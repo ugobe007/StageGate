@@ -69,6 +69,9 @@ export const appRouter = router({
     list: publicProcedure.query(async () => {
       return db.getAllTradeShows();
     }),
+    lasVegas2026: publicProcedure.query(async () => {
+      return db.getLasVegasShows2026();
+    }),
 
     search: publicProcedure
       .input(

@@ -21,6 +21,7 @@ export default function Navbar() {
   const [quoteOpen, setQuoteOpen] = useState(false);
 
   const navLinks = [
+    { href: "/shows",     label: "Shows" },
     { href: "/services",  label: "Services" },
     { href: "/stagehand", label: "StageHand™" },
     { href: "/stagepro",  label: "StagePro™" },

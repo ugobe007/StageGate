@@ -128,3 +128,13 @@
 - [x] "Get a Quote" CTA button in Navbar and hero section
 - [x] Admin Dashboard: Quote Requests panel with status management
 - [x] Vitest tests for quotes.submit and quotes.list procedures (6 tests, 40 total)
+
+## Public Show Calendar Page (v1.7)
+- [x] /shows page: card grid of all 2026 Las Vegas trade shows
+- [x] Venue filter pills (All Venues + each unique venue)
+- [x] Month filter pills (All Months + Jan–Dec)
+- [x] Show cards: name, venue, city, date range, status badge, website link
+- [x] Per-card CTAs: "Book Services" → /order?showId=X and "Get a Quote" modal trigger
+- [x] Empty state when no shows match filters
+- [x] Navbar link to /shows
+- [x] Route registered in App.tsx

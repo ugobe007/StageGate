@@ -117,6 +117,16 @@ export async function getAllTradeShows() {
   return db.select().from(tradeShows).orderBy(tradeShows.startDate);
 }
 
+export async function getLasVegasShows2026() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(tradeShows).orderBy(tradeShows.startDate);
+  return rows.filter((show) => {
+    const isLasVegas = (show.city ?? "").toLowerCase().includes("las vegas");
+    const year = show.startDate ? new Date(show.startDate).getFullYear() : null;
+    return isLasVegas && year === 2026;
+  });
+}
 export async function searchTradeShows(query: string, city?: string) {
   const db = await getDb();
   if (!db) return [];

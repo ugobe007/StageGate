@@ -17,6 +17,7 @@ import AdminShows from "./pages/AdminShows";
 import AdminLeads from "./pages/AdminLeads";
 import AdminOrders from "./pages/AdminOrders";
 import AdminPartners from "./pages/AdminPartners";
+import ShowsCalendar from "./pages/ShowsCalendar";
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/stagehand" component={StageHandPage} />
       <Route path="/stagepro" component={StageProPage} />
       <Route path="/register" component={Register} />
+      <Route path="/shows" component={ShowsCalendar} />
 
       {/* Client */}
       <Route path="/dashboard" component={ClientDashboard} />
