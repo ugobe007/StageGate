@@ -85,3 +85,11 @@
 - [x] City expansion: upgraded card design
 - [x] Bottom CTA: stronger visual weight, glow effect
 - [x] Navbar: refined with backdrop blur and border
+
+## Visual Redesign v1.2 — Supabase-Style Clean
+- [ ] Source real robot logistics image (crate/warehouse scene)
+- [ ] Remove radar/robot SVG graphic from hero
+- [ ] Redesign CSS: Supabase-style clean palette, stroke-only buttons, tight typography
+- [ ] Rebuild hero with real image, clean asymmetric layout
+- [ ] Update all sections to match clean design language
+- [ ] Update Navbar, Services, StageHand™, StagePro™ pages

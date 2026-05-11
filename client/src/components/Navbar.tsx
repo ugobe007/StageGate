@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Zap } from "lucide-react";
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -53,29 +53,12 @@ export default function Navbar() {
           <Link href="/">
             <div className="flex items-center gap-2.5 group cursor-pointer">
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200"
-                style={{
-                  background: "oklch(0.74 0.23 145 / 0.12)",
-                  border: "1px solid oklch(0.74 0.23 145 / 0.35)",
-                  boxShadow: "0 0 0 oklch(0.74 0.23 145 / 0)",
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 14px oklch(0.74 0.23 145 / 0.35)";
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 oklch(0.74 0.23 145 / 0)";
-                }}
+                className="w-7 h-7 rounded-md flex items-center justify-center"
+                style={{ background: "oklch(0.72 0.21 145)" }}
               >
-                <span
-                  className="font-display font-bold text-xs"
-                  style={{ color: "oklch(0.74 0.23 145)" }}
-                >
-                  SG
-                </span>
+                <Zap size={13} className="text-[oklch(0.08_0.006_240)]" />
               </div>
-              <span className="font-display font-bold text-[0.9375rem] tracking-tight text-white">
-                Stage<span style={{ color: "oklch(0.74 0.23 145)" }}>Gate</span>
-              </span>
+              <span className="font-semibold text-sm text-white tracking-tight">StageGate</span>
             </div>
           </Link>
 
@@ -153,17 +136,8 @@ export default function Navbar() {
                   <button
                     className="px-4 py-2 rounded-lg text-sm font-display font-bold transition-all duration-200 cursor-pointer"
                     style={{
-                      background: "oklch(0.74 0.23 145)",
-                      color: "oklch(0.06 0.008 240)",
-                      boxShadow: "0 0 16px oklch(0.74 0.23 145 / 0.22)",
-                    }}
-                    onMouseEnter={e => {
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 26px oklch(0.74 0.23 145 / 0.45)";
-                      (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)";
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 16px oklch(0.74 0.23 145 / 0.22)";
-                      (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
+                      background: "oklch(0.72 0.21 145)",
+                      color: "oklch(0.08 0.006 240)",
                     }}
                   >
                     Register Free
