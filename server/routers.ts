@@ -124,6 +124,10 @@ export const appRouter = router({
           website: z.string().optional(),
           exhibitorListUrl: z.string().optional(),
           status: z.enum(["upcoming", "active", "completed"]).optional(),
+          description: z.string().optional(),
+          roboticsRelevance: z.number().int().min(1).max(5).optional(),
+          estimatedExhibitors: z.number().int().optional(),
+          roboticsExhibitors: z.number().int().optional(),
         })
       )
       .mutation(async ({ input }) => {

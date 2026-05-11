@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `trade_shows` ADD `description` text;\nALTER TABLE `trade_shows` ADD `roboticsRelevance` int DEFAULT 3;\nALTER TABLE `trade_shows` ADD `estimatedExhibitors` int;\nALTER TABLE `trade_shows` ADD `roboticsExhibitors` int;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute ALTER TABLE `trade_shows` ADD `description` text;\nALTER TABLE `trade_shows` ADD `roboticsRelevance` int DEFAULT 3;\nALTER TABLE `trade_shows` ADD `estimatedExhibitors` int;\nALTER TABLE `trade_shows` ADD `roboticsExhibitors` int;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1242
+}

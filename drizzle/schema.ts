@@ -56,6 +56,10 @@ export const tradeShows = mysqlTable("trade_shows", {
   website: varchar("website", { length: 512 }),
   exhibitorListUrl: varchar("exhibitorListUrl", { length: 512 }),
   status: mysqlEnum("status", ["upcoming", "active", "completed"]).default("upcoming").notNull(),
+  description: text("description"),
+  roboticsRelevance: int("roboticsRelevance").default(3), // 1-5 scale
+  estimatedExhibitors: int("estimatedExhibitors"),
+  roboticsExhibitors: int("roboticsExhibitors"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

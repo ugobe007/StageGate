@@ -99,12 +99,17 @@ const EMPTY: FormData = {
 
 type Props = {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange?: (open: boolean) => void;
+  onClose?: () => void;
+  preselectedShowId?: number;
 };
 
-export default function GetQuoteModal({ open, onOpenChange }: Props) {
+export default function GetQuoteModal({ open, onOpenChange, onClose, preselectedShowId }: Props) {
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState<FormData>(EMPTY);
+  const [form, setForm] = useState<FormData>(() => ({
+    ...EMPTY,
+    showId: preselectedShowId,
+  }));
   const [submitted, setSubmitted] = useState(false);
 
   const { data: shows } = trpc.shows.list.useQuery();
@@ -117,13 +122,16 @@ export default function GetQuoteModal({ open, onOpenChange }: Props) {
 
   function reset() {
     setStep(1);
-    setForm(EMPTY);
+    setForm({ ...EMPTY, showId: preselectedShowId });
     setSubmitted(false);
   }
 
   function handleClose(v: boolean) {
-    if (!v) reset();
-    onOpenChange(v);
+    if (!v) {
+      reset();
+      onClose?.();
+    }
+    onOpenChange?.(v);
   }
 
   function toggleService(id: number) {

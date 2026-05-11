@@ -261,9 +261,11 @@ export default function ShowsCalendar() {
                         >
                           {/* Top row: name + status */}
                           <div className="flex items-start justify-between gap-2">
-                            <h3 className="font-display font-semibold text-foreground text-base leading-snug group-hover:text-primary transition-colors">
-                              {show.name}
-                            </h3>
+                            <Link href={`/shows/${show.id}`}>
+                              <h3 className="font-display font-semibold text-foreground text-base leading-snug group-hover:text-primary transition-colors cursor-pointer">
+                                {show.name}
+                              </h3>
+                            </Link>
                             <span
                               className="flex-shrink-0 text-[10px] font-mono px-2 py-0.5 rounded-full"
                               style={{ background: statusStyle.bg, color: statusStyle.text }}

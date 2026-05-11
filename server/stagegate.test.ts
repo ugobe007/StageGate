@@ -488,3 +488,43 @@ describe("quotes.updateStatus", () => {
     ).rejects.toThrow();
   });
 });
+
+describe("shows.get", () => {
+  const fullShow = {
+    id: 5,
+    name: "CES 2026",
+    status: "upcoming" as const,
+    location: "Las Vegas, NV",
+    venue: "Las Vegas Convention Center",
+    city: "Las Vegas",
+    startDate: new Date("2026-01-06"),
+    endDate: new Date("2026-01-09"),
+    website: "https://www.ces.tech",
+    exhibitorListUrl: null,
+    description: "The world's most influential technology event.",
+    roboticsRelevance: 5,
+    estimatedExhibitors: 4500,
+    roboticsExhibitors: 120,
+    createdAt: new Date(),
+  };
+
+  it("returns full show details including robotics fields for a valid id", async () => {
+    vi.mocked(getTradeShowById).mockResolvedValueOnce(fullShow as any);
+    const caller = appRouter.createCaller(createPublicCtx());
+    const result = await caller.shows.get({ id: 5 });
+    expect(result).toMatchObject({
+      id: 5,
+      name: "CES 2026",
+      roboticsRelevance: 5,
+      estimatedExhibitors: 4500,
+      roboticsExhibitors: 120,
+    });
+  });
+
+  it("returns null for an unknown show id", async () => {
+    vi.mocked(getTradeShowById).mockResolvedValueOnce(null);
+    const caller = appRouter.createCaller(createPublicCtx());
+    const result = await caller.shows.get({ id: 9999 });
+    expect(result).toBeNull();
+  });
+});

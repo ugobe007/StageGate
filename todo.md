@@ -138,3 +138,20 @@
 - [x] Empty state when no shows match filters
 - [x] Navbar link to /shows
 - [x] Route registered in App.tsx
+
+## Show Detail Pages (v1.8)
+- [x] DB: add `description`, `roboticsRelevance` (1-5 int), `estimatedExhibitors`, `roboticsExhibitors` columns to trade_shows
+- [x] Migration applied
+- [x] Seed all 19 Las Vegas shows with descriptions, relevance ratings, and exhibitor counts
+- [x] Backend: `shows.get` procedure returns full show detail (already exists, verified)
+- [x] Backend: `shows.update` admin procedure supports new fields
+- [x] ShowDetail page: hero with show name, dates, venue, status badge
+- [x] ShowDetail page: robotics relevance star/bar rating (1-5)
+- [x] ShowDetail page: exhibitor stats (total vs robotics exhibitors)
+- [x] ShowDetail page: full description section
+- [x] ShowDetail page: pre-filled service booking form (show pre-selected, can't be changed)
+- [x] ShowDetail page: "Notify me" inline for upcoming shows
+- [x] ShowDetail page: back link to /shows calendar
+- [x] ShowsCalendar cards: show name links to /shows/:id
+- [x] Route /shows/:id registered in App.tsx
+- [x] Vitest test for shows.get procedure (42 tests total)
