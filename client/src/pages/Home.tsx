@@ -8,6 +8,7 @@ import {
   GraduationCap, Monitor, TrendingUp, MapPin, ChevronRight,
   Star, CheckCircle2, Shield
 } from "lucide-react";
+import ShowSearchBar from "@/components/ShowSearchBar";
 
 /* ── Animated counter hook ─────────────────────────────────────────────────── */
 function useCountUp(target: number, duration = 1600, start = false) {
@@ -218,6 +219,24 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── SHOW SEARCH ──────────────────────────────────────────────────────── */}
+      <section className="py-12 border-b border-[oklch(0.16_0.008_240)] bg-[oklch(0.09_0.006_240)]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-6">
+            <div className="section-label mx-auto justify-center mb-2">
+              Find Your Show
+            </div>
+            <h2 className="text-xl font-semibold tracking-tight text-white">
+              Search upcoming Las Vegas trade shows
+            </h2>
+            <p className="text-sm text-[oklch(0.50_0.008_240)] mt-1">
+              Select your event to see available services and book your robot's spot.
+            </p>
+          </div>
+          <ShowSearchBar showCityFilter={true} />
         </div>
       </section>
 

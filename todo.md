@@ -93,3 +93,12 @@
 - [x] Rebuild hero with real image, clean asymmetric layout
 - [x] Update all sections to match clean design language
 - [x] Update Navbar, Services, StageHand™, StagePro™ pages
+
+## Trade Show Search Bar (v1.3)
+- [x] Backend: public `shows.search` tRPC procedure with text + city filter
+- [x] ShowSearchBar component: live search input, dropdown results, keyboard nav
+- [x] Show result cards: name, date, venue, city badge, "Book Services" CTA
+- [x] Empty state and loading skeleton in dropdown
+- [x] Integrate search bar into Home.tsx hero section
+- [x] Navigate to /order?showId=X when a show is selected
+- [x] Vitest test for shows.search procedure (6 tests)

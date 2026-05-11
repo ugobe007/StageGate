@@ -70,6 +70,17 @@ export const appRouter = router({
       return db.getAllTradeShows();
     }),
 
+    search: publicProcedure
+      .input(
+        z.object({
+          query: z.string().default(""),
+          city: z.string().optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        return db.searchTradeShows(input.query, input.city);
+      }),
+
     get: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
       return db.getTradeShowById(input.id);
     }),

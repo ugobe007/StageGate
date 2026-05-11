@@ -114,6 +114,25 @@ export async function getAllTradeShows() {
   return db.select().from(tradeShows).orderBy(tradeShows.startDate);
 }
 
+export async function searchTradeShows(query: string, city?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(tradeShows).orderBy(tradeShows.startDate);
+  const q = query.toLowerCase().trim();
+  return rows.filter((show) => {
+    const matchesQuery =
+      !q ||
+      show.name.toLowerCase().includes(q) ||
+      (show.venue ?? "").toLowerCase().includes(q) ||
+      (show.city ?? "").toLowerCase().includes(q) ||
+      (show.location ?? "").toLowerCase().includes(q);
+    const matchesCity =
+      !city ||
+      (show.city ?? "").toLowerCase().includes(city.toLowerCase());
+    return matchesQuery && matchesCity;
+  });
+}
+
 export async function getTradeShowById(id: number) {
   const db = await getDb();
   if (!db) return undefined;

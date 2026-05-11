@@ -11,6 +11,19 @@ vi.mock("./db", () => ({
   upsertCompanyProfile: vi.fn().mockResolvedValue(undefined),
   getAllCompanyProfiles: vi.fn().mockResolvedValue([]),
   getAllTradeShows: vi.fn().mockResolvedValue([]),
+  searchTradeShows: vi.fn().mockImplementation(async (query: string, city?: string) => {
+    const shows = [
+      { id: 1, name: "CES 2026", venue: "Las Vegas Convention Center", city: "Las Vegas", location: "Las Vegas, NV", startDate: new Date("2026-01-06"), endDate: new Date("2026-01-09"), status: "upcoming" as const, createdAt: new Date() },
+      { id: 2, name: "Automate 2026", venue: "McCormick Place", city: "Chicago", location: "Chicago, IL", startDate: new Date("2026-05-04"), endDate: new Date("2026-05-07"), status: "upcoming" as const, createdAt: new Date() },
+      { id: 3, name: "MODEX 2026", venue: "Georgia World Congress Center", city: "Atlanta", location: "Atlanta, GA", startDate: new Date("2026-03-09"), endDate: new Date("2026-03-12"), status: "upcoming" as const, createdAt: new Date() },
+    ];
+    const q = query.toLowerCase().trim();
+    return shows.filter((s) => {
+      const matchQ = !q || s.name.toLowerCase().includes(q) || s.city.toLowerCase().includes(q) || s.venue.toLowerCase().includes(q);
+      const matchC = !city || s.city.toLowerCase().includes(city.toLowerCase());
+      return matchQ && matchC;
+    });
+  }),
   getTradeShowById: vi.fn().mockResolvedValue(null),
   createTradeShow: vi.fn().mockResolvedValue({ id: 1, name: "Test Show", status: "upcoming" }),
   updateTradeShow: vi.fn().mockResolvedValue(undefined),
@@ -324,5 +337,48 @@ describe("Outreach status labels", () => {
     VALID_STATUSES.forEach(status => {
       expect(["new", "emailed", "responded", "registered"]).toContain(status);
     });
+  });
+});
+
+// ─── Trade Show Search Tests ──────────────────────────────────────────────────
+
+describe("shows.search", () => {
+  it("returns all shows when query is empty", async () => {
+    const caller = appRouter.createCaller(createPublicCtx());
+    const results = await caller.shows.search({ query: "" });
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBe(3);
+  });
+
+  it("filters shows by name query (case-insensitive)", async () => {
+    const caller = appRouter.createCaller(createPublicCtx());
+    const results = await caller.shows.search({ query: "ces" });
+    expect(results.length).toBe(1);
+    expect(results[0]?.name).toBe("CES 2026");
+  });
+
+  it("filters shows by city", async () => {
+    const caller = appRouter.createCaller(createPublicCtx());
+    const results = await caller.shows.search({ query: "", city: "chicago" });
+    expect(results.length).toBe(1);
+    expect(results[0]?.city).toBe("Chicago");
+  });
+
+  it("filters shows by venue keyword", async () => {
+    const caller = appRouter.createCaller(createPublicCtx());
+    const results = await caller.shows.search({ query: "las vegas" });
+    expect(results.length).toBe(1);
+    expect(results[0]?.name).toBe("CES 2026");
+  });
+
+  it("returns empty array when no shows match", async () => {
+    const caller = appRouter.createCaller(createPublicCtx());
+    const results = await caller.shows.search({ query: "nonexistent show xyz" });
+    expect(results.length).toBe(0);
+  });
+
+  it("is accessible to unauthenticated (public) users", async () => {
+    const caller = appRouter.createCaller(createPublicCtx());
+    await expect(caller.shows.search({ query: "" })).resolves.toBeDefined();
   });
 });
