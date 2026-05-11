@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+import { getTradeShowById, createShowNotification } from "./db";
 
 // Mock the database helpers using actual function names from server/db.ts
 vi.mock("./db", () => ({
@@ -51,6 +52,9 @@ vi.mock("./db", () => ({
   createLogisticsPartner: vi.fn().mockResolvedValue({ id: 1, name: "Global Freight Co.", serviceType: "customs" }),
   updateLogisticsPartner: vi.fn().mockResolvedValue(undefined),
   deleteLogisticsPartner: vi.fn().mockResolvedValue(undefined),
+  createShowNotification: vi.fn().mockResolvedValue({ id: 1, alreadyExists: false }),
+  getShowNotificationsByShowId: vi.fn().mockResolvedValue([]),
+  getAllShowNotifications: vi.fn().mockResolvedValue([]),
 }));
 
 // Mock LLM
@@ -380,5 +384,42 @@ describe("shows.search", () => {
   it("is accessible to unauthenticated (public) users", async () => {
     const caller = appRouter.createCaller(createPublicCtx());
     await expect(caller.shows.search({ query: "" })).resolves.toBeDefined();
+  });
+});
+
+describe("shows.notifyMe", () => {
+  it("returns success when a valid email is submitted for an upcoming show", async () => {
+    vi.mocked(getTradeShowById).mockResolvedValueOnce({ id: 1, name: "CES 2026", status: "upcoming", location: null, venue: null, city: null, startDate: null, endDate: null, website: null, exhibitorListUrl: null, createdAt: new Date() });
+    vi.mocked(createShowNotification).mockResolvedValueOnce({ id: 1, alreadyExists: false });
+
+    const caller = appRouter.createCaller(createPublicCtx());
+    const result = await caller.shows.notifyMe({ showId: 1, email: "test@example.com" });
+    expect(result.success).toBe(true);
+    expect(result.alreadyExists).toBe(false);
+  });
+
+  it("returns alreadyExists: true when email is already registered for the show", async () => {
+    vi.mocked(getTradeShowById).mockResolvedValueOnce({ id: 1, name: "CES 2026", status: "upcoming", location: null, venue: null, city: null, startDate: null, endDate: null, website: null, exhibitorListUrl: null, createdAt: new Date() });
+    vi.mocked(createShowNotification).mockResolvedValueOnce({ id: 1, alreadyExists: true });
+
+    const caller = appRouter.createCaller(createPublicCtx());
+    const result = await caller.shows.notifyMe({ showId: 1, email: "test@example.com" });
+    expect(result.success).toBe(true);
+    expect(result.alreadyExists).toBe(true);
+  });
+
+  it("throws NOT_FOUND when show does not exist", async () => {
+    vi.mocked(getTradeShowById).mockResolvedValueOnce(null);
+
+    const caller = appRouter.createCaller(createPublicCtx());
+    await expect(caller.shows.notifyMe({ showId: 999, email: "test@example.com" })).rejects.toThrow();
+  });
+
+  it("is accessible to unauthenticated users", async () => {
+    vi.mocked(getTradeShowById).mockResolvedValueOnce({ id: 1, name: "CES 2026", status: "upcoming", location: null, venue: null, city: null, startDate: null, endDate: null, website: null, exhibitorListUrl: null, createdAt: new Date() });
+    vi.mocked(createShowNotification).mockResolvedValueOnce({ id: 1, alreadyExists: false });
+
+    const caller = appRouter.createCaller(createPublicCtx());
+    await expect(caller.shows.notifyMe({ showId: 1, email: "visitor@example.com" })).resolves.toBeDefined();
   });
 });

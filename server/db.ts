@@ -10,6 +10,7 @@ import {
   serviceOrders,
   orderItems,
   logisticsPartners,
+  showNotifications,
   InsertCompanyProfile,
   InsertTradeShow,
   InsertExhibitorLead,
@@ -295,4 +296,41 @@ export async function deleteLogisticsPartner(id: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   await db.delete(logisticsPartners).where(eq(logisticsPartners.id, id));
+}
+
+// ─── Show Notifications ───────────────────────────────────────────────────────
+
+export async function createShowNotification(showId: number, email: string): Promise<{ id: number; alreadyExists: boolean }> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  // Check for duplicate (same email + showId)
+  const existing = await db
+    .select({ id: showNotifications.id })
+    .from(showNotifications)
+    .where(and(eq(showNotifications.showId, showId), eq(showNotifications.email, email)))
+    .limit(1);
+  if (existing.length > 0) {
+    return { id: existing[0]!.id, alreadyExists: true };
+  }
+  const result = await db.insert(showNotifications).values({ showId, email });
+  return { id: (result[0] as any).insertId as number, alreadyExists: false };
+}
+
+export async function getShowNotificationsByShowId(showId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(showNotifications)
+    .where(eq(showNotifications.showId, showId))
+    .orderBy(desc(showNotifications.createdAt));
+}
+
+export async function getAllShowNotifications() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(showNotifications)
+    .orderBy(desc(showNotifications.createdAt));
 }

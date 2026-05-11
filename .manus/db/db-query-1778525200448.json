@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `show_notifications` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `showId` int NOT NULL,\n  `email` varchar(320) NOT NULL,\n  `createdAt` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `show_notifications_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute CREATE TABLE `show_notifications` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `showId` int NOT NULL,\n  `email` varchar(320) NOT NULL,\n  `createdAt` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `show_notifications_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 431
+}

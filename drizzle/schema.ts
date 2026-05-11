@@ -146,3 +146,14 @@ export const logisticsPartners = mysqlTable("logistics_partners", {
 
 export type LogisticsPartner = typeof logisticsPartners.$inferSelect;
 export type InsertLogisticsPartner = typeof logisticsPartners.$inferInsert;
+
+// Show booking notification requests
+export const showNotifications = mysqlTable("show_notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  showId: int("showId").notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ShowNotification = typeof showNotifications.$inferSelect;
+export type InsertShowNotification = typeof showNotifications.$inferInsert;

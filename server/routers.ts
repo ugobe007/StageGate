@@ -139,6 +139,37 @@ export const appRouter = router({
         await db.deleteTradeShow(input.id);
         return { success: true };
       }),
+
+    // Public: register email for booking-open notification
+    notifyMe: publicProcedure
+      .input(
+        z.object({
+          showId: z.number(),
+          email: z.string().email({ message: "Please enter a valid email address" }),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const show = await db.getTradeShowById(input.showId);
+        if (!show) throw new TRPCError({ code: "NOT_FOUND", message: "Show not found" });
+        const { alreadyExists } = await db.createShowNotification(input.showId, input.email);
+        if (!alreadyExists) {
+          await notifyOwner({
+            title: "New Booking Notification Request",
+            content: `${input.email} wants to be notified when bookings open for "${show.name}".`,
+          }).catch(() => {});
+        }
+        return { success: true, alreadyExists };
+      }),
+
+    // Admin: list all notification requests for a show
+    getNotifications: adminProcedure
+      .input(z.object({ showId: z.number().optional() }))
+      .query(async ({ input }) => {
+        if (input.showId) {
+          return db.getShowNotificationsByShowId(input.showId);
+        }
+        return db.getAllShowNotifications();
+      }),
   }),
 
   // ─── Services ──────────────────────────────────────────────────────────────

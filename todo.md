@@ -102,3 +102,13 @@
 - [x] Integrate search bar into Home.tsx hero section
 - [x] Navigate to /order?showId=X when a show is selected
 - [x] Vitest test for shows.search procedure (6 tests)
+
+## Notify Me — Show Booking Alerts (v1.4)
+- [ ] DB: `showNotifications` table (id, showId, email, createdAt)
+- [ ] Migration applied via webdev_execute_sql
+- [ ] Backend: `shows.notifyMe` tRPC public procedure (email + showId, dedup by email+showId)
+- [ ] Backend: owner notification triggered on new signup
+- [ ] ShowSearchBar: inline "Notify me" email input on upcoming show results
+- [ ] UI: success/error state after submission (inline confirmation, no page reload)
+- [ ] Admin: notification requests visible in Admin Shows panel
+- [ ] Vitest tests for shows.notifyMe procedure

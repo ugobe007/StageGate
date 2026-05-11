@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Calendar, Plus, Trash2, Edit, ArrowLeft, Loader2, Globe } from "lucide-react";
+import { Calendar, Plus, Trash2, Edit, ArrowLeft, Loader2, Globe, Bell } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
@@ -39,8 +39,15 @@ export default function AdminShows() {
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<ShowForm>(EMPTY_FORM);
 
+  const [selectedShowForNotifs, setSelectedShowForNotifs] = useState<number | null>(null);
+
   const utils = trpc.useUtils();
   const { data: shows, isLoading } = trpc.shows.list.useQuery();
+  const { data: allNotifs } = trpc.shows.getNotifications.useQuery({ showId: undefined });
+  const { data: showNotifs } = trpc.shows.getNotifications.useQuery(
+    { showId: selectedShowForNotifs ?? undefined },
+    { enabled: selectedShowForNotifs !== null }
+  );
 
   const createShow = trpc.shows.create.useMutation({
     onSuccess: () => { toast.success("Show created"); utils.shows.list.invalidate(); setOpen(false); setForm(EMPTY_FORM); },
@@ -218,6 +225,39 @@ export default function AdminShows() {
                       <Trash2 size={12} />
                     </Button>
                   </div>
+                  {/* Notification count */}
+                  {(() => {
+                    const count = (allNotifs || []).filter((n: any) => n.showId === show.id).length;
+                    return count > 0 ? (
+                      <button
+                        onClick={() => setSelectedShowForNotifs(selectedShowForNotifs === show.id ? null : show.id)}
+                        className="mt-2 w-full flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs border transition-all"
+                        style={{ borderColor: "oklch(0.55 0.18 145 / 0.30)", color: "oklch(0.55 0.18 145)", background: "oklch(0.55 0.18 145 / 0.06)" }}
+                      >
+                        <Bell size={11} />
+                        {count} notification request{count !== 1 ? "s" : ""}
+                        <span className="ml-auto text-[10px] opacity-60">{selectedShowForNotifs === show.id ? "▲ hide" : "▼ show"}</span>
+                      </button>
+                    ) : null;
+                  })()}
+                  {/* Notification list drawer */}
+                  {selectedShowForNotifs === show.id && (
+                    <div className="mt-2 rounded-lg border overflow-hidden" style={{ borderColor: "oklch(0.55 0.18 145 / 0.20)" }}>
+                      <div className="px-3 py-2 text-[10px] font-mono tracking-widest uppercase" style={{ background: "oklch(0.55 0.18 145 / 0.08)", color: "oklch(0.55 0.18 145)" }}>
+                        Notification Requests
+                      </div>
+                      <ul className="divide-y" style={{ borderColor: "oklch(0.55 0.18 145 / 0.10)" }}>
+                        {(showNotifs || []).map((n: any) => (
+                          <li key={n.id} className="px-3 py-2 flex items-center justify-between gap-2">
+                            <span className="text-xs truncate" style={{ color: "oklch(0.80 0.004 240)" }}>{n.email}</span>
+                            <span className="text-[10px] flex-shrink-0" style={{ color: "oklch(0.40 0.008 240)" }}>
+                              {new Date(n.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
