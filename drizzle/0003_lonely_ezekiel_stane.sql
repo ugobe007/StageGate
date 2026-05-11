@@ -1,0 +1,20 @@
+CREATE TABLE `quote_requests` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`name` varchar(255) NOT NULL,
+	`email` varchar(320) NOT NULL,
+	`company` varchar(255) NOT NULL,
+	`phone` varchar(64),
+	`robotType` varchar(255) NOT NULL,
+	`robotCount` int NOT NULL DEFAULT 1,
+	`robotDimensions` varchar(255),
+	`robotWeight` varchar(100),
+	`showId` int,
+	`showName` varchar(255),
+	`serviceIds` text,
+	`notes` text,
+	`status` enum('new','reviewing','quoted','converted','closed') NOT NULL DEFAULT 'new',
+	`adminNotes` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `quote_requests_id` PRIMARY KEY(`id`)
+);

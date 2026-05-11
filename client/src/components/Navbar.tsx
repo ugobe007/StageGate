@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Menu, X, Zap } from "lucide-react";
+import GetQuoteModal from "@/components/GetQuoteModal";
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -17,6 +18,7 @@ export default function Navbar() {
   }, []);
 
   const isAdmin = user?.role === "admin";
+  const [quoteOpen, setQuoteOpen] = useState(false);
 
   const navLinks = [
     { href: "/services",  label: "Services" },
@@ -36,6 +38,7 @@ export default function Navbar() {
     : "1px solid oklch(0.13 0.008 240)";
 
   return (
+    <>
     <nav
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
       style={{
@@ -132,6 +135,19 @@ export default function Navbar() {
                     Sign In
                   </span>
                 </a>
+                <button
+                    onClick={() => setQuoteOpen(true)}
+                    className="px-4 py-2 rounded-lg text-sm font-display font-semibold transition-all duration-200 cursor-pointer border"
+                    style={{
+                      borderColor: "oklch(0.72 0.21 145)",
+                      color: "oklch(0.72 0.21 145)",
+                      background: "transparent",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "oklch(0.72 0.21 145 / 0.10)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                  >
+                    Get a Quote
+                  </button>
                 <Link href="/register">
                   <button
                     className="px-4 py-2 rounded-lg text-sm font-display font-bold transition-all duration-200 cursor-pointer"
@@ -233,5 +249,7 @@ export default function Navbar() {
         </div>
       )}
     </nav>
+    <GetQuoteModal open={quoteOpen} onOpenChange={setQuoteOpen} />
+    </>
   );
 }

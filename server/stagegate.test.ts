@@ -55,6 +55,9 @@ vi.mock("./db", () => ({
   createShowNotification: vi.fn().mockResolvedValue({ id: 1, alreadyExists: false }),
   getShowNotificationsByShowId: vi.fn().mockResolvedValue([]),
   getAllShowNotifications: vi.fn().mockResolvedValue([]),
+  createQuoteRequest: vi.fn().mockResolvedValue({ id: 10, status: "new" }),
+  getAllQuoteRequests: vi.fn().mockResolvedValue([]),
+  updateQuoteRequestStatus: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock LLM
@@ -421,5 +424,67 @@ describe("shows.notifyMe", () => {
 
     const caller = appRouter.createCaller(createPublicCtx());
     await expect(caller.shows.notifyMe({ showId: 1, email: "visitor@example.com" })).resolves.toBeDefined();
+  });
+});
+
+// ─── Quote Request Tests ──────────────────────────────────────────────────────
+
+describe("quotes.submit", () => {
+  it("allows unauthenticated users to submit a quote request", async () => {
+    const caller = appRouter.createCaller(createPublicCtx());
+    const result = await caller.quotes.submit({
+      name: "Jane Smith",
+      email: "jane@acme.com",
+      company: "Acme Robotics",
+      robotType: "Humanoid",
+      robotCount: 2,
+      serviceIds: [1, 3],
+      notes: "Need staging and activation for CES",
+    });
+    expect(result).toBeDefined();
+    expect(result.success).toBe(true);
+  });
+
+  it("requires name, email, company, robotType, and robotCount", async () => {
+    const caller = appRouter.createCaller(createPublicCtx());
+    await expect(
+      caller.quotes.submit({
+        name: "",
+        email: "not-an-email",
+        company: "X",
+        robotType: "Arm",
+        robotCount: 0,
+        serviceIds: [],
+      })
+    ).rejects.toThrow();
+  });
+});
+
+describe("quotes.list", () => {
+  it("allows admin to list all quote requests", async () => {
+    const caller = appRouter.createCaller(createAdminCtx());
+    const result = await caller.quotes.list();
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("throws FORBIDDEN for regular user", async () => {
+    const caller = appRouter.createCaller(createUserCtx());
+    await expect(caller.quotes.list()).rejects.toThrow();
+  });
+});
+
+describe("quotes.updateStatus", () => {
+  it("allows admin to update quote status", async () => {
+    const caller = appRouter.createCaller(createAdminCtx());
+    await expect(
+      caller.quotes.updateStatus({ id: 10, status: "reviewing" })
+    ).resolves.toBeDefined();
+  });
+
+  it("throws FORBIDDEN for regular user", async () => {
+    const caller = appRouter.createCaller(createUserCtx());
+    await expect(
+      caller.quotes.updateStatus({ id: 10, status: "reviewing" })
+    ).rejects.toThrow();
   });
 });

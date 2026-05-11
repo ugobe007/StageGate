@@ -104,11 +104,27 @@
 - [x] Vitest test for shows.search procedure (6 tests)
 
 ## Notify Me — Show Booking Alerts (v1.4)
-- [ ] DB: `showNotifications` table (id, showId, email, createdAt)
-- [ ] Migration applied via webdev_execute_sql
-- [ ] Backend: `shows.notifyMe` tRPC public procedure (email + showId, dedup by email+showId)
-- [ ] Backend: owner notification triggered on new signup
-- [ ] ShowSearchBar: inline "Notify me" email input on upcoming show results
-- [ ] UI: success/error state after submission (inline confirmation, no page reload)
-- [ ] Admin: notification requests visible in Admin Shows panel
-- [ ] Vitest tests for shows.notifyMe procedure
+- [x] DB: `showNotifications` table (id, showId, email, createdAt)
+- [x] Migration applied via webdev_execute_sql
+- [x] Backend: `shows.notifyMe` tRPC public procedure (email + showId, dedup by email+showId)
+- [x] Backend: owner notification triggered on new signup
+- [x] ShowSearchBar: inline "Notify me" email input on upcoming show results
+- [x] UI: success/error state after submission (inline confirmation, no page reload)
+- [x] Admin: notification requests visible in Admin Shows panel
+- [x] Vitest tests for shows.notifyMe procedure (4 tests, 34 total)
+
+## Get a Quote Modal (v1.5)
+- [ ] DB: `quoteRequests` table (id, name, email, company, robotType, robotCount, showId, serviceIds, notes, status, createdAt)
+- [ ] Migration applied
+- [ ] Backend: `quotes.submit` public tRPC procedure (saves quote, notifies owner)
+- [ ] Backend: `quotes.list` admin-only tRPC procedure
+- [ ] Backend: `quotes.updateStatus` admin-only tRPC procedure
+- [ ] Multi-step modal: Step 1 — Robot details (type, count, dimensions, weight)
+- [ ] Multi-step modal: Step 2 — Show selection (searchable dropdown of upcoming shows)
+- [ ] Multi-step modal: Step 3 — Services checklist (all 8 service lines with descriptions)
+- [ ] Multi-step modal: Step 4 — Contact info (name, email, company, notes)
+- [ ] Step progress indicator at top of modal
+- [ ] Success confirmation screen after submit
+- [ ] "Get a Quote" CTA button in Navbar and hero section
+- [ ] Admin Dashboard: Quote Requests panel with status management
+- [ ] Vitest tests for quotes.submit and quotes.list procedures

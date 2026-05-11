@@ -11,7 +11,8 @@ import StageProPage from "./pages/StageProPage";
 import Register from "./pages/Register";
 import ClientDashboard from "./pages/ClientDashboard";
 import ServiceOrder from "./pages/ServiceOrder";
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboard from "@/pages/AdminDashboard";
+import AdminQuotes from "@/pages/AdminQuotes";
 import AdminShows from "./pages/AdminShows";
 import AdminLeads from "./pages/AdminLeads";
 import AdminOrders from "./pages/AdminOrders";
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/admin/leads" component={AdminLeads} />
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/partners" component={AdminPartners} />
+      <Route path="/admin/quotes" component={AdminQuotes} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

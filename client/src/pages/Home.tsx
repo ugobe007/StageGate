@@ -9,6 +9,7 @@ import {
   Star, CheckCircle2, Shield
 } from "lucide-react";
 import ShowSearchBar from "@/components/ShowSearchBar";
+import GetQuoteModal from "@/components/GetQuoteModal";
 
 /* ── Animated counter hook ─────────────────────────────────────────────────── */
 function useCountUp(target: number, duration = 1600, start = false) {
@@ -89,7 +90,8 @@ const BRAND_CARDS = [
 
 /* ── Main component ─────────────────────────────────────────────────────────── */
 export default function Home() {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const [quoteOpen, setQuoteOpen] = useState(false);
   const { data: services } = trpc.services.list.useQuery();
 
   const statsRef = useRef<HTMLDivElement>(null);
@@ -109,6 +111,7 @@ export default function Home() {
   const ctaHref = isAuthenticated ? "/dashboard" : "/register";
 
   return (
+    <>
     <div className="min-h-screen bg-[oklch(0.08_0.006_240)] text-[oklch(0.97_0.002_240)] overflow-x-hidden">
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
@@ -170,6 +173,13 @@ export default function Home() {
                     <ArrowRight size={15} />
                   </span>
                 </Link>
+                <button
+                  onClick={() => setQuoteOpen(true)}
+                  className="btn-default text-sm"
+                >
+                  Get a Quote
+                  <ChevronRight size={15} />
+                </button>
                 <Link href="/services">
                   <span className="btn-default text-sm">
                     View Services
@@ -514,5 +524,7 @@ export default function Home() {
         </div>
       </footer>
     </div>
+    <GetQuoteModal open={quoteOpen} onOpenChange={setQuoteOpen} />
+    </>
   );
 }

@@ -11,6 +11,8 @@ import {
   orderItems,
   logisticsPartners,
   showNotifications,
+  quoteRequests,
+  InsertQuoteRequest,
   InsertCompanyProfile,
   InsertTradeShow,
   InsertExhibitorLead,
@@ -333,4 +335,43 @@ export async function getAllShowNotifications() {
     .select()
     .from(showNotifications)
     .orderBy(desc(showNotifications.createdAt));
+}
+
+// ── Quote Requests ──────────────────────────────────────────────────────────
+export async function createQuoteRequest(data: InsertQuoteRequest) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(quoteRequests).values(data);
+}
+
+export async function getAllQuoteRequests() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(quoteRequests)
+    .orderBy(desc(quoteRequests.createdAt));
+}
+
+export async function getQuoteRequestById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select()
+    .from(quoteRequests)
+    .where(eq(quoteRequests.id, id))
+    .limit(1);
+  return result[0] ?? null;
+}
+
+export async function updateQuoteRequestStatus(
+  id: number,
+  status: "new" | "reviewing" | "quoted" | "converted" | "closed",
+  adminNotes?: string
+) {
+  const db = await getDb();
+  if (!db) return;
+  const updateData: Record<string, unknown> = { status };
+  if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+  await db.update(quoteRequests).set(updateData).where(eq(quoteRequests.id, id));
 }

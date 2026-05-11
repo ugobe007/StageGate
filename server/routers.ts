@@ -502,7 +502,56 @@ Subject line and body only.`,
         await db.deleteLogisticsPartner(input.id);
         return { success: true };
       }),
+   }),
+
+  // ── Quote Requests ──────────────────────────────────────────────────────
+  quotes: router({
+    submit: publicProcedure
+      .input(
+        z.object({
+          name: z.string().min(1),
+          email: z.string().email(),
+          company: z.string().min(1),
+          phone: z.string().optional(),
+          robotType: z.string().min(1),
+          robotCount: z.number().int().min(1).max(50).default(1),
+          robotDimensions: z.string().optional(),
+          robotWeight: z.string().optional(),
+          showId: z.number().optional(),
+          showName: z.string().optional(),
+          serviceIds: z.array(z.number()).optional(),
+          notes: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { serviceIds, ...rest } = input;
+        await db.createQuoteRequest({
+          ...rest,
+          serviceIds: serviceIds ? JSON.stringify(serviceIds) : null,
+        });
+        await notifyOwner({
+          title: "New Quote Request — " + input.company,
+          content: `${input.name} (${input.email}) from ${input.company} has requested a quote.\nRobot: ${input.robotType} × ${input.robotCount}\nShow: ${input.showName || "Not specified"}\nServices: ${serviceIds?.length || 0} selected`,
+        });
+        return { success: true };
+      }),
+
+    list: adminProcedure.query(async () => {
+      return db.getAllQuoteRequests();
+    }),
+
+    updateStatus: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          status: z.enum(["new", "reviewing", "quoted", "converted", "closed"]),
+          adminNotes: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await db.updateQuoteRequestStatus(input.id, input.status, input.adminNotes);
+        return { success: true };
+      }),
   }),
 });
-
 export type AppRouter = typeof appRouter;

@@ -157,3 +157,32 @@ export const showNotifications = mysqlTable("show_notifications", {
 
 export type ShowNotification = typeof showNotifications.$inferSelect;
 export type InsertShowNotification = typeof showNotifications.$inferInsert;
+
+// Quote requests from prospective clients
+export const quoteRequests = mysqlTable("quote_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  // Contact info
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  company: varchar("company", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 64 }),
+  // Robot details
+  robotType: varchar("robotType", { length: 255 }).notNull(),
+  robotCount: int("robotCount").default(1).notNull(),
+  robotDimensions: varchar("robotDimensions", { length: 255 }),
+  robotWeight: varchar("robotWeight", { length: 100 }),
+  // Show and services
+  showId: int("showId"),
+  showName: varchar("showName", { length: 255 }), // fallback if show not in DB
+  serviceIds: text("serviceIds"), // JSON array of service IDs
+  // Additional info
+  notes: text("notes"),
+  // Admin workflow
+  status: mysqlEnum("status", ["new", "reviewing", "quoted", "converted", "closed"]).default("new").notNull(),
+  adminNotes: text("adminNotes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type QuoteRequest = typeof quoteRequests.$inferSelect;
+export type InsertQuoteRequest = typeof quoteRequests.$inferInsert;
