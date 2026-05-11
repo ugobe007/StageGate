@@ -114,17 +114,17 @@
 - [x] Vitest tests for shows.notifyMe procedure (4 tests, 34 total)
 
 ## Get a Quote Modal (v1.5)
-- [ ] DB: `quoteRequests` table (id, name, email, company, robotType, robotCount, showId, serviceIds, notes, status, createdAt)
-- [ ] Migration applied
-- [ ] Backend: `quotes.submit` public tRPC procedure (saves quote, notifies owner)
-- [ ] Backend: `quotes.list` admin-only tRPC procedure
-- [ ] Backend: `quotes.updateStatus` admin-only tRPC procedure
-- [ ] Multi-step modal: Step 1 — Robot details (type, count, dimensions, weight)
-- [ ] Multi-step modal: Step 2 — Show selection (searchable dropdown of upcoming shows)
-- [ ] Multi-step modal: Step 3 — Services checklist (all 8 service lines with descriptions)
-- [ ] Multi-step modal: Step 4 — Contact info (name, email, company, notes)
-- [ ] Step progress indicator at top of modal
-- [ ] Success confirmation screen after submit
-- [ ] "Get a Quote" CTA button in Navbar and hero section
-- [ ] Admin Dashboard: Quote Requests panel with status management
-- [ ] Vitest tests for quotes.submit and quotes.list procedures
+- [x] DB: `quoteRequests` table (id, name, email, company, robotType, robotCount, showId, serviceIds, notes, status, createdAt)
+- [x] Migration applied
+- [x] Backend: `quotes.submit` public tRPC procedure (saves quote, notifies owner)
+- [x] Backend: `quotes.list` admin-only tRPC procedure
+- [x] Backend: `quotes.updateStatus` admin-only tRPC procedure
+- [x] Multi-step modal: Step 1 — Robot details (type, count, dimensions, weight)
+- [x] Multi-step modal: Step 2 — Show selection (searchable dropdown of upcoming shows)
+- [x] Multi-step modal: Step 3 — Services checklist (all 8 service lines with descriptions)
+- [x] Multi-step modal: Step 4 — Contact info (name, email, company, notes)
+- [x] Step progress indicator at top of modal
+- [x] Success confirmation screen after submit
+- [x] "Get a Quote" CTA button in Navbar and hero section
+- [x] Admin Dashboard: Quote Requests panel with status management
+- [x] Vitest tests for quotes.submit and quotes.list procedures (6 tests, 40 total)

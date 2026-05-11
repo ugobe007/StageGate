@@ -1,0 +1,181 @@
+{
+  "query": "SELECT id, name, venue, city, startDate, endDate, status FROM trade_shows WHERE city = 'Las Vegas' ORDER BY startDate ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SELECT id, name, venue, city, startDate, endDate, status FROM trade_shows WHERE city = 'Las Vegas' ORDER BY startDate ASC;",
+  "rows": [
+    {
+      "id": "30001",
+      "name": "CES 2026",
+      "venue": "Las Vegas Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-01-06 00:00:00",
+      "endDate": "2026-01-09 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30002",
+      "name": "World of Concrete 2026",
+      "venue": "Las Vegas Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-01-20 00:00:00",
+      "endDate": "2026-01-23 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30003",
+      "name": "SHOT Show 2026",
+      "venue": "Venetian Expo & Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-01-20 00:00:00",
+      "endDate": "2026-01-23 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30004",
+      "name": "Manifest 2026",
+      "venue": "Venetian Expo & Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-02-09 00:00:00",
+      "endDate": "2026-02-11 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30006",
+      "name": "CONEXPO-CON/AGG 2026",
+      "venue": "Las Vegas Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-03-03 00:00:00",
+      "endDate": "2026-03-07 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30005",
+      "name": "HIMSS 2026",
+      "venue": "Las Vegas Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-03-09 00:00:00",
+      "endDate": "2026-03-13 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30007",
+      "name": "ISC West 2026",
+      "venue": "Venetian Expo & Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-04-01 00:00:00",
+      "endDate": "2026-04-04 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30008",
+      "name": "NAB Show 2026",
+      "venue": "Las Vegas Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-04-18 00:00:00",
+      "endDate": "2026-04-23 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30009",
+      "name": "Interop 2026",
+      "venue": "MGM Grand Conference Center",
+      "city": "Las Vegas",
+      "startDate": "2026-05-04 00:00:00",
+      "endDate": "2026-05-08 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30010",
+      "name": "HDExpo + Conference 2026",
+      "venue": "Mandalay Bay Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-05-12 00:00:00",
+      "endDate": "2026-05-14 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "3",
+      "name": "MINExpo 2026",
+      "venue": "Las Vegas Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-09-22 09:00:00",
+      "endDate": "2026-09-24 18:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30011",
+      "name": "PACK EXPO Las Vegas 2026",
+      "venue": "Las Vegas Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-09-28 00:00:00",
+      "endDate": "2026-10-01 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30012",
+      "name": "G2E — Global Gaming Expo 2026",
+      "venue": "Las Vegas Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-10-06 00:00:00",
+      "endDate": "2026-10-08 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30013",
+      "name": "SEMA Show 2026",
+      "venue": "Las Vegas Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-11-03 00:00:00",
+      "endDate": "2026-11-06 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30014",
+      "name": "AWS re:Invent 2026",
+      "venue": "Multiple Las Vegas Venues",
+      "city": "Las Vegas",
+      "startDate": "2026-11-30 00:00:00",
+      "endDate": "2026-12-04 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "30015",
+      "name": "MJBizCon 2026",
+      "venue": "Las Vegas Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2026-12-02 00:00:00",
+      "endDate": "2026-12-05 00:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "1",
+      "name": "CES 2027",
+      "venue": "Las Vegas Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2027-01-06 09:00:00",
+      "endDate": "2027-01-09 18:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "2",
+      "name": "Manifest 2027",
+      "venue": "Mandalay Bay Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2027-02-10 09:00:00",
+      "endDate": "2027-02-12 18:00:00",
+      "status": "upcoming"
+    },
+    {
+      "id": "4",
+      "name": "HIMSS 2027",
+      "venue": "Las Vegas Convention Center",
+      "city": "Las Vegas",
+      "startDate": "2027-03-17 09:00:00",
+      "endDate": "2027-03-21 18:00:00",
+      "status": "upcoming"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tvenue\tcity\tstartDate\tendDate\tstatus\n30001\tCES 2026\tLas Vegas Convention Center\tLas Vegas\t2026-01-06 00:00:00\t2026-01-09 00:00:00\tupcoming\n30002\tWorld of Concrete 2026\tLas Vegas Convention Center\tLas Vegas\t2026-01-20 00:00:00\t2026-01-23 00:00:00\tupcoming\n30003\tSHOT Show 2026\tVenetian Expo & Convention Center\tLas Vegas\t2026-01-20 00:00:00\t2026-01-23 00:00:00\tupcoming\n30004\tManifest 2026\tVenetian Expo & Convention Center\tLas Vegas\t2026-02-09 00:00:00\t2026-02-11 00:00:00\tupcoming\n30006\tCONEXPO-CON/AGG 2026\tLas Vegas Convention Center\tLas Vegas\t2026-03-03 00:00:00\t2026-03-07 00:00:00\tupcoming\n30005\tHIMSS 2026\tLas Vegas Convention Center\tLas Vegas\t2026-03-09 00:00:00\t2026-03-13 00:00:00\tupcoming\n30007\tISC West 2026\tVenetian Expo & Convention Center\tLas Vegas\t2026-04-01 00:00:00\t2026-04-04 00:00:00\tupcoming\n30008\tNAB Show 2026\tLas Vegas Convention Center\tLas Vegas\t2026-04-18 00:00:00\t2026-04-23 00:00:00\tupcoming\n30009\tInterop 2026\tMGM Grand Conference Center\tLas Vegas\t2026-05-04 00:00:00\t2026-05-08 00:00:00\tupcoming\n30010\tHDExpo + Conference 2026\tMandalay Bay Convention Center\tLas Vegas\t2026-05-12 00:00:00\t2026-05-14 00:00:00\tupcoming\n3\tMINExpo 2026\tLas Vegas Convention Center\tLas Vegas\t2026-09-22 09:00:00\t2026-09-24 18:00:00\tupcoming\n30011\tPACK EXPO Las Vegas 2026\tLas Vegas Convention Center\tLas Vegas\t2026-09-28 00:00:00\t2026-10-01 00:00:00\tupcoming\n30012\tG2E — Global Gaming Expo 2026\tLas Vegas Convention Center\tLas Vegas\t2026-10-06 00:00:00\t2026-10-08 00:00:00\tupcoming\n30013\tSEMA Show 2026\tLas Vegas Convention Center\tLas Vegas\t2026-11-03 00:00:00\t2026-11-06 00:00:00\tupcoming\n30014\tAWS re:Invent 2026\tMultiple Las Vegas Venues\tLas Vegas\t2026-11-30 00:00:00\t2026-12-04 00:00:00\tupcoming\n30015\tMJBizCon 2026\tLas Vegas Convention Center\tLas Vegas\t2026-12-02 00:00:00\t2026-12-05 00:00:00\tupcoming\n1\tCES 2027\tLas Vegas Convention Center\tLas Vegas\t2027-01-06 09:00:00\t2027-01-09 18:00:00\tupcoming\n2\tManifest 2027\tMandalay Bay Convention Center\tLas Vegas\t2027-02-10 09:00:00\t2027-02-12 18:00:00\tupcoming\n4\tHIMSS 2027\tLas Vegas Convention Center\tLas Vegas\t2027-03-17 09:00:00\t2027-03-21 18:00:00\tupcoming\n",
+  "stderr": "",
+  "execution_time_ms": 361
+}
