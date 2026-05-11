@@ -1,116 +1,263 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { useState } from "react";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 24);
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
 
   const isAdmin = user?.role === "admin";
 
+  const navLinks = [
+    { href: "/services",  label: "Services" },
+    { href: "/stagehand", label: "StageHand™" },
+    { href: "/stagepro",  label: "StagePro™" },
+    ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
+  ];
+
+  const isActive = (href: string) =>
+    href === "/" ? location === "/" : location.startsWith(href);
+
+  const navBg = scrolled
+    ? "rgba(10,11,15,0.92)"
+    : "rgba(8,9,13,0.75)";
+  const navBorder = scrolled
+    ? "1px solid oklch(0.20 0.010 240)"
+    : "1px solid oklch(0.13 0.008 240)";
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-md">
+    <nav
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+      style={{
+        background: navBg,
+        backdropFilter: "blur(18px) saturate(160%)",
+        WebkitBackdropFilter: "blur(18px) saturate(160%)",
+        borderBottom: navBorder,
+        boxShadow: scrolled ? "0 4px 30px rgba(0,0,0,0.35)" : "none",
+      }}
+    >
       <div className="container">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">SG</span>
+
+          {/* ── Logo ── */}
+          <Link href="/">
+            <div className="flex items-center gap-2.5 group cursor-pointer">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200"
+                style={{
+                  background: "oklch(0.74 0.23 145 / 0.12)",
+                  border: "1px solid oklch(0.74 0.23 145 / 0.35)",
+                  boxShadow: "0 0 0 oklch(0.74 0.23 145 / 0)",
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 14px oklch(0.74 0.23 145 / 0.35)";
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 oklch(0.74 0.23 145 / 0)";
+                }}
+              >
+                <span
+                  className="font-display font-bold text-xs"
+                  style={{ color: "oklch(0.74 0.23 145)" }}
+                >
+                  SG
+                </span>
+              </div>
+              <span className="font-display font-bold text-[0.9375rem] tracking-tight text-white">
+                Stage<span style={{ color: "oklch(0.74 0.23 145)" }}>Gate</span>
+              </span>
             </div>
-            <span className="font-display font-bold text-lg text-foreground">
-              Stage<span className="text-primary">Gate</span>
-            </span>
           </Link>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="/services" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/services" ? "text-primary" : "text-muted-foreground"}`}>
-              Services
-            </Link>
-            <Link href="/stagehand" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/stagehand" ? "text-primary" : "text-muted-foreground"}`}>
-              StageHand&#8482;
-            </Link>
-            <Link href="/stagepro" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/stagepro" ? "text-primary" : "text-muted-foreground"}`}>
-              StagePro&#8482;
-            </Link>
-            {isAdmin && (
-              <Link href="/admin" className={`text-sm font-medium transition-colors hover:text-primary ${location.startsWith("/admin") ? "text-primary" : "text-muted-foreground"}`}>
-                Admin
+          {/* ── Desktop links ── */}
+          <div className="hidden md:flex items-center gap-0.5">
+            {navLinks.map(({ href, label }) => (
+              <Link key={href} href={href}>
+                <span
+                  className="px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 block"
+                  style={{
+                    color: isActive(href)
+                      ? "oklch(0.74 0.23 145)"
+                      : "oklch(0.62 0.010 240)",
+                    background: isActive(href)
+                      ? "oklch(0.74 0.23 145 / 0.08)"
+                      : "transparent",
+                  }}
+                  onMouseEnter={e => {
+                    if (!isActive(href)) {
+                      (e.currentTarget as HTMLElement).style.color = "oklch(0.88 0.010 240)";
+                      (e.currentTarget as HTMLElement).style.background = "oklch(0.74 0.23 145 / 0.05)";
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!isActive(href)) {
+                      (e.currentTarget as HTMLElement).style.color = "oklch(0.62 0.010 240)";
+                      (e.currentTarget as HTMLElement).style.background = "transparent";
+                    }
+                  }}
+                >
+                  {label}
+                </span>
               </Link>
-            )}
+            ))}
           </div>
 
-          {/* Auth Actions */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* ── Desktop auth ── */}
+          <div className="hidden md:flex items-center gap-2">
             {isAuthenticated ? (
               <>
                 <Link href="/dashboard">
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  <span
+                    className="px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 block"
+                    style={{
+                      color: isActive("/dashboard") ? "oklch(0.74 0.23 145)" : "oklch(0.62 0.010 240)",
+                      background: isActive("/dashboard") ? "oklch(0.74 0.23 145 / 0.08)" : "transparent",
+                    }}
+                  >
                     Dashboard
-                  </Button>
+                  </span>
                 </Link>
-                <Button variant="outline" size="sm" onClick={() => logout()} className="border-border text-muted-foreground hover:text-foreground">
+                <button
+                  onClick={() => logout()}
+                  className="px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150"
+                  style={{ color: "oklch(0.48 0.010 240)" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "oklch(0.74 0.23 145)")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "oklch(0.48 0.010 240)")}
+                >
                   Sign Out
-                </Button>
+                </button>
               </>
             ) : (
               <>
                 <a href={getLoginUrl()}>
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  <span
+                    className="px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 block"
+                    style={{ color: "oklch(0.62 0.010 240)" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "oklch(0.88 0.010 240)")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "oklch(0.62 0.010 240)")}
+                  >
                     Sign In
-                  </Button>
+                  </span>
                 </a>
                 <Link href="/register">
-                  <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
+                  <button
+                    className="px-4 py-2 rounded-lg text-sm font-display font-bold transition-all duration-200 cursor-pointer"
+                    style={{
+                      background: "oklch(0.74 0.23 145)",
+                      color: "oklch(0.06 0.008 240)",
+                      boxShadow: "0 0 16px oklch(0.74 0.23 145 / 0.22)",
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 26px oklch(0.74 0.23 145 / 0.45)";
+                      (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)";
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 16px oklch(0.74 0.23 145 / 0.22)";
+                      (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
+                    }}
+                  >
                     Register Free
-                  </Button>
+                  </button>
                 </Link>
               </>
             )}
           </div>
 
-          {/* Mobile Toggle */}
+          {/* ── Mobile toggle ── */}
           <button
-            className="md:hidden text-muted-foreground hover:text-foreground p-2"
+            className="md:hidden p-2 rounded-lg transition-colors"
+            style={{ color: "oklch(0.60 0.010 240)" }}
             onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
+      </div>
 
-        {/* Mobile Menu */}
-        {mobileOpen && (
-          <div className="md:hidden border-t border-border py-4 space-y-3">
-            <Link href="/services" className="block px-2 py-2 text-sm text-muted-foreground hover:text-primary" onClick={() => setMobileOpen(false)}>Services</Link>
-            <Link href="/stagehand" className="block px-2 py-2 text-sm text-muted-foreground hover:text-primary" onClick={() => setMobileOpen(false)}>StageHand&#8482;</Link>
-            <Link href="/stagepro" className="block px-2 py-2 text-sm text-muted-foreground hover:text-primary" onClick={() => setMobileOpen(false)}>StagePro&#8482;</Link>
-            {isAdmin && <Link href="/admin" className="block px-2 py-2 text-sm text-muted-foreground hover:text-primary" onClick={() => setMobileOpen(false)}>Admin</Link>}
-            <div className="pt-2 border-t border-border flex flex-col gap-2">
+      {/* ── Mobile menu ── */}
+      {mobileOpen && (
+        <div
+          className="md:hidden border-t"
+          style={{
+            background: "oklch(0.07 0.008 240 / 0.97)",
+            backdropFilter: "blur(16px)",
+            borderColor: "oklch(0.16 0.010 240)",
+          }}
+        >
+          <div className="container py-4 flex flex-col gap-1">
+            {navLinks.map(({ href, label }) => (
+              <Link key={href} href={href}>
+                <span
+                  className="block px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors"
+                  style={{
+                    color: isActive(href) ? "oklch(0.74 0.23 145)" : "oklch(0.62 0.010 240)",
+                    background: isActive(href) ? "oklch(0.74 0.23 145 / 0.08)" : "transparent",
+                  }}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {label}
+                </span>
+              </Link>
+            ))}
+            <div
+              className="border-t mt-2 pt-3 flex flex-col gap-2"
+              style={{ borderColor: "oklch(0.16 0.010 240)" }}
+            >
               {isAuthenticated ? (
                 <>
-                  <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
-                    <Button variant="ghost" size="sm" className="w-full justify-start">Dashboard</Button>
+                  <Link href="/dashboard">
+                    <span
+                      className="block px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer"
+                      style={{ color: "oklch(0.62 0.010 240)" }}
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      Dashboard
+                    </span>
                   </Link>
-                  <Button variant="outline" size="sm" onClick={() => { logout(); setMobileOpen(false); }} className="w-full">Sign Out</Button>
+                  <button
+                    onClick={() => { logout(); setMobileOpen(false); }}
+                    className="text-left px-3 py-2.5 rounded-lg text-sm font-medium"
+                    style={{ color: "oklch(0.48 0.010 240)" }}
+                  >
+                    Sign Out
+                  </button>
                 </>
               ) : (
                 <>
-                  <a href={getLoginUrl()} className="w-full">
-                    <Button variant="ghost" size="sm" className="w-full">Sign In</Button>
+                  <a href={getLoginUrl()} onClick={() => setMobileOpen(false)}>
+                    <span className="block px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: "oklch(0.62 0.010 240)" }}>
+                      Sign In
+                    </span>
                   </a>
-                  <Link href="/register" onClick={() => setMobileOpen(false)} className="w-full">
-                    <Button size="sm" className="w-full bg-primary text-primary-foreground">Register Free</Button>
+                  <Link href="/register">
+                    <button
+                      className="w-full px-4 py-2.5 rounded-lg text-sm font-display font-bold text-center"
+                      style={{
+                        background: "oklch(0.74 0.23 145)",
+                        color: "oklch(0.06 0.008 240)",
+                      }}
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      Register Free
+                    </button>
                   </Link>
                 </>
               )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </nav>
   );
 }

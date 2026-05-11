@@ -1,8 +1,14 @@
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
-import { Clock, Shield, Zap, Phone, CheckCircle, ArrowRight, Wrench, AlertCircle, Activity } from "lucide-react";
+import {
+  Clock, Shield, ArrowRight, Wrench, AlertCircle,
+  Activity, Phone, CheckCircle2
+} from "lucide-react";
+
+const AMBER = "oklch(0.78 0.18 70)";
+const AMBER_GLOW = "oklch(0.78 0.18 70 / 0.25)";
+const AMBER_DIM  = "oklch(0.78 0.18 70 / 0.10)";
+const AMBER_BORDER = "oklch(0.78 0.18 70 / 0.25)";
 
 const TIERS = [
   {
@@ -36,148 +42,227 @@ const TIERS = [
 
 const USE_CASES = [
   { icon: AlertCircle, title: "Emergency Repair", desc: "Robot breaks down mid-demo at a trade show. StageHand™ dispatches a technician within hours." },
-  { icon: Activity, title: "Deployment Monitoring", desc: "Robots deployed in hotels, airports, or retail locations monitored 24/7 with proactive alerts." },
-  { icon: Wrench, title: "Scheduled Maintenance", desc: "Quarterly on-site inspections, firmware updates, and preventive maintenance to avoid failures." },
-  { icon: Phone, title: "Remote Diagnostics", desc: "Most issues resolved remotely in under 30 minutes via secure connection to your robot's systems." },
+  { icon: Activity,    title: "Deployment Monitoring", desc: "Robots deployed in hotels, airports, or retail locations monitored 24/7 with proactive alerts." },
+  { icon: Wrench,      title: "Scheduled Maintenance", desc: "Quarterly on-site inspections, firmware updates, and preventive maintenance to avoid failures." },
+  { icon: Phone,       title: "Remote Diagnostics", desc: "Most issues resolved remotely in under 30 minutes via secure connection to your robot's systems." },
 ];
 
 export default function StageHandPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
-      <div className="pt-24 pb-16">
-        {/* Hero */}
-        <section className="py-16 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10"
+
+      {/* ── Hero ── */}
+      <section className="pt-28 pb-20 relative overflow-hidden">
+        <div className="absolute inset-0 tech-grid opacity-20" />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full blur-[100px] pointer-events-none"
+          style={{ background: "oklch(0.78 0.18 70 / 0.06)" }}
+        />
+        <div className="container relative z-10 text-center">
+          {/* Icon */}
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
             style={{
-              backgroundImage: "linear-gradient(oklch(0.22 0.015 200 / 0.5) 1px, transparent 1px), linear-gradient(90deg, oklch(0.22 0.015 200 / 0.5) 1px, transparent 1px)",
-              backgroundSize: "60px 60px"
+              background: AMBER_DIM,
+              border: `1px solid ${AMBER_BORDER}`,
+              boxShadow: `0 0 30px ${AMBER_GLOW}`,
             }}
-          />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full opacity-10 blur-3xl"
-            style={{ background: "oklch(0.72 0.18 55)" }}
-          />
-          <div className="container relative z-10 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-orange-500/20 flex items-center justify-center mx-auto mb-6">
-              <Clock size={32} className="text-orange-400" />
-            </div>
-            <Badge className="mb-4 bg-orange-500/20 text-orange-400 border-orange-500/30 font-semibold">
-              24/7 Technical Support
-            </Badge>
-            <h1 className="text-5xl md:text-6xl font-display font-bold mb-4">
-              StageHand<sup className="text-2xl">™</sup>
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-              Ongoing remote and on-site technical support for robots in the field. When your robot needs help, we're already there.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register">
-                <Button size="lg" className="bg-orange-500 text-white hover:bg-orange-600 font-bold gap-2">
-                  Get Started Free <ArrowRight size={16} />
-                </Button>
-              </Link>
-              <Link href="/order">
-                <Button size="lg" variant="outline" className="border-orange-500/40 text-orange-400 hover:bg-orange-500/10 font-semibold">
-                  Book Support Now
-                </Button>
-              </Link>
-            </div>
+          >
+            <Clock size={30} style={{ color: AMBER }} />
           </div>
-        </section>
 
-        {/* Stats */}
-        <section className="py-12 border-y border-border bg-card/30">
-          <div className="container">
-            <div className="grid grid-cols-3 gap-6 text-center">
-              <div>
-                <div className="text-3xl font-display font-bold text-orange-400 mb-1">24/7</div>
-                <div className="text-sm text-muted-foreground">Always Available</div>
-              </div>
-              <div>
-                <div className="text-3xl font-display font-bold text-orange-400 mb-1">&lt;4hr</div>
-                <div className="text-sm text-muted-foreground">Emergency Response</div>
-              </div>
-              <div>
-                <div className="text-3xl font-display font-bold text-orange-400 mb-1">All</div>
-                <div className="text-sm text-muted-foreground">Robot Brands Supported</div>
-              </div>
-            </div>
+          {/* Badge */}
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-6"
+            style={{ color: AMBER, borderColor: AMBER_BORDER, background: AMBER_DIM }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: AMBER }} />
+            <span className="font-mono text-xs tracking-widest uppercase">24/7 Technical Support</span>
           </div>
-        </section>
 
-        {/* Use Cases */}
-        <section className="py-20">
-          <div className="container">
-            <h2 className="text-3xl font-display font-bold text-center mb-12">When You Need StageHand&#8482;</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {USE_CASES.map((uc) => (
-                <div key={uc.title} className="p-6 rounded-xl border border-orange-500/20 bg-orange-500/5 flex gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center shrink-0">
-                    <uc.icon size={20} className="text-orange-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">{uc.title}</h3>
-                    <p className="text-sm text-muted-foreground">{uc.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Pricing */}
-        <section className="py-20 bg-card/20 border-y border-border">
-          <div className="container">
-            <h2 className="text-3xl font-display font-bold text-center mb-4">StageHand&#8482; Plans</h2>
-            <p className="text-muted-foreground text-center mb-12">Monthly retainers with flexible SLA options.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-              {TIERS.map((tier) => (
-                <div key={tier.name} className={`p-8 rounded-2xl border ${tier.highlight ? "border-orange-500/50 bg-orange-500/10" : "border-border bg-card"}`}>
-                  {tier.highlight && (
-                    <Badge className="mb-4 bg-orange-500/20 text-orange-400 border-orange-500/30">Most Popular</Badge>
-                  )}
-                  <h3 className="font-display font-bold text-xl text-foreground mb-2">{tier.name}</h3>
-                  <div className="mb-6">
-                    <span className="text-4xl font-display font-bold text-orange-400">{tier.price}</span>
-                    <span className="text-muted-foreground text-sm">{tier.unit}</span>
-                  </div>
-                  <ul className="space-y-3 mb-8">
-                    {tier.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <CheckCircle size={14} className="text-orange-400 mt-0.5 shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/register">
-                    <Button className={`w-full font-semibold ${tier.highlight ? "bg-orange-500 text-white hover:bg-orange-600" : "border-orange-500/40 text-orange-400 hover:bg-orange-500/10"}`} variant={tier.highlight ? "default" : "outline"}>
-                      Get Started Free
-                    </Button>
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="py-20">
-          <div className="container text-center">
-            <h2 className="text-3xl font-display font-bold mb-4">
-              Your Robot Deserves<br />
-              <span className="text-orange-400">Always-On Support</span>
-            </h2>
-            <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-              Register your company for free and add StageHand&#8482; to your service plan. No commitment until you're ready.
-            </p>
+          <h1 className="text-5xl md:text-7xl font-display font-bold text-white mb-4">
+            StageHand<sup className="text-2xl font-normal">™</sup>
+          </h1>
+          <p className="text-xl text-[oklch(0.60_0.010_240)] max-w-2xl mx-auto mb-8 leading-relaxed">
+            Ongoing remote and on-site technical support for robots in the field.
+            When your robot needs help, we're already there.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/register">
-              <Button size="lg" className="bg-orange-500 text-white hover:bg-orange-600 font-bold gap-2">
-                Register Free Today <ArrowRight size={16} />
-              </Button>
+              <button
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg font-display font-bold text-sm transition-all duration-200"
+                style={{
+                  background: AMBER,
+                  color: "oklch(0.06 0.008 240)",
+                  boxShadow: `0 0 24px ${AMBER_GLOW}`,
+                }}
+              >
+                Get Started Free <ArrowRight size={15} />
+              </button>
+            </Link>
+            <Link href="/order">
+              <button
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg font-display font-semibold text-sm border transition-all duration-200"
+                style={{ borderColor: AMBER_BORDER, color: AMBER, background: "transparent" }}
+              >
+                Book Support Now
+              </button>
             </Link>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
+
+      {/* ── Stats bar ── */}
+      <section
+        className="py-10 border-y"
+        style={{ borderColor: "oklch(0.16 0.010 240)", background: "oklch(0.09 0.008 240)" }}
+      >
+        <div className="container">
+          <div className="grid grid-cols-3 gap-6 text-center">
+            {[
+              { value: "24/7", label: "Always Available" },
+              { value: "<4hr", label: "Emergency Response SLA" },
+              { value: "All", label: "Robot Brands Supported" },
+            ].map(({ value, label }) => (
+              <div key={label}>
+                <div className="font-display font-bold text-3xl mb-1" style={{ color: AMBER }}>{value}</div>
+                <div className="text-xs text-[oklch(0.52_0.010_240)]">{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Use Cases ── */}
+      <section className="py-20">
+        <div className="container">
+          <div className="text-center mb-12">
+            <div className="section-label mx-auto justify-center" style={{ color: AMBER }}>
+              <span className="w-6 h-px mr-2 inline-block" style={{ background: AMBER }} />
+              Use Cases
+            </div>
+            <h2 className="text-3xl font-display font-bold text-white">When You Need StageHand™</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {USE_CASES.map(({ icon: Icon, title, desc }) => (
+              <div
+                key={title}
+                className="flex gap-4 p-6 rounded-xl border transition-all duration-200 group hover:border-[oklch(0.78_0.18_70/0.30)]"
+                style={{
+                  borderColor: "oklch(0.78 0.18 70 / 0.15)",
+                  background: "oklch(0.78 0.18 70 / 0.04)",
+                }}
+              >
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: AMBER_DIM, border: `1px solid ${AMBER_BORDER}` }}
+                >
+                  <Icon size={18} style={{ color: AMBER }} />
+                </div>
+                <div>
+                  <h3 className="font-display font-semibold text-white mb-1">{title}</h3>
+                  <p className="text-sm text-[oklch(0.58_0.010_240)] leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pricing ── */}
+      <section
+        className="py-20 border-y"
+        style={{ borderColor: "oklch(0.16 0.010 240)", background: "oklch(0.08 0.008 240)" }}
+      >
+        <div className="container">
+          <div className="text-center mb-12">
+            <div className="section-label mx-auto justify-center" style={{ color: AMBER }}>
+              <span className="w-6 h-px mr-2 inline-block" style={{ background: AMBER }} />
+              Pricing
+            </div>
+            <h2 className="text-3xl font-display font-bold text-white mb-2">StageHand™ Plans</h2>
+            <p className="text-[oklch(0.55_0.010_240)]">Monthly retainers with flexible SLA options.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            {TIERS.map((tier) => (
+              <div
+                key={tier.name}
+                className="relative p-8 rounded-2xl border overflow-hidden"
+                style={{
+                  borderColor: tier.highlight ? "oklch(0.78 0.18 70 / 0.40)" : "oklch(0.20 0.010 240)",
+                  background: tier.highlight
+                    ? "linear-gradient(135deg, oklch(0.78 0.18 70 / 0.08) 0%, oklch(0.10 0.010 240) 100%)"
+                    : "oklch(0.10 0.010 240)",
+                }}
+              >
+                {tier.highlight && (
+                  <>
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[oklch(0.78_0.18_70/0.60)] to-transparent" />
+                    <div
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-mono font-bold tracking-widest uppercase mb-4"
+                      style={{ color: AMBER, borderColor: AMBER_BORDER, background: AMBER_DIM }}
+                    >
+                      <Shield size={10} />
+                      Most Popular
+                    </div>
+                  </>
+                )}
+                <h3 className="font-display font-bold text-lg text-white mb-2">{tier.name}</h3>
+                <div className="mb-6">
+                  <span className="text-4xl font-display font-bold" style={{ color: AMBER }}>{tier.price}</span>
+                  <span className="text-[oklch(0.50_0.010_240)] text-sm ml-1">{tier.unit}</span>
+                </div>
+                <ul className="space-y-2.5 mb-8">
+                  {tier.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-[oklch(0.60_0.010_240)]">
+                      <CheckCircle2 size={13} className="mt-0.5 flex-shrink-0" style={{ color: AMBER }} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/register">
+                  <button
+                    className="w-full py-2.5 rounded-lg font-display font-bold text-sm transition-all duration-200"
+                    style={tier.highlight
+                      ? { background: AMBER, color: "oklch(0.06 0.008 240)", boxShadow: `0 0 20px ${AMBER_GLOW}` }
+                      : { background: "transparent", border: `1px solid ${AMBER_BORDER}`, color: AMBER }
+                    }
+                  >
+                    Get Started Free
+                  </button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="py-20">
+        <div className="container text-center">
+          <h2 className="text-3xl font-display font-bold text-white mb-4">
+            Your Robot Deserves<br />
+            <span style={{ color: AMBER }}>Always-On Support</span>
+          </h2>
+          <p className="text-[oklch(0.55_0.010_240)] mb-8 max-w-xl mx-auto">
+            Register your company for free and add StageHand™ to your service plan.
+            No commitment until you're ready.
+          </p>
+          <Link href="/register">
+            <button
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-lg font-display font-bold text-base transition-all duration-200"
+              style={{
+                background: AMBER,
+                color: "oklch(0.06 0.008 240)",
+                boxShadow: `0 0 28px ${AMBER_GLOW}`,
+              }}
+            >
+              Register Free Today <ArrowRight size={18} />
+            </button>
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

@@ -73,3 +73,15 @@
 - [x] Company profile access control tests
 - [x] Outreach status label validation tests
 - [x] Total: 24 tests passing across 2 test files
+
+## Visual Redesign (v1.1 — "Pop" Upgrade)
+- [x] Global CSS: noise texture, gradient mesh backgrounds, refined color tokens
+- [x] Hero: asymmetric layout with technical grid graphic, animated tagline, glowing CTA button
+- [x] Stats bar: animated count-up numbers, higher contrast treatment
+- [x] Service cards: color-coded accent bars by category (logistics/activation/support/marketing)
+- [x] Section dividers: diagonal cuts between sections
+- [x] Logo marquee: horizontal scrolling partner/show logo strip
+- [x] Brand cards: upgraded visual treatment with gradient backgrounds
+- [x] City expansion: upgraded card design
+- [x] Bottom CTA: stronger visual weight, glow effect
+- [x] Navbar: refined with backdrop blur and border

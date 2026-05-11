@@ -1,8 +1,14 @@
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
-import { GraduationCap, CheckCircle, ArrowRight, Users, Award, BookOpen, Wrench } from "lucide-react";
+import {
+  GraduationCap, CheckCircle2, ArrowRight,
+  Users, Award, BookOpen, Wrench
+} from "lucide-react";
+
+const PURPLE = "oklch(0.62 0.22 295)";
+const PURPLE_GLOW = "oklch(0.62 0.22 295 / 0.25)";
+const PURPLE_DIM  = "oklch(0.62 0.22 295 / 0.10)";
+const PURPLE_BORDER = "oklch(0.62 0.22 295 / 0.25)";
 
 const PROGRAMS = [
   {
@@ -44,134 +50,221 @@ const PROGRAMS = [
 ];
 
 const DIFFERENTIATORS = [
-  { icon: Wrench, title: "Learn on Real Robots", desc: "Students repair actual client robots — not simulations. Every repair is real, every lesson sticks." },
-  { icon: Award, title: "Master Technician Instructors", desc: "All instructors are active StageGate technicians with multi-brand expertise and field experience." },
-  { icon: Users, title: "All Brands Covered", desc: "Humanoid, industrial, collaborative, delivery — we train on every major robot brand and type." },
-  { icon: BookOpen, title: "Curriculum That Evolves", desc: "As new robots enter the market, our curriculum updates. Your certification stays current." },
+  { icon: Wrench,    title: "Learn on Real Robots",           desc: "Students repair actual client robots — not simulations. Every repair is real, every lesson sticks." },
+  { icon: Award,     title: "Master Technician Instructors",  desc: "All instructors are active StageGate technicians with multi-brand expertise and field experience." },
+  { icon: Users,     title: "All Brands Covered",             desc: "Humanoid, industrial, collaborative, delivery — we train on every major robot brand and type." },
+  { icon: BookOpen,  title: "Curriculum That Evolves",        desc: "As new robots enter the market, our curriculum updates. Your certification stays current." },
 ];
 
 export default function StageProPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
-      <div className="pt-24 pb-16">
-        {/* Hero */}
-        <section className="py-16 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: "linear-gradient(oklch(0.22 0.015 200 / 0.5) 1px, transparent 1px), linear-gradient(90deg, oklch(0.22 0.015 200 / 0.5) 1px, transparent 1px)",
-              backgroundSize: "60px 60px"
-            }}
-          />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full opacity-10 blur-3xl"
-            style={{ background: "oklch(0.65 0.18 290)" }}
-          />
-          <div className="container relative z-10 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-purple-500/20 flex items-center justify-center mx-auto mb-6">
-              <GraduationCap size={32} className="text-purple-400" />
-            </div>
-            <Badge className="mb-4 bg-purple-500/20 text-purple-400 border-purple-500/30 font-semibold">
-              Workforce Training
-            </Badge>
-            <h1 className="text-5xl md:text-6xl font-display font-bold mb-4">
-              StagePro<sup className="text-2xl">™</sup>
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-              The world's first hands-on robot technician training program. Learn by repairing real robots under master technician supervision.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register">
-                <Button size="lg" className="bg-purple-600 text-white hover:bg-purple-700 font-bold gap-2">
-                  Register Free <ArrowRight size={16} />
-                </Button>
-              </Link>
-              <Link href="/order">
-                <Button size="lg" variant="outline" className="border-purple-500/40 text-purple-400 hover:bg-purple-500/10 font-semibold">
-                  Enroll Now
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
 
-        {/* Differentiators */}
-        <section className="py-16 border-y border-border bg-card/20">
-          <div className="container">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {DIFFERENTIATORS.map((d) => (
-                <div key={d.title} className="text-center p-6">
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center mx-auto mb-4">
-                    <d.icon size={22} className="text-purple-400" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-2">{d.title}</h3>
-                  <p className="text-sm text-muted-foreground">{d.desc}</p>
-                </div>
-              ))}
-            </div>
+      {/* ── Hero ── */}
+      <section className="pt-28 pb-20 relative overflow-hidden">
+        <div className="absolute inset-0 tech-grid opacity-20" />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full blur-[100px] pointer-events-none"
+          style={{ background: "oklch(0.62 0.22 295 / 0.06)" }}
+        />
+        <div className="container relative z-10 text-center">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+            style={{ background: PURPLE_DIM, border: `1px solid ${PURPLE_BORDER}`, boxShadow: `0 0 30px ${PURPLE_GLOW}` }}
+          >
+            <GraduationCap size={30} style={{ color: PURPLE }} />
           </div>
-        </section>
 
-        {/* Programs */}
-        <section className="py-20">
-          <div className="container">
-            <h2 className="text-3xl font-display font-bold text-center mb-4">Training Programs</h2>
-            <p className="text-muted-foreground text-center mb-12 max-w-xl mx-auto">
-              From a one-day introduction to a six-week apprenticeship — there's a StagePro&#8482; program for every level.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {PROGRAMS.map((prog) => (
-                <div key={prog.name} className={`p-8 rounded-2xl border ${prog.highlight ? "border-purple-500/50 bg-purple-500/10" : "border-border bg-card"}`}>
-                  {prog.highlight && (
-                    <Badge className="mb-4 bg-purple-500/20 text-purple-400 border-purple-500/30">Most Popular</Badge>
-                  )}
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-display font-bold text-xl text-foreground">{prog.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">{prog.duration}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-display font-bold text-purple-400">{prog.price}</div>
-                      <div className="text-xs text-muted-foreground">{prog.unit}</div>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-5">{prog.desc}</p>
-                  <ul className="space-y-2 mb-6">
-                    {prog.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <CheckCircle size={14} className="text-purple-400 mt-0.5 shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/register">
-                    <Button className={`w-full font-semibold ${prog.highlight ? "bg-purple-600 text-white hover:bg-purple-700" : "border-purple-500/40 text-purple-400 hover:bg-purple-500/10"}`} variant={prog.highlight ? "default" : "outline"}>
-                      Enroll Free
-                    </Button>
-                  </Link>
-                </div>
-              ))}
-            </div>
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-6"
+            style={{ color: PURPLE, borderColor: PURPLE_BORDER, background: PURPLE_DIM }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: PURPLE }} />
+            <span className="font-mono text-xs tracking-widest uppercase">Workforce Training</span>
           </div>
-        </section>
 
-        {/* CTA */}
-        <section className="py-20 bg-card/20 border-t border-border">
-          <div className="container text-center">
-            <h2 className="text-3xl font-display font-bold mb-4">
-              Train the Next Generation<br />
-              <span className="text-purple-400">of Robot Technicians</span>
-            </h2>
-            <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-              Register your company for free and enroll your team in StagePro&#8482; training. Build the in-house expertise your robotics business needs.
-            </p>
+          <h1 className="text-5xl md:text-7xl font-display font-bold text-white mb-4">
+            StagePro<sup className="text-2xl font-normal">™</sup>
+          </h1>
+          <p className="text-xl text-[oklch(0.60_0.010_240)] max-w-2xl mx-auto mb-8 leading-relaxed">
+            The world's first hands-on robot technician training program.
+            Learn by repairing real robots under master technician supervision.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/register">
-              <Button size="lg" className="bg-purple-600 text-white hover:bg-purple-700 font-bold gap-2">
-                Register Free Today <ArrowRight size={16} />
-              </Button>
+              <button
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg font-display font-bold text-sm transition-all duration-200"
+                style={{ background: PURPLE, color: "oklch(0.97 0.005 240)", boxShadow: `0 0 24px ${PURPLE_GLOW}` }}
+              >
+                Enroll Now <ArrowRight size={15} />
+              </button>
+            </Link>
+            <Link href="/order">
+              <button
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg font-display font-semibold text-sm border transition-all duration-200"
+                style={{ borderColor: PURPLE_BORDER, color: PURPLE, background: "transparent" }}
+              >
+                Request Corporate Quote
+              </button>
             </Link>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
+
+      {/* ── Stats ── */}
+      <section
+        className="py-10 border-y"
+        style={{ borderColor: "oklch(0.16 0.010 240)", background: "oklch(0.09 0.008 240)" }}
+      >
+        <div className="container">
+          <div className="grid grid-cols-3 gap-6 text-center">
+            {[
+              { value: "4", label: "Program Levels" },
+              { value: "All", label: "Robot Brands Covered" },
+              { value: "Real", label: "Client Robots Used in Training" },
+            ].map(({ value, label }) => (
+              <div key={label}>
+                <div className="font-display font-bold text-3xl mb-1" style={{ color: PURPLE }}>{value}</div>
+                <div className="text-xs text-[oklch(0.52_0.010_240)]">{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Why StagePro ── */}
+      <section className="py-20">
+        <div className="container">
+          <div className="text-center mb-12">
+            <div className="section-label mx-auto justify-center" style={{ color: PURPLE }}>
+              <span className="w-6 h-px mr-2 inline-block" style={{ background: PURPLE }} />
+              Why StagePro™
+            </div>
+            <h2 className="text-3xl font-display font-bold text-white">Training Unlike Anything Else</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {DIFFERENTIATORS.map(({ icon: Icon, title, desc }) => (
+              <div
+                key={title}
+                className="flex gap-4 p-6 rounded-xl border transition-all duration-200 hover:border-[oklch(0.62_0.22_295/0.30)]"
+                style={{ borderColor: "oklch(0.62 0.22 295 / 0.15)", background: "oklch(0.62 0.22 295 / 0.04)" }}
+              >
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: PURPLE_DIM, border: `1px solid ${PURPLE_BORDER}` }}
+                >
+                  <Icon size={18} style={{ color: PURPLE }} />
+                </div>
+                <div>
+                  <h3 className="font-display font-semibold text-white mb-1">{title}</h3>
+                  <p className="text-sm text-[oklch(0.58_0.010_240)] leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Programs ── */}
+      <section
+        className="py-20 border-y"
+        style={{ borderColor: "oklch(0.16 0.010 240)", background: "oklch(0.08 0.008 240)" }}
+      >
+        <div className="container">
+          <div className="text-center mb-12">
+            <div className="section-label mx-auto justify-center" style={{ color: PURPLE }}>
+              <span className="w-6 h-px mr-2 inline-block" style={{ background: PURPLE }} />
+              Programs
+            </div>
+            <h2 className="text-3xl font-display font-bold text-white mb-2">StagePro™ Training Programs</h2>
+            <p className="text-[oklch(0.55_0.010_240)]">Four levels from introductory to master apprentice.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {PROGRAMS.map((prog) => (
+              <div
+                key={prog.name}
+                className="relative p-8 rounded-2xl border overflow-hidden"
+                style={{
+                  borderColor: prog.highlight ? "oklch(0.62 0.22 295 / 0.40)" : "oklch(0.20 0.010 240)",
+                  background: prog.highlight
+                    ? "linear-gradient(135deg, oklch(0.62 0.22 295 / 0.08) 0%, oklch(0.10 0.010 240) 100%)"
+                    : "oklch(0.10 0.010 240)",
+                }}
+              >
+                {prog.highlight && (
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[oklch(0.62_0.22_295/0.60)] to-transparent" />
+                )}
+
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="font-display font-bold text-lg text-white">{prog.name}</h3>
+                    <div className="font-mono text-xs text-[oklch(0.45_0.008_240)] mt-0.5">{prog.duration}</div>
+                  </div>
+                  {prog.highlight && (
+                    <span
+                      className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border"
+                      style={{ color: PURPLE, borderColor: PURPLE_BORDER, background: PURPLE_DIM }}
+                    >
+                      Most Popular
+                    </span>
+                  )}
+                </div>
+
+                <div className="mb-4">
+                  <span className="text-3xl font-display font-bold" style={{ color: PURPLE }}>{prog.price}</span>
+                  <span className="text-[oklch(0.50_0.010_240)] text-sm ml-1">{prog.unit}</span>
+                </div>
+
+                <p className="text-sm text-[oklch(0.58_0.010_240)] leading-relaxed mb-5">{prog.desc}</p>
+
+                <ul className="space-y-2 mb-6">
+                  {prog.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-[oklch(0.60_0.010_240)]">
+                      <CheckCircle2 size={13} className="mt-0.5 flex-shrink-0" style={{ color: PURPLE }} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <Link href="/register">
+                  <button
+                    className="w-full py-2.5 rounded-lg font-display font-bold text-sm transition-all duration-200"
+                    style={prog.highlight
+                      ? { background: PURPLE, color: "oklch(0.97 0.005 240)", boxShadow: `0 0 18px ${PURPLE_GLOW}` }
+                      : { background: "transparent", border: `1px solid ${PURPLE_BORDER}`, color: PURPLE }
+                    }
+                  >
+                    Enroll Now
+                  </button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="py-20">
+        <div className="container text-center">
+          <h2 className="text-3xl font-display font-bold text-white mb-4">
+            Build the Next Generation<br />
+            <span style={{ color: PURPLE }}>of Robot Technicians</span>
+          </h2>
+          <p className="text-[oklch(0.55_0.010_240)] mb-8 max-w-xl mx-auto">
+            Register your company for free and enroll your team in StagePro™ training.
+            Corporate cohort pricing available for groups of 5 or more.
+          </p>
+          <Link href="/register">
+            <button
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-lg font-display font-bold text-base transition-all duration-200"
+              style={{ background: PURPLE, color: "oklch(0.97 0.005 240)", boxShadow: `0 0 28px ${PURPLE_GLOW}` }}
+            >
+              Register Free Today <ArrowRight size={18} />
+            </button>
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }
