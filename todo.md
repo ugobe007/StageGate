@@ -207,3 +207,12 @@
 - [x] Build DemoRequestModal component (name, company, robot type, preferred show dropdowns)
 - [x] Wire Demo CTA on Home page to DemoRequestModal (replace GetQuoteModal)
 - [x] Write vitest test for demos.submit mutation
+
+## v3.3 — Admin Demo Requests Panel
+- [x] Build AdminDemoRequests page with table view (name, company, robot type, show, status, date)
+- [x] Status badge colors per status (new, contacted, scheduled, completed, closed)
+- [x] Inline status update dropdown per row
+- [x] Detail expand/modal for full request info including message
+- [x] Add "Demo Requests" nav button and quick link card to AdminDashboard
+- [x] Register /admin/demos route in App.tsx
+- [x] Write vitest tests for demos.list and demos.updateStatus admin procedures (54 total tests passing)

@@ -124,3 +124,125 @@ describe("demos.submit", () => {
     expect(result).toEqual({ success: true });
   });
 });
+
+// ── Admin: demos.list ─────────────────────────────────────────────────────────
+describe("demos.list", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function createAdminContext(): TrpcContext {
+    return {
+      user: {
+        id: 1,
+        openId: "admin-open-id",
+        email: "admin@stagegate.com",
+        name: "Admin User",
+        loginMethod: "manus",
+        role: "admin",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+      },
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: {} as TrpcContext["res"],
+    };
+  }
+
+  function createUserContext(): TrpcContext {
+    return {
+      user: {
+        id: 2,
+        openId: "user-open-id",
+        email: "user@example.com",
+        name: "Regular User",
+        loginMethod: "manus",
+        role: "user",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+      },
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: {} as TrpcContext["res"],
+    };
+  }
+
+  it("allows admin to list all demo requests", async () => {
+    const caller = appRouter.createCaller(createAdminContext());
+    const result = await caller.demos.list();
+    expect(Array.isArray(result)).toBe(true);
+    expect(db.getAllDemoRequests).toHaveBeenCalledOnce();
+  });
+
+  it("throws FORBIDDEN for regular user", async () => {
+    const caller = appRouter.createCaller(createUserContext());
+    await expect(caller.demos.list()).rejects.toThrow();
+  });
+
+  it("throws UNAUTHORIZED for unauthenticated user", async () => {
+    const caller = appRouter.createCaller(createAnonContext());
+    await expect(caller.demos.list()).rejects.toThrow();
+  });
+});
+
+// ── Admin: demos.updateStatus ─────────────────────────────────────────────────
+describe("demos.updateStatus", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function createAdminContext(): TrpcContext {
+    return {
+      user: {
+        id: 1,
+        openId: "admin-open-id",
+        email: "admin@stagegate.com",
+        name: "Admin User",
+        loginMethod: "manus",
+        role: "admin",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+      },
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: {} as TrpcContext["res"],
+    };
+  }
+
+  it("allows admin to update demo request status", async () => {
+    const caller = appRouter.createCaller(createAdminContext());
+    const result = await caller.demos.updateStatus({ id: 1, status: "contacted" });
+    expect(result).toEqual({ success: true });
+    expect(db.updateDemoRequestStatus).toHaveBeenCalledWith(1, "contacted");
+  });
+
+  it("allows all valid statuses", async () => {
+    const caller = appRouter.createCaller(createAdminContext());
+    for (const status of ["new", "contacted", "scheduled", "completed", "closed"] as const) {
+      vi.clearAllMocks();
+      const result = await caller.demos.updateStatus({ id: 1, status });
+      expect(result).toEqual({ success: true });
+    }
+  });
+
+  it("throws FORBIDDEN for regular user", async () => {
+    const caller = appRouter.createCaller({
+      user: {
+        id: 2,
+        openId: "user-open-id",
+        email: "user@example.com",
+        name: "Regular User",
+        loginMethod: "manus",
+        role: "user",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+      },
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: {} as TrpcContext["res"],
+    });
+    await expect(
+      caller.demos.updateStatus({ id: 1, status: "contacted" })
+    ).rejects.toThrow();
+  });
+});

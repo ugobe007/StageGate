@@ -13,6 +13,7 @@ import ClientDashboard from "./pages/ClientDashboard";
 import ServiceOrder from "./pages/ServiceOrder";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminQuotes from "@/pages/AdminQuotes";
+import AdminDemoRequests from "@/pages/AdminDemoRequests";
 import AdminShows from "./pages/AdminShows";
 import AdminLeads from "./pages/AdminLeads";
 import AdminOrders from "./pages/AdminOrders";
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/partners" component={AdminPartners} />
       <Route path="/admin/quotes" component={AdminQuotes} />
+      <Route path="/admin/demos" component={AdminDemoRequests} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

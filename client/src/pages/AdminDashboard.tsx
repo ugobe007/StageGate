@@ -7,7 +7,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import {
   Building2, Calendar, Package, Users, TrendingUp, ArrowRight,
-  Loader2, AlertCircle, CheckCircle, Clock, Zap, FileText
+  Loader2, AlertCircle, CheckCircle, Clock, Zap, FileText, Play
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -111,6 +111,11 @@ export default function AdminDashboard() {
               <Link href="/admin/quotes">
                 <Button variant="outline" size="sm" className="border-border gap-1.5">
                   <FileText size={14} /> Quotes
+                </Button>
+              </Link>
+              <Link href="/admin/demos">
+                <Button variant="outline" size="sm" className="border-border gap-1.5">
+                  <Play size={14} /> Demos
                 </Button>
               </Link>
             </div>
@@ -225,6 +230,7 @@ export default function AdminDashboard() {
               { href: "/admin/orders", icon: Package, label: "Fulfill Orders", desc: "Review and update service order statuses", color: "border-yellow-500/30 bg-yellow-500/5" },
               { href: "/admin/partners", icon: TrendingUp, label: "Logistics Partners", desc: "Manage customs, transport, and insurance partners", color: "border-purple-500/30 bg-purple-500/5" },
               { href: "/admin/quotes", icon: FileText, label: "Quote Requests", desc: "Review and respond to inbound quote requests", color: "border-green-500/30 bg-green-500/5" },
+              { href: "/admin/demos", icon: Play, label: "Demo Requests", desc: "Track and manage inbound demo requests", color: "border-violet-500/30 bg-violet-500/5" },
             ].map((item) => (
               <Link key={item.href} href={item.href}>
                 <div className={`p-5 rounded-xl border ${item.color} hover:opacity-90 transition-all cursor-pointer group`}>
