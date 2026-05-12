@@ -155,3 +155,14 @@
 - [x] ShowsCalendar cards: show name links to /shows/:id
 - [x] Route /shows/:id registered in App.tsx
 - [x] Vitest test for shows.get procedure (42 tests total)
+
+## v1.9 — Option A White B2B Redesign
+
+- [x] Global CSS: light background (#fafafa), near-black text (#0f0f0f), blue accent (#2563eb), filled buttons, clean card borders, Inter + display font
+- [x] Navbar: white bg, border-bottom, filled CTA button, dark logo text
+- [x] Home: white hero, bold display headline, filled primary button, light stat bar, white service cards with border+shadow, brand architecture cards
+- [x] Services page: white layout, service cards with filled icon badges
+- [x] StageHand™ page: white layout with amber/orange accent (on-site support brand identity)
+- [x] StagePro™ page: white layout with purple accent (training/certification brand identity)
+- [x] ShowsCalendar page: white layout, clean filter pills, white show cards
+- [x] ShowDetail page: white layout, clean hero, rating bar, booking form

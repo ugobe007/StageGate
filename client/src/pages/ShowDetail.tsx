@@ -1,14 +1,12 @@
 import { useParams, useLocation } from "wouter";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Navbar from "@/components/Navbar";
 import GetQuoteModal from "@/components/GetQuoteModal";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
@@ -34,6 +32,10 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 
+const BLUE = "oklch(0.52 0.22 262)";
+const BLUE_BG = "oklch(0.52 0.22 262 / 0.08)";
+const BLUE_BORDER = "oklch(0.52 0.22 262 / 0.22)";
+
 const SERVICE_ICONS: Record<string, React.ElementType> = {
   logistics: Truck,
   activation: Zap,
@@ -46,17 +48,17 @@ const SERVICE_ICONS: Record<string, React.ElementType> = {
 
 function RelevanceBar({ score }: { score: number }) {
   const labels = ["", "Low", "Moderate", "Good", "High", "Exceptional"];
-  const colors = ["", "#6b7280", "#f59e0b", "#3b82f6", "#10b981", "#22c55e"];
+  const colors = ["", "#9ca3af", "#f59e0b", "oklch(0.52 0.22 262)", "#10b981", "#22c55e"];
   const pct = (score / 5) * 100;
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-[oklch(0.55_0.010_240)]">Robotics Relevance</span>
-        <span className="font-semibold" style={{ color: colors[score] }}>
+        <span style={{ color: "oklch(0.50 0.010 240)" }}>Robotics Relevance</span>
+        <span className="font-bold" style={{ color: colors[score] }}>
           {labels[score]} ({score}/5)
         </span>
       </div>
-      <div className="h-2 rounded-full bg-[oklch(0.18_0.008_240)] overflow-hidden">
+      <div className="h-2 rounded-full overflow-hidden" style={{ background: "oklch(0.90 0.005 240)" }}>
         <div
           className="h-full rounded-full transition-all duration-700"
           style={{ width: `${pct}%`, background: colors[score] }}
@@ -93,7 +95,7 @@ function NotifyMeInline({ showId }: { showId: number }) {
 
   if (submitted) {
     return (
-      <div className="flex items-center gap-2 text-sm text-green-400">
+      <div className="flex items-center gap-2 text-sm" style={{ color: "oklch(0.45 0.18 145)" }}>
         <CheckCircle2 size={16} />
         <span>You're on the list! We'll email you when bookings open.</span>
       </div>
@@ -107,10 +109,11 @@ function NotifyMeInline({ showId }: { showId: number }) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="your@email.com"
-        className="flex-1 px-3 py-2 text-sm rounded-lg border bg-transparent"
+        className="flex-1 px-3 py-2 text-sm rounded-lg border"
         style={{
-          borderColor: "oklch(0.22 0.010 240)",
-          color: "oklch(0.90 0.005 240)",
+          borderColor: "oklch(0.88 0.006 240)",
+          background: "oklch(0.97 0.003 240)",
+          color: "oklch(0.10 0.010 240)",
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter" && email) {
@@ -134,7 +137,7 @@ export default function ShowDetail() {
   const params = useParams<{ id: string }>();
   const showId = parseInt(params.id ?? "0", 10);
   const [, navigate] = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [orderNotes, setOrderNotes] = useState("");
@@ -169,10 +172,10 @@ export default function ShowDetail() {
     });
   };
 
-  const statusColor: Record<string, string> = {
-    upcoming: "oklch(0.72 0.21 145)",
-    active: "oklch(0.65 0.18 220)",
-    completed: "oklch(0.55 0.010 240)",
+  const statusConfig: Record<string, { color: string; bg: string; border: string }> = {
+    upcoming:  { color: BLUE, bg: BLUE_BG, border: BLUE_BORDER },
+    active:    { color: "oklch(0.45 0.18 145)", bg: "oklch(0.45 0.18 145 / 0.08)", border: "oklch(0.45 0.18 145 / 0.22)" },
+    completed: { color: "oklch(0.55 0.010 240)", bg: "oklch(0.92 0.004 240)", border: "oklch(0.85 0.006 240)" },
   };
 
   const handleBooking = () => {
@@ -195,8 +198,8 @@ export default function ShowDetail() {
     return (
       <>
         <Navbar />
-        <div className="min-h-screen flex items-center justify-center" style={{ background: "oklch(0.09 0.006 240)" }}>
-          <Loader2 size={32} className="animate-spin" style={{ color: "oklch(0.72 0.21 145)" }} />
+        <div className="min-h-screen flex items-center justify-center" style={{ background: "oklch(0.98 0.002 240)" }}>
+          <Loader2 size={32} className="animate-spin" style={{ color: BLUE }} />
         </div>
       </>
     );
@@ -206,8 +209,8 @@ export default function ShowDetail() {
     return (
       <>
         <Navbar />
-        <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: "oklch(0.09 0.006 240)" }}>
-          <p className="text-lg" style={{ color: "oklch(0.62 0.010 240)" }}>Show not found.</p>
+        <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: "oklch(0.98 0.002 240)" }}>
+          <p className="text-lg" style={{ color: "oklch(0.52 0.010 240)" }}>Show not found.</p>
           <Link href="/shows">
             <Button variant="outline" className="btn-default">
               <ArrowLeft size={16} className="mr-2" /> Back to Shows
@@ -222,27 +225,28 @@ export default function ShowDetail() {
   const relevanceBadgeColor =
     relevance >= 5 ? "#22c55e" :
     relevance >= 4 ? "#10b981" :
-    relevance >= 3 ? "#3b82f6" :
-    relevance >= 2 ? "#f59e0b" : "#6b7280";
+    relevance >= 3 ? "oklch(0.52 0.22 262)" :
+    relevance >= 2 ? "#f59e0b" : "#9ca3af";
+
+  const sc = statusConfig[show.status] ?? statusConfig.upcoming;
 
   return (
     <>
       <Navbar />
-      <div className="min-h-screen pt-16" style={{ background: "oklch(0.09 0.006 240)" }}>
+      <div className="min-h-screen pt-16" style={{ background: "oklch(0.98 0.002 240)", color: "oklch(0.10 0.010 240)" }}>
 
         {/* ── Hero ── */}
         <div
           className="border-b"
-          style={{
-            background: "linear-gradient(135deg, oklch(0.11 0.008 240) 0%, oklch(0.10 0.012 240) 100%)",
-            borderColor: "oklch(0.16 0.008 240)",
-          }}
+          style={{ background: "oklch(1.00 0.000 0)", borderColor: "oklch(0.90 0.005 240)" }}
         >
           <div className="container py-10">
             {/* Breadcrumb */}
             <Link href="/shows">
-              <button className="flex items-center gap-1.5 text-sm mb-6 transition-colors hover:opacity-80"
-                style={{ color: "oklch(0.55 0.010 240)" }}>
+              <button
+                className="flex items-center gap-1.5 text-sm mb-6 transition-colors hover:opacity-70"
+                style={{ color: "oklch(0.52 0.010 240)" }}
+              >
                 <ArrowLeft size={14} />
                 Back to 2026 Show Calendar
               </button>
@@ -253,22 +257,18 @@ export default function ShowDetail() {
                 {/* Status + relevance badges */}
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <span
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium uppercase tracking-wide"
-                    style={{
-                      background: `${statusColor[show.status] ?? statusColor.upcoming}18`,
-                      color: statusColor[show.status] ?? statusColor.upcoming,
-                      border: `1px solid ${statusColor[show.status] ?? statusColor.upcoming}40`,
-                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide border"
+                    style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}
                   >
                     <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: "currentColor" }} />
                     {show.status}
                   </span>
                   <span
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border"
                     style={{
-                      background: `${relevanceBadgeColor}15`,
+                      background: `${relevanceBadgeColor}12`,
                       color: relevanceBadgeColor,
-                      border: `1px solid ${relevanceBadgeColor}35`,
+                      borderColor: `${relevanceBadgeColor}30`,
                     }}
                   >
                     <Bot size={11} />
@@ -276,11 +276,14 @@ export default function ShowDetail() {
                   </span>
                 </div>
 
-                <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-white mb-3">
+                <h1
+                  className="text-3xl lg:text-4xl font-extrabold mb-3"
+                  style={{ color: "oklch(0.08 0.010 240)", letterSpacing: "-0.03em" }}
+                >
                   {show.name}
                 </h1>
 
-                <div className="flex flex-wrap gap-4 text-sm" style={{ color: "oklch(0.62 0.010 240)" }}>
+                <div className="flex flex-wrap gap-4 text-sm" style={{ color: "oklch(0.52 0.010 240)" }}>
                   {(show.startDate || show.endDate) && (
                     <span className="flex items-center gap-1.5">
                       <Calendar size={14} />
@@ -300,7 +303,7 @@ export default function ShowDetail() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1.5 hover:underline"
-                      style={{ color: "oklch(0.72 0.21 145)" }}
+                      style={{ color: BLUE }}
                     >
                       <Globe size={14} />
                       Official Website
@@ -313,7 +316,7 @@ export default function ShowDetail() {
               <div className="flex flex-col gap-2 lg:items-end shrink-0">
                 {show.status === "upcoming" ? (
                   <div className="w-full lg:w-72">
-                    <p className="text-xs mb-2" style={{ color: "oklch(0.55 0.010 240)" }}>
+                    <p className="text-xs mb-2" style={{ color: "oklch(0.52 0.010 240)" }}>
                       <Bell size={11} className="inline mr-1" />
                       Bookings not yet open — get notified:
                     </p>
@@ -349,8 +352,13 @@ export default function ShowDetail() {
               {/* Description */}
               {show.description && (
                 <section>
-                  <h2 className="text-lg font-semibold text-white mb-3">About This Show</h2>
-                  <p className="text-sm leading-relaxed" style={{ color: "oklch(0.65 0.010 240)" }}>
+                  <h2
+                    className="text-lg font-bold mb-3"
+                    style={{ color: "oklch(0.10 0.010 240)" }}
+                  >
+                    About This Show
+                  </h2>
+                  <p className="text-sm leading-relaxed" style={{ color: "oklch(0.45 0.010 240)" }}>
                     {show.description}
                   </p>
                 </section>
@@ -359,31 +367,36 @@ export default function ShowDetail() {
               {/* Robotics relevance detail */}
               <section
                 className="rounded-xl p-5 border"
-                style={{
-                  background: "oklch(0.11 0.008 240)",
-                  borderColor: "oklch(0.18 0.008 240)",
-                }}
+                style={{ background: "oklch(1.00 0.000 0)", borderColor: "oklch(0.90 0.005 240)" }}
               >
-                <h2 className="text-lg font-semibold text-white mb-4">Robotics Activity</h2>
+                <h2 className="text-lg font-bold mb-4" style={{ color: "oklch(0.10 0.010 240)" }}>
+                  Robotics Activity
+                </h2>
                 <RelevanceBar score={relevance} />
                 {(show.estimatedExhibitors || show.roboticsExhibitors) && (
                   <div className="grid grid-cols-2 gap-4 mt-5">
                     {show.estimatedExhibitors && (
-                      <div className="text-center p-3 rounded-lg" style={{ background: "oklch(0.14 0.008 240)" }}>
-                        <div className="text-2xl font-bold text-white">
+                      <div
+                        className="text-center p-3 rounded-lg"
+                        style={{ background: "oklch(0.96 0.003 240)", border: "1px solid oklch(0.90 0.005 240)" }}
+                      >
+                        <div className="text-2xl font-extrabold" style={{ color: "oklch(0.10 0.010 240)" }}>
                           {show.estimatedExhibitors.toLocaleString()}+
                         </div>
-                        <div className="text-xs mt-1" style={{ color: "oklch(0.55 0.010 240)" }}>
+                        <div className="text-xs mt-1" style={{ color: "oklch(0.52 0.010 240)" }}>
                           Total Exhibitors
                         </div>
                       </div>
                     )}
                     {show.roboticsExhibitors && (
-                      <div className="text-center p-3 rounded-lg" style={{ background: "oklch(0.14 0.008 240)" }}>
-                        <div className="text-2xl font-bold" style={{ color: "oklch(0.72 0.21 145)" }}>
+                      <div
+                        className="text-center p-3 rounded-lg"
+                        style={{ background: BLUE_BG, border: `1px solid ${BLUE_BORDER}` }}
+                      >
+                        <div className="text-2xl font-extrabold" style={{ color: BLUE }}>
                           {show.roboticsExhibitors}+
                         </div>
-                        <div className="text-xs mt-1" style={{ color: "oklch(0.55 0.010 240)" }}>
+                        <div className="text-xs mt-1" style={{ color: "oklch(0.52 0.010 240)" }}>
                           Robotics Exhibitors
                         </div>
                       </div>
@@ -392,16 +405,16 @@ export default function ShowDetail() {
                 )}
                 {show.roboticsExhibitors && show.estimatedExhibitors && (
                   <div className="mt-4">
-                    <div className="flex justify-between text-xs mb-1" style={{ color: "oklch(0.55 0.010 240)" }}>
+                    <div className="flex justify-between text-xs mb-1" style={{ color: "oklch(0.52 0.010 240)" }}>
                       <span>Robotics share of floor</span>
                       <span>{Math.round((show.roboticsExhibitors / show.estimatedExhibitors) * 100)}%</span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-[oklch(0.18_0.008_240)] overflow-hidden">
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "oklch(0.90 0.005 240)" }}>
                       <div
                         className="h-full rounded-full"
                         style={{
                           width: `${Math.round((show.roboticsExhibitors / show.estimatedExhibitors) * 100)}%`,
-                          background: "oklch(0.72 0.21 145)",
+                          background: BLUE,
                         }}
                       />
                     </div>
@@ -412,23 +425,22 @@ export default function ShowDetail() {
               {/* Why StageGate for this show */}
               <section
                 className="rounded-xl p-5 border"
-                style={{
-                  background: "oklch(0.11 0.008 240)",
-                  borderColor: "oklch(0.18 0.008 240)",
-                }}
+                style={{ background: "oklch(1.00 0.000 0)", borderColor: "oklch(0.90 0.005 240)" }}
               >
-                <h2 className="text-lg font-semibold text-white mb-3">Why Use StageGate at This Show</h2>
+                <h2 className="text-lg font-bold mb-3" style={{ color: "oklch(0.10 0.010 240)" }}>
+                  Why Use StageGate at This Show
+                </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
-                    { icon: Truck, text: "Airport & customs pickup for robot crates" },
-                    { icon: Warehouse, text: "Secure Las Vegas warehouse storage" },
-                    { icon: Zap, text: "On-site unpacking, assembly & power-up" },
-                    { icon: HeadphonesIcon, text: "24/7 technical support during the show" },
-                    { icon: Package, text: "Return shipping & re-crating after the show" },
-                    { icon: BarChart3, text: "Brand promotion and booth traffic support" },
+                    { icon: Truck,         text: "Airport & customs pickup for robot crates" },
+                    { icon: Warehouse,     text: "Secure Las Vegas warehouse storage" },
+                    { icon: Zap,           text: "On-site unpacking, assembly & power-up" },
+                    { icon: HeadphonesIcon,text: "24/7 technical support during the show" },
+                    { icon: Package,       text: "Return shipping & re-crating after the show" },
+                    { icon: BarChart3,     text: "Brand promotion and booth traffic support" },
                   ].map(({ icon: Icon, text }, i) => (
-                    <div key={i} className="flex items-start gap-2.5 text-sm" style={{ color: "oklch(0.65 0.010 240)" }}>
-                      <Icon size={15} className="mt-0.5 shrink-0" style={{ color: "oklch(0.72 0.21 145)" }} />
+                    <div key={i} className="flex items-start gap-2.5 text-sm" style={{ color: "oklch(0.45 0.010 240)" }}>
+                      <Icon size={15} className="mt-0.5 shrink-0" style={{ color: BLUE }} />
                       {text}
                     </div>
                   ))}
@@ -441,23 +453,23 @@ export default function ShowDetail() {
               <div
                 id="booking-form"
                 className="rounded-xl border p-5 sticky top-20"
-                style={{
-                  background: "oklch(0.11 0.008 240)",
-                  borderColor: "oklch(0.18 0.008 240)",
-                }}
+                style={{ background: "oklch(1.00 0.000 0)", borderColor: "oklch(0.90 0.005 240)" }}
               >
-                <h2 className="text-base font-semibold text-white mb-1">Book Services</h2>
-                <p className="text-xs mb-4" style={{ color: "oklch(0.55 0.010 240)" }}>
-                  Select the services you need for <span className="text-white font-medium">{show.name}</span>.
+                <h2 className="text-base font-bold mb-1" style={{ color: "oklch(0.10 0.010 240)" }}>
+                  Book Services
+                </h2>
+                <p className="text-xs mb-4" style={{ color: "oklch(0.52 0.010 240)" }}>
+                  Select the services you need for{" "}
+                  <span className="font-semibold" style={{ color: "oklch(0.10 0.010 240)" }}>{show.name}</span>.
                 </p>
 
                 {show.status === "upcoming" ? (
                   <div className="text-center py-6 space-y-3">
-                    <Bell size={28} className="mx-auto opacity-40" style={{ color: "oklch(0.72 0.21 145)" }} />
-                    <p className="text-sm" style={{ color: "oklch(0.55 0.010 240)" }}>
+                    <Bell size={28} className="mx-auto opacity-30" style={{ color: BLUE }} />
+                    <p className="text-sm" style={{ color: "oklch(0.52 0.010 240)" }}>
                       Bookings are not yet open for this show.
                     </p>
-                    <p className="text-xs" style={{ color: "oklch(0.45 0.008 240)" }}>
+                    <p className="text-xs" style={{ color: "oklch(0.60 0.010 240)" }}>
                       Enter your email above to be notified when they open.
                     </p>
                   </div>
@@ -473,8 +485,8 @@ export default function ShowDetail() {
                             key={svc.id}
                             className="flex items-start gap-3 p-2.5 rounded-lg cursor-pointer transition-colors"
                             style={{
-                              background: isSelected ? "oklch(0.72 0.21 145 / 0.08)" : "transparent",
-                              border: `1px solid ${isSelected ? "oklch(0.72 0.21 145 / 0.30)" : "oklch(0.18 0.008 240)"}`,
+                              background: isSelected ? BLUE_BG : "oklch(0.97 0.003 240)",
+                              border: `1px solid ${isSelected ? BLUE_BORDER : "oklch(0.90 0.005 240)"}`,
                             }}
                           >
                             <Checkbox
@@ -485,8 +497,10 @@ export default function ShowDetail() {
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5">
-                                <Icon size={13} style={{ color: isSelected ? "oklch(0.72 0.21 145)" : "oklch(0.55 0.010 240)" }} />
-                                <span className="text-sm font-medium text-white">{svc.name}</span>
+                                <Icon size={13} style={{ color: isSelected ? BLUE : "oklch(0.55 0.010 240)" }} />
+                                <span className="text-sm font-semibold" style={{ color: "oklch(0.10 0.010 240)" }}>
+                                  {svc.name}
+                                </span>
                               </div>
                               {svc.basePrice && (
                                 <span className="text-xs" style={{ color: "oklch(0.55 0.010 240)" }}>
@@ -507,9 +521,9 @@ export default function ShowDetail() {
                       className="text-sm mb-4 resize-none"
                       rows={3}
                       style={{
-                        background: "oklch(0.14 0.008 240)",
-                        borderColor: "oklch(0.22 0.010 240)",
-                        color: "oklch(0.88 0.005 240)",
+                        background: "oklch(0.97 0.003 240)",
+                        borderColor: "oklch(0.88 0.006 240)",
+                        color: "oklch(0.10 0.010 240)",
                       }}
                     />
 
@@ -534,14 +548,14 @@ export default function ShowDetail() {
                         >
                           Sign In to Book
                         </Button>
-                        <p className="text-xs text-center" style={{ color: "oklch(0.45 0.008 240)" }}>
+                        <p className="text-xs text-center" style={{ color: "oklch(0.55 0.010 240)" }}>
                           Free registration — no credit card required
                         </p>
                       </div>
                     )}
 
                     {selectedServices.length > 0 && (
-                      <p className="text-xs text-center mt-2" style={{ color: "oklch(0.55 0.010 240)" }}>
+                      <p className="text-xs text-center mt-2" style={{ color: "oklch(0.52 0.010 240)" }}>
                         {selectedServices.length} service{selectedServices.length !== 1 ? "s" : ""} selected
                         — our team will follow up with a detailed quote
                       </p>
@@ -553,13 +567,12 @@ export default function ShowDetail() {
               {/* Quick quote CTA */}
               <div
                 className="rounded-xl border p-4 text-center"
-                style={{
-                  background: "oklch(0.11 0.008 240)",
-                  borderColor: "oklch(0.18 0.008 240)",
-                }}
+                style={{ background: "oklch(0.97 0.003 240)", borderColor: "oklch(0.90 0.005 240)" }}
               >
-                <p className="text-sm font-medium text-white mb-1">Not sure what you need?</p>
-                <p className="text-xs mb-3" style={{ color: "oklch(0.55 0.010 240)" }}>
+                <p className="text-sm font-bold mb-1" style={{ color: "oklch(0.10 0.010 240)" }}>
+                  Not sure what you need?
+                </p>
+                <p className="text-xs mb-3" style={{ color: "oklch(0.52 0.010 240)" }}>
                   Get a personalized quote in 2 minutes.
                 </p>
                 <Button

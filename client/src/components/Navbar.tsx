@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { Menu, X, Zap } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import GetQuoteModal from "@/components/GetQuoteModal";
 
 export default function Navbar() {
@@ -31,23 +31,18 @@ export default function Navbar() {
   const isActive = (href: string) =>
     href === "/" ? location === "/" : location.startsWith(href);
 
-  const navBg = scrolled
-    ? "rgba(10,11,15,0.92)"
-    : "rgba(8,9,13,0.75)";
-  const navBorder = scrolled
-    ? "1px solid oklch(0.20 0.010 240)"
-    : "1px solid oklch(0.13 0.008 240)";
-
   return (
     <>
     <nav
-      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-200"
       style={{
-        background: navBg,
-        backdropFilter: "blur(18px) saturate(160%)",
-        WebkitBackdropFilter: "blur(18px) saturate(160%)",
-        borderBottom: navBorder,
-        boxShadow: scrolled ? "0 4px 30px rgba(0,0,0,0.35)" : "none",
+        background: scrolled ? "rgba(255,255,255,0.97)" : "rgba(255,255,255,0.95)",
+        backdropFilter: "blur(12px) saturate(180%)",
+        WebkitBackdropFilter: "blur(12px) saturate(180%)",
+        borderBottom: scrolled
+          ? "1px solid oklch(0.88 0.006 240)"
+          : "1px solid oklch(0.92 0.004 240)",
+        boxShadow: scrolled ? "0 1px 12px oklch(0 0 0 / 0.06)" : "none",
       }}
     >
       <div className="container">
@@ -58,11 +53,18 @@ export default function Navbar() {
             <div className="flex items-center gap-2.5 group cursor-pointer">
               <div
                 className="w-7 h-7 rounded-md flex items-center justify-center"
-                style={{ background: "oklch(0.72 0.21 145)" }}
+                style={{ background: "oklch(0.52 0.22 262)" }}
               >
-                <Zap size={13} className="text-[oklch(0.08_0.006_240)]" />
+                <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                  <path d="M7 1L2 8h5l-1 5 6-7H7l1-5z" fill="white" />
+                </svg>
               </div>
-              <span className="font-semibold text-sm text-white tracking-tight">StageGate</span>
+              <span
+                className="font-bold text-sm tracking-tight"
+                style={{ color: "oklch(0.10 0.010 240)" }}
+              >
+                StageGate
+              </span>
             </div>
           </Link>
 
@@ -74,21 +76,22 @@ export default function Navbar() {
                   className="px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 block"
                   style={{
                     color: isActive(href)
-                      ? "oklch(0.74 0.23 145)"
-                      : "oklch(0.62 0.010 240)",
+                      ? "oklch(0.52 0.22 262)"
+                      : "oklch(0.40 0.010 240)",
                     background: isActive(href)
-                      ? "oklch(0.74 0.23 145 / 0.08)"
+                      ? "oklch(0.52 0.22 262 / 0.08)"
                       : "transparent",
+                    fontWeight: isActive(href) ? 600 : 500,
                   }}
                   onMouseEnter={e => {
                     if (!isActive(href)) {
-                      (e.currentTarget as HTMLElement).style.color = "oklch(0.88 0.010 240)";
-                      (e.currentTarget as HTMLElement).style.background = "oklch(0.74 0.23 145 / 0.05)";
+                      (e.currentTarget as HTMLElement).style.color = "oklch(0.10 0.010 240)";
+                      (e.currentTarget as HTMLElement).style.background = "oklch(0.94 0.004 240)";
                     }
                   }}
                   onMouseLeave={e => {
                     if (!isActive(href)) {
-                      (e.currentTarget as HTMLElement).style.color = "oklch(0.62 0.010 240)";
+                      (e.currentTarget as HTMLElement).style.color = "oklch(0.40 0.010 240)";
                       (e.currentTarget as HTMLElement).style.background = "transparent";
                     }
                   }}
@@ -107,8 +110,8 @@ export default function Navbar() {
                   <span
                     className="px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 block"
                     style={{
-                      color: isActive("/dashboard") ? "oklch(0.74 0.23 145)" : "oklch(0.62 0.010 240)",
-                      background: isActive("/dashboard") ? "oklch(0.74 0.23 145 / 0.08)" : "transparent",
+                      color: isActive("/dashboard") ? "oklch(0.52 0.22 262)" : "oklch(0.40 0.010 240)",
+                      background: isActive("/dashboard") ? "oklch(0.52 0.22 262 / 0.08)" : "transparent",
                     }}
                   >
                     Dashboard
@@ -117,9 +120,15 @@ export default function Navbar() {
                 <button
                   onClick={() => logout()}
                   className="px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150"
-                  style={{ color: "oklch(0.48 0.010 240)" }}
-                  onMouseEnter={e => (e.currentTarget.style.color = "oklch(0.74 0.23 145)")}
-                  onMouseLeave={e => (e.currentTarget.style.color = "oklch(0.48 0.010 240)")}
+                  style={{ color: "oklch(0.50 0.010 240)" }}
+                  onMouseEnter={e => {
+                    (e.currentTarget.style.color = "oklch(0.10 0.010 240)");
+                    (e.currentTarget.style.background = "oklch(0.94 0.004 240)");
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget.style.color = "oklch(0.50 0.010 240)");
+                    (e.currentTarget.style.background = "transparent");
+                  }}
                 >
                   Sign Out
                 </button>
@@ -129,34 +138,27 @@ export default function Navbar() {
                 <a href={getLoginUrl()}>
                   <span
                     className="px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 block"
-                    style={{ color: "oklch(0.62 0.010 240)" }}
-                    onMouseEnter={e => (e.currentTarget.style.color = "oklch(0.88 0.010 240)")}
-                    onMouseLeave={e => (e.currentTarget.style.color = "oklch(0.62 0.010 240)")}
+                    style={{ color: "oklch(0.40 0.010 240)" }}
+                    onMouseEnter={e => {
+                      (e.currentTarget.style.color = "oklch(0.10 0.010 240)");
+                      (e.currentTarget.style.background = "oklch(0.94 0.004 240)");
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget.style.color = "oklch(0.40 0.010 240)");
+                      (e.currentTarget.style.background = "transparent");
+                    }}
                   >
                     Sign In
                   </span>
                 </a>
                 <button
-                    onClick={() => setQuoteOpen(true)}
-                    className="px-4 py-2 rounded-lg text-sm font-display font-semibold transition-all duration-200 cursor-pointer border"
-                    style={{
-                      borderColor: "oklch(0.72 0.21 145)",
-                      color: "oklch(0.72 0.21 145)",
-                      background: "transparent",
-                    }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "oklch(0.72 0.21 145 / 0.10)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-                  >
-                    Get a Quote
-                  </button>
+                  onClick={() => setQuoteOpen(true)}
+                  className="btn-default text-sm"
+                >
+                  Get a Quote
+                </button>
                 <Link href="/register">
-                  <button
-                    className="px-4 py-2 rounded-lg text-sm font-display font-bold transition-all duration-200 cursor-pointer"
-                    style={{
-                      background: "oklch(0.72 0.21 145)",
-                      color: "oklch(0.08 0.006 240)",
-                    }}
-                  >
+                  <button className="btn-primary text-sm">
                     Register Free
                   </button>
                 </Link>
@@ -167,7 +169,7 @@ export default function Navbar() {
           {/* ── Mobile toggle ── */}
           <button
             className="md:hidden p-2 rounded-lg transition-colors"
-            style={{ color: "oklch(0.60 0.010 240)" }}
+            style={{ color: "oklch(0.40 0.010 240)" }}
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
           >
@@ -181,9 +183,9 @@ export default function Navbar() {
         <div
           className="md:hidden border-t"
           style={{
-            background: "oklch(0.07 0.008 240 / 0.97)",
-            backdropFilter: "blur(16px)",
-            borderColor: "oklch(0.16 0.010 240)",
+            background: "rgba(255,255,255,0.98)",
+            backdropFilter: "blur(12px)",
+            borderColor: "oklch(0.90 0.005 240)",
           }}
         >
           <div className="container py-4 flex flex-col gap-1">
@@ -192,8 +194,8 @@ export default function Navbar() {
                 <span
                   className="block px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors"
                   style={{
-                    color: isActive(href) ? "oklch(0.74 0.23 145)" : "oklch(0.62 0.010 240)",
-                    background: isActive(href) ? "oklch(0.74 0.23 145 / 0.08)" : "transparent",
+                    color: isActive(href) ? "oklch(0.52 0.22 262)" : "oklch(0.35 0.010 240)",
+                    background: isActive(href) ? "oklch(0.52 0.22 262 / 0.08)" : "transparent",
                   }}
                   onClick={() => setMobileOpen(false)}
                 >
@@ -203,14 +205,14 @@ export default function Navbar() {
             ))}
             <div
               className="border-t mt-2 pt-3 flex flex-col gap-2"
-              style={{ borderColor: "oklch(0.16 0.010 240)" }}
+              style={{ borderColor: "oklch(0.90 0.005 240)" }}
             >
               {isAuthenticated ? (
                 <>
                   <Link href="/dashboard">
                     <span
                       className="block px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer"
-                      style={{ color: "oklch(0.62 0.010 240)" }}
+                      style={{ color: "oklch(0.35 0.010 240)" }}
                       onClick={() => setMobileOpen(false)}
                     >
                       Dashboard
@@ -219,7 +221,7 @@ export default function Navbar() {
                   <button
                     onClick={() => { logout(); setMobileOpen(false); }}
                     className="text-left px-3 py-2.5 rounded-lg text-sm font-medium"
-                    style={{ color: "oklch(0.48 0.010 240)" }}
+                    style={{ color: "oklch(0.50 0.010 240)" }}
                   >
                     Sign Out
                   </button>
@@ -227,17 +229,19 @@ export default function Navbar() {
               ) : (
                 <>
                   <a href={getLoginUrl()} onClick={() => setMobileOpen(false)}>
-                    <span className="block px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: "oklch(0.62 0.010 240)" }}>
+                    <span className="block px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: "oklch(0.35 0.010 240)" }}>
                       Sign In
                     </span>
                   </a>
+                  <button
+                    onClick={() => { setQuoteOpen(true); setMobileOpen(false); }}
+                    className="btn-default w-full justify-center"
+                  >
+                    Get a Quote
+                  </button>
                   <Link href="/register">
                     <button
-                      className="w-full px-4 py-2.5 rounded-lg text-sm font-display font-bold text-center"
-                      style={{
-                        background: "oklch(0.74 0.23 145)",
-                        color: "oklch(0.06 0.008 240)",
-                      }}
+                      className="btn-primary w-full justify-center"
                       onClick={() => setMobileOpen(false)}
                     >
                       Register Free

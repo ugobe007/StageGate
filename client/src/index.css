@@ -11,38 +11,38 @@
   --radius-xl: 1rem;
   --radius-2xl: 1.25rem;
 
-  /* Supabase-style: near-black background, crisp whites, green accent */
-  --color-background:        oklch(0.08 0.006 240);
-  --color-foreground:        oklch(0.97 0.002 240);
-  --color-card:              oklch(0.11 0.008 240);
-  --color-card-foreground:   oklch(0.97 0.002 240);
-  --color-popover:           oklch(0.11 0.008 240);
-  --color-popover-foreground:oklch(0.97 0.002 240);
+  /* Option A: White B2B — light background, near-black text, blue accent */
+  --color-background:         oklch(0.98 0.002 240);
+  --color-foreground:         oklch(0.10 0.010 240);
+  --color-card:               oklch(1.00 0.000 0);
+  --color-card-foreground:    oklch(0.10 0.010 240);
+  --color-popover:            oklch(1.00 0.000 0);
+  --color-popover-foreground: oklch(0.10 0.010 240);
 
-  /* Primary = StageGate green */
-  --color-primary:           oklch(0.72 0.21 145);
-  --color-primary-foreground:oklch(0.08 0.006 240);
+  /* Primary = electric blue */
+  --color-primary:            oklch(0.52 0.22 262);
+  --color-primary-foreground: oklch(1.00 0.000 0);
 
-  --color-secondary:         oklch(0.14 0.008 240);
-  --color-secondary-foreground: oklch(0.80 0.005 240);
+  --color-secondary:          oklch(0.95 0.004 240);
+  --color-secondary-foreground: oklch(0.20 0.010 240);
 
-  --color-muted:             oklch(0.14 0.008 240);
-  --color-muted-foreground:  oklch(0.52 0.010 240);
+  --color-muted:              oklch(0.95 0.004 240);
+  --color-muted-foreground:   oklch(0.50 0.010 240);
 
-  --color-accent:            oklch(0.14 0.008 240);
-  --color-accent-foreground: oklch(0.97 0.002 240);
+  --color-accent:             oklch(0.95 0.004 240);
+  --color-accent-foreground:  oklch(0.10 0.010 240);
 
-  --color-destructive:       oklch(0.62 0.22 25);
-  --color-border:            oklch(0.20 0.008 240);
-  --color-input:             oklch(0.20 0.008 240);
-  --color-ring:              oklch(0.72 0.21 145);
+  --color-destructive:        oklch(0.58 0.22 25);
+  --color-border:             oklch(0.88 0.006 240);
+  --color-input:              oklch(0.88 0.006 240);
+  --color-ring:               oklch(0.52 0.22 262);
 
   /* Category accent colors */
-  --cat-logistics:  oklch(0.65 0.18 245);
-  --cat-storage:    oklch(0.60 0.20 295);
-  --cat-activation: oklch(0.72 0.21 145);
-  --cat-support:    oklch(0.78 0.17 70);
-  --cat-marketing:  oklch(0.68 0.20 20);
+  --cat-logistics:  oklch(0.52 0.22 262);
+  --cat-storage:    oklch(0.55 0.20 295);
+  --cat-activation: oklch(0.62 0.18 145);
+  --cat-support:    oklch(0.70 0.17 55);
+  --cat-marketing:  oklch(0.62 0.20 20);
 
   /* Typography */
   --font-sans:    "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -70,18 +70,19 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: -0.025em;
-    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: oklch(0.10 0.010 240);
   }
 
   ::selection {
-    background: oklch(0.72 0.21 145 / 0.25);
-    color: oklch(0.97 0.002 240);
+    background: oklch(0.52 0.22 262 / 0.15);
+    color: oklch(0.10 0.010 240);
   }
 
   :focus-visible {
-    outline: 2px solid oklch(0.72 0.21 145);
+    outline: 2px solid oklch(0.52 0.22 262);
     outline-offset: 2px;
   }
 }
@@ -89,53 +90,56 @@
 /* ── Components ────────────────────────────────────────────────────────────── */
 @layer components {
 
-  /* ── Supabase-style buttons ── */
+  /* ── Buttons ── */
 
-  /* Primary: solid green fill */
+  /* Primary: solid blue fill */
   .btn-primary {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5625rem 1.125rem;
+    padding: 0.625rem 1.25rem;
     border-radius: var(--radius-md);
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: -0.01em;
-    background: oklch(0.72 0.21 145);
-    color: oklch(0.08 0.006 240);
-    border: 1px solid oklch(0.72 0.21 145);
+    background: oklch(0.52 0.22 262);
+    color: oklch(1.00 0.000 0);
+    border: 1px solid oklch(0.52 0.22 262);
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
     text-decoration: none;
     white-space: nowrap;
+    box-shadow: 0 1px 2px oklch(0 0 0 / 0.08);
   }
   .btn-primary:hover {
-    background: oklch(0.78 0.19 145);
-    border-color: oklch(0.78 0.19 145);
+    background: oklch(0.46 0.22 262);
+    border-color: oklch(0.46 0.22 262);
+    box-shadow: 0 4px 12px oklch(0.52 0.22 262 / 0.25);
   }
 
-  /* Default: stroke only, text color */
+  /* Default: white bg, border, dark text */
   .btn-default {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5625rem 1.125rem;
+    padding: 0.625rem 1.25rem;
     border-radius: var(--radius-md);
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: -0.01em;
-    background: transparent;
-    color: oklch(0.80 0.005 240);
-    border: 1px solid oklch(0.22 0.008 240);
+    background: oklch(1.00 0.000 0);
+    color: oklch(0.15 0.010 240);
+    border: 1px solid oklch(0.85 0.006 240);
     cursor: pointer;
-    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
     text-decoration: none;
     white-space: nowrap;
+    box-shadow: 0 1px 2px oklch(0 0 0 / 0.06);
   }
   .btn-default:hover {
-    border-color: oklch(0.38 0.010 240);
-    color: oklch(0.97 0.002 240);
-    background: oklch(0.14 0.008 240);
+    border-color: oklch(0.70 0.008 240);
+    background: oklch(0.97 0.003 240);
+    box-shadow: 0 2px 6px oklch(0 0 0 / 0.08);
   }
 
   /* Ghost: no border, text only */
@@ -148,7 +152,7 @@
     font-size: 0.875rem;
     font-weight: 500;
     background: transparent;
-    color: oklch(0.55 0.010 240);
+    color: oklch(0.45 0.010 240);
     border: none;
     cursor: pointer;
     transition: color 0.15s, background 0.15s;
@@ -156,8 +160,8 @@
     white-space: nowrap;
   }
   .btn-ghost:hover {
-    color: oklch(0.97 0.002 240);
-    background: oklch(0.14 0.008 240);
+    color: oklch(0.10 0.010 240);
+    background: oklch(0.94 0.004 240);
   }
 
   /* ── Section label (eyebrow text) ── */
@@ -165,62 +169,66 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.08em;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.10em;
     text-transform: uppercase;
-    color: oklch(0.72 0.21 145);
+    color: oklch(0.52 0.22 262);
     margin-bottom: 0.75rem;
   }
   .section-label::before {
     content: "";
     display: block;
     width: 1.25rem;
-    height: 1px;
-    background: oklch(0.72 0.21 145);
+    height: 2px;
+    background: oklch(0.52 0.22 262);
+    border-radius: 2px;
   }
 
   /* ── Divider line ── */
   .divider {
     width: 100%;
     height: 1px;
-    background: oklch(0.18 0.008 240);
+    background: oklch(0.90 0.005 240);
   }
 
   /* ── Card ── */
   .sg-card {
-    background: oklch(0.11 0.008 240);
-    border: 1px solid oklch(0.18 0.008 240);
+    background: oklch(1.00 0.000 0);
+    border: 1px solid oklch(0.90 0.005 240);
     border-radius: var(--radius-xl);
     padding: 1.5rem;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.05);
   }
   .sg-card:hover {
-    border-color: oklch(0.28 0.010 240);
+    border-color: oklch(0.75 0.010 240);
+    box-shadow: 0 4px 16px oklch(0 0 0 / 0.08);
   }
 
   /* ── Service card ── */
   .svc-card {
     position: relative;
-    background: oklch(0.11 0.008 240);
-    border: 1px solid oklch(0.18 0.008 240);
+    background: oklch(1.00 0.000 0);
+    border: 1px solid oklch(0.90 0.005 240);
     border-radius: var(--radius-xl);
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    transition: border-color 0.2s, background 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
     overflow: hidden;
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.05);
   }
   .svc-card::before {
     content: "";
     position: absolute;
     top: 0; left: 0; right: 0;
-    height: 2px;
+    height: 3px;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   }
   .svc-card:hover {
-    border-color: oklch(0.28 0.010 240);
-    background: oklch(0.13 0.008 240);
+    border-color: oklch(0.75 0.010 240);
+    box-shadow: 0 6px 20px oklch(0 0 0 / 0.10);
   }
   .svc-card.svc-logistics::before  { background: var(--cat-logistics); }
   .svc-card.svc-storage::before    { background: var(--cat-storage); }
@@ -231,10 +239,11 @@
   /* ── Stat number ── */
   .stat-number {
     font-size: clamp(1.75rem, 3vw, 2.5rem);
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: -0.04em;
     line-height: 1;
     font-variant-numeric: tabular-nums;
+    color: oklch(0.10 0.010 240);
   }
 
   /* ── Inline code / mono badge ── */
@@ -243,7 +252,7 @@
     font-size: 0.6875rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: oklch(0.72 0.21 145);
+    color: oklch(0.52 0.22 262);
   }
 
   /* ── Scrolling marquee ── */
@@ -293,7 +302,7 @@
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.22 0.008 240);
+  background: oklch(0.82 0.006 240);
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover { background: oklch(0.30 0.010 240); }
+::-webkit-scrollbar-thumb:hover { background: oklch(0.70 0.008 240); }
