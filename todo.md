@@ -223,3 +223,9 @@
 - [x] Active filter count badge on each status pill
 - [x] "Clear" button when status filter is active + empty-state clear button
 - [x] Result count label ("Showing X of Y requests · filtered by ... · sorted by ...")
+
+## v3.5 — Demo Requests Search Bar
+- [x] Search input filters live across name, company, and robot type
+- [x] Clear (×) button inside input when query is non-empty
+- [x] Result count reflects combined search + status filter
+- [x] Empty state message mentions the search query

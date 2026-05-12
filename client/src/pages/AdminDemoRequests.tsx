@@ -7,7 +7,7 @@ import {
   Play, ArrowLeft, Bot, Calendar, Building2,
   ChevronDown, ChevronUp, CheckCircle2,
   Clock, Phone, Mail, MessageSquare, XCircle, Loader2,
-  ArrowUpDown, X,
+  ArrowUpDown, X, Search,
 } from "lucide-react";
 
 const STATUS_CONFIG = {
@@ -48,6 +48,7 @@ export default function AdminDemoRequests() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortKey, setSortKey]           = useState<SortKey>("newest");
   const [sortOpen, setSortOpen]         = useState(false);
+  const [searchQuery, setSearchQuery]   = useState("");
 
   const { data: demos, isLoading, refetch } = trpc.demos.list.useQuery();
 
@@ -71,9 +72,16 @@ export default function AdminDemoRequests() {
 
   // Filter then sort
   const processed = useMemo(() => {
-    const base = (demos || []).filter(
-      (d) => statusFilter === "all" || d.status === statusFilter
-    );
+    const q = searchQuery.trim().toLowerCase();
+    const base = (demos || []).filter((d) => {
+      const matchesStatus = statusFilter === "all" || d.status === statusFilter;
+      const matchesSearch =
+        !q ||
+        (d.name ?? "").toLowerCase().includes(q) ||
+        (d.company ?? "").toLowerCase().includes(q) ||
+        (d.robotType ?? "").toLowerCase().includes(q);
+      return matchesStatus && matchesSearch;
+    });
     return [...base].sort((a, b) => {
       switch (sortKey) {
         case "newest":
@@ -90,9 +98,9 @@ export default function AdminDemoRequests() {
           return 0;
       }
     });
-  }, [demos, statusFilter, sortKey]);
+  }, [demos, statusFilter, sortKey, searchQuery]);
 
-  const hasActiveFilters = statusFilter !== "all";
+  const hasActiveFilters = statusFilter !== "all" || searchQuery.trim() !== "";
   const currentSortLabel = SORT_OPTIONS.find((o) => o.key === sortKey)?.label ?? "Sort";
 
   return (
@@ -136,6 +144,44 @@ export default function AdminDemoRequests() {
 
       <div className="container py-6 space-y-5">
 
+        {/* ── Search input ────────────────────────────────────────────────── */}
+        <div className="relative">
+          <Search
+            size={15}
+            className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ color: "oklch(0.45 0.008 240)" }}
+          />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by name, company, or robot type…"
+            className="w-full pl-9 pr-9 py-2 rounded-lg text-sm border outline-none transition-all"
+            style={{
+              background: "oklch(0.11 0.006 240)",
+              borderColor: searchQuery ? "oklch(0.72 0.21 280 / 0.50)" : "oklch(0.20 0.008 240)",
+              color: "oklch(0.88 0.004 240)",
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "oklch(0.72 0.21 280 / 0.60)")}
+            onBlur={(e) =>
+              (e.currentTarget.style.borderColor = searchQuery
+                ? "oklch(0.72 0.21 280 / 0.50)"
+                : "oklch(0.20 0.008 240)")
+            }
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+              style={{ color: "oklch(0.45 0.008 240)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "oklch(0.75 0.008 240)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "oklch(0.45 0.008 240)")}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
         {/* ── Filter + Sort bar ───────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
 
@@ -169,11 +215,11 @@ export default function AdminDemoRequests() {
             {/* Clear filters */}
             {hasActiveFilters && (
               <button
-                onClick={() => setStatusFilter("all")}
+                onClick={() => { setStatusFilter("all"); setSearchQuery(""); }}
                 className="px-3 py-1.5 rounded-lg text-sm border transition-all flex items-center gap-1.5"
                 style={{ borderColor: "oklch(0.28 0.008 240)", color: "oklch(0.55 0.008 240)" }}
               >
-                <X size={12} /> Clear
+                <X size={12} /> Clear all
               </button>
             )}
           </div>
@@ -224,8 +270,11 @@ export default function AdminDemoRequests() {
         {!isLoading && demos && (
           <p className="text-xs font-mono" style={{ color: "oklch(0.45 0.008 240)" }}>
             Showing {processed.length} of {demos.length} request{demos.length !== 1 ? "s" : ""}
-            {hasActiveFilters && (
-              <> · filtered by <span style={{ color: "oklch(0.72 0.21 280)" }}>{STATUS_CONFIG[statusFilter as DemoStatus]?.label}</span></>
+            {statusFilter !== "all" && (
+              <> · status: <span style={{ color: "oklch(0.72 0.21 280)" }}>{STATUS_CONFIG[statusFilter as DemoStatus]?.label}</span></>
+            )}
+            {searchQuery.trim() && (
+              <> · search: <span style={{ color: "oklch(0.72 0.21 280)" }}>"{searchQuery.trim()}"</span></>
             )}
             {" · "}sorted by <span style={{ color: "oklch(0.60 0.008 240)" }}>{currentSortLabel.toLowerCase()}</span>
           </p>
@@ -247,22 +296,24 @@ export default function AdminDemoRequests() {
           >
             <Play size={32} className="mx-auto mb-3" style={{ color: "oklch(0.30 0.008 240)" }} />
             <p className="font-semibold" style={{ color: "oklch(0.65 0.008 240)" }}>
-              {statusFilter === "all"
-                ? "No demo requests yet"
-                : `No ${STATUS_CONFIG[statusFilter as DemoStatus]?.label.toLowerCase()} requests`}
+              {searchQuery.trim()
+                ? `No results for "${searchQuery.trim()}"`
+                : statusFilter === "all"
+                  ? "No demo requests yet"
+                  : `No ${STATUS_CONFIG[statusFilter as DemoStatus]?.label.toLowerCase()} requests`}
             </p>
             <p className="text-sm mt-1" style={{ color: "oklch(0.45 0.008 240)" }}>
               {hasActiveFilters
-                ? "Try clearing the status filter to see all requests."
+                ? "Try adjusting your search or clearing the filters."
                 : "Demo requests submitted via the website will appear here."}
             </p>
             {hasActiveFilters && (
               <button
-                onClick={() => setStatusFilter("all")}
+                onClick={() => { setStatusFilter("all"); setSearchQuery(""); }}
                 className="mt-4 px-4 py-2 rounded-lg text-sm border transition-all"
                 style={{ borderColor: "oklch(0.22 0.008 240)", color: "oklch(0.60 0.008 240)" }}
               >
-                Clear filter
+                Clear all filters
               </button>
             )}
           </div>
