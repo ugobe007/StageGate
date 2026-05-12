@@ -190,3 +190,21 @@ export const quoteRequests = mysqlTable("quote_requests", {
 
 export type QuoteRequest = typeof quoteRequests.$inferSelect;
 export type InsertQuoteRequest = typeof quoteRequests.$inferInsert;
+
+// Demo requests from prospective clients
+export const demoRequests = mysqlTable("demo_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  company: varchar("company", { length: 255 }).notNull(),
+  robotType: varchar("robotType", { length: 255 }).notNull(),
+  preferredShowId: int("preferredShowId"),
+  preferredShowName: varchar("preferredShowName", { length: 255 }),
+  message: text("message"),
+  status: mysqlEnum("status", ["new", "contacted", "scheduled", "completed", "closed"]).default("new").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DemoRequest = typeof demoRequests.$inferSelect;
+export type InsertDemoRequest = typeof demoRequests.$inferInsert;

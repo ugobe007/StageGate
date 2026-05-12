@@ -197,3 +197,13 @@
 - [x] Tighten all copy to Las Vegas focus only (remove any multi-city promises)
 - [x] Replace hero CTAs with: Register, Demo, How It Works, Services
 - [x] Update bottom CTA section to match new button set
+
+## v3.2 — Dedicated Demo Request Modal
+
+- [x] Add demo_requests table to drizzle/schema.ts (id, name, company, robotType, preferredShowId, email, status, createdAt)
+- [x] Generate migration SQL and apply via webdev_execute_sql
+- [x] Add demos.submit tRPC mutation in server/routers.ts
+- [x] Owner notification on new demo request
+- [x] Build DemoRequestModal component (name, company, robot type, preferred show dropdowns)
+- [x] Wire Demo CTA on Home page to DemoRequestModal (replace GetQuoteModal)
+- [x] Write vitest test for demos.submit mutation

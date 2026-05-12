@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, ArrowUpRight, ChevronDown, Play } from "lucide-react";
 import GetQuoteModal from "@/components/GetQuoteModal";
+import DemoRequestModal from "@/components/DemoRequestModal";
 
 /* ── Image URLs ─────────────────────────────────────────────────────────────── */
 const IMG_HERO      = "/manus-storage/ces-unitree-pack_b3079621.png";   // Unitree pack — full booth energy
@@ -779,7 +780,7 @@ export default function Home() {
       </footer>
 
       <GetQuoteModal open={quoteOpen} onOpenChange={setQuoteOpen} />
-      <GetQuoteModal open={demoOpen} onOpenChange={setDemoOpen} />
+      <DemoRequestModal open={demoOpen} onOpenChange={setDemoOpen} />
     </div>
   );
 }

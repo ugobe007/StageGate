@@ -19,6 +19,7 @@ import {
   InsertServiceOrder,
   InsertOrderItem,
   InsertLogisticsPartner,
+  demoRequests,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -384,4 +385,37 @@ export async function updateQuoteRequestStatus(
   const updateData: Record<string, unknown> = { status };
   if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
   await db.update(quoteRequests).set(updateData).where(eq(quoteRequests.id, id));
+}
+
+// ── Demo Requests ──────────────────────────────────────────────────────────
+export async function createDemoRequest(data: {
+  name: string;
+  email: string;
+  company: string;
+  robotType: string;
+  preferredShowId?: number;
+  preferredShowName?: string;
+  message?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(demoRequests).values(data);
+}
+
+export async function getAllDemoRequests() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(demoRequests)
+    .orderBy(desc(demoRequests.createdAt));
+}
+
+export async function updateDemoRequestStatus(
+  id: number,
+  status: "new" | "contacted" | "scheduled" | "completed" | "closed"
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(demoRequests).set({ status }).where(eq(demoRequests.id, id));
 }

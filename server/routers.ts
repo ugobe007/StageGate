@@ -511,6 +511,47 @@ Subject line and body only.`,
       }),
    }),
 
+  // ── Demo Requests ──────────────────────────────────────────────────────
+  demos: router({
+    submit: publicProcedure
+      .input(
+        z.object({
+          name: z.string().min(1, "Name is required"),
+          email: z.string().email("Valid email required"),
+          company: z.string().min(1, "Company is required"),
+          robotType: z.string().min(1, "Robot type is required"),
+          preferredShowId: z.number().optional(),
+          preferredShowName: z.string().optional(),
+          message: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await db.createDemoRequest(input);
+        const showLabel = input.preferredShowName || (input.preferredShowId ? `Show #${input.preferredShowId}` : "Not specified");
+        await notifyOwner({
+          title: `New Demo Request — ${input.company}`,
+          content: `${input.name} (${input.email}) from ${input.company} has requested a demo.\nRobot: ${input.robotType}\nPreferred show: ${showLabel}\n${input.message ? `Message: ${input.message}` : ""}`,
+        }).catch(() => {});
+        return { success: true };
+      }),
+
+    list: adminProcedure.query(async () => {
+      return db.getAllDemoRequests();
+    }),
+
+    updateStatus: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          status: z.enum(["new", "contacted", "scheduled", "completed", "closed"]),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await db.updateDemoRequestStatus(input.id, input.status);
+        return { success: true };
+      }),
+  }),
+
   // ── Quote Requests ──────────────────────────────────────────────────────
   quotes: router({
     submit: publicProcedure
