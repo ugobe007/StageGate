@@ -2,579 +2,878 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import {
-  ArrowRight, Package, Warehouse, Zap, Headphones, Clock,
-  GraduationCap, Monitor, TrendingUp, MapPin, ChevronRight,
-  Star, CheckCircle2, Shield
-} from "lucide-react";
-import ShowSearchBar from "@/components/ShowSearchBar";
+import { getLoginUrl } from "@/const";
+import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
 import GetQuoteModal from "@/components/GetQuoteModal";
 
-/* ── Palette ─────────────────────────────────────────────────────────────── */
-const BG        = "oklch(0.11 0.012 262)";
-const CARD      = "oklch(0.14 0.014 262)";
-const BORDER    = "oklch(0.22 0.016 262)";
-const INDIGO    = "oklch(0.72 0.20 262)";
-const INDIGO_DIM= "oklch(0.62 0.24 262 / 0.55)";
-const INDIGO_BG = "oklch(0.62 0.24 262 / 0.08)";
-const CYAN      = "oklch(0.75 0.18 200)";
-const TEXT_HI   = "oklch(0.93 0.005 240)";
-const TEXT_MID  = "oklch(0.70 0.008 240)";
-const TEXT_DIM  = "oklch(0.50 0.010 240)";
+/* ── Image URLs ─────────────────────────────────────────────────────────────── */
+const IMG_HERO      = "/manus-storage/ces-unitree-pack_b3079621.png";   // Unitree pack — full booth energy
+const IMG_STEP1     = "/manus-storage/ces-robot-warehouse_ebad86ee.png"; // warehouse / staging
+const IMG_STEP2     = "/manus-storage/ces-engineai-robots_22423812.png"; // robots in booth
+const IMG_STEP3     = "/manus-storage/ces-neura-robots_14776dff.png";    // live performance
+const IMG_GRID_1    = "/manus-storage/ces-richtech-robot_4be07bbb.png";
+const IMG_GRID_2    = "/manus-storage/ces-hisense-robots_c9d909a1.png";
+const IMG_GRID_3    = "/manus-storage/ces-unitree-rider_a54d8806.png";
 
-/* ── Animated counter hook ─────────────────────────────────────────────── */
-function useCountUp(target: number, duration = 1600, start = false) {
+/* ── Animated counter ───────────────────────────────────────────────────────── */
+function useCountUp(target: number, duration = 1800, trigger = false) {
   const [value, setValue] = useState(0);
   useEffect(() => {
-    if (!start) return;
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) { setValue(target); return; }
-    let startTime: number | null = null;
+    if (!trigger) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setValue(target); return; }
+    let start: number | null = null;
     const step = (ts: number) => {
-      if (!startTime) startTime = ts;
-      const p = Math.min((ts - startTime) / duration, 1);
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / duration, 1);
       setValue(Math.floor((1 - Math.pow(1 - p, 3)) * target));
       if (p < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
-  }, [target, duration, start]);
+  }, [target, duration, trigger]);
   return value;
 }
 
-/* ── Service meta ─────────────────────────────────────────────────────── */
-const SERVICE_META: Record<string, { icon: React.ElementType; color: string }> = {
-  "Inbound Logistics":       { icon: Package,       color: INDIGO },
-  "Warehousing & Storage":   { icon: Warehouse,     color: "oklch(0.65 0.20 295)" },
-  "Staging & Activation":    { icon: Zap,           color: CYAN },
-  "Live Technical Support":  { icon: Headphones,    color: "oklch(0.70 0.17 55)" },
-  "StageHand 24/7™":         { icon: Clock,         color: "oklch(0.70 0.17 55)" },
-  "StagePro Training™":      { icon: GraduationCap, color: "oklch(0.65 0.20 295)" },
-  "Showroom & Demo":         { icon: Monitor,       color: INDIGO },
-  "Robot Sales & Marketing": { icon: TrendingUp,    color: "oklch(0.62 0.20 20)" },
-};
+/* ── Intersection observer hook ─────────────────────────────────────────────── */
+function useInView(threshold = 0.3) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setInView(true); }, { threshold });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, inView };
+}
 
-const MARQUEE_ITEMS = [
-  "CES 2026", "Manifest 2026", "MINExpo", "IAAPA Expo", "InfoComm",
-  "Automate", "IMTS", "World Petroleum Congress", "NAB Show",
-  "MODEX", "ProMat", "PACK EXPO", "AWS re:Invent", "GTC",
-];
-
-const CITIES = [
-  { city: "Las Vegas, NV", shows: "CES · Manifest · MINExpo",    status: "Live"  },
-  { city: "Orlando, FL",   shows: "IAAPA · InfoComm · HIMSS",    status: "2026"  },
-  { city: "Chicago, IL",   shows: "Automate · IMTS · PACK EXPO", status: "2026"  },
-  { city: "Houston, TX",   shows: "OTC · World Petroleum",       status: "2027"  },
-];
-
-const BRAND_CARDS = [
-  {
-    slug: "/services",
-    label: "Core Platform",
-    name: "StageGate",
-    tm: false,
-    desc: "End-to-end trade show infrastructure. Inbound logistics, warehousing, staging, activation, and live technical support for every show.",
-    color: INDIGO,
-    icon: Zap,
-    cta: "Explore Services",
-  },
-  {
-    slug: "/stagehand",
-    label: "24/7 Technical Support",
-    name: "StageHand",
-    tm: true,
-    desc: "Ongoing remote and on-site technical support for robots in the field. Monthly retainers, SLA contracts, and emergency response.",
-    color: "oklch(0.70 0.17 55)",
-    icon: Clock,
-    cta: "Learn More",
-  },
-  {
-    slug: "/stagepro",
-    label: "Workforce Training",
-    name: "StagePro",
-    tm: true,
-    desc: "Hands-on robot technician training under master supervision. 1-day workshops to 6-week certifications.",
-    color: "oklch(0.65 0.20 295)",
-    icon: GraduationCap,
-    cta: "Learn More",
-  },
-];
-
-/* ── Component ────────────────────────────────────────────────────────── */
 export default function Home() {
   const { isAuthenticated } = useAuth();
   const [quoteOpen, setQuoteOpen] = useState(false);
-  const { data: services } = trpc.services.list.useQuery();
+  const { ref: statsRef, inView: statsVisible } = useInView(0.4);
 
-  const statsRef = useRef<HTMLDivElement>(null);
-  const [statsVisible, setStatsVisible] = useState(false);
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) setStatsVisible(true); },
-      { threshold: 0.3 }
-    );
-    if (statsRef.current) obs.observe(statsRef.current);
-    return () => obs.disconnect();
-  }, []);
-
-  const c1 = useCountUp(25, 1600, statsVisible);
-  const c2 = useCountUp(72, 1600, statsVisible);
-  const ctaHref = isAuthenticated ? "/dashboard" : "/register";
+  const shows   = useCountUp(19, 1600, statsVisible);
+  const robots  = useCountUp(200, 1800, statsVisible);
+  const brands  = useCountUp(40, 1600, statsVisible);
+  const years   = useCountUp(8, 1400, statsVisible);
 
   return (
-    <>
-    <div className="min-h-screen overflow-x-hidden" style={{ background: BG, color: TEXT_HI }}>
+    <div style={{ background: "#000", minHeight: "100vh" }}>
 
-      {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className="relative pt-28 pb-20 overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+      {/* ═══════════════════════════════════════════════════════════════════════
+          HERO — full viewport, massive type, robot photo right
+      ════════════════════════════════════════════════════════════════════════ */}
+      <section
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          position: "relative",
+          overflow: "hidden",
+        }}
+        className="pt-14"
+      >
+        {/* Left: text */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            padding: "6rem 3rem 6rem 4rem",
+            position: "relative",
+            zIndex: 2,
+          }}
+        >
+          {/* Eyebrow */}
+          <div className="section-label" style={{ marginBottom: "2rem" }}>
+            Las Vegas · Trade Show Robot Infrastructure
+          </div>
 
-            {/* Left: Copy */}
-            <div>
-              {/* Eyebrow badge — stroke only */}
-              <div
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-7"
-                style={{ borderColor: INDIGO_DIM, background: INDIGO_BG }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: INDIGO }} />
-                <span className="font-mono text-[10px] tracking-widest uppercase" style={{ color: INDIGO }}>
-                  Robotics Trade Show Infrastructure
-                </span>
-              </div>
+          {/* Headline — massive */}
+          <h1
+            style={{
+              fontSize: "clamp(3.5rem, 6vw, 5.5rem)",
+              fontWeight: 900,
+              letterSpacing: "-0.045em",
+              lineHeight: 1.0,
+              color: "#fff",
+              marginBottom: "2rem",
+            }}
+          >
+            Your Robot<br />
+            Performs.<br />
+            <span style={{ color: "rgba(255,255,255,0.35)" }}>
+              We Handle<br />Everything Else.
+            </span>
+          </h1>
 
-              {/* Headline */}
-              <h1
-                className="text-5xl sm:text-6xl font-bold leading-[1.05] mb-6"
-                style={{ color: TEXT_HI, letterSpacing: "-0.03em" }}
-              >
-                We Turn Shipped Robots{" "}
-                <span
-                  style={{
-                    background: `linear-gradient(90deg, ${INDIGO} 0%, ${CYAN} 100%)`,
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
-                >
-                  Into Live Experiences
-                </span>
-              </h1>
+          {/* Sub */}
+          <p
+            style={{
+              fontSize: "1.125rem",
+              color: "rgba(255,255,255,0.55)",
+              lineHeight: 1.65,
+              maxWidth: "34ch",
+              marginBottom: "2.5rem",
+              fontWeight: 400,
+            }}
+          >
+            Warehouse your robots in Las Vegas year-round. We stage, activate,
+            and support them at every major trade show — so your engineers stay home.
+          </p>
 
-              <p className="text-base leading-relaxed mb-8 max-w-lg" style={{ color: TEXT_MID }}>
-                End-to-end logistics, warehousing, staging, activation, and technical support
-                for robots at trade shows.{" "}
-                <span style={{ color: TEXT_HI }}>
-                  Your engineers stay home. Your robot performs perfectly.
-                </span>
-              </p>
-
-              {/* CTAs — stroke only */}
-              <div className="flex flex-wrap gap-3 mb-8">
-                <Link href={ctaHref}>
-                  <span className="btn-primary">
-                    Start free <ArrowRight size={14} />
-                  </span>
-                </Link>
-                <button onClick={() => setQuoteOpen(true)} className="btn-default">
-                  Get a quote <ChevronRight size={14} />
+          {/* CTAs */}
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+            {isAuthenticated ? (
+              <Link href="/dashboard">
+                <button className="btn-primary">
+                  Go to Dashboard <ArrowRight size={16} />
                 </button>
-                <Link href="/services">
-                  <span className="btn-default">
-                    View services <ChevronRight size={14} />
-                  </span>
-                </Link>
-              </div>
+              </Link>
+            ) : (
+              <a href={getLoginUrl()}>
+                <button className="btn-primary">
+                  Get started free <ArrowRight size={16} />
+                </button>
+              </a>
+            )}
+            <button
+              className="btn-default"
+              onClick={() => setQuoteOpen(true)}
+            >
+              Get a quote
+            </button>
+          </div>
 
-              {/* Trust signals */}
-              <div className="flex flex-wrap gap-5 text-sm" style={{ color: TEXT_DIM }}>
-                {[
-                  { icon: CheckCircle2, text: "Free registration" },
-                  { icon: Shield,       text: "No credit card required" },
-                  { icon: MapPin,       text: "Las Vegas-based" },
-                ].map(({ icon: Icon, text }) => (
-                  <span key={text} className="flex items-center gap-1.5">
-                    <Icon size={12} style={{ color: INDIGO }} />
-                    {text}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Right: Hero image */}
-            <div className="hidden lg:block relative">
-              <div
-                className="relative rounded-xl overflow-hidden"
+          {/* Trust line */}
+          <div
+            style={{
+              marginTop: "3rem",
+              display: "flex",
+              gap: "1.75rem",
+              flexWrap: "wrap",
+            }}
+          >
+            {["Free registration", "No long-term contracts", "Las Vegas HQ"].map(t => (
+              <span
+                key={t}
                 style={{
-                  aspectRatio: "4/3",
-                  border: `1px solid ${BORDER}`,
+                  fontSize: "0.8125rem",
+                  color: "rgba(255,255,255,0.30)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
                 }}
               >
-                <img
-                  src="/manus-storage/robot-crate-hero_ad5ce8ec.jpg"
-                  alt="Humanoid robot standing in an open wooden shipping crate inside a warehouse"
-                  className="w-full h-full object-cover"
-                />
+                <span style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "inline-block" }} />
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: full-bleed robot photo */}
+        <div
+          style={{
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <img
+            src={IMG_HERO}
+            alt="Unitree robots at CES trade show booth"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "center top",
+              display: "block",
+            }}
+          />
+          {/* Left fade to black */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(to right, #000 0%, transparent 35%)",
+              pointerEvents: "none",
+            }}
+          />
+          {/* Bottom fade */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "30%",
+              background: "linear-gradient(to top, #000 0%, transparent 100%)",
+              pointerEvents: "none",
+            }}
+          />
+        </div>
+
+        {/* Scroll indicator */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "2rem",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "0.5rem",
+            opacity: 0.35,
+          }}
+        >
+          <span style={{ fontSize: "0.6875rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff" }}>Scroll</span>
+          <ChevronDown size={14} color="#fff" />
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          STATS BAR
+      ════════════════════════════════════════════════════════════════════════ */}
+      <div
+        ref={statsRef}
+        style={{
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          padding: "3rem 0",
+        }}
+      >
+        <div className="container">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: "2rem",
+            }}
+          >
+            {[
+              { value: shows,  suffix: "+", label: "Las Vegas Shows" },
+              { value: robots, suffix: "+", label: "Robots Activated" },
+              { value: brands, suffix: "+", label: "Robot Brands" },
+              { value: years,  suffix: " yrs", label: "In Operation" },
+            ].map(({ value, suffix, label }) => (
+              <div key={label} style={{ textAlign: "center" }}>
                 <div
-                  className="absolute bottom-0 left-0 right-0 p-4"
-                  style={{ background: "linear-gradient(to top, oklch(0.08 0.012 262 / 0.90) 0%, transparent 100%)" }}
+                  style={{
+                    fontSize: "clamp(2.5rem, 4vw, 3.5rem)",
+                    fontWeight: 900,
+                    letterSpacing: "-0.04em",
+                    color: "#fff",
+                    lineHeight: 1,
+                    marginBottom: "0.5rem",
+                  }}
                 >
-                  <p className="font-mono text-[10px] tracking-wider uppercase" style={{ color: "oklch(0.60 0.010 240)" }}>
-                    Humanoid robot · Inbound logistics · Las Vegas
-                  </p>
+                  {value}{suffix}
+                </div>
+                <div style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.40)", letterSpacing: "0.02em" }}>
+                  {label}
                 </div>
               </div>
-              {/* Floating stat — stroke card */}
-              <div
-                className="absolute -bottom-4 -left-4 rounded-lg px-4 py-3"
-                style={{ background: CARD, border: `1px solid ${BORDER}` }}
-              >
-                <div className="text-2xl font-bold" style={{ color: TEXT_HI }}>8</div>
-                <div className="text-xs" style={{ color: TEXT_DIM }}>Service Lines</div>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
-      </section>
-
-      {/* ── SHOW SEARCH ──────────────────────────────────────────────────── */}
-      <section className="py-12 border-y" style={{ borderColor: BORDER, background: CARD }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-6">
-            <p className="section-label mx-auto justify-center mb-2">Find Your Show</p>
-            <h2 className="text-xl font-bold" style={{ color: TEXT_HI }}>
-              Search upcoming Las Vegas trade shows
-            </h2>
-            <p className="text-sm mt-1" style={{ color: TEXT_DIM }}>
-              Select your event to see available services and book your robot's spot.
-            </p>
-          </div>
-          <ShowSearchBar showCityFilter={true} />
-        </div>
-      </section>
-
-      {/* ── MARQUEE ──────────────────────────────────────────────────────── */}
-      <div className="border-b py-3 overflow-hidden" style={{ borderColor: BORDER }}>
-        <div className="marquee-track">
-          {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
-            <span key={i} className="inline-flex items-center gap-3 mx-8">
-              <span className="w-1 h-1 rounded-full" style={{ background: INDIGO_DIM }} />
-              <span className="font-mono text-[11px] tracking-widest uppercase" style={{ color: TEXT_DIM }}>
-                {item}
-              </span>
-            </span>
-          ))}
         </div>
       </div>
 
-      {/* ── STATS ────────────────────────────────────────────────────────── */}
-      <section ref={statsRef} className="py-20 border-b" style={{ borderColor: BORDER }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="mb-10">
-            <p className="section-label mb-2">The Problem We Solve</p>
-            <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
-              Trade Shows Are Brutal for Robot Companies
-            </h2>
-          </div>
-          <div
-            className="grid grid-cols-2 lg:grid-cols-4 rounded-xl overflow-hidden border"
-            style={{ borderColor: BORDER }}
-          >
-            {[
-              { value: `$${c1}K–$80K`, label: "Cost per show to fly in engineers", accent: true },
-              { value: `${c2} hrs`,    label: "Average robot recovery time without local support", accent: false },
-              { value: "1 in 3",       label: "Robots arrive at shows damaged or unprepared", accent: false },
-              { value: "0",            label: "Dedicated robotics trade show infrastructure providers — until now", accent: true },
-            ].map(({ value, label, accent }, i) => (
-              <div
-                key={label}
-                className="p-8"
-                style={{
-                  background: CARD,
-                  borderRight: i < 3 ? `1px solid ${BORDER}` : "none",
-                }}
-              >
-                <div
-                  className="text-3xl font-bold mb-2"
-                  style={{
-                    color: accent ? INDIGO : TEXT_HI,
-                    letterSpacing: "-0.03em",
-                    background: accent
-                      ? `linear-gradient(90deg, ${INDIGO} 0%, ${CYAN} 100%)`
-                      : "none",
-                    WebkitBackgroundClip: accent ? "text" : "unset",
-                    WebkitTextFillColor: accent ? "transparent" : "unset",
-                    backgroundClip: accent ? "text" : "unset",
-                  }}
-                >
-                  {value}
-                </div>
-                <p className="text-xs leading-snug" style={{ color: TEXT_DIM }}>
-                  {label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── SERVICES ─────────────────────────────────────────────────────── */}
-      <section className="py-24 border-b" style={{ borderColor: BORDER, background: CARD }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
-            <div>
-              <p className="section-label mb-2">Service Catalog</p>
-              <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
-                Everything Your Robot Needs,{" "}
-                <span
-                  style={{
-                    background: `linear-gradient(90deg, ${INDIGO} 0%, ${CYAN} 100%)`,
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
-                >
-                  From Crate to Stage
-                </span>
-              </h2>
-            </div>
-            <Link href="/services">
-              <span className="btn-default text-sm flex-shrink-0">
-                View all services <ArrowRight size={13} />
-              </span>
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {(services || []).map((svc) => {
-              const meta = SERVICE_META[svc.name] || { icon: Star, color: INDIGO };
-              const Icon = meta.icon;
-              return (
-                <div
-                  key={svc.id}
-                  className="rounded-xl border p-5 flex flex-col gap-3 transition-colors"
-                  style={{ background: BG, borderColor: BORDER }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "oklch(0.38 0.020 262)"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = BORDER; }}
-                >
-                  {/* Icon — stroke badge */}
-                  <div
-                    className="w-8 h-8 rounded flex items-center justify-center"
-                    style={{ border: `1px solid ${meta.color}55`, background: `${meta.color}0d` }}
-                  >
-                    <Icon size={14} style={{ color: meta.color }} />
-                  </div>
-                  <h3 className="font-semibold text-sm leading-snug" style={{ color: TEXT_HI }}>
-                    {svc.name}
-                  </h3>
-                  <p className="text-xs leading-relaxed flex-1 line-clamp-3" style={{ color: TEXT_DIM }}>
-                    {svc.description}
-                  </p>
-                  <div className="font-mono text-xs" style={{ color: meta.color }}>
-                    From {svc.basePrice ? `$${Number(svc.basePrice).toLocaleString()}` : "—"}{" "}
-                    <span style={{ color: TEXT_DIM }}>{svc.priceUnit}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-      <section className="py-24 border-b" style={{ borderColor: BORDER }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="mb-12">
-            <p className="section-label mb-2">Process</p>
-            <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
-              How StageGate Works
-            </h2>
-            <p className="mt-2 text-sm" style={{ color: TEXT_DIM }}>
-              Four steps from registration to a live robot on the show floor.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { step: "01", title: "Register Free",    desc: "Create your company profile and tell us about your robots. No commitment required.", icon: CheckCircle2 },
-              { step: "02", title: "Select Your Show", desc: "Choose from upcoming trade shows in Las Vegas and beyond. We cover the major venues.", icon: MapPin },
-              { step: "03", title: "Book Services",    desc: "Select the service bundle that fits your needs — logistics, activation, support, or all three.", icon: Package },
-              { step: "04", title: "Show Up & Demo",   desc: "Your robot is unpacked, tested, and ready. You walk in and present. We handle the rest.", icon: Star },
-            ].map(({ step, title, desc, icon: Icon }, i) => (
-              <div key={step} className="relative">
-                {i < 3 && (
-                  <div
-                    className="hidden lg:block absolute top-5 left-[calc(100%+0.5rem)] w-[calc(100%-1rem)] h-px z-10"
-                    style={{ background: `linear-gradient(to right, ${BORDER}, transparent)` }}
-                  />
-                )}
-                <div
-                  className="h-full rounded-xl border p-5 flex flex-col gap-3"
-                  style={{ background: CARD, borderColor: BORDER }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs" style={{ color: INDIGO }}>{step}</span>
-                    <div
-                      className="w-7 h-7 rounded flex items-center justify-center"
-                      style={{ border: `1px solid ${INDIGO}44`, background: INDIGO_BG }}
-                    >
-                      <Icon size={13} style={{ color: INDIGO }} />
-                    </div>
-                  </div>
-                  <h3 className="font-semibold text-sm" style={{ color: TEXT_HI }}>{title}</h3>
-                  <p className="text-xs leading-relaxed" style={{ color: TEXT_DIM }}>{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── BRAND ARCHITECTURE ───────────────────────────────────────────── */}
-      <section className="py-24 border-b" style={{ borderColor: BORDER, background: CARD }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="mb-12">
-            <p className="section-label mb-2">Brand Architecture</p>
-            <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
-              Three Brands, One Platform
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            {BRAND_CARDS.map(({ slug, label, name, tm, desc, color, icon: Icon, cta }) => (
-              <div
-                key={name}
-                className="rounded-xl border p-6 flex flex-col gap-4 transition-colors"
-                style={{ background: BG, borderColor: BORDER, borderTopColor: color, borderTopWidth: "1px" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "oklch(0.38 0.020 262)"; (e.currentTarget as HTMLElement).style.borderTopColor = color; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = BORDER; (e.currentTarget as HTMLElement).style.borderTopColor = color; }}
-              >
-                <div
-                  className="w-9 h-9 rounded flex items-center justify-center"
-                  style={{ border: `1px solid ${color}44`, background: `${color}0d` }}
-                >
-                  <Icon size={16} style={{ color }} />
-                </div>
-                <div>
-                  <p className="font-mono text-[10px] tracking-widest uppercase mb-1" style={{ color }}>
-                    {label}
-                  </p>
-                  <h3 className="text-xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.02em" }}>
-                    {name}{tm && <sup className="text-xs font-normal">™</sup>}
-                  </h3>
-                </div>
-                <p className="text-sm leading-relaxed flex-1" style={{ color: TEXT_DIM }}>{desc}</p>
-                <Link href={slug}>
-                  <span className="inline-flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-70" style={{ color }}>
-                    {cta} <ArrowRight size={13} />
-                  </span>
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CITIES ───────────────────────────────────────────────────────── */}
-      <section className="py-20 border-b" style={{ borderColor: BORDER }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="mb-10">
-            <p className="section-label mb-2">Expansion</p>
-            <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
-              Expanding Across Convention Cities
-            </h2>
-            <p className="mt-2 text-sm" style={{ color: TEXT_DIM }}>
-              Starting in Las Vegas, growing to every major trade show market.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {CITIES.map(({ city, shows, status }) => {
-              const isLive = status === "Live";
-              const statusColor = isLive ? "oklch(0.62 0.18 145)" : INDIGO;
-              return (
-                <div
-                  key={city}
-                  className="rounded-xl border p-5 transition-colors"
-                  style={{ background: CARD, borderColor: BORDER }}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <MapPin size={13} style={{ color: `${INDIGO}88`, marginTop: "2px" }} />
-                    <span
-                      className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
-                      style={{ color: statusColor, borderColor: `${statusColor}44`, background: `${statusColor}0d` }}
-                    >
-                      {status}
-                    </span>
-                  </div>
-                  <div className="font-semibold text-sm mb-1" style={{ color: TEXT_HI }}>{city}</div>
-                  <div className="text-[11px] leading-relaxed" style={{ color: TEXT_DIM }}>{shows}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ──────────────────────────────────────────────────────────── */}
-      <section className="py-24 border-b" style={{ borderColor: BORDER, background: CARD }}>
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <p className="section-label mx-auto justify-center mb-4">Get Started</p>
-          <h2 className="text-4xl font-bold mb-4" style={{ color: TEXT_HI, letterSpacing: "-0.03em" }}>
-            Ready to Bring Your Robot{" "}
-            <span
+      {/* ═══════════════════════════════════════════════════════════════════════
+          THE PROBLEM / INSIGHT
+      ════════════════════════════════════════════════════════════════════════ */}
+      <section style={{ padding: "8rem 0" }}>
+        <div className="container">
+          <div style={{ maxWidth: "52rem" }}>
+            <div className="section-label" style={{ marginBottom: "1.5rem" }}>The problem</div>
+            <h2
               style={{
-                background: `linear-gradient(90deg, ${INDIGO} 0%, ${CYAN} 100%)`,
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
+                fontSize: "clamp(2rem, 4vw, 3.25rem)",
+                fontWeight: 800,
+                letterSpacing: "-0.04em",
+                color: "#fff",
+                lineHeight: 1.1,
+                marginBottom: "1.75rem",
               }}
             >
-              to the Show Floor?
-            </span>
-          </h2>
-          <p className="mb-8 max-w-md mx-auto text-sm leading-relaxed" style={{ color: TEXT_DIM }}>
-            Register your company for free. No credit card, no commitment.
-            Just your robot and our infrastructure.
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            <Link href={ctaHref}>
-              <span className="btn-primary">
-                Register free today <ArrowRight size={14} />
-              </span>
-            </Link>
-            <Link href="/services">
-              <span className="btn-default">View pricing</span>
-            </Link>
+              Shipping a robot to a trade show is a logistics nightmare.
+              <span style={{ color: "rgba(255,255,255,0.30)" }}> We solved it.</span>
+            </h2>
+            <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.50)", lineHeight: 1.7, maxWidth: "52ch" }}>
+              Most robotics companies spend weeks coordinating freight, customs, crating, hotel rooms for engineers,
+              and on-site troubleshooting — for every single show. StageGate eliminates all of it. Your robot lives
+              in Las Vegas. We handle the rest.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* ── FOOTER ───────────────────────────────────────────────────────── */}
-      <footer className="border-t py-10" style={{ borderColor: BORDER, background: BG }}>
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div
-              className="w-6 h-6 rounded flex items-center justify-center"
-              style={{ border: `1.5px solid ${INDIGO}`, color: INDIGO }}
+      {/* ═══════════════════════════════════════════════════════════════════════
+          3-STEP PROCESS
+      ════════════════════════════════════════════════════════════════════════ */}
+      <section
+        style={{
+          padding: "0 0 8rem",
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        <div className="container" style={{ paddingTop: "6rem" }}>
+          <div className="section-label" style={{ marginBottom: "3rem" }}>How it works</div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2px" }}>
+            {[
+              {
+                num: "01",
+                title: "Ship Once",
+                body: "Send your robot to our Las Vegas warehouse. We handle inbound freight, customs clearance, and secure storage year-round. No re-shipping between shows.",
+                img: IMG_STEP1,
+                cta: "Warehousing & Storage",
+                href: "/services",
+              },
+              {
+                num: "02",
+                title: "We Stage It",
+                body: "Before each show, our team uncrates, charges, calibrates, and installs your robot at your booth. Full pre-show activation and technical rehearsal included.",
+                img: IMG_STEP2,
+                cta: "Staging & Activation",
+                href: "/services",
+              },
+              {
+                num: "03",
+                title: "It Performs",
+                body: "Your robot runs flawlessly on the show floor. Our StageHand™ technicians are on-site the entire event — monitoring, troubleshooting, and keeping the crowd engaged.",
+                img: IMG_STEP3,
+                cta: "Live Technical Support",
+                href: "/stagehand",
+              },
+            ].map(({ num, title, body, img, cta, href }) => (
+              <div
+                key={num}
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                {/* Image */}
+                <div style={{ height: "220px", overflow: "hidden", position: "relative" }}>
+                  <img
+                    src={img}
+                    alt={title}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                      filter: "brightness(0.75)",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: "60%",
+                      background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%)",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "1rem",
+                      left: "1.5rem",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "0.6875rem",
+                      letterSpacing: "0.12em",
+                      color: "rgba(255,255,255,0.40)",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Step {num}
+                  </div>
+                </div>
+
+                {/* Text */}
+                <div style={{ padding: "1.75rem", flex: 1, display: "flex", flexDirection: "column" }}>
+                  <h3
+                    style={{
+                      fontSize: "1.375rem",
+                      fontWeight: 800,
+                      letterSpacing: "-0.03em",
+                      color: "#fff",
+                      marginBottom: "0.875rem",
+                    }}
+                  >
+                    {title}
+                  </h3>
+                  <p style={{ fontSize: "0.9375rem", color: "rgba(255,255,255,0.50)", lineHeight: 1.65, flex: 1 }}>
+                    {body}
+                  </p>
+                  <Link href={href}>
+                    <div
+                      style={{
+                        marginTop: "1.5rem",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.375rem",
+                        fontSize: "0.8125rem",
+                        color: "rgba(255,255,255,0.55)",
+                        cursor: "pointer",
+                        transition: "color 0.15s",
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+                      onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
+                    >
+                      {cta} <ArrowUpRight size={13} />
+                    </div>
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          PHOTO GRID — CES robots in action
+      ════════════════════════════════════════════════════════════════════════ */}
+      <section
+        style={{
+          padding: "0 0 8rem",
+        }}
+      >
+        <div className="container">
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-end",
+              marginBottom: "2.5rem",
+            }}
+          >
+            <div>
+              <div className="section-label" style={{ marginBottom: "0.75rem" }}>In the field</div>
+              <h2
+                style={{
+                  fontSize: "clamp(1.75rem, 3vw, 2.5rem)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.04em",
+                  color: "#fff",
+                  lineHeight: 1.1,
+                }}
+              >
+                Robots we've activated at CES
+              </h2>
+            </div>
+            <Link href="/shows">
+              <button className="btn-default" style={{ padding: "0.6rem 1.25rem", fontSize: "0.875rem" }}>
+                View all shows <ArrowUpRight size={14} />
+              </button>
+            </Link>
+          </div>
+
+          {/* Asymmetric photo grid */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "2fr 1fr 1fr",
+              gridTemplateRows: "280px 280px",
+              gap: "2px",
+            }}
+          >
+            {/* Large left — spans 2 rows */}
+            <div style={{ gridRow: "1 / 3", overflow: "hidden", position: "relative" }}>
+              <img
+                src={IMG_HERO}
+                alt="Unitree robot pack at CES"
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "1.25rem",
+                  left: "1.25rem",
+                  background: "rgba(0,0,0,0.7)",
+                  backdropFilter: "blur(8px)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "0.5rem",
+                  padding: "0.5rem 0.875rem",
+                  fontSize: "0.75rem",
+                  color: "rgba(255,255,255,0.75)",
+                  fontFamily: "var(--font-mono)",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                UNITREE · CES 2026
+              </div>
+            </div>
+
+            {[
+              { src: IMG_GRID_1, label: "RICHTECH · CES 2026" },
+              { src: IMG_STEP2,  label: "ENGINEAI · CES 2026" },
+              { src: IMG_GRID_2, label: "HISENSE · CES 2026" },
+              { src: IMG_GRID_3, label: "UNITREE RIDER · CES 2026" },
+            ].map(({ src, label }) => (
+              <div key={label} style={{ overflow: "hidden", position: "relative" }}>
+                <img
+                  src={src}
+                  alt={label}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: "0.75rem",
+                    left: "0.75rem",
+                    background: "rgba(0,0,0,0.65)",
+                    backdropFilter: "blur(6px)",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    borderRadius: "0.375rem",
+                    padding: "0.3rem 0.625rem",
+                    fontSize: "0.6875rem",
+                    color: "rgba(255,255,255,0.65)",
+                    fontFamily: "var(--font-mono)",
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  {label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          SERVICES — clean text list
+      ════════════════════════════════════════════════════════════════════════ */}
+      <section
+        style={{
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          padding: "8rem 0",
+        }}
+      >
+        <div className="container">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 2fr",
+              gap: "6rem",
+              alignItems: "start",
+            }}
+          >
+            {/* Left */}
+            <div>
+              <div className="section-label" style={{ marginBottom: "1.5rem" }}>What we do</div>
+              <h2
+                style={{
+                  fontSize: "clamp(2rem, 3.5vw, 2.75rem)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.04em",
+                  color: "#fff",
+                  lineHeight: 1.1,
+                  marginBottom: "1.5rem",
+                }}
+              >
+                End-to-end robot show services
+              </h2>
+              <p style={{ fontSize: "0.9375rem", color: "rgba(255,255,255,0.45)", lineHeight: 1.7, marginBottom: "2rem" }}>
+                Eight integrated service lines, all managed from our Las Vegas operations center.
+              </p>
+              <Link href="/services">
+                <button className="btn-primary" style={{ padding: "0.65rem 1.5rem", fontSize: "0.875rem" }}>
+                  View all services <ArrowRight size={15} />
+                </button>
+              </Link>
+            </div>
+
+            {/* Right — service list */}
+            <div>
+              {[
+                { num: "01", name: "Inbound Logistics",       desc: "Freight coordination, customs clearance, and secure inbound handling." },
+                { num: "02", name: "Warehousing & Storage",   desc: "Climate-controlled Las Vegas warehouse with 24/7 security monitoring." },
+                { num: "03", name: "Staging & Activation",    desc: "Pre-show uncrating, calibration, charging, and booth installation." },
+                { num: "04", name: "Live Technical Support",  desc: "On-site technicians for the full duration of every show." },
+                { num: "05", name: "StageHand 24/7™",         desc: "Round-the-clock remote monitoring and emergency dispatch." },
+                { num: "06", name: "StagePro Training™",      desc: "Operator certification programs for your booth staff." },
+                { num: "07", name: "Showroom & Demo",         desc: "Permanent Las Vegas demo space for client previews and press." },
+                { num: "08", name: "Robot Sales & Marketing", desc: "Lead generation, media coverage, and post-show analytics." },
+              ].map(({ num, name, desc }, i) => (
+                <div
+                  key={num}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "3rem 1fr",
+                    gap: "1rem",
+                    padding: "1.25rem 0",
+                    borderBottom: i < 7 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                    cursor: "default",
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.02)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                >
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "0.6875rem",
+                      color: "rgba(255,255,255,0.25)",
+                      letterSpacing: "0.06em",
+                      paddingTop: "0.2rem",
+                    }}
+                  >
+                    {num}
+                  </span>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "1rem",
+                        fontWeight: 600,
+                        color: "#fff",
+                        letterSpacing: "-0.02em",
+                        marginBottom: "0.25rem",
+                      }}
+                    >
+                      {name}
+                    </div>
+                    <div style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.40)", lineHeight: 1.55 }}>
+                      {desc}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          UPCOMING SHOWS
+      ════════════════════════════════════════════════════════════════════════ */}
+      <UpcomingShowsSection onQuote={() => setQuoteOpen(true)} />
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          BOTTOM CTA
+      ════════════════════════════════════════════════════════════════════════ */}
+      <section
+        style={{
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          padding: "10rem 0",
+          textAlign: "center",
+        }}
+      >
+        <div className="container">
+          <div className="section-label" style={{ marginBottom: "2rem" }}>Ready to start?</div>
+          <h2
+            style={{
+              fontSize: "clamp(2.5rem, 6vw, 5rem)",
+              fontWeight: 900,
+              letterSpacing: "-0.045em",
+              color: "#fff",
+              lineHeight: 1.0,
+              marginBottom: "1.5rem",
+            }}
+          >
+            Your robot belongs<br />
+            <span style={{ color: "rgba(255,255,255,0.30)" }}>on the show floor.</span>
+          </h2>
+          <p
+            style={{
+              fontSize: "1.125rem",
+              color: "rgba(255,255,255,0.45)",
+              lineHeight: 1.65,
+              maxWidth: "42ch",
+              margin: "0 auto 3rem",
+            }}
+          >
+            Register free today. Tell us about your robot and your show schedule.
+            We'll handle everything from the first crate to the last curtain call.
+          </p>
+          <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+            {isAuthenticated ? (
+              <Link href="/dashboard">
+                <button className="btn-primary" style={{ padding: "0.875rem 2.5rem", fontSize: "1rem" }}>
+                  Go to Dashboard <ArrowRight size={17} />
+                </button>
+              </Link>
+            ) : (
+              <a href={getLoginUrl()}>
+                <button className="btn-primary" style={{ padding: "0.875rem 2.5rem", fontSize: "1rem" }}>
+                  Get started free <ArrowRight size={17} />
+                </button>
+              </a>
+            )}
+            <button
+              className="btn-default"
+              style={{ padding: "0.875rem 2.5rem", fontSize: "1rem" }}
+              onClick={() => setQuoteOpen(true)}
             >
-              <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+              Talk to us
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          FOOTER
+      ════════════════════════════════════════════════════════════════════════ */}
+      <footer
+        style={{
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          padding: "3rem 0",
+        }}
+      >
+        <div
+          className="container"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "1rem",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+            <div
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 5,
+                border: "1.5px solid rgba(255,255,255,0.30)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "rgba(255,255,255,0.60)",
+              }}
+            >
+              <svg width="10" height="10" viewBox="0 0 14 14" fill="none">
                 <path d="M7 1L2 8h5l-1 5 6-7H7l1-5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
               </svg>
             </div>
-            <span className="font-bold text-sm" style={{ color: TEXT_HI, letterSpacing: "-0.02em" }}>StageGate</span>
+            <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>StageGate</span>
           </div>
-          <div className="flex flex-wrap items-center gap-6 text-xs" style={{ color: TEXT_DIM }}>
-            <Link href="/services"><span className="hover:opacity-80 transition-opacity cursor-pointer">Services</span></Link>
-            <Link href="/stagehand"><span className="hover:opacity-80 transition-opacity cursor-pointer">StageHand™</span></Link>
-            <Link href="/stagepro"><span className="hover:opacity-80 transition-opacity cursor-pointer">StagePro™</span></Link>
-            <Link href="/register"><span className="hover:opacity-80 transition-opacity cursor-pointer">Register</span></Link>
+
+          <div style={{ display: "flex", gap: "2rem" }}>
+            {[
+              { href: "/shows", label: "Shows" },
+              { href: "/services", label: "Services" },
+              { href: "/stagehand", label: "StageHand™" },
+              { href: "/stagepro", label: "StagePro™" },
+            ].map(({ href, label }) => (
+              <Link key={href} href={href}>
+                <span
+                  style={{
+                    fontSize: "0.8125rem",
+                    color: "rgba(255,255,255,0.35)",
+                    cursor: "pointer",
+                    transition: "color 0.15s",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}
+                >
+                  {label}
+                </span>
+              </Link>
+            ))}
           </div>
-          <p className="text-xs" style={{ color: "oklch(0.38 0.010 262)" }}>
-            © 2026 StageGate. StageHand™ and StagePro™ are trademarks of StageGate.
-          </p>
+
+          <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.20)" }}>
+            © 2026 StageGate · Las Vegas, NV
+          </div>
         </div>
       </footer>
+
+      <GetQuoteModal open={quoteOpen} onOpenChange={setQuoteOpen} />
     </div>
-    <GetQuoteModal open={quoteOpen} onOpenChange={setQuoteOpen} />
-    </>
+  );
+}
+
+/* ── Upcoming Shows sub-component ─────────────────────────────────────────── */
+function UpcomingShowsSection({ onQuote }: { onQuote: () => void }) {
+  const { data: allShows } = trpc.shows.lasVegas2026.useQuery();
+  const shows = allShows?.slice(0, 4);
+
+  if (!shows?.length) return null;
+
+  return (
+    <section
+      style={{
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        padding: "8rem 0",
+      }}
+    >
+      <div className="container">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            marginBottom: "3rem",
+          }}
+        >
+          <div>
+            <div className="section-label" style={{ marginBottom: "0.75rem" }}>Upcoming shows</div>
+            <h2
+              style={{
+                fontSize: "clamp(1.75rem, 3vw, 2.5rem)",
+                fontWeight: 800,
+                letterSpacing: "-0.04em",
+                color: "#fff",
+                lineHeight: 1.1,
+              }}
+            >
+              Book your robot's spot now
+            </h2>
+          </div>
+          <Link href="/shows">
+            <button className="btn-default" style={{ padding: "0.6rem 1.25rem", fontSize: "0.875rem" }}>
+              All shows <ArrowUpRight size={14} />
+            </button>
+          </Link>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1px" }}>
+          {shows.map((show: any) => (
+            <Link key={show.id} href={`/shows/${show.id}`}>
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.02)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  padding: "1.75rem",
+                  cursor: "pointer",
+                  transition: "background 0.15s, border-color 0.15s",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "1rem",
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.15)";
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.02)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", letterSpacing: "-0.02em", marginBottom: "0.375rem" }}>
+                    {show.name}
+                  </div>
+                  <div style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.40)" }}>
+                    {show.venue} · {new Date(show.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </div>
+                </div>
+                <ArrowUpRight size={16} color="rgba(255,255,255,0.25)" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

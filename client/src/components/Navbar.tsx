@@ -5,16 +5,6 @@ import { getLoginUrl } from "@/const";
 import { Menu, X } from "lucide-react";
 import GetQuoteModal from "@/components/GetQuoteModal";
 
-// Deep slate palette constants
-const BG_BASE    = "oklch(0.11 0.012 262)";
-const BG_SCROLL  = "oklch(0.12 0.014 262 / 0.96)";
-const BORDER     = "oklch(0.22 0.016 262)";
-const INDIGO     = "oklch(0.72 0.20 262)";
-const INDIGO_BG  = "oklch(0.62 0.24 262 / 0.10)";
-const TEXT_DIM   = "oklch(0.55 0.010 240)";
-const TEXT_MID   = "oklch(0.70 0.008 240)";
-const TEXT_BRIGHT= "oklch(0.90 0.005 240)";
-
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
@@ -23,7 +13,7 @@ export default function Navbar() {
   const [quoteOpen, setQuoteOpen] = useState(false);
 
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 24);
+    const handler = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
@@ -41,35 +31,54 @@ export default function Navbar() {
   const isActive = (href: string) =>
     href === "/" ? location === "/" : location.startsWith(href);
 
+  const navBg = scrolled
+    ? "rgba(0,0,0,0.85)"
+    : "transparent";
+
+  const navBorder = scrolled
+    ? "1px solid rgba(255,255,255,0.07)"
+    : "1px solid transparent";
+
   return (
     <>
     <nav
-      className="fixed top-0 left-0 right-0 z-50 transition-all duration-200"
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
       style={{
-        background: scrolled ? BG_SCROLL : BG_BASE,
-        backdropFilter: "blur(16px) saturate(160%)",
-        WebkitBackdropFilter: "blur(16px) saturate(160%)",
-        borderBottom: `1px solid ${BORDER}`,
+        background: navBg,
+        backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
+        WebkitBackdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
+        borderBottom: navBorder,
       }}
     >
       <div className="container">
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-between" style={{ height: "3.5rem" }}>
 
           {/* ── Logo ── */}
           <Link href="/">
-            <div className="flex items-center gap-2 cursor-pointer group">
-              {/* Stroke-only logo mark */}
+            <div className="flex items-center gap-2 cursor-pointer">
               <div
-                className="w-6 h-6 rounded flex items-center justify-center"
-                style={{ border: `1.5px solid ${INDIGO}`, color: INDIGO }}
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 5,
+                  border: "1.5px solid rgba(255,255,255,0.35)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "rgba(255,255,255,0.70)",
+                }}
               >
-                <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                <svg width="10" height="10" viewBox="0 0 14 14" fill="none">
                   <path d="M7 1L2 8h5l-1 5 6-7H7l1-5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
                 </svg>
               </div>
               <span
-                className="font-bold text-sm tracking-tight"
-                style={{ color: TEXT_BRIGHT, letterSpacing: "-0.02em" }}
+                style={{
+                  fontSize: "0.9375rem",
+                  fontWeight: 700,
+                  color: "#fff",
+                  letterSpacing: "-0.025em",
+                }}
               >
                 StageGate
               </span>
@@ -77,25 +86,25 @@ export default function Navbar() {
           </Link>
 
           {/* ── Desktop nav links ── */}
-          <div className="hidden md:flex items-center gap-0.5">
+          <div className="hidden md:flex items-center gap-1">
             {navLinks.map(({ href, label }) => (
               <Link key={href} href={href}>
                 <span
-                  className="px-3 py-1.5 rounded text-sm cursor-pointer transition-all duration-150 block"
                   style={{
-                    color: isActive(href) ? INDIGO : TEXT_DIM,
+                    display: "block",
+                    padding: "0.375rem 0.75rem",
+                    borderRadius: "0.375rem",
+                    fontSize: "0.875rem",
                     fontWeight: isActive(href) ? 500 : 400,
-                    background: isActive(href) ? INDIGO_BG : "transparent",
+                    color: isActive(href) ? "#fff" : "rgba(255,255,255,0.45)",
+                    cursor: "pointer",
+                    transition: "color 0.15s",
                   }}
                   onMouseEnter={e => {
-                    if (!isActive(href)) {
-                      (e.currentTarget as HTMLElement).style.color = TEXT_MID;
-                    }
+                    if (!isActive(href)) (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.80)";
                   }}
                   onMouseLeave={e => {
-                    if (!isActive(href)) {
-                      (e.currentTarget as HTMLElement).style.color = TEXT_DIM;
-                    }
+                    if (!isActive(href)) (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.45)";
                   }}
                 >
                   {label}
@@ -110,53 +119,69 @@ export default function Navbar() {
               <>
                 <Link href="/dashboard">
                   <span
-                    className="px-3 py-1.5 rounded text-sm cursor-pointer transition-colors block"
-                    style={{ color: isActive("/dashboard") ? INDIGO : TEXT_DIM }}
+                    style={{
+                      display: "block",
+                      padding: "0.375rem 0.75rem",
+                      fontSize: "0.875rem",
+                      color: isActive("/dashboard") ? "#fff" : "rgba(255,255,255,0.45)",
+                      cursor: "pointer",
+                      transition: "color 0.15s",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.80)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isActive("/dashboard") ? "#fff" : "rgba(255,255,255,0.45)"; }}
                   >
                     Dashboard
                   </span>
                 </Link>
                 <button
                   onClick={() => logout()}
-                  className="px-3 py-1.5 rounded text-sm transition-colors"
-                  style={{ color: TEXT_DIM }}
-                  onMouseEnter={e => { (e.currentTarget.style.color = TEXT_MID); }}
-                  onMouseLeave={e => { (e.currentTarget.style.color = TEXT_DIM); }}
+                  style={{
+                    padding: "0.375rem 0.75rem",
+                    fontSize: "0.875rem",
+                    color: "rgba(255,255,255,0.40)",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "color 0.15s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget.style.color = "rgba(255,255,255,0.75)"); }}
+                  onMouseLeave={e => { (e.currentTarget.style.color = "rgba(255,255,255,0.40)"); }}
                 >
-                  Sign Out
+                  Sign out
                 </button>
               </>
             ) : (
               <>
                 <a href={getLoginUrl()}>
                   <span
-                    className="px-3 py-1.5 rounded text-sm cursor-pointer transition-colors block"
-                    style={{ color: TEXT_DIM }}
-                    onMouseEnter={e => { (e.currentTarget.style.color = TEXT_MID); }}
-                    onMouseLeave={e => { (e.currentTarget.style.color = TEXT_DIM); }}
+                    style={{
+                      display: "block",
+                      padding: "0.375rem 0.75rem",
+                      fontSize: "0.875rem",
+                      color: "rgba(255,255,255,0.40)",
+                      cursor: "pointer",
+                      transition: "color 0.15s",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.75)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.40)"; }}
                   >
                     Sign in
                   </span>
                 </a>
                 <button
                   onClick={() => setQuoteOpen(true)}
-                  className="btn-default text-sm"
+                  className="btn-nav"
                 >
                   Get a quote
                 </button>
-                <Link href="/register">
-                  <button className="btn-primary text-sm">
-                    Start free →
-                  </button>
-                </Link>
               </>
             )}
           </div>
 
           {/* ── Mobile toggle ── */}
           <button
-            className="md:hidden p-2 rounded transition-colors"
-            style={{ color: TEXT_DIM }}
+            className="md:hidden p-2"
+            style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none", cursor: "pointer" }}
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
           >
@@ -168,31 +193,46 @@ export default function Navbar() {
       {/* ── Mobile menu ── */}
       {mobileOpen && (
         <div
-          className="md:hidden border-t"
-          style={{ background: BG_SCROLL, backdropFilter: "blur(16px)", borderColor: BORDER }}
+          style={{
+            background: "rgba(0,0,0,0.95)",
+            backdropFilter: "blur(20px)",
+            borderTop: "1px solid rgba(255,255,255,0.07)",
+          }}
         >
-          <div className="container py-4 flex flex-col gap-0.5">
-            {navLinks.map(({ href, label }) => (
-              <Link key={href} href={href}>
-                <span
-                  className="block px-3 py-2.5 rounded text-sm cursor-pointer transition-colors"
-                  style={{
-                    color: isActive(href) ? INDIGO : TEXT_DIM,
-                    background: isActive(href) ? INDIGO_BG : "transparent",
-                  }}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {label}
-                </span>
-              </Link>
-            ))}
-            <div className="border-t mt-2 pt-3 flex flex-col gap-2" style={{ borderColor: BORDER }}>
+          <div className="container" style={{ paddingTop: "1rem", paddingBottom: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
+              {navLinks.map(({ href, label }) => (
+                <Link key={href} href={href}>
+                  <span
+                    style={{
+                      display: "block",
+                      padding: "0.75rem",
+                      fontSize: "0.9375rem",
+                      color: isActive(href) ? "#fff" : "rgba(255,255,255,0.50)",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {label}
+                  </span>
+                </Link>
+              ))}
+            </div>
+            <div
+              style={{
+                borderTop: "1px solid rgba(255,255,255,0.07)",
+                marginTop: "0.75rem",
+                paddingTop: "1rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+              }}
+            >
               {isAuthenticated ? (
                 <>
                   <Link href="/dashboard">
                     <span
-                      className="block px-3 py-2.5 rounded text-sm cursor-pointer"
-                      style={{ color: TEXT_DIM }}
+                      style={{ display: "block", padding: "0.75rem", fontSize: "0.9375rem", color: "rgba(255,255,255,0.50)", cursor: "pointer" }}
                       onClick={() => setMobileOpen(false)}
                     >
                       Dashboard
@@ -200,33 +240,25 @@ export default function Navbar() {
                   </Link>
                   <button
                     onClick={() => { logout(); setMobileOpen(false); }}
-                    className="text-left px-3 py-2.5 rounded text-sm"
-                    style={{ color: TEXT_DIM }}
+                    style={{ textAlign: "left", padding: "0.75rem", fontSize: "0.9375rem", color: "rgba(255,255,255,0.40)", background: "transparent", border: "none", cursor: "pointer" }}
                   >
-                    Sign Out
+                    Sign out
                   </button>
                 </>
               ) : (
                 <>
                   <a href={getLoginUrl()} onClick={() => setMobileOpen(false)}>
-                    <span className="block px-3 py-2.5 rounded text-sm" style={{ color: TEXT_DIM }}>
+                    <span style={{ display: "block", padding: "0.75rem", fontSize: "0.9375rem", color: "rgba(255,255,255,0.50)", cursor: "pointer" }}>
                       Sign in
                     </span>
                   </a>
                   <button
                     onClick={() => { setQuoteOpen(true); setMobileOpen(false); }}
-                    className="btn-default w-full justify-center"
+                    className="btn-nav"
+                    style={{ width: "100%", justifyContent: "center" }}
                   >
                     Get a quote
                   </button>
-                  <Link href="/register">
-                    <button
-                      className="btn-primary w-full justify-center"
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      Start free →
-                    </button>
-                  </Link>
                 </>
               )}
             </div>

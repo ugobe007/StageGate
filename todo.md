@@ -178,3 +178,14 @@
 - [x] StagePro™ page: dark layout, stroke accent
 - [x] ShowsCalendar page: dark layout, stroke filter pills, dark show cards
 - [x] ShowDetail page: dark layout, stroke booking form
+
+## v3.0 — Marble.com-Inspired Redesign (Pure Black + Massive Type + Robot Photography)
+
+- [x] Upload all 8 robot CES images to static storage, get CDN URLs
+- [x] Global CSS: pure black (#000), massive display font (700-900 weight), white/near-white text, single accent color, clean CTA button style
+- [x] Navbar: pure black, minimal links, single white CTA pill button
+- [x] Hero: full-viewport, robot photo right-side dominant, massive left-aligned headline, single CTA, scroll indicator
+- [x] 3-step process section: "Ship → Stage → Perform" with clean numbered cards
+- [x] Photo grid section: mosaic of robot CES photos
+- [x] Service lines: clean text-only list or minimal card grid
+- [x] Bottom CTA: full-width black section with large headline + single button
