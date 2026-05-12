@@ -6,21 +6,25 @@ import {
   GraduationCap, Monitor, TrendingUp, ArrowRight, CheckCircle2
 } from "lucide-react";
 
-/* ── Service visual config ─────────────────────────────────────────────────── */
-const SVC_CONFIG: Record<string, {
-  icon: React.ElementType;
-  catClass: string;
-  color: string;
-  bg: string;
-}> = {
-  "inbound-logistics":       { icon: Package,       catClass: "svc-logistics",  color: "oklch(0.52 0.22 262)", bg: "oklch(0.52 0.22 262 / 0.08)" },
-  "warehousing-storage":     { icon: Warehouse,     catClass: "svc-storage",    color: "oklch(0.55 0.20 295)", bg: "oklch(0.55 0.20 295 / 0.08)" },
-  "staging-activation":      { icon: Zap,           catClass: "svc-activation", color: "oklch(0.45 0.18 145)", bg: "oklch(0.45 0.18 145 / 0.08)" },
-  "live-technical-support":  { icon: Wrench,        catClass: "svc-support",    color: "oklch(0.58 0.17 55)",  bg: "oklch(0.58 0.17 55 / 0.08)"  },
-  "stagehand-247":           { icon: Clock,         catClass: "svc-support",    color: "oklch(0.58 0.17 55)",  bg: "oklch(0.58 0.17 55 / 0.08)"  },
-  "stagepro-training":       { icon: GraduationCap, catClass: "svc-storage",    color: "oklch(0.55 0.20 295)", bg: "oklch(0.55 0.20 295 / 0.08)" },
-  "showroom-demo":           { icon: Monitor,       catClass: "svc-logistics",  color: "oklch(0.52 0.22 262)", bg: "oklch(0.52 0.22 262 / 0.08)" },
-  "robot-sales-marketing":   { icon: TrendingUp,    catClass: "svc-marketing",  color: "oklch(0.55 0.20 20)",  bg: "oklch(0.55 0.20 20 / 0.08)"  },
+/* ── Palette ─────────────────────────────────────────────────────────── */
+const BG     = "oklch(0.11 0.012 262)";
+const CARD   = "oklch(0.14 0.014 262)";
+const BORDER = "oklch(0.22 0.016 262)";
+const INDIGO = "oklch(0.72 0.20 262)";
+const CYAN   = "oklch(0.75 0.18 200)";
+const TEXT_HI  = "oklch(0.93 0.005 240)";
+const TEXT_MID = "oklch(0.70 0.008 240)";
+const TEXT_DIM = "oklch(0.50 0.010 240)";
+
+const SVC_CONFIG: Record<string, { icon: React.ElementType; color: string }> = {
+  "inbound-logistics":       { icon: Package,       color: INDIGO },
+  "warehousing-storage":     { icon: Warehouse,     color: "oklch(0.65 0.20 295)" },
+  "staging-activation":      { icon: Zap,           color: CYAN },
+  "live-technical-support":  { icon: Wrench,        color: "oklch(0.70 0.17 55)" },
+  "stagehand-247":           { icon: Clock,         color: "oklch(0.70 0.17 55)" },
+  "stagepro-training":       { icon: GraduationCap, color: "oklch(0.65 0.20 295)" },
+  "showroom-demo":           { icon: Monitor,       color: INDIGO },
+  "robot-sales-marketing":   { icon: TrendingUp,    color: "oklch(0.62 0.20 20)" },
 };
 
 const FEATURES: Record<string, string[]> = {
@@ -34,86 +38,69 @@ const FEATURES: Record<string, string[]> = {
   "robot-sales-marketing":   ["US market distribution partnerships", "The Robot Guild™ brand activation", "StageGate Ready™ certification", "Trade show booth marketing", "Commission-based sales model"],
 };
 
-/* ── Service card ───────────────────────────────────────────────────────────── */
 function ServiceCard({ svc, phase }: { svc: any; phase: "phase1" | "phase2" }) {
-  const cfg = SVC_CONFIG[svc.slug] || SVC_CONFIG["inbound-logistics"];
+  const cfg = SVC_CONFIG[svc.slug] || { icon: Package, color: INDIGO };
   const Icon = cfg.icon;
   const features = FEATURES[svc.slug] || [];
   const tiers: any[] = svc.pricingTiers ? JSON.parse(svc.pricingTiers) : [];
   const isPhase2 = phase === "phase2";
+  const statusColor = isPhase2 ? TEXT_DIM : "oklch(0.62 0.18 145)";
+  const statusLabel = isPhase2 ? "Coming 2026" : "Available Now";
 
   return (
     <div
-      className={`svc-card ${cfg.catClass} flex flex-col h-full`}
-      style={{ opacity: isPhase2 ? 0.75 : 1 }}
+      className="rounded-xl border p-6 flex flex-col gap-4 transition-colors"
+      style={{ background: CARD, borderColor: BORDER, opacity: isPhase2 ? 0.75 : 1 }}
+      onMouseEnter={e => { if (!isPhase2) (e.currentTarget as HTMLElement).style.borderColor = "oklch(0.38 0.020 262)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = BORDER; }}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-5">
+      <div className="flex items-start justify-between">
         <div
-          className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: cfg.bg, border: `1px solid ${cfg.color.replace(")", " / 0.20)")}` }}
+          className="w-10 h-10 rounded flex items-center justify-center"
+          style={{ border: `1px solid ${cfg.color}44`, background: `${cfg.color}0d` }}
         >
-          <Icon size={20} style={{ color: cfg.color }} />
+          <Icon size={18} style={{ color: cfg.color }} />
         </div>
         <span
-          className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border"
-          style={isPhase2 ? {
-            color: "oklch(0.55 0.010 240)",
-            borderColor: "oklch(0.85 0.006 240)",
-            background: "oklch(0.95 0.004 240)",
-          } : {
-            color: cfg.color,
-            borderColor: cfg.color.replace(")", " / 0.25)"),
-            background: cfg.bg,
-          }}
+          className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
+          style={{ color: statusColor, borderColor: `${statusColor}44`, background: `${statusColor}0d` }}
         >
-          {isPhase2 ? "Coming 2026" : "Available Now"}
+          {statusLabel}
         </span>
       </div>
 
-      {/* Name */}
-      <h3
-        className="font-bold text-lg mb-2 leading-snug"
-        style={{ color: "oklch(0.10 0.010 240)" }}
-      >
-        {svc.name}
-      </h3>
-
-      {/* Description */}
-      <p className="text-sm leading-relaxed mb-5" style={{ color: "oklch(0.48 0.010 240)" }}>
-        {svc.description}
-      </p>
+      <div>
+        <h3 className="font-semibold text-base mb-2" style={{ color: TEXT_HI }}>{svc.name}</h3>
+        <p className="text-sm leading-relaxed" style={{ color: TEXT_DIM }}>{svc.description}</p>
+      </div>
 
       {/* Features */}
-      <ul className="space-y-2 mb-6 flex-1">
-        {features.map((f) => (
-          <li key={f} className="flex items-start gap-2 text-sm" style={{ color: "oklch(0.40 0.010 240)" }}>
-            <CheckCircle2 size={13} className="mt-0.5 flex-shrink-0" style={{ color: cfg.color }} />
-            {f}
-          </li>
-        ))}
-      </ul>
+      {features.length > 0 && (
+        <ul className="space-y-1.5 flex-1">
+          {features.map((f) => (
+            <li key={f} className="flex items-start gap-2 text-xs" style={{ color: TEXT_MID }}>
+              <CheckCircle2 size={12} className="mt-0.5 flex-shrink-0" style={{ color: cfg.color }} />
+              {f}
+            </li>
+          ))}
+        </ul>
+      )}
 
       {/* Pricing */}
       {tiers.length > 0 && (
-        <div
-          className="border-t pt-4"
-          style={{ borderColor: "oklch(0.90 0.005 240)" }}
-        >
-          <div
-            className="font-mono text-[10px] uppercase tracking-widest mb-3"
-            style={{ color: "oklch(0.60 0.010 240)" }}
-          >
+        <div className="border-t pt-4" style={{ borderColor: BORDER }}>
+          <p className="font-mono text-[10px] uppercase tracking-widest mb-3" style={{ color: TEXT_DIM }}>
             Pricing
-          </div>
+          </p>
           <div className="flex flex-wrap gap-4">
             {tiers.map((tier: any) => (
               <div key={tier.label}>
-                <div className="font-bold text-base" style={{ color: cfg.color }}>
+                <div className="font-mono text-sm font-semibold" style={{ color: cfg.color }}>
                   {tier.price ? `$${Number(tier.price).toLocaleString()}` : "Custom"}
                 </div>
-                <div className="text-[11px]" style={{ color: "oklch(0.52 0.010 240)" }}>{tier.label}</div>
-                {tier.unit && <div className="text-[10px]" style={{ color: "oklch(0.62 0.010 240)" }}>{tier.unit}</div>}
+                <div className="text-[11px]" style={{ color: TEXT_DIM }}>{tier.label}</div>
+                {tier.unit && <div className="text-[10px]" style={{ color: TEXT_DIM }}>{tier.unit}</div>}
               </div>
             ))}
           </div>
@@ -123,7 +110,6 @@ function ServiceCard({ svc, phase }: { svc: any; phase: "phase1" | "phase2" }) {
   );
 }
 
-/* ── Page ───────────────────────────────────────────────────────────────────── */
 export default function Services() {
   const { data: services, isLoading } = trpc.services.list.useQuery();
 
@@ -131,24 +117,30 @@ export default function Services() {
   const phase2 = (services || []).filter(s => s.phase === "phase2");
 
   return (
-    <div className="min-h-screen" style={{ background: "oklch(0.98 0.002 240)", color: "oklch(0.10 0.010 240)" }}>
+    <div className="min-h-screen" style={{ background: BG, color: TEXT_HI }}>
       <Navbar />
 
       {/* ── Page header ── */}
-      <div
-        className="pt-28 pb-16 border-b"
-        style={{ borderColor: "oklch(0.90 0.005 240)", background: "oklch(1.00 0.000 0)" }}
-      >
+      <div className="pt-28 pb-16 border-b" style={{ borderColor: BORDER, background: CARD }}>
         <div className="container text-center">
-          <div className="section-label mx-auto justify-center">Complete Service Catalog</div>
+          <p className="section-label mx-auto justify-center mb-3">Complete Service Catalog</p>
           <h1
-            className="text-5xl lg:text-6xl font-extrabold mb-4"
-            style={{ color: "oklch(0.08 0.010 240)", letterSpacing: "-0.035em" }}
+            className="text-5xl lg:text-6xl font-bold mb-4"
+            style={{ color: TEXT_HI, letterSpacing: "-0.035em" }}
           >
             Eight Services.{" "}
-            <span style={{ color: "oklch(0.52 0.22 262)" }}>One Platform.</span>
+            <span
+              style={{
+                background: `linear-gradient(90deg, ${INDIGO} 0%, ${CYAN} 100%)`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              One Platform.
+            </span>
           </h1>
-          <p className="text-lg max-w-2xl mx-auto" style={{ color: "oklch(0.45 0.010 240)" }}>
+          <p className="text-base max-w-2xl mx-auto" style={{ color: TEXT_MID }}>
             From the moment your robot ships to the moment it's back in storage,
             StageGate covers every step of the trade show lifecycle.
           </p>
@@ -161,27 +153,27 @@ export default function Services() {
         <div className="mb-16">
           <div className="flex items-center gap-4 mb-8">
             <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono font-bold tracking-widest uppercase"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono tracking-widest uppercase"
               style={{
-                color: "oklch(0.45 0.18 145)",
-                borderColor: "oklch(0.45 0.18 145 / 0.30)",
-                background: "oklch(0.45 0.18 145 / 0.06)",
+                color: "oklch(0.62 0.18 145)",
+                borderColor: "oklch(0.62 0.18 145 / 0.30)",
+                background: "oklch(0.62 0.18 145 / 0.06)",
               }}
             >
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "oklch(0.45 0.18 145)" }} />
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "oklch(0.62 0.18 145)" }} />
               Phase 1 — Available Now
             </div>
-            <div className="flex-1 h-px" style={{ background: "oklch(0.88 0.006 240)" }} />
+            <div className="flex-1 h-px" style={{ background: BORDER }} />
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-80 rounded-2xl animate-pulse" style={{ background: "oklch(0.92 0.004 240)" }} />
+                <div key={i} className="h-80 rounded-xl animate-pulse" style={{ background: CARD, border: `1px solid ${BORDER}` }} />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {phase1.map(svc => <ServiceCard key={svc.id} svc={svc} phase="phase1" />)}
             </div>
           )}
@@ -192,18 +184,14 @@ export default function Services() {
           <div className="mb-16">
             <div className="flex items-center gap-4 mb-8">
               <div
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono font-bold tracking-widest uppercase"
-                style={{
-                  color: "oklch(0.55 0.010 240)",
-                  borderColor: "oklch(0.85 0.006 240)",
-                  background: "oklch(0.95 0.004 240)",
-                }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono tracking-widest uppercase"
+                style={{ color: TEXT_DIM, borderColor: BORDER, background: "transparent" }}
               >
                 Phase 2 — Launching 2026
               </div>
-              <div className="flex-1 h-px" style={{ background: "oklch(0.88 0.006 240)" }} />
+              <div className="flex-1 h-px" style={{ background: BORDER }} />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {phase2.map(svc => <ServiceCard key={svc.id} svc={svc} phase="phase2" />)}
             </div>
           </div>
@@ -211,41 +199,24 @@ export default function Services() {
 
         {/* ── CTA ── */}
         <div
-          className="relative p-10 rounded-2xl border text-center"
-          style={{
-            borderColor: "oklch(0.52 0.22 262 / 0.20)",
-            background: "oklch(0.10 0.010 240)",
-          }}
+          className="p-10 rounded-xl border text-center"
+          style={{ borderColor: "oklch(0.72 0.20 262 / 0.20)", background: CARD }}
         >
-          <div className="section-label mx-auto justify-center mb-4" style={{ color: "oklch(0.52 0.22 262)" }}>
-            Get Started
-          </div>
-          <h2
-            className="text-3xl font-extrabold mb-3"
-            style={{ color: "oklch(0.97 0.002 240)", letterSpacing: "-0.03em" }}
-          >
+          <p className="section-label mx-auto justify-center mb-4">Get Started</p>
+          <h2 className="text-3xl font-bold mb-3" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
             Ready to Book Services?
           </h2>
-          <p className="mb-6" style={{ color: "oklch(0.60 0.010 240)" }}>
+          <p className="mb-6 text-sm" style={{ color: TEXT_DIM }}>
             Register your company for free, then select your show and services.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/register">
               <button className="btn-primary">
-                Register Free <ArrowRight size={15} />
+                Register free <ArrowRight size={14} />
               </button>
             </Link>
             <Link href="/order">
-              <button
-                className="btn-default"
-                style={{
-                  background: "oklch(1.00 0.000 0 / 0.08)",
-                  borderColor: "oklch(1.00 0.000 0 / 0.20)",
-                  color: "oklch(0.88 0.005 240)",
-                }}
-              >
-                Book Services Now
-              </button>
+              <button className="btn-default">Book services now</button>
             </Link>
           </div>
         </div>

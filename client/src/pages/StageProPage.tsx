@@ -5,9 +5,14 @@ import {
   Users, Award, BookOpen, Wrench
 } from "lucide-react";
 
-const PURPLE = "oklch(0.52 0.20 295)";
-const PURPLE_BG = "oklch(0.52 0.20 295 / 0.08)";
-const PURPLE_BORDER = "oklch(0.52 0.20 295 / 0.22)";
+/* ── Palette ─────────────────────────────────────────────────────────── */
+const BG     = "oklch(0.11 0.012 262)";
+const CARD   = "oklch(0.14 0.014 262)";
+const BORDER = "oklch(0.22 0.016 262)";
+const PURPLE = "oklch(0.65 0.20 295)";
+const TEXT_HI  = "oklch(0.93 0.005 240)";
+const TEXT_MID = "oklch(0.70 0.008 240)";
+const TEXT_DIM = "oklch(0.50 0.010 240)";
 
 const PROGRAMS = [
   {
@@ -57,61 +62,55 @@ const DIFFERENTIATORS = [
 
 export default function StageProPage() {
   return (
-    <div className="min-h-screen" style={{ background: "oklch(0.98 0.002 240)", color: "oklch(0.10 0.010 240)" }}>
+    <div className="min-h-screen" style={{ background: BG, color: TEXT_HI }}>
       <Navbar />
 
-      {/* ── Hero ─────────────────────────────────────────────────────────────── */}
-      <section
-        className="pt-28 pb-20 border-b"
-        style={{ borderColor: "oklch(0.90 0.005 240)", background: "oklch(1.00 0.000 0)" }}
-      >
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          {/* Icon badge */}
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="pt-28 pb-20 border-b" style={{ borderColor: BORDER, background: CARD }}>
+        <div className="max-w-5xl mx-auto px-6 text-center">
+          {/* Icon — stroke only */}
           <div
-            className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-6"
-            style={{ background: PURPLE_BG, border: `1px solid ${PURPLE_BORDER}` }}
+            className="w-12 h-12 rounded flex items-center justify-center mx-auto mb-6"
+            style={{ border: `1px solid ${PURPLE}55`, background: `${PURPLE}0d` }}
           >
-            <GraduationCap size={26} style={{ color: PURPLE }} />
+            <GraduationCap size={22} style={{ color: PURPLE }} />
           </div>
 
-          {/* Eyebrow */}
+          {/* Eyebrow — stroke badge */}
           <div
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full border mb-6"
-            style={{ color: PURPLE, borderColor: PURPLE_BORDER, background: PURPLE_BG }}
+            style={{ color: PURPLE, borderColor: `${PURPLE}55`, background: `${PURPLE}0d` }}
           >
             <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: PURPLE }} />
-            <span className="font-mono text-[11px] tracking-widest uppercase font-semibold">Workforce Training</span>
+            <span className="font-mono text-[10px] tracking-widest uppercase">Workforce Training</span>
           </div>
 
           <h1
-            className="text-5xl md:text-6xl font-extrabold mb-4"
-            style={{ color: "oklch(0.08 0.010 240)", letterSpacing: "-0.035em" }}
+            className="text-5xl md:text-6xl font-bold mb-4"
+            style={{ color: TEXT_HI, letterSpacing: "-0.035em" }}
           >
             StagePro<sup className="text-xl font-normal align-super">™</sup>
           </h1>
-          <p className="text-lg max-w-2xl mx-auto mb-8 leading-relaxed" style={{ color: "oklch(0.45 0.010 240)" }}>
+          <p className="text-base max-w-2xl mx-auto mb-8 leading-relaxed" style={{ color: TEXT_MID }}>
             The world's first hands-on robot technician training program.
             Learn by repairing real robots under master technician supervision.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/register">
-              <span className="btn-primary" style={{ background: PURPLE, borderColor: PURPLE }}>
-                Enroll Now <ArrowRight size={14} />
+              <span className="btn-primary" style={{ borderColor: `${PURPLE}55`, color: PURPLE, background: `${PURPLE}0d` }}>
+                Enroll now <ArrowRight size={14} />
               </span>
             </Link>
             <Link href="/order">
-              <span className="btn-default">Request Corporate Quote</span>
+              <span className="btn-default">Request corporate quote</span>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── Stats bar ─────────────────────────────────────────────────────────── */}
-      <div
-        className="border-b"
-        style={{ borderColor: "oklch(0.90 0.005 240)", background: "oklch(0.97 0.003 240)" }}
-      >
-        <div className="max-w-6xl mx-auto px-6 py-10">
+      {/* ── Stats bar ─────────────────────────────────────────────────────── */}
+      <div className="border-b" style={{ borderColor: BORDER }}>
+        <div className="max-w-5xl mx-auto px-6 py-10">
           <div className="grid grid-cols-3 gap-6 text-center">
             {[
               { value: "4",    label: "Program Levels" },
@@ -119,28 +118,22 @@ export default function StageProPage() {
               { value: "Real", label: "Client Robots Used in Training" },
             ].map(({ value, label }) => (
               <div key={label}>
-                <div
-                  className="text-3xl font-extrabold tracking-tight mb-1"
-                  style={{ color: PURPLE, letterSpacing: "-0.03em" }}
-                >
+                <div className="text-3xl font-bold tracking-tight mb-1" style={{ color: PURPLE, letterSpacing: "-0.03em" }}>
                   {value}
                 </div>
-                <div className="text-xs" style={{ color: "oklch(0.52 0.010 240)" }}>{label}</div>
+                <div className="text-xs" style={{ color: TEXT_DIM }}>{label}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ── Why StagePro ──────────────────────────────────────────────────────── */}
-      <section className="py-20 border-b" style={{ borderColor: "oklch(0.90 0.005 240)" }}>
-        <div className="max-w-6xl mx-auto px-6">
+      {/* ── Why StagePro ──────────────────────────────────────────────────── */}
+      <section className="py-20 border-b" style={{ borderColor: BORDER }}>
+        <div className="max-w-5xl mx-auto px-6">
           <div className="mb-10">
-            <div className="section-label" style={{ color: PURPLE }}>Why StagePro™</div>
-            <h2
-              className="text-3xl font-extrabold"
-              style={{ color: "oklch(0.08 0.010 240)", letterSpacing: "-0.03em" }}
-            >
+            <p className="section-label mb-2" style={{ color: PURPLE }}>Why StagePro™</p>
+            <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
               Training Unlike Anything Else
             </h2>
           </div>
@@ -148,18 +141,20 @@ export default function StageProPage() {
             {DIFFERENTIATORS.map(({ icon: Icon, title, desc }) => (
               <div
                 key={title}
-                className="sg-card flex gap-4"
-                style={{ borderTopColor: PURPLE, borderTopWidth: "2px" }}
+                className="rounded-xl border p-5 flex gap-4 transition-colors"
+                style={{ background: CARD, borderColor: BORDER }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${PURPLE}44`; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = BORDER; }}
               >
                 <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: PURPLE_BG, border: `1px solid ${PURPLE_BORDER}` }}
+                  className="w-9 h-9 rounded flex items-center justify-center flex-shrink-0"
+                  style={{ border: `1px solid ${PURPLE}44`, background: `${PURPLE}0d` }}
                 >
-                  <Icon size={16} style={{ color: PURPLE }} />
+                  <Icon size={15} style={{ color: PURPLE }} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm mb-1" style={{ color: "oklch(0.10 0.010 240)" }}>{title}</h3>
-                  <p className="text-xs leading-relaxed" style={{ color: "oklch(0.50 0.010 240)" }}>{desc}</p>
+                  <h3 className="font-semibold text-sm mb-1" style={{ color: TEXT_HI }}>{title}</h3>
+                  <p className="text-xs leading-relaxed" style={{ color: TEXT_DIM }}>{desc}</p>
                 </div>
               </div>
             ))}
@@ -167,21 +162,15 @@ export default function StageProPage() {
         </div>
       </section>
 
-      {/* ── Programs ──────────────────────────────────────────────────────────── */}
-      <section
-        className="py-20 border-b"
-        style={{ borderColor: "oklch(0.90 0.005 240)", background: "oklch(0.97 0.003 240)" }}
-      >
-        <div className="max-w-6xl mx-auto px-6">
+      {/* ── Programs ──────────────────────────────────────────────────────── */}
+      <section className="py-20 border-b" style={{ borderColor: BORDER, background: CARD }}>
+        <div className="max-w-5xl mx-auto px-6">
           <div className="mb-10">
-            <div className="section-label" style={{ color: PURPLE }}>Programs</div>
-            <h2
-              className="text-3xl font-extrabold"
-              style={{ color: "oklch(0.08 0.010 240)", letterSpacing: "-0.03em" }}
-            >
+            <p className="section-label mb-2" style={{ color: PURPLE }}>Programs</p>
+            <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
               StagePro™ Training Programs
             </h2>
-            <p className="mt-1 text-sm" style={{ color: "oklch(0.52 0.010 240)" }}>
+            <p className="mt-1 text-sm" style={{ color: TEXT_DIM }}>
               Four levels from introductory to master apprentice.
             </p>
           </div>
@@ -189,42 +178,36 @@ export default function StageProPage() {
             {PROGRAMS.map((prog) => (
               <div
                 key={prog.name}
-                className="sg-card flex flex-col"
-                style={{
-                  borderTopColor: prog.highlight ? PURPLE : "oklch(0.90 0.005 240)",
-                  borderTopWidth: prog.highlight ? "3px" : "1px",
-                }}
+                className="rounded-xl border p-6 flex flex-col gap-4"
+                style={{ background: BG, borderColor: prog.highlight ? `${PURPLE}55` : BORDER }}
               >
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-bold" style={{ color: "oklch(0.10 0.010 240)" }}>{prog.name}</h3>
-                    <div className="font-mono text-[11px] mt-0.5" style={{ color: "oklch(0.55 0.010 240)" }}>{prog.duration}</div>
+                    <h3 className="font-semibold" style={{ color: TEXT_HI }}>{prog.name}</h3>
+                    <div className="font-mono text-[11px] mt-0.5" style={{ color: TEXT_DIM }}>{prog.duration}</div>
                   </div>
                   {prog.highlight && (
                     <span
-                      className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border"
-                      style={{ color: PURPLE, borderColor: PURPLE_BORDER, background: PURPLE_BG }}
+                      className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
+                      style={{ color: PURPLE, borderColor: `${PURPLE}44`, background: `${PURPLE}0d` }}
                     >
                       Most Popular
                     </span>
                   )}
                 </div>
 
-                <div className="mb-3">
-                  <span
-                    className="text-3xl font-extrabold tracking-tight"
-                    style={{ color: PURPLE, letterSpacing: "-0.03em" }}
-                  >
+                <div>
+                  <span className="text-3xl font-bold tracking-tight" style={{ color: PURPLE, letterSpacing: "-0.03em" }}>
                     {prog.price}
                   </span>
-                  <span className="text-sm ml-1" style={{ color: "oklch(0.52 0.010 240)" }}>{prog.unit}</span>
+                  <span className="text-sm ml-1" style={{ color: TEXT_DIM }}>{prog.unit}</span>
                 </div>
 
-                <p className="text-xs leading-relaxed mb-4" style={{ color: "oklch(0.48 0.010 240)" }}>{prog.desc}</p>
+                <p className="text-xs leading-relaxed" style={{ color: TEXT_DIM }}>{prog.desc}</p>
 
-                <ul className="space-y-2 mb-5 flex-1">
+                <ul className="space-y-1.5 flex-1">
                   {prog.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm" style={{ color: "oklch(0.42 0.010 240)" }}>
+                    <li key={f} className="flex items-start gap-2 text-xs" style={{ color: TEXT_MID }}>
                       <CheckCircle2 size={12} className="mt-0.5 flex-shrink-0" style={{ color: PURPLE }} />
                       {f}
                     </li>
@@ -234,9 +217,9 @@ export default function StageProPage() {
                 <Link href="/register">
                   <span
                     className={`${prog.highlight ? "btn-primary" : "btn-default"} w-full justify-center`}
-                    style={prog.highlight ? { background: PURPLE, borderColor: PURPLE } : {}}
+                    style={prog.highlight ? { borderColor: `${PURPLE}55`, color: PURPLE, background: `${PURPLE}0d` } : {}}
                   >
-                    Enroll Now
+                    Enroll now
                   </span>
                 </Link>
               </div>
@@ -245,25 +228,20 @@ export default function StageProPage() {
         </div>
       </section>
 
-      {/* ── CTA ───────────────────────────────────────────────────────────────── */}
-      <section className="py-20" style={{ background: "oklch(0.10 0.010 240)" }}>
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <div className="section-label mx-auto justify-center mb-4" style={{ color: PURPLE }}>
-            Get Started
-          </div>
-          <h2
-            className="text-3xl font-extrabold mb-3"
-            style={{ color: "oklch(0.97 0.002 240)", letterSpacing: "-0.03em" }}
-          >
+      {/* ── CTA ───────────────────────────────────────────────────────────── */}
+      <section className="py-20">
+        <div className="max-w-5xl mx-auto px-6 text-center">
+          <p className="section-label mx-auto justify-center mb-4" style={{ color: PURPLE }}>Get Started</p>
+          <h2 className="text-3xl font-bold mb-3" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
             Build the Next Generation of Robot Technicians
           </h2>
-          <p className="mb-7 max-w-md mx-auto text-sm leading-relaxed" style={{ color: "oklch(0.60 0.010 240)" }}>
+          <p className="mb-7 max-w-md mx-auto text-sm leading-relaxed" style={{ color: TEXT_DIM }}>
             Register your company for free and enroll your team in StagePro™ training.
             Corporate cohort pricing available for groups of 5 or more.
           </p>
           <Link href="/register">
-            <span className="btn-primary" style={{ background: PURPLE, borderColor: PURPLE }}>
-              Register Free Today <ArrowRight size={14} />
+            <span className="btn-primary" style={{ borderColor: `${PURPLE}55`, color: PURPLE, background: `${PURPLE}0d` }}>
+              Register free today <ArrowRight size={14} />
             </span>
           </Link>
         </div>

@@ -5,11 +5,22 @@ import { getLoginUrl } from "@/const";
 import { Menu, X } from "lucide-react";
 import GetQuoteModal from "@/components/GetQuoteModal";
 
+// Deep slate palette constants
+const BG_BASE    = "oklch(0.11 0.012 262)";
+const BG_SCROLL  = "oklch(0.12 0.014 262 / 0.96)";
+const BORDER     = "oklch(0.22 0.016 262)";
+const INDIGO     = "oklch(0.72 0.20 262)";
+const INDIGO_BG  = "oklch(0.62 0.24 262 / 0.10)";
+const TEXT_DIM   = "oklch(0.55 0.010 240)";
+const TEXT_MID   = "oklch(0.70 0.008 240)";
+const TEXT_BRIGHT= "oklch(0.90 0.005 240)";
+
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 24);
@@ -18,7 +29,6 @@ export default function Navbar() {
   }, []);
 
   const isAdmin = user?.role === "admin";
-  const [quoteOpen, setQuoteOpen] = useState(false);
 
   const navLinks = [
     { href: "/shows",     label: "Shows" },
@@ -36,63 +46,55 @@ export default function Navbar() {
     <nav
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-200"
       style={{
-        background: scrolled ? "rgba(255,255,255,0.97)" : "rgba(255,255,255,0.95)",
-        backdropFilter: "blur(12px) saturate(180%)",
-        WebkitBackdropFilter: "blur(12px) saturate(180%)",
-        borderBottom: scrolled
-          ? "1px solid oklch(0.88 0.006 240)"
-          : "1px solid oklch(0.92 0.004 240)",
-        boxShadow: scrolled ? "0 1px 12px oklch(0 0 0 / 0.06)" : "none",
+        background: scrolled ? BG_SCROLL : BG_BASE,
+        backdropFilter: "blur(16px) saturate(160%)",
+        WebkitBackdropFilter: "blur(16px) saturate(160%)",
+        borderBottom: `1px solid ${BORDER}`,
       }}
     >
       <div className="container">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-14">
 
           {/* ── Logo ── */}
           <Link href="/">
-            <div className="flex items-center gap-2.5 group cursor-pointer">
+            <div className="flex items-center gap-2 cursor-pointer group">
+              {/* Stroke-only logo mark */}
               <div
-                className="w-7 h-7 rounded-md flex items-center justify-center"
-                style={{ background: "oklch(0.52 0.22 262)" }}
+                className="w-6 h-6 rounded flex items-center justify-center"
+                style={{ border: `1.5px solid ${INDIGO}`, color: INDIGO }}
               >
-                <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                  <path d="M7 1L2 8h5l-1 5 6-7H7l1-5z" fill="white" />
+                <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                  <path d="M7 1L2 8h5l-1 5 6-7H7l1-5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
                 </svg>
               </div>
               <span
                 className="font-bold text-sm tracking-tight"
-                style={{ color: "oklch(0.10 0.010 240)" }}
+                style={{ color: TEXT_BRIGHT, letterSpacing: "-0.02em" }}
               >
                 StageGate
               </span>
             </div>
           </Link>
 
-          {/* ── Desktop links ── */}
+          {/* ── Desktop nav links ── */}
           <div className="hidden md:flex items-center gap-0.5">
             {navLinks.map(({ href, label }) => (
               <Link key={href} href={href}>
                 <span
-                  className="px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 block"
+                  className="px-3 py-1.5 rounded text-sm cursor-pointer transition-all duration-150 block"
                   style={{
-                    color: isActive(href)
-                      ? "oklch(0.52 0.22 262)"
-                      : "oklch(0.40 0.010 240)",
-                    background: isActive(href)
-                      ? "oklch(0.52 0.22 262 / 0.08)"
-                      : "transparent",
-                    fontWeight: isActive(href) ? 600 : 500,
+                    color: isActive(href) ? INDIGO : TEXT_DIM,
+                    fontWeight: isActive(href) ? 500 : 400,
+                    background: isActive(href) ? INDIGO_BG : "transparent",
                   }}
                   onMouseEnter={e => {
                     if (!isActive(href)) {
-                      (e.currentTarget as HTMLElement).style.color = "oklch(0.10 0.010 240)";
-                      (e.currentTarget as HTMLElement).style.background = "oklch(0.94 0.004 240)";
+                      (e.currentTarget as HTMLElement).style.color = TEXT_MID;
                     }
                   }}
                   onMouseLeave={e => {
                     if (!isActive(href)) {
-                      (e.currentTarget as HTMLElement).style.color = "oklch(0.40 0.010 240)";
-                      (e.currentTarget as HTMLElement).style.background = "transparent";
+                      (e.currentTarget as HTMLElement).style.color = TEXT_DIM;
                     }
                   }}
                 >
@@ -108,27 +110,18 @@ export default function Navbar() {
               <>
                 <Link href="/dashboard">
                   <span
-                    className="px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 block"
-                    style={{
-                      color: isActive("/dashboard") ? "oklch(0.52 0.22 262)" : "oklch(0.40 0.010 240)",
-                      background: isActive("/dashboard") ? "oklch(0.52 0.22 262 / 0.08)" : "transparent",
-                    }}
+                    className="px-3 py-1.5 rounded text-sm cursor-pointer transition-colors block"
+                    style={{ color: isActive("/dashboard") ? INDIGO : TEXT_DIM }}
                   >
                     Dashboard
                   </span>
                 </Link>
                 <button
                   onClick={() => logout()}
-                  className="px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150"
-                  style={{ color: "oklch(0.50 0.010 240)" }}
-                  onMouseEnter={e => {
-                    (e.currentTarget.style.color = "oklch(0.10 0.010 240)");
-                    (e.currentTarget.style.background = "oklch(0.94 0.004 240)");
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget.style.color = "oklch(0.50 0.010 240)");
-                    (e.currentTarget.style.background = "transparent");
-                  }}
+                  className="px-3 py-1.5 rounded text-sm transition-colors"
+                  style={{ color: TEXT_DIM }}
+                  onMouseEnter={e => { (e.currentTarget.style.color = TEXT_MID); }}
+                  onMouseLeave={e => { (e.currentTarget.style.color = TEXT_DIM); }}
                 >
                   Sign Out
                 </button>
@@ -137,29 +130,23 @@ export default function Navbar() {
               <>
                 <a href={getLoginUrl()}>
                   <span
-                    className="px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 block"
-                    style={{ color: "oklch(0.40 0.010 240)" }}
-                    onMouseEnter={e => {
-                      (e.currentTarget.style.color = "oklch(0.10 0.010 240)");
-                      (e.currentTarget.style.background = "oklch(0.94 0.004 240)");
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget.style.color = "oklch(0.40 0.010 240)");
-                      (e.currentTarget.style.background = "transparent");
-                    }}
+                    className="px-3 py-1.5 rounded text-sm cursor-pointer transition-colors block"
+                    style={{ color: TEXT_DIM }}
+                    onMouseEnter={e => { (e.currentTarget.style.color = TEXT_MID); }}
+                    onMouseLeave={e => { (e.currentTarget.style.color = TEXT_DIM); }}
                   >
-                    Sign In
+                    Sign in
                   </span>
                 </a>
                 <button
                   onClick={() => setQuoteOpen(true)}
                   className="btn-default text-sm"
                 >
-                  Get a Quote
+                  Get a quote
                 </button>
                 <Link href="/register">
                   <button className="btn-primary text-sm">
-                    Register Free
+                    Start free →
                   </button>
                 </Link>
               </>
@@ -168,12 +155,12 @@ export default function Navbar() {
 
           {/* ── Mobile toggle ── */}
           <button
-            className="md:hidden p-2 rounded-lg transition-colors"
-            style={{ color: "oklch(0.40 0.010 240)" }}
+            className="md:hidden p-2 rounded transition-colors"
+            style={{ color: TEXT_DIM }}
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
           >
-            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>
@@ -182,20 +169,16 @@ export default function Navbar() {
       {mobileOpen && (
         <div
           className="md:hidden border-t"
-          style={{
-            background: "rgba(255,255,255,0.98)",
-            backdropFilter: "blur(12px)",
-            borderColor: "oklch(0.90 0.005 240)",
-          }}
+          style={{ background: BG_SCROLL, backdropFilter: "blur(16px)", borderColor: BORDER }}
         >
-          <div className="container py-4 flex flex-col gap-1">
+          <div className="container py-4 flex flex-col gap-0.5">
             {navLinks.map(({ href, label }) => (
               <Link key={href} href={href}>
                 <span
-                  className="block px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors"
+                  className="block px-3 py-2.5 rounded text-sm cursor-pointer transition-colors"
                   style={{
-                    color: isActive(href) ? "oklch(0.52 0.22 262)" : "oklch(0.35 0.010 240)",
-                    background: isActive(href) ? "oklch(0.52 0.22 262 / 0.08)" : "transparent",
+                    color: isActive(href) ? INDIGO : TEXT_DIM,
+                    background: isActive(href) ? INDIGO_BG : "transparent",
                   }}
                   onClick={() => setMobileOpen(false)}
                 >
@@ -203,16 +186,13 @@ export default function Navbar() {
                 </span>
               </Link>
             ))}
-            <div
-              className="border-t mt-2 pt-3 flex flex-col gap-2"
-              style={{ borderColor: "oklch(0.90 0.005 240)" }}
-            >
+            <div className="border-t mt-2 pt-3 flex flex-col gap-2" style={{ borderColor: BORDER }}>
               {isAuthenticated ? (
                 <>
                   <Link href="/dashboard">
                     <span
-                      className="block px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer"
-                      style={{ color: "oklch(0.35 0.010 240)" }}
+                      className="block px-3 py-2.5 rounded text-sm cursor-pointer"
+                      style={{ color: TEXT_DIM }}
                       onClick={() => setMobileOpen(false)}
                     >
                       Dashboard
@@ -220,8 +200,8 @@ export default function Navbar() {
                   </Link>
                   <button
                     onClick={() => { logout(); setMobileOpen(false); }}
-                    className="text-left px-3 py-2.5 rounded-lg text-sm font-medium"
-                    style={{ color: "oklch(0.50 0.010 240)" }}
+                    className="text-left px-3 py-2.5 rounded text-sm"
+                    style={{ color: TEXT_DIM }}
                   >
                     Sign Out
                   </button>
@@ -229,22 +209,22 @@ export default function Navbar() {
               ) : (
                 <>
                   <a href={getLoginUrl()} onClick={() => setMobileOpen(false)}>
-                    <span className="block px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: "oklch(0.35 0.010 240)" }}>
-                      Sign In
+                    <span className="block px-3 py-2.5 rounded text-sm" style={{ color: TEXT_DIM }}>
+                      Sign in
                     </span>
                   </a>
                   <button
                     onClick={() => { setQuoteOpen(true); setMobileOpen(false); }}
                     className="btn-default w-full justify-center"
                   >
-                    Get a Quote
+                    Get a quote
                   </button>
                   <Link href="/register">
                     <button
                       className="btn-primary w-full justify-center"
                       onClick={() => setMobileOpen(false)}
                     >
-                      Register Free
+                      Start free →
                     </button>
                   </Link>
                 </>

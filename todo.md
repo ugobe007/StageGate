@@ -166,3 +166,15 @@
 - [x] StagePro™ page: white layout with purple accent (training/certification brand identity)
 - [x] ShowsCalendar page: white layout, clean filter pills, white show cards
 - [x] ShowDetail page: white layout, clean hero, rating bar, booking form
+
+## v2.0 — Option B Deep Slate + Supabase Stroke Style
+
+- [x] Global CSS: deep slate bg (#0d0f14), indigo-cyan accent, stroke-only buttons/badges, clean type scale, no dot grids
+- [x] ThemeProvider set to dark
+- [x] Navbar: dark bg, stroke-only CTA button, monospace label
+- [x] Home: dark hero, stroke buttons, clean stat bar, dark service cards with border only
+- [x] Services page: dark layout, stroke badges, inline category labels
+- [x] StageHand™ page: dark layout, stroke accent
+- [x] StagePro™ page: dark layout, stroke accent
+- [x] ShowsCalendar page: dark layout, stroke filter pills, dark show cards
+- [x] ShowDetail page: dark layout, stroke booking form

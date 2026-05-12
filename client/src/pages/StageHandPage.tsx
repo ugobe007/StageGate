@@ -5,9 +5,14 @@ import {
   Activity, Phone, CheckCircle2
 } from "lucide-react";
 
-const AMBER = "oklch(0.58 0.17 55)";
-const AMBER_BG = "oklch(0.58 0.17 55 / 0.08)";
-const AMBER_BORDER = "oklch(0.58 0.17 55 / 0.22)";
+/* ── Palette ─────────────────────────────────────────────────────────── */
+const BG     = "oklch(0.11 0.012 262)";
+const CARD   = "oklch(0.14 0.014 262)";
+const BORDER = "oklch(0.22 0.016 262)";
+const AMBER  = "oklch(0.70 0.17 55)";
+const TEXT_HI  = "oklch(0.93 0.005 240)";
+const TEXT_MID = "oklch(0.70 0.008 240)";
+const TEXT_DIM = "oklch(0.50 0.010 240)";
 
 const TIERS = [
   {
@@ -48,59 +53,53 @@ const USE_CASES = [
 
 export default function StageHandPage() {
   return (
-    <div className="min-h-screen" style={{ background: "oklch(0.98 0.002 240)", color: "oklch(0.10 0.010 240)" }}>
+    <div className="min-h-screen" style={{ background: BG, color: TEXT_HI }}>
       <Navbar />
 
-      {/* ── Hero ─────────────────────────────────────────────────────────────── */}
-      <section
-        className="pt-28 pb-20 border-b"
-        style={{ borderColor: "oklch(0.90 0.005 240)", background: "oklch(1.00 0.000 0)" }}
-      >
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          {/* Icon badge */}
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="pt-28 pb-20 border-b" style={{ borderColor: BORDER, background: CARD }}>
+        <div className="max-w-5xl mx-auto px-6 text-center">
+          {/* Icon — stroke only */}
           <div
-            className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-6"
-            style={{ background: AMBER_BG, border: `1px solid ${AMBER_BORDER}` }}
+            className="w-12 h-12 rounded flex items-center justify-center mx-auto mb-6"
+            style={{ border: `1px solid ${AMBER}55`, background: `${AMBER}0d` }}
           >
-            <Clock size={26} style={{ color: AMBER }} />
+            <Clock size={22} style={{ color: AMBER }} />
           </div>
 
-          {/* Eyebrow */}
+          {/* Eyebrow — stroke badge */}
           <div
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full border mb-6"
-            style={{ color: AMBER, borderColor: AMBER_BORDER, background: AMBER_BG }}
+            style={{ color: AMBER, borderColor: `${AMBER}55`, background: `${AMBER}0d` }}
           >
             <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: AMBER }} />
-            <span className="font-mono text-[11px] tracking-widest uppercase font-semibold">24/7 Technical Support</span>
+            <span className="font-mono text-[10px] tracking-widest uppercase">24/7 Technical Support</span>
           </div>
 
           <h1
-            className="text-5xl md:text-6xl font-extrabold mb-4"
-            style={{ color: "oklch(0.08 0.010 240)", letterSpacing: "-0.035em" }}
+            className="text-5xl md:text-6xl font-bold mb-4"
+            style={{ color: TEXT_HI, letterSpacing: "-0.035em" }}
           >
             StageHand<sup className="text-xl font-normal align-super">™</sup>
           </h1>
-          <p className="text-lg max-w-2xl mx-auto mb-8 leading-relaxed" style={{ color: "oklch(0.45 0.010 240)" }}>
+          <p className="text-base max-w-2xl mx-auto mb-8 leading-relaxed" style={{ color: TEXT_MID }}>
             Ongoing remote and on-site technical support for robots in the field.
             When your robot needs help, we're already there.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/register">
-              <span className="btn-primary">Get Started Free <ArrowRight size={14} /></span>
+              <span className="btn-primary">Get started free <ArrowRight size={14} /></span>
             </Link>
             <Link href="/order">
-              <span className="btn-default">Book Support Now</span>
+              <span className="btn-default">Book support now</span>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── Stats bar ─────────────────────────────────────────────────────────── */}
-      <div
-        className="border-b"
-        style={{ borderColor: "oklch(0.90 0.005 240)", background: "oklch(0.97 0.003 240)" }}
-      >
-        <div className="max-w-6xl mx-auto px-6 py-10">
+      {/* ── Stats bar ─────────────────────────────────────────────────────── */}
+      <div className="border-b" style={{ borderColor: BORDER }}>
+        <div className="max-w-5xl mx-auto px-6 py-10">
           <div className="grid grid-cols-3 gap-6 text-center">
             {[
               { value: "24/7",  label: "Always Available" },
@@ -109,27 +108,24 @@ export default function StageHandPage() {
             ].map(({ value, label }) => (
               <div key={label}>
                 <div
-                  className="text-3xl font-extrabold tracking-tight mb-1"
+                  className="text-3xl font-bold tracking-tight mb-1"
                   style={{ color: AMBER, letterSpacing: "-0.03em" }}
                 >
                   {value}
                 </div>
-                <div className="text-xs" style={{ color: "oklch(0.52 0.010 240)" }}>{label}</div>
+                <div className="text-xs" style={{ color: TEXT_DIM }}>{label}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ── Use Cases ─────────────────────────────────────────────────────────── */}
-      <section className="py-20 border-b" style={{ borderColor: "oklch(0.90 0.005 240)" }}>
-        <div className="max-w-6xl mx-auto px-6">
+      {/* ── Use Cases ─────────────────────────────────────────────────────── */}
+      <section className="py-20 border-b" style={{ borderColor: BORDER }}>
+        <div className="max-w-5xl mx-auto px-6">
           <div className="mb-10">
-            <div className="section-label" style={{ color: AMBER }}>Use Cases</div>
-            <h2
-              className="text-3xl font-extrabold"
-              style={{ color: "oklch(0.08 0.010 240)", letterSpacing: "-0.03em" }}
-            >
+            <p className="section-label mb-2" style={{ color: AMBER }}>Use Cases</p>
+            <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
               When You Need StageHand™
             </h2>
           </div>
@@ -137,18 +133,20 @@ export default function StageHandPage() {
             {USE_CASES.map(({ icon: Icon, title, desc }) => (
               <div
                 key={title}
-                className="sg-card flex gap-4"
-                style={{ borderTopColor: AMBER, borderTopWidth: "2px" }}
+                className="rounded-xl border p-5 flex gap-4 transition-colors"
+                style={{ background: CARD, borderColor: BORDER }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${AMBER}44`; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = BORDER; }}
               >
                 <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: AMBER_BG, border: `1px solid ${AMBER_BORDER}` }}
+                  className="w-9 h-9 rounded flex items-center justify-center flex-shrink-0"
+                  style={{ border: `1px solid ${AMBER}44`, background: `${AMBER}0d` }}
                 >
-                  <Icon size={16} style={{ color: AMBER }} />
+                  <Icon size={15} style={{ color: AMBER }} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm mb-1" style={{ color: "oklch(0.10 0.010 240)" }}>{title}</h3>
-                  <p className="text-xs leading-relaxed" style={{ color: "oklch(0.50 0.010 240)" }}>{desc}</p>
+                  <h3 className="font-semibold text-sm mb-1" style={{ color: TEXT_HI }}>{title}</h3>
+                  <p className="text-xs leading-relaxed" style={{ color: TEXT_DIM }}>{desc}</p>
                 </div>
               </div>
             ))}
@@ -156,21 +154,15 @@ export default function StageHandPage() {
         </div>
       </section>
 
-      {/* ── Pricing ───────────────────────────────────────────────────────────── */}
-      <section
-        className="py-20 border-b"
-        style={{ borderColor: "oklch(0.90 0.005 240)", background: "oklch(0.97 0.003 240)" }}
-      >
-        <div className="max-w-6xl mx-auto px-6">
+      {/* ── Pricing ───────────────────────────────────────────────────────── */}
+      <section className="py-20 border-b" style={{ borderColor: BORDER, background: CARD }}>
+        <div className="max-w-5xl mx-auto px-6">
           <div className="mb-10">
-            <div className="section-label" style={{ color: AMBER }}>Pricing</div>
-            <h2
-              className="text-3xl font-extrabold"
-              style={{ color: "oklch(0.08 0.010 240)", letterSpacing: "-0.03em" }}
-            >
+            <p className="section-label mb-2" style={{ color: AMBER }}>Pricing</p>
+            <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
               StageHand™ Plans
             </h2>
-            <p className="mt-1 text-sm" style={{ color: "oklch(0.52 0.010 240)" }}>
+            <p className="mt-1 text-sm" style={{ color: TEXT_DIM }}>
               Monthly retainers with flexible SLA options.
             </p>
           </div>
@@ -178,46 +170,40 @@ export default function StageHandPage() {
             {TIERS.map((tier) => (
               <div
                 key={tier.name}
-                className="sg-card flex flex-col"
+                className="rounded-xl border p-6 flex flex-col gap-4"
                 style={{
-                  borderTopColor: tier.highlight ? AMBER : "oklch(0.90 0.005 240)",
-                  borderTopWidth: tier.highlight ? "3px" : "1px",
+                  background: BG,
+                  borderColor: tier.highlight ? `${AMBER}55` : BORDER,
                 }}
               >
                 {tier.highlight && (
                   <div
-                    className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold tracking-widest uppercase mb-3 px-2 py-0.5 rounded-full border w-fit"
-                    style={{ color: AMBER, borderColor: AMBER_BORDER, background: AMBER_BG }}
+                    className="inline-flex items-center gap-1.5 text-[10px] font-mono tracking-widest uppercase px-2 py-0.5 rounded-full border w-fit"
+                    style={{ color: AMBER, borderColor: `${AMBER}44`, background: `${AMBER}0d` }}
                   >
                     <Shield size={9} /> Most Popular
                   </div>
                 )}
-                <h3
-                  className="font-bold mb-2"
-                  style={{ color: "oklch(0.10 0.010 240)" }}
-                >
-                  {tier.name}
-                </h3>
-                <div className="mb-5">
-                  <span className="text-3xl font-extrabold tracking-tight" style={{ color: AMBER, letterSpacing: "-0.03em" }}>
+                <h3 className="font-semibold" style={{ color: TEXT_HI }}>{tier.name}</h3>
+                <div>
+                  <span className="text-3xl font-bold tracking-tight" style={{ color: AMBER, letterSpacing: "-0.03em" }}>
                     {tier.price}
                   </span>
-                  <span className="text-sm ml-1" style={{ color: "oklch(0.52 0.010 240)" }}>{tier.unit}</span>
+                  <span className="text-sm ml-1" style={{ color: TEXT_DIM }}>{tier.unit}</span>
                 </div>
-                <ul className="space-y-2 mb-6 flex-1">
+                <ul className="space-y-2 flex-1">
                   {tier.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm" style={{ color: "oklch(0.42 0.010 240)" }}>
+                    <li key={f} className="flex items-start gap-2 text-xs" style={{ color: TEXT_MID }}>
                       <CheckCircle2 size={12} className="mt-0.5 flex-shrink-0" style={{ color: AMBER }} />
                       {f}
                     </li>
                   ))}
                 </ul>
                 <Link href="/register">
-                  <span
-                    className={`${tier.highlight ? "btn-primary" : "btn-default"} w-full justify-center`}
-                    style={tier.highlight ? { background: AMBER, borderColor: AMBER } : {}}
+                  <span className={`${tier.highlight ? "btn-primary" : "btn-default"} w-full justify-center`}
+                    style={tier.highlight ? { borderColor: `${AMBER}55`, color: AMBER, background: `${AMBER}0d` } : {}}
                   >
-                    Get Started Free
+                    Get started free
                   </span>
                 </Link>
               </div>
@@ -226,25 +212,20 @@ export default function StageHandPage() {
         </div>
       </section>
 
-      {/* ── CTA ───────────────────────────────────────────────────────────────── */}
-      <section className="py-20" style={{ background: "oklch(0.10 0.010 240)" }}>
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <div className="section-label mx-auto justify-center mb-4" style={{ color: AMBER }}>
-            Get Started
-          </div>
-          <h2
-            className="text-3xl font-extrabold mb-3"
-            style={{ color: "oklch(0.97 0.002 240)", letterSpacing: "-0.03em" }}
-          >
+      {/* ── CTA ───────────────────────────────────────────────────────────── */}
+      <section className="py-20">
+        <div className="max-w-5xl mx-auto px-6 text-center">
+          <p className="section-label mx-auto justify-center mb-4" style={{ color: AMBER }}>Get Started</p>
+          <h2 className="text-3xl font-bold mb-3" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
             Your Robot Deserves Always-On Support
           </h2>
-          <p className="mb-7 max-w-md mx-auto text-sm leading-relaxed" style={{ color: "oklch(0.60 0.010 240)" }}>
+          <p className="mb-7 max-w-md mx-auto text-sm leading-relaxed" style={{ color: TEXT_DIM }}>
             Register your company for free and add StageHand™ to your service plan.
             No commitment until you're ready.
           </p>
           <Link href="/register">
-            <span className="btn-primary" style={{ background: AMBER, borderColor: AMBER }}>
-              Register Free Today <ArrowRight size={14} />
+            <span className="btn-primary" style={{ borderColor: `${AMBER}55`, color: AMBER, background: `${AMBER}0d` }}>
+              Register free today <ArrowRight size={14} />
             </span>
           </Link>
         </div>
