@@ -21,8 +21,8 @@ export default function Navbar() {
   const isAdmin = user?.role === "admin";
 
   const navLinks = [
-    { href: "/shows",     label: "Shows" },
     { href: "/services",  label: "Services" },
+    { href: "/shows",     label: "Shows" },
     { href: "/stagehand", label: "StageHand™" },
     { href: "/stagepro",  label: "StagePro™" },
     ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
@@ -168,12 +168,26 @@ export default function Navbar() {
                     Sign in
                   </span>
                 </a>
-                <button
-                  onClick={() => setQuoteOpen(true)}
-                  className="btn-nav"
-                >
-                  Get a quote
-                </button>
+                <Link href="/register">
+                  <button
+                    style={{
+                      padding: "0.4rem 1rem",
+                      fontSize: "0.8125rem",
+                      fontWeight: 600,
+                      letterSpacing: "0.02em",
+                      color: "#fff",
+                      background: "#4f6ef7",
+                      border: "none",
+                      borderRadius: "0.375rem",
+                      cursor: "pointer",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget.style.background = "#3b5be8"); }}
+                    onMouseLeave={e => { (e.currentTarget.style.background = "#4f6ef7"); }}
+                  >
+                    Register Free
+                  </button>
+                </Link>
               </>
             )}
           </div>

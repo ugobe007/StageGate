@@ -229,3 +229,15 @@
 - [x] Clear (×) button inside input when query is non-empty
 - [x] Result count reflects combined search + status filter
 - [x] Empty state message mentions the search query
+
+## v4.0 — Conversion-Focused Full Rebuild (Robot Guild + Dribbble Reference)
+
+- [ ] CSS: Space Grotesk font, near-black bg (#050508), electric blue accent (#4f6ef7), violet secondary (#7c3aed), refined tokens
+- [ ] Navbar: minimal 4-link nav + 2 CTA buttons (How It Works ghost, Register filled)
+- [ ] Hero: full-bleed robot photo background, massive headline overlay, positioning statement, 2 CTAs
+- [ ] Service value strip: 5 cards in priority order (Warehouse, Ship/Receive, Stage, Activate, Promote) with numbered badges
+- [ ] How It Works: 4-step numbered section with descriptions
+- [ ] Shows preview: next 3 upcoming Las Vegas shows with date + register link
+- [ ] Robot Guild partner section: logo + description + link
+- [ ] Final CTA: "Schedule Your Robot" full-width section
+- [ ] Footer: minimal links + contact
