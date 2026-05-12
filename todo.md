@@ -189,3 +189,11 @@
 - [x] Photo grid section: mosaic of robot CES photos
 - [x] Service lines: clean text-only list or minimal card grid
 - [x] Bottom CTA: full-width black section with large headline + single button
+
+## v3.1 — Las Vegas Focus + Blue/Purple Accent + CTA Refinement
+
+- [x] Add blue/deep-purple accent CSS variable and text utility class
+- [x] Apply accent color to key headline words (e.g. "Las Vegas", "Performs", "Stage")
+- [x] Tighten all copy to Las Vegas focus only (remove any multi-city promises)
+- [x] Replace hero CTAs with: Register, Demo, How It Works, Services
+- [x] Update bottom CTA section to match new button set

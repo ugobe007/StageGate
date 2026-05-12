@@ -204,6 +204,19 @@
     padding-right: 2rem;
   }
 
+  /* Accent text — blue/deep purple */
+  .text-accent {
+    color: #7c6bff;
+  }
+
+  /* Accent gradient text — indigo to violet */
+  .text-accent-gradient {
+    background: linear-gradient(90deg, #6d7fff 0%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
   /* Badge — inline stroke */
   .badge-stroke {
     display: inline-flex;

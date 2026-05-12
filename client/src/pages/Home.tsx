@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
-import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown, Play } from "lucide-react";
 import GetQuoteModal from "@/components/GetQuoteModal";
 
 /* ── Image URLs ─────────────────────────────────────────────────────────────── */
@@ -48,8 +46,8 @@ function useInView(threshold = 0.3) {
 }
 
 export default function Home() {
-  const { isAuthenticated } = useAuth();
   const [quoteOpen, setQuoteOpen] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
   const { ref: statsRef, inView: statsVisible } = useInView(0.4);
 
   const shows   = useCountUp(19, 1600, statsVisible);
@@ -101,8 +99,8 @@ export default function Home() {
             }}
           >
             Your Robot<br />
-            Performs.<br />
-            <span style={{ color: "rgba(255,255,255,0.35)" }}>
+            <span className="text-accent-gradient">Performs.</span><br />
+            <span style={{ color: "rgba(255,255,255,0.30)" }}>
               We Handle<br />Everything Else.
             </span>
           </h1>
@@ -118,31 +116,29 @@ export default function Home() {
               fontWeight: 400,
             }}
           >
-            Warehouse your robots in Las Vegas year-round. We stage, activate,
-            and support them at every major trade show — so your engineers stay home.
+            Las Vegas is the world's trade show capital. Warehouse your robots here year-round — we stage, activate, and support them at every major show, so your engineers stay home.
           </p>
 
-          {/* CTAs */}
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
-            {isAuthenticated ? (
-              <Link href="/dashboard">
-                <button className="btn-primary">
-                  Go to Dashboard <ArrowRight size={16} />
-                </button>
-              </Link>
-            ) : (
-              <a href={getLoginUrl()}>
-                <button className="btn-primary">
-                  Get started free <ArrowRight size={16} />
-                </button>
-              </a>
-            )}
+          {/* CTAs — 4 actions */}
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+            <Link href="/register">
+              <button className="btn-primary">
+                Register <ArrowRight size={15} />
+              </button>
+            </Link>
             <button
               className="btn-default"
-              onClick={() => setQuoteOpen(true)}
+              onClick={() => setDemoOpen(true)}
+              style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
             >
-              Get a quote
+              <Play size={13} style={{ opacity: 0.7 }} /> Demo
             </button>
+            <a href="#how-it-works">
+              <button className="btn-default">How it works</button>
+            </a>
+            <Link href="/services">
+              <button className="btn-default">Services</button>
+            </Link>
           </div>
 
           {/* Trust line */}
@@ -154,7 +150,7 @@ export default function Home() {
               flexWrap: "wrap",
             }}
           >
-            {["Free registration", "No long-term contracts", "Las Vegas HQ"].map(t => (
+            {["Las Vegas HQ", "Free registration", "No long-term contracts"].map(t => (
               <span
                 key={t}
                 style={{
@@ -319,7 +315,7 @@ export default function Home() {
         }}
       >
         <div className="container" style={{ paddingTop: "6rem" }}>
-          <div className="section-label" style={{ marginBottom: "3rem" }}>How it works</div>
+          <div id="how-it-works" className="section-label" style={{ marginBottom: "3rem" }}>How it works — Las Vegas</div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2px" }}>
             {[
@@ -667,7 +663,7 @@ export default function Home() {
         }}
       >
         <div className="container">
-          <div className="section-label" style={{ marginBottom: "2rem" }}>Ready to start?</div>
+          <div className="section-label" style={{ marginBottom: "2rem" }}>Las Vegas · Ready to start?</div>
           <h2
             style={{
               fontSize: "clamp(2.5rem, 6vw, 5rem)",
@@ -679,41 +675,36 @@ export default function Home() {
             }}
           >
             Your robot belongs<br />
-            <span style={{ color: "rgba(255,255,255,0.30)" }}>on the show floor.</span>
+            <span className="text-accent-gradient">on the Las Vegas floor.</span>
           </h2>
           <p
             style={{
               fontSize: "1.125rem",
               color: "rgba(255,255,255,0.45)",
               lineHeight: 1.65,
-              maxWidth: "42ch",
+              maxWidth: "44ch",
               margin: "0 auto 3rem",
             }}
           >
-            Register free today. Tell us about your robot and your show schedule.
-            We'll handle everything from the first crate to the last curtain call.
+            Register free. Tell us about your robot and your Las Vegas show schedule.
+            We handle everything from the first crate to the last curtain call.
           </p>
-          <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
-            {isAuthenticated ? (
-              <Link href="/dashboard">
-                <button className="btn-primary" style={{ padding: "0.875rem 2.5rem", fontSize: "1rem" }}>
-                  Go to Dashboard <ArrowRight size={17} />
-                </button>
-              </Link>
-            ) : (
-              <a href={getLoginUrl()}>
-                <button className="btn-primary" style={{ padding: "0.875rem 2.5rem", fontSize: "1rem" }}>
-                  Get started free <ArrowRight size={17} />
-                </button>
-              </a>
-            )}
+          <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", flexWrap: "wrap" }}>
+            <Link href="/register">
+              <button className="btn-primary" style={{ padding: "0.875rem 2.25rem", fontSize: "1rem" }}>
+                Register <ArrowRight size={17} />
+              </button>
+            </Link>
             <button
               className="btn-default"
-              style={{ padding: "0.875rem 2.5rem", fontSize: "1rem" }}
-              onClick={() => setQuoteOpen(true)}
+              style={{ padding: "0.875rem 2.25rem", fontSize: "1rem", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+              onClick={() => setDemoOpen(true)}
             >
-              Talk to us
+              <Play size={14} style={{ opacity: 0.7 }} /> Demo
             </button>
+            <Link href="/services">
+              <button className="btn-default" style={{ padding: "0.875rem 2.25rem", fontSize: "1rem" }}>Services</button>
+            </Link>
           </div>
         </div>
       </section>
@@ -788,6 +779,7 @@ export default function Home() {
       </footer>
 
       <GetQuoteModal open={quoteOpen} onOpenChange={setQuoteOpen} />
+      <GetQuoteModal open={demoOpen} onOpenChange={setDemoOpen} />
     </div>
   );
 }
