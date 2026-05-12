@@ -216,3 +216,10 @@
 - [x] Add "Demo Requests" nav button and quick link card to AdminDashboard
 - [x] Register /admin/demos route in App.tsx
 - [x] Write vitest tests for demos.list and demos.updateStatus admin procedures (54 total tests passing)
+
+## v3.4 — Demo Requests Filter & Sort
+- [x] Status filter pills: All / New / Contacted / Scheduled / Completed / Closed
+- [x] Sort dropdown: Newest First / Oldest First / Company A–Z / Company Z–A / Robot Type A–Z
+- [x] Active filter count badge on each status pill
+- [x] "Clear" button when status filter is active + empty-state clear button
+- [x] Result count label ("Showing X of Y requests · filtered by ... · sorted by ...")
