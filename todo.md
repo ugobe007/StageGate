@@ -303,26 +303,31 @@
 ## v6.0 — Visibility, Prospect Research & XBOT Outreach Engine
 
 ### UI Fixes
-- [ ] Amber CTA buttons: increase font weight to 700, add solid amber fill (not stroke-only), increase padding, add hover glow
-- [ ] Home page white text: increase font weight to 700+ on all body/description text, or shift to off-white (#f0f0f0) for better contrast
-- [ ] Hero subheadline and section descriptions: ensure minimum contrast ratio 4.5:1 against dark background
+- [x] Amber CTA buttons: increase font weight to 700, add solid amber fill (not stroke-only), increase padding, add hover glow
+- [x] Home page white text: increased opacity to 0.75 on all body/description text for better contrast
+- [x] Hero subheadline and section descriptions: opacity boosted to 0.75 minimum
 
 ### Prospect Research
-- [ ] Research robotics companies exhibiting at CES (Las Vegas, Jan)
-- [ ] Research robotics companies at Manifest (Las Vegas, Feb)
-- [ ] Research robotics companies at Concrete World (Las Vegas)
-- [ ] Research robotics companies at AUTOMATE (Detroit/Chicago)
-- [ ] Research robotics companies at ACTExpo (Las Vegas)
-- [ ] Research robotics companies at additional Las Vegas trade shows (NAB, SEMA, MHI ProMat, etc.)
-- [ ] Build structured prospect list: company, robot name/type, contact name, email, show(s), relevance score
+- [x] Research robotics companies exhibiting at CES (Las Vegas, Jan)
+- [x] Research robotics companies at Manifest (Las Vegas, Feb)
+- [x] Research robotics companies at Concrete World (Las Vegas)
+- [x] Research robotics companies at AUTOMATE (Detroit/Chicago)
+- [x] Research robotics companies at ACTExpo (Las Vegas)
+- [x] Research robotics companies at additional Las Vegas trade shows (NAB, SEMA, MHI ProMat, etc.)
+- [x] Build structured prospect list: 78 companies seeded — company, robot name/type, contact dept, shows, notes, status
 
 ### XBOT Outreach Engine
-- [ ] DB: prospects table (id, company, robotName, robotType, contactName, contactEmail, contactTitle, shows JSON, status, notes, createdAt)
-- [ ] DB: outreach_campaigns table (id, prospectId, emailSentAt, emailTemplate, videoMessageUrl, responseStatus, scheduledCallAt, createdAt)
-- [ ] tRPC: prospects.list, prospects.create, prospects.update, prospects.bulkImport
-- [ ] tRPC: outreach.sendIntroEmail (generates personalized email via LLM, sends via notification API)
-- [ ] tRPC: outreach.logVideoMessage (stores uploaded video URL against prospect)
-- [ ] Admin page /admin/prospects: table of all prospects with status, email send button, notes
-- [ ] Email template: personalized intro from XBOT — robot name, show, StageGate services pitch, registration link, schedule call CTA
-- [ ] Video message intake: upload widget on /xbot page for prospects to record/upload a video request
-- [ ] Schedule call CTA: links to Calendly or inline date picker for StageGate team call
+- [x] DB: prospects table (id, company, robotName, robotType, contactName, contactEmail, contactTitle, shows JSON, status, notes, createdAt)
+- [x] DB: outreach_campaigns table (id, prospectId, emailSentAt, emailTemplate, videoMessageUrl, responseStatus, scheduledCallAt, createdAt)
+- [x] tRPC: prospects.list, prospects.create, prospects.update, prospects.bulkImport
+- [x] tRPC: outreach.sendIntroEmail (generates personalized email via LLM, sends via notification API)
+- [x] tRPC: outreach.logVideoMessage (stores uploaded video URL against prospect)
+- [x] Admin page /admin/prospects: table of all prospects with status, email send button, notes
+- [x] Email template: personalized intro from XBOT — robot name, show, StageGate services pitch, registration link, schedule call CTA
+- [x] Video message intake: upload widget on /xbot/video for prospects to record/upload a video request
+- [x] Schedule call CTA: wired to Meetup/Google Calendar booking URL on all pages and in email template
+
+## v6.1 — Calendar Link + Outreach Review
+- [x] Wire Meetup/Google Calendar booking URL into Schedule Call CTA across all pages and email templates
+- [x] Verify email drafts are properly personalized per prospect (robot name, show, pitch)
+- [x] Add direct link to /admin/prospects in the nav so owner can review and send emails

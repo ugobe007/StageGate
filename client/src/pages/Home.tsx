@@ -420,9 +420,11 @@ export default function Home() {
             <Link href="/register">
               <button className="btn-primary" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem" }}>Register Free <ArrowRight size={15} /></button>
             </Link>
-            <button className="btn-default" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem" }} onClick={() => setDemoOpen(true)}>
-              Request a Demo
-            </button>
+            <a href="http://www.meetup.com/events/ical/12604938/a97f35faab6d3193ae3a0a599d9fc521a423f275/going?t=1376143930" target="_blank" rel="noopener noreferrer">
+              <button className="btn-primary" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem", background: "transparent", border: "1px solid #f59e0b", color: "#f59e0b" }}>
+                Schedule a Call <ArrowUpRight size={15} />
+              </button>
+            </a>
             <Link href="/shows">
               <button className="btn-default" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem" }}>
                 View Shows <ArrowUpRight size={15} />
