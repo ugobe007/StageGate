@@ -154,20 +154,27 @@ export default function Navbar() {
             ) : (
               <>
                 <a href={getLoginUrl()}>
-                  <span
+                  <button
                     style={{
-                      display: "block",
-                      padding: "0.375rem 0.75rem",
-                      fontSize: "0.875rem",
-                      color: "rgba(255,255,255,0.40)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.35rem",
+                      padding: "0.375rem 0.9rem",
+                      fontSize: "0.8125rem",
+                      fontWeight: 600,
+                      letterSpacing: "0.02em",
+                      color: "rgba(255,255,255,0.75)",
+                      background: "transparent",
+                      border: "1px solid rgba(255,255,255,0.22)",
+                      borderRadius: "0.25rem",
                       cursor: "pointer",
-                      transition: "color 0.15s",
+                      transition: "all 0.15s",
                     }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.75)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.40)"; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.55)"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.22)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.75)"; }}
                   >
-                    Sign in
-                  </span>
+                    Sign In
+                  </button>
                 </a>
                 <Link href="/register">
                   <button className="btn-nav-primary">

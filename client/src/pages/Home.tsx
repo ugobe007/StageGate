@@ -3,6 +3,8 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
 import DemoRequestModal from "@/components/DemoRequestModal";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 /* ── Image URLs ─────────────────────────────────────────────────────────────── */
 const IMG_HERO   = "/manus-storage/ces-unitree-pack_cb20bcdc.png";
@@ -60,6 +62,7 @@ const STEPS = [
 ];
 
 export default function Home() {
+  const { isAuthenticated } = useAuth();
   const [demoOpen, setDemoOpen] = useState(false);
   const { ref: statsRef, inView: statsVisible } = useInView(0.4);
 
@@ -125,6 +128,9 @@ export default function Home() {
                 <button className="btn-primary">Register Free <ArrowRight size={14} /></button>
               </Link>
               <button className="btn-default" onClick={() => setDemoOpen(true)}>Request a Demo</button>
+              {!isAuthenticated && (
+                <a href={getLoginUrl()} className="btn-default">Sign In</a>
+              )}
               <a href="#how-it-works" className="btn-default">How It Works</a>
             </div>
           </div>

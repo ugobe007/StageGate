@@ -585,3 +585,9 @@ export async function updateOutreachCampaign(id: number, data: Partial<InsertOut
 
 // Suppress unused import warnings
 export type { Prospect, OutreachCampaign };
+
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  return db.select().from(users).orderBy(desc(users.createdAt));
+}

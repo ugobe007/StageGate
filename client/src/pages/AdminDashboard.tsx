@@ -7,7 +7,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import {
   Building2, Calendar, Package, Users, TrendingUp, ArrowRight,
-  Loader2, AlertCircle, CheckCircle, Clock, Zap, FileText, Play
+  Loader2, AlertCircle, Zap, FileText, Play,
+  ShieldCheck, BarChart3, UserCheck
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -17,6 +18,8 @@ export default function AdminDashboard() {
   const { data: shows } = trpc.shows.list.useQuery();
   const { data: allLeads } = trpc.leads.all.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: allProfiles } = trpc.company.getAllProfiles.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
+  const { data: siteStats } = trpc.admin.getSiteStats.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
+  const { data: allUsers } = trpc.admin.getUsers.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
 
   if (loading) {
     return (
@@ -142,6 +145,27 @@ export default function AdminDashboard() {
             ))}
           </div>
 
+          {/* Site Stats Row */}
+          {siteStats && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+              {[
+                { label: "Registered Users", value: siteStats.users.total, sub: `${siteStats.users.admins} admin`, icon: UserCheck, color: "text-primary" },
+                { label: "Service Orders", value: siteStats.orders.total, sub: `${siteStats.orders.byStatus?.pending ?? 0} pending`, icon: Package, color: "text-yellow-400" },
+                { label: "Demo Requests", value: siteStats.demos.total, sub: `${siteStats.demos.pending} pending`, icon: Play, color: "text-violet-400" },
+                { label: "Quote Requests", value: siteStats.quotes.total, sub: `${siteStats.quotes.pending} pending`, icon: FileText, color: "text-green-400" },
+                { label: "Exhibitor Leads", value: siteStats.leads.total, sub: "from trade shows", icon: Zap, color: "text-orange-400" },
+                { label: "XBOT Prospects", value: siteStats.prospects.total, sub: `${siteStats.prospects.byStatus?.responded ?? 0} responded`, icon: BarChart3, color: "text-emerald-400" },
+              ].map(s => (
+                <div key={s.label} className="p-4 rounded-xl border border-border bg-card">
+                  <s.icon size={15} className={`${s.color} mb-2`} />
+                  <div className={`text-2xl font-display font-bold ${s.color}`}>{s.value}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{s.label}</div>
+                  <div className="text-xs text-muted-foreground/60 mt-0.5">{s.sub}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Outreach Pipeline */}
             <div className="p-6 rounded-xl border border-border bg-card">
@@ -226,6 +250,45 @@ export default function AdminDashboard() {
               )}
             </div>
           </div>
+
+          {/* Users Table */}
+          {allUsers && allUsers.length > 0 && (
+            <div className="mt-6 p-6 rounded-xl border border-border bg-card">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-primary" />
+                  Registered Users
+                  <Badge className="ml-1 bg-primary/10 text-primary border-primary/30 text-xs">{allUsers.length}</Badge>
+                </h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      {["Name", "Email", "Role", "Joined", "Last Sign In"].map(h => (
+                        <th key={h} className="text-left pb-3 pr-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allUsers.map((u) => (
+                      <tr key={u.id} className="border-b border-border/40 hover:bg-secondary/20 transition-colors">
+                        <td className="py-3 pr-4 font-medium text-foreground">{u.name || <span className="text-muted-foreground italic">—</span>}</td>
+                        <td className="py-3 pr-4 text-muted-foreground font-mono text-xs">{u.email || "—"}</td>
+                        <td className="py-3 pr-4">
+                          <Badge className={u.role === "admin" ? "bg-primary/20 text-primary border-primary/30 text-xs" : "bg-secondary text-muted-foreground border-border text-xs"}>
+                            {u.role}
+                          </Badge>
+                        </td>
+                        <td className="py-3 pr-4 text-muted-foreground text-xs">{new Date(u.createdAt).toLocaleDateString()}</td>
+                        <td className="py-3 text-muted-foreground text-xs">{new Date(u.lastSignedIn).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Quick Links */}
           <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">

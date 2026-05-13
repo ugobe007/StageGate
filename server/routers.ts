@@ -1043,5 +1043,36 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return { success: true };
       }),
   }),
+  admin: router({
+    getUsers: adminProcedure.query(async () => {
+      return db.getAllUsers();
+    }),
+    getSiteStats: adminProcedure.query(async () => {
+      const [users, orders, demos, quotes, leads, prospects] = await Promise.all([
+        db.getAllUsers(),
+        db.getAllOrders(),
+        db.getAllDemoRequests(),
+        db.getAllQuoteRequests(),
+        db.getAllLeads(),
+        db.listProspects(),
+      ]);
+      const prospectsByStatus = prospects.reduce((acc: Record<string, number>, p: { status: string }) => {
+        acc[p.status] = (acc[p.status] ?? 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      const ordersByStatus = orders.reduce((acc: Record<string, number>, o: { status: string }) => {
+        acc[o.status] = (acc[o.status] ?? 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      return {
+        users: { total: users.length, admins: users.filter((u: { role: string }) => u.role === "admin").length },
+        orders: { total: orders.length, byStatus: ordersByStatus },
+        demos: { total: demos.length, pending: demos.filter((d: { status: string }) => d.status === "pending").length },
+        quotes: { total: quotes.length, pending: quotes.filter((q: { status: string }) => q.status === "pending").length },
+        leads: { total: leads.length },
+        prospects: { total: prospects.length, byStatus: prospectsByStatus },
+      };
+    }),
+  }),
 });
 export type AppRouter = typeof appRouter;
