@@ -57,6 +57,13 @@
       "when": 1778694004074,
       "tag": "0007_motionless_gravity",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1778706776603,
+      "tag": "0008_material_arclight",
+      "breakpoints": true
     }
   ]
 }

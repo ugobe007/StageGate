@@ -885,7 +885,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     markReplied: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
-        await db.updateProspect(input.id, { status: "responded" });
+        await db.updateProspect(input.id, { status: "responded", repliedAt: new Date() });
         return { success: true };
       }),
 

@@ -549,11 +549,20 @@ describe("prospects.markReplied", () => {
     } as any);
   });
 
-  it("allows admin to mark a prospect as responded", async () => {
+  it("allows admin to mark a prospect as responded and records repliedAt timestamp", async () => {
     const caller = appRouter.createCaller(createAdminCtx());
+    const before = Date.now();
     const result = await caller.prospects.markReplied({ id: 1 });
+    const after = Date.now();
     expect(result).toEqual({ success: true });
-    expect(vi.mocked(updateProspect)).toHaveBeenCalledWith(1, { status: "responded" });
+    expect(vi.mocked(updateProspect)).toHaveBeenCalledOnce();
+    const callArgs = vi.mocked(updateProspect).mock.calls[0];
+    expect(callArgs[0]).toBe(1);
+    expect(callArgs[1].status).toBe("responded");
+    expect(callArgs[1].repliedAt).toBeInstanceOf(Date);
+    const ts = (callArgs[1].repliedAt as Date).getTime();
+    expect(ts).toBeGreaterThanOrEqual(before);
+    expect(ts).toBeLessThanOrEqual(after);
   });
 
   it("rejects non-admin users", async () => {

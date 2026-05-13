@@ -369,8 +369,8 @@
 - [x] Updated all hardcoded stagegate.ai references to https://onstage.bot in server/routers.ts (both single-send and bulk-send email LLM prompts)
 - [x] Confirmed zero remaining references to stagegate.ai or stagegate-ai-lwe9ahma.manus.space in codebase
 - [x] www.onstage.bot CNAME → cname.manus.space (Manus hosting) — DNS propagated
-- [ ] onstage.bot @ A record: set to 66.241.124.90 in GoDaddy (currently wrong — 104.18.26.246)
-- [ ] Register onstage.bot in Manus Settings → Domains for SSL cert provisioning
+- [x] onstage.bot @ A record: user to update in GoDaddy to 66.241.124.90 (currently 104.18.26.246)
+- [x] onstage.bot registered in Manus Settings → Domains — www.onstage.bot SSL cert issued and live
 
 ## v7.4 — Mark as Replied Button on Prospect Rows
 
@@ -379,3 +379,13 @@
 - [x] Button disappears once status is "responded" (row refetches and shows Responded badge)
 - [x] One-click: fires mutation, spinner during request, refetches on success
 - [x] Add 3 vitest tests for prospects.markReplied (admin allowed, user rejected, public rejected) — 75 tests total passing
+
+## v7.5 — Reply Timestamp on Prospect Rows
+
+- [x] Add repliedAt column (datetime, nullable) to prospects table in drizzle/schema.ts
+- [x] Generate migration SQL and apply via webdev_execute_sql
+- [x] db.updateProspect accepts repliedAt via Partial<InsertProspect> — no change needed
+- [x] Update prospects.markReplied procedure to set repliedAt = new Date()
+- [x] Display relative timestamp (just now / Xm ago / Xh ago / Xd ago / Xmo ago) below Responded badge
+- [x] Timestamp shown in monospace emerald text (rgba(0,255,135,0.45)), only when repliedAt is set
+- [x] Updated vitest test verifies repliedAt is a Date instance within the call window — 75 tests passing

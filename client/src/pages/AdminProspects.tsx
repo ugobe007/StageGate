@@ -7,6 +7,20 @@ import { ExternalLink, Mail, RefreshCw, ChevronDown, Check, X, Clock, Phone, Ale
 
 type ProspectStatus = "new" | "contacted" | "responded" | "scheduled" | "converted" | "not_interested";
 
+function formatRelativeTime(date: Date): string {
+  const now = Date.now();
+  const diff = now - date.getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months}mo ago`;
+}
+
 const STATUS_CONFIG: Record<ProspectStatus, { label: string; color: string; icon: React.ReactNode }> = {
   new:            { label: "New",           color: "rgba(255,255,255,0.35)", icon: <AlertCircle size={11} /> },
   contacted:      { label: "Contacted",     color: "#f59e0b",                icon: <Mail size={11} /> },
@@ -528,9 +542,16 @@ export default function AdminProspects() {
                     </div>
 
                     {/* Status */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: cfg.color, fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                      {cfg.icon}
-                      {cfg.label}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: cfg.color, fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                        {cfg.icon}
+                        {cfg.label}
+                      </div>
+                      {p.status === "responded" && (p as Record<string, unknown>).repliedAt != null && (
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(0,255,135,0.45)", letterSpacing: "0.04em" }}>
+                          {formatRelativeTime(new Date(String((p as Record<string, unknown>).repliedAt)))}
+                        </span>
+                      )}
                     </div>
 
                     {/* Actions */}

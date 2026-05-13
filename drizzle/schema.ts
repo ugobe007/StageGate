@@ -295,6 +295,7 @@ export const prospects = mysqlTable("prospects", {
   scheduledCallAt: timestamp("scheduledCallAt"),
   contactLinkedIn: varchar("contactLinkedIn", { length: 512 }),
   emailConfidence: varchar("emailConfidence", { length: 20 }).default("low"),
+  repliedAt: timestamp("repliedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
