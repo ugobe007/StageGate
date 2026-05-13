@@ -417,14 +417,14 @@
 
 ## v7.9 — Sign In/Up Button + Admin Panel
 
-- [ ] Add Sign In / Sign Up button to Navbar (visible when logged out, shows user avatar/name when logged in)
-- [ ] Add Sign In CTA to Home page hero section
-- [ ] Admin panel: pipeline overview (prospects funnel stats, demo requests, quotes, leads counts)
-- [ ] Admin panel: users table (id, name, email, role, joined date, last seen)
-- [ ] Admin panel: site stats (total registrations, demo requests, service orders, XBOT projects)
-- [ ] Add admin.getUsers tRPC procedure (admin-only, returns user list)
-- [ ] Add admin.getSiteStats tRPC procedure (admin-only, returns aggregate counts)
-- [ ] Wire all admin panel sections to live tRPC data
+- [x] Add Sign In / Sign Up button to Navbar (confirmed present — Sign In + Register Free buttons)
+- [x] Add Sign In CTA to Home page hero section (added, hidden when authenticated)
+- [x] Admin panel: pipeline overview (site stats row + outreach pipeline funnel in AdminDashboard)
+- [x] Admin panel: users table (name, email, role, joined, last sign in — in AdminDashboard)
+- [x] Admin panel: site stats (6-cell row: users, orders, demos, quotes, leads, prospects)
+- [x] Add admin.getUsers tRPC procedure (admin-only, returns user list ordered by createdAt desc)
+- [x] Add admin.getSiteStats tRPC procedure (admin-only, aggregate counts)
+- [x] Wire all admin panel sections to live tRPC data (all queries use adminProcedure)
 
 ## v7.9 — Sign In Button + Admin Panel Enhancements
 - [x] Add Sign In button to Home hero CTA (only shown when not authenticated)
