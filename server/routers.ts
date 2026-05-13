@@ -388,11 +388,13 @@ export const appRouter = router({
           await db.completeAgentRun(runId, "success", { outputSummary: `Discovered ${created.length} robotics leads` });
           return { count: created.length, leadIds: created };
         } catch (err) {
-          await db.completeAgentRun(runId, "error", { errorMessage: err instanceof Error ? err.message : String(err) });
+          const errMsg = err instanceof Error ? err.message : String(err);
+          await db.completeAgentRun(runId, "error", { errorMessage: errMsg });
+          await notifyOwner({ title: "⚠️ Agent Error: Lead Discovery", content: `Lead discovery agent failed.\n\nError: ${errMsg}` }).catch(() => {});
           throw err;
         }
       }),
-    // AI: Generate personalized outreach email for a leadd
+    // AI: Generate personalized outreach email for a lead
     generateEmail: adminProcedure
       .input(z.object({ leadId: z.number() }))
       .mutation(async ({ input, ctx }) => {
@@ -431,7 +433,9 @@ Subject line and body only.`,
         await db.completeAgentRun(runId, "success", { outputSummary: `Email draft generated for ${lead.companyName}` });
         return { emailDraft };
         } catch (err) {
-          await db.completeAgentRun(runId, "error", { errorMessage: err instanceof Error ? err.message : String(err) });
+          const errMsg = err instanceof Error ? err.message : String(err);
+          await db.completeAgentRun(runId, "error", { errorMessage: errMsg });
+          await notifyOwner({ title: "⚠️ Agent Error: Email Drafting", content: `Email drafting agent failed.\n\nError: ${errMsg}` }).catch(() => {});
           throw err;
         }
       }),

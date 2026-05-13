@@ -128,6 +128,8 @@ export default function AdminProspects() {
     onSuccess: () => refetch(),
   });
 
+  // View mode: table or kanban
+  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -386,6 +388,23 @@ export default function AdminProspects() {
               >
                 <Upload size={11} /> Import
               </button>
+              {/* View toggle */}
+              <div style={{ display: "flex", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.125rem", overflow: "hidden" }}>
+                <button
+                  onClick={() => setViewMode("table")}
+                  title="Table view"
+                  style={{ padding: "0.3rem 0.55rem", background: viewMode === "table" ? "rgba(255,255,255,0.10)" : "transparent", border: "none", cursor: "pointer", color: viewMode === "table" ? "#fff" : "rgba(255,255,255,0.35)", borderRight: "1px solid rgba(255,255,255,0.08)" }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                </button>
+                <button
+                  onClick={() => setViewMode("kanban")}
+                  title="Kanban view"
+                  style={{ padding: "0.3rem 0.55rem", background: viewMode === "kanban" ? "rgba(255,255,255,0.10)" : "transparent", border: "none", cursor: "pointer", color: viewMode === "kanban" ? "#fff" : "rgba(255,255,255,0.35)" }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>
+                </button>
+              </div>
               <button onClick={() => refetch()} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.40)", padding: "0.25rem" }}>
                 <RefreshCw size={14} />
               </button>
@@ -669,8 +688,81 @@ export default function AdminProspects() {
           </div>
         )}
 
+        {/* Kanban View */}
+        {!isLoading && viewMode === "kanban" && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem", paddingBottom: "2rem" }}>
+            {(["new", "contacted", "responded", "scheduled", "converted", "not_interested"] as ProspectStatus[]).map(col => {
+              const colProspects = sortedProspects.filter(p => p.status === col);
+              const cfg = STATUS_CONFIG[col];
+              return (
+                <div key={col} style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {/* Column header */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.5rem 0.75rem", borderBottom: `2px solid ${cfg.color}`, marginBottom: "0.25rem" }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: cfg.color, display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                      {cfg.icon} {cfg.label}
+                    </span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(255,255,255,0.30)" }}>{colProspects.length}</span>
+                  </div>
+                  {/* Cards */}
+                  {colProspects.length === 0 ? (
+                    <div style={{ padding: "1rem 0.75rem", border: "1px dashed rgba(255,255,255,0.06)", borderRadius: "0.25rem", textAlign: "center" }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(255,255,255,0.20)" }}>empty</span>
+                    </div>
+                  ) : colProspects.map(p => {
+                    const followUp = (p as Record<string, unknown>).followUpDate ? new Date(String((p as Record<string, unknown>).followUpDate)) : null;
+                    const isOverdue = followUp && followUp < new Date() && col !== "responded" && col !== "converted";
+                    return (
+                      <div key={p.id} style={{
+                        padding: "0.75rem",
+                        background: "rgba(255,255,255,0.025)",
+                        border: `1px solid ${isOverdue ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.07)"}`,
+                        borderRadius: "0.25rem",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "0.35rem",
+                        cursor: "pointer",
+                        transition: "border-color 0.15s",
+                      }}>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.6875rem", fontWeight: 700, color: "#fff", lineHeight: 1.2 }}>{p.company}</span>
+                        {p.contactName && <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: "rgba(255,255,255,0.45)" }}>{p.contactName}</span>}
+                        {p.contactEmail && <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "#f59e0b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.contactEmail}</span>}
+                        {followUp && (
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.45rem", color: isOverdue ? "#f59e0b" : "rgba(255,255,255,0.30)", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                            <Calendar size={8} /> {followUp.toLocaleDateString("en-US", { month: "short", day: "numeric" })}{isOverdue ? " ⚠" : ""}
+                          </span>
+                        )}
+                        {/* Quick status change buttons */}
+                        <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
+                          {col !== "contacted" && col !== "converted" && col !== "not_interested" && (
+                            <button
+                              onClick={() => updateProspect.mutate({ id: p.id, status: "contacted" })}
+                              style={{ fontFamily: "var(--font-mono)", fontSize: "0.4rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.15rem 0.4rem", border: "1px solid rgba(245,158,11,0.30)", color: "#f59e0b", background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
+                            >→ Contacted</button>
+                          )}
+                          {col !== "responded" && col !== "converted" && col !== "not_interested" && (
+                            <button
+                              onClick={() => markReplied.mutate({ id: p.id })}
+                              style={{ fontFamily: "var(--font-mono)", fontSize: "0.4rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.15rem 0.4rem", border: "1px solid rgba(0,255,135,0.30)", color: "#00ff87", background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
+                            >✓ Replied</button>
+                          )}
+                          {col === "responded" && (
+                            <button
+                              onClick={() => updateProspect.mutate({ id: p.id, status: "converted" })}
+                              style={{ fontFamily: "var(--font-mono)", fontSize: "0.4rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.15rem 0.4rem", border: "1px solid rgba(167,139,250,0.40)", color: "#a78bfa", background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
+                            >★ Convert</button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* Table */}
-        {isLoading ? (
+        {viewMode === "kanban" ? null : isLoading ? (
           <div style={{ textAlign: "center", padding: "4rem 0", color: "rgba(255,255,255,0.30)", fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}>
             Loading prospects...
           </div>

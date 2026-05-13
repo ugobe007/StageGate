@@ -452,12 +452,31 @@
 
 ## v8.1 — AI Agents & Workflows Admin Section
 
-- [ ] Add admin.getAgentStats tRPC procedure: returns live counts for each agent (runs, last run time, success/fail)
-- [ ] Add agent_runs table to schema (agentName, status, triggeredBy, startedAt, completedAt, inputSummary, outputSummary, errorMessage)
-- [ ] Instrument existing AI procedures (leads.discover, leads.generateEmail, xbot.generateBrief, prospects.sendIntroEmail, prospects.bulkSendEmails) to log runs to agent_runs table
-- [ ] Build AdminAgents.tsx page with agent cards, run history table, and manual trigger buttons
-- [ ] Add /admin/agents route to App.tsx
-- [ ] Add "AI Agents" nav button to AdminDashboard header
-- [ ] Agent cards show: name, description, last run time, total runs, success rate, status badge (idle/running/error)
-- [ ] Run history table shows last 20 runs across all agents: agent, status, triggered by, duration, timestamp
-- [ ] Manual trigger buttons for: Discover Leads (select show), Generate Brief (select project), Bulk Outreach (select prospects)
+- [x] Add admin.getAgentStats and admin.getAgentRuns tRPC procedures — returns stats per agent and recent run history
+- [x] Add agent_runs table to schema (agentName, status, triggeredBy, startedAt, completedAt, inputSummary, outputSummary, errorMessage)
+- [x] Instrument leads.discover, leads.generateEmail, xbot.generateBrief, sendIntroEmail, bulkSendEmails with agent_runs logging
+- [x] Build AdminAgents.tsx page with agent cards, run history table, and auto-refresh every 10s
+- [x] Add /admin/agents route to App.tsx
+- [x] Add "AI Agents" nav item to DashboardLayout sidebar (full admin nav with all 9 sections)
+- [x] Agent cards show: name, description, last run time, total runs, success rate, status badge (idle/running/error)
+- [x] Run history table shows last 50 runs: agent, status, triggered by, duration, input/output summary, timestamp
+- [x] Manual trigger buttons: Discover Leads, Generate Brief, Bulk Outreach (placeholder — triggers via existing admin pages)
+
+## v8.2 — Agent Failure Alerts, Daily Follow-up Digest, Prospect Kanban
+
+- [ ] Agent run failure alerts: call notifyOwner when any AI agent procedure catches an error (leads.discover, leads.generateEmail, xbot.generateBrief, sendIntroEmail, bulkSendEmails)
+- [ ] Daily follow-up digest: Heartbeat cron at 9am UTC — query prospects with followUpDate <= today and status != responded/converted, send notifyOwner with list
+- [ ] Add /api/scheduled/followup-digest Express handler in server/_core/index.ts
+- [ ] Prospect Kanban view: toggle button (Table / Kanban) in AdminProspects header
+- [ ] Kanban columns: New, Contacted, Responded, Scheduled, Converted — each shows prospect cards with company, contact, follow-up date
+- [ ] Clicking a Kanban card opens the same edit panel as the table row
+
+## v8.2 — Agent Alerts, Daily Digest, Kanban View
+- [x] Agent failure alerts: notifyOwner on catch in all 5 AI agent procedures (leads.discover, leads.generateEmail, xbot.generateBrief, prospects.sendIntroEmail, prospects.bulkSendEmails)
+- [x] Daily follow-up digest: /api/scheduled/followup-digest handler sends owner notification with overdue + today's follow-ups
+- [x] getProspectsWithOverdueFollowUp helper in db.ts (followUpDate <= today, status not responded/converted)
+- [x] Kanban view: table/kanban toggle buttons in header (table icon / column icon)
+- [x] Kanban columns: New, Contacted, Responded, Scheduled, Converted, Not Interested
+- [x] Kanban cards show: company, contact name, email, follow-up date (amber if overdue)
+- [x] Kanban quick-action buttons: → Contacted, ✓ Replied, ★ Convert (context-aware per column)
+- [x] 79 tests passing
