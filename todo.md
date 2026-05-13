@@ -355,3 +355,11 @@
 - [x] tRPC: prospects.bulkSendEmails procedure (array of prospectIds, dispatches sendIntroEmail for each)
 - [x] Deselect all / clear selection button in toolbar
 - [x] Bulk result summary strip showing sent/failed counts with per-company chips
+
+## v7.2 — Prospects Table: Contacted Filter Pill
+
+- [x] Status filter pills already existed; upgraded with count badges per status
+- [x] Active pill highlights in the status accent color (amber for Contacted, green for Responded, indigo for Scheduled)
+- [x] "Hide Contacted" quick-toggle button appears when All filter is active — excludes contacted rows in one click
+- [x] Toggle turns red when active with "● Hiding Contacted" label
+- [x] Row count label updates: "X of 78 prospects (contacted hidden)" when toggle is on

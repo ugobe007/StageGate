@@ -43,6 +43,7 @@ const CONFIDENCE_BORDERS: Record<string, string> = {
 export default function AdminProspects() {
   const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [hideContacted, setHideContacted] = useState(false);
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
   const [failedIds, setFailedIds] = useState<Set<number>>(new Set());
@@ -63,6 +64,15 @@ export default function AdminProspects() {
   const [bulkProgress, setBulkProgress] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [bulkResults, setBulkResults] = useState<{ id: number; success: boolean; company: string; error?: string }[]>([]);
 
+  // Fetch all prospects (no status filter) for count badges
+  const { data: allData } = trpc.prospects.list.useQuery(
+    {},
+    { enabled: !!user && user.role === "admin" }
+  );
+  const statusCounts = (allData?.prospects ?? []).reduce<Record<string, number>>((acc, p) => {
+    acc[p.status] = (acc[p.status] ?? 0) + 1;
+    return acc;
+  }, {});
   const { data, isLoading, refetch } = trpc.prospects.list.useQuery(
     { status: statusFilter || undefined },
     { enabled: !!user && user.role === "admin" }
@@ -127,7 +137,9 @@ export default function AdminProspects() {
     );
   }
 
-  const prospects = data?.prospects ?? [];
+  const prospects = (data?.prospects ?? []).filter(p =>
+    hideContacted && statusFilter === "" ? p.status !== "contacted" : true
+  );
 
   // Helpers for selection
   const allVisibleIds = prospects.map(p => p.id);
@@ -182,7 +194,7 @@ export default function AdminProspects() {
             </h1>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "#00ff87" }}>
-                {prospects.length} prospects
+                {prospects.length}{hideContacted && statusFilter === "" ? ` of ${(allData?.prospects ?? []).length}` : ""} prospects{hideContacted && statusFilter === "" ? " (contacted hidden)" : ""}
               </span>
               <button onClick={() => refetch()} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.40)", padding: "0.25rem" }}>
                 <RefreshCw size={14} />
@@ -192,28 +204,71 @@ export default function AdminProspects() {
         </div>
 
         {/* Status filter tabs */}
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "2rem" }}>
-          {["", "new", "contacted", "responded", "scheduled", "converted", "not_interested"].map(s => (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "2rem" }}>
+          {["", "new", "contacted", "responded", "scheduled", "converted", "not_interested"].map(s => {
+            const count = s === "" ? (allData?.prospects ?? []).length : (statusCounts[s] ?? 0);
+            const isActive = statusFilter === s;
+            const accentColor = s === "contacted" ? "#f59e0b" : s === "responded" ? "#00ff87" : s === "scheduled" ? "#818cf8" : "rgba(255,255,255,0.40)";
+            return (
+              <button
+                key={s}
+                onClick={() => { setStatusFilter(s); setSelectedIds(new Set()); if (s !== "") setHideContacted(false); }}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "0.625rem",
+                  letterSpacing: "0.10em",
+                  textTransform: "uppercase",
+                  padding: "0.3rem 0.75rem",
+                  border: `1px solid ${isActive ? (s === "" ? "rgba(255,255,255,0.40)" : accentColor) : "rgba(255,255,255,0.10)"}`,
+                  background: isActive ? (s === "" ? "rgba(255,255,255,0.06)" : `${accentColor}18`) : "transparent",
+                  color: isActive ? (s === "" ? "#fff" : accentColor) : "rgba(255,255,255,0.40)",
+                  cursor: "pointer",
+                  borderRadius: "0.125rem",
+                  transition: "all 0.15s",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                }}
+              >
+                {s === "" ? "All" : STATUS_CONFIG[s as ProspectStatus]?.label ?? s}
+                {count > 0 && (
+                  <span style={{
+                    fontSize: "0.5rem",
+                    padding: "0.05rem 0.3rem",
+                    borderRadius: "0.75rem",
+                    background: isActive ? (s === "" ? "rgba(255,255,255,0.12)" : `${accentColor}30`) : "rgba(255,255,255,0.06)",
+                    color: isActive ? (s === "" ? "rgba(255,255,255,0.80)" : accentColor) : "rgba(255,255,255,0.30)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}>{count}</span>
+                )}
+              </button>
+            );
+          })}
+          {/* Hide Contacted quick-toggle — only visible when All filter is active */}
+          {statusFilter === "" && (
             <button
-              key={s}
-              onClick={() => { setStatusFilter(s); setSelectedIds(new Set()); }}
+              onClick={() => { setHideContacted(h => !h); setSelectedIds(new Set()); }}
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.625rem",
                 letterSpacing: "0.10em",
                 textTransform: "uppercase",
                 padding: "0.3rem 0.75rem",
-                border: `1px solid ${statusFilter === s ? "rgba(255,255,255,0.40)" : "rgba(255,255,255,0.10)"}`,
-                background: statusFilter === s ? "rgba(255,255,255,0.06)" : "transparent",
-                color: statusFilter === s ? "#fff" : "rgba(255,255,255,0.40)",
+                border: `1px solid ${hideContacted ? "rgba(239,68,68,0.50)" : "rgba(255,255,255,0.10)"}`,
+                background: hideContacted ? "rgba(239,68,68,0.10)" : "transparent",
+                color: hideContacted ? "#f87171" : "rgba(255,255,255,0.40)",
                 cursor: "pointer",
                 borderRadius: "0.125rem",
                 transition: "all 0.15s",
+                marginLeft: "0.5rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
               }}
             >
-              {s === "" ? "All" : STATUS_CONFIG[s as ProspectStatus]?.label ?? s}
+              {hideContacted ? "● Hiding Contacted" : "Hide Contacted"}
             </button>
-          ))}
+          )}
         </div>
 
         {/* Bulk action toolbar — appears when rows are selected */}
