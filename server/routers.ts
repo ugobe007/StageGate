@@ -947,10 +947,51 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           content: `Email sent to ${prospect.company} (${prospect.robotName ?? "robot"}).\n\nSubject: ${emailSubject}\n\n${emailBody}`,
         });
 
-        return { success: true, emailSubject, emailBody };
+         return { success: true, emailSubject, emailBody };
+      }),
+
+    bulkSendEmails: adminProcedure
+      .input(z.object({ prospectIds: z.array(z.number()).min(1).max(50) }))
+      .mutation(async ({ input }) => {
+        const results: { id: number; success: boolean; company: string; error?: string }[] = [];
+        for (const prospectId of input.prospectIds) {
+          try {
+            const prospect = await db.getProspectById(prospectId);
+            if (!prospect) { results.push({ id: prospectId, success: false, company: "Unknown", error: "Not found" }); continue; }
+            if (!prospect.contactEmail) { results.push({ id: prospectId, success: false, company: prospect.company, error: "No email address" }); continue; }
+            // Generate personalized email via LLM
+            const llmRes = await invokeLLM({
+              messages: [
+                {
+                  role: "system",
+                  content: `You are XBOT, an AI logistics coordinator for StageGate — a Las Vegas-based company that handles all robot logistics for trade shows: international shipping, customs clearance, warehousing, staging, activation, and on-site support. Write a concise, professional, and compelling outreach email (150-200 words) to a robotics company. The tone is direct, knowledgeable, and peer-to-peer (robot-to-robot company). Do NOT use generic phrases like 'I hope this email finds you well'. Start with a specific observation about their robot. End with two clear CTAs on separate lines: (1) Register at https://stagegate.ai to start their logistics intake, and (2) Schedule a 15-minute call with the StageGate team at https://calendar.google.com/calendar/embed?src=bc58ef12c74e2216111ee28feb95e5edf6381e54aa8699acdab87cd370177797%40group.calendar.google.com&ctz=America%2FLos_Angeles — use the exact URL, do not shorten it. Return ONLY the email body text, no subject line, no greeting header.`,
+                },
+                {
+                  role: "user",
+                  content: `Company: ${prospect.company}\nRobot: ${prospect.robotName ?? "their robot"}\nRobot type: ${prospect.robotType ?? "unknown"}\nShows they attend: ${(prospect.shows as string[] ?? []).join(", ") || "major trade shows"}\nContact: ${prospect.contactName ?? prospect.contactDept ?? "operations team"}`,
+                },
+              ],
+            });
+            const rawContent = llmRes.choices?.[0]?.message?.content;
+            const emailBody = typeof rawContent === "string" ? rawContent : (Array.isArray(rawContent) ? rawContent.map((c: { type: string; text?: string }) => c.type === "text" ? c.text ?? "" : "").join("") : "");
+            const emailSubject = `StageGate: Las Vegas Robot Logistics for ${prospect.company}`;
+            await db.createOutreachCampaign({ prospectId: prospect.id, emailSubject, emailBody, emailStatus: "sent", emailSentAt: new Date() });
+            await db.updateProspect(prospect.id, { status: "contacted" });
+            results.push({ id: prospectId, success: true, company: prospect.company });
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : "Unknown error";
+            results.push({ id: prospectId, success: false, company: String(prospectId), error: msg });
+          }
+        }
+        const sent = results.filter(r => r.success).length;
+        const failed = results.filter(r => !r.success).length;
+        await notifyOwner({
+          title: `XBOT Bulk Outreach: ${sent} emails sent`,
+          content: `Bulk send complete.\n\nSent: ${sent}\nFailed: ${failed}\n\nDetails:\n${results.map(r => `${r.company}: ${r.success ? "✓ sent" : `✗ ${r.error}`}`).join("\n")}`,
+        });
+        return { sent, failed, results };
       }),
   }),
-
   // ─── Video Message Intake (public — for prospects to submit) ────────────────
   videoIntake: router({
     submit: publicProcedure

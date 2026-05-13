@@ -343,3 +343,15 @@
 - [x] Admin prospects: inline editable contactEmail, contactName, contactTitle, contactLinkedIn fields per row
 - [x] Admin prospects: email confidence badge (verified/high/medium/low) displayed per contact
 - [x] Admin prospects: Edit/Save toggle per row for contact fields
+
+## v7.1 — Bulk Send Email on Prospects Page
+
+- [x] Row checkboxes on each prospect row in /admin/prospects
+- [x] "Select All" checkbox in the table header (checks/unchecks all visible rows)
+- [x] "Select Verified Only" shortcut button to auto-check rows with emailConfidence = verified or high
+- [x] Bulk action toolbar: appears when ≥1 row is selected — shows count + "Send Email to X contacts" amber button
+- [x] Bulk send dispatches personalized emails sequentially with per-item success/fail status
+- [x] Per-row status update: row turns green on success, red on failure with error tooltip
+- [x] tRPC: prospects.bulkSendEmails procedure (array of prospectIds, dispatches sendIntroEmail for each)
+- [x] Deselect all / clear selection button in toolbar
+- [x] Bulk result summary strip showing sent/failed counts with per-company chips
