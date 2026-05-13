@@ -219,7 +219,7 @@ export default function XbotLanding() {
             <Link href="/xbot/new">
               <button className="btn-primary">Begin Intake <ArrowRight size={14} /></button>
             </Link>
-            <a href="http://www.meetup.com/events/ical/12604938/a97f35faab6d3193ae3a0a599d9fc521a423f275/going?t=1376143930" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", padding: "0.75rem 1.5rem", border: "1px solid #f59e0b", color: "#f59e0b", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer", textDecoration: "none" }}>
+            <a href="https://calendar.google.com/calendar/embed?src=bc58ef12c74e2216111ee28feb95e5edf6381e54aa8699acdab87cd370177797%40group.calendar.google.com&ctz=America%2FLos_Angeles" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", padding: "0.75rem 1.5rem", border: "1px solid #f59e0b", color: "#f59e0b", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer", textDecoration: "none" }}>
               Schedule a Call <ArrowUpRight size={14} />
             </a>
           </div>

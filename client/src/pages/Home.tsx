@@ -420,7 +420,7 @@ export default function Home() {
             <Link href="/register">
               <button className="btn-primary" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem" }}>Register Free <ArrowRight size={15} /></button>
             </Link>
-            <a href="http://www.meetup.com/events/ical/12604938/a97f35faab6d3193ae3a0a599d9fc521a423f275/going?t=1376143930" target="_blank" rel="noopener noreferrer">
+            <a href="https://calendar.google.com/calendar/embed?src=bc58ef12c74e2216111ee28feb95e5edf6381e54aa8699acdab87cd370177797%40group.calendar.google.com&ctz=America%2FLos_Angeles" target="_blank" rel="noopener noreferrer">
               <button className="btn-primary" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem", background: "transparent", border: "1px solid #f59e0b", color: "#f59e0b" }}>
                 Schedule a Call <ArrowUpRight size={15} />
               </button>
