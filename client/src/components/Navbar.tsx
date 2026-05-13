@@ -170,22 +170,7 @@ export default function Navbar() {
                   </span>
                 </a>
                 <Link href="/register">
-                  <button
-                    style={{
-                      padding: "0.4rem 1rem",
-                      fontSize: "0.8125rem",
-                      fontWeight: 600,
-                      letterSpacing: "0.02em",
-                      color: "#fff",
-                      background: "#4f6ef7",
-                      border: "none",
-                      borderRadius: "0.375rem",
-                      cursor: "pointer",
-                      transition: "background 0.15s",
-                    }}
-                    onMouseEnter={e => { (e.currentTarget.style.background = "#3b5be8"); }}
-                    onMouseLeave={e => { (e.currentTarget.style.background = "#4f6ef7"); }}
-                  >
+                  <button className="btn-nav-primary">
                     Register Free
                   </button>
                 </Link>

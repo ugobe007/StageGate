@@ -41,7 +41,7 @@ interface ServicePackageItem {
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     draft: "border-white/20 text-white/50",
-    brief_generated: "border-indigo-500/50 text-indigo-400",
+    brief_generated: "border-emerald-500/60/50 text-emerald-400",
     submitted: "border-amber-500/50 text-amber-400",
     in_review: "border-blue-500/50 text-blue-400",
     confirmed: "border-green-500/50 text-green-400",
@@ -209,7 +209,7 @@ export default function XbotProject() {
               ← Back to XBOT
             </button>
             <div className="flex items-center gap-3 mb-2">
-              <span className="text-xs font-mono text-indigo-400 border border-indigo-500/40 px-2 py-0.5 rounded">
+              <span className="text-xs font-mono text-emerald-400 border border-emerald-500/60/40 px-2 py-0.5 rounded">
                 XBOT
               </span>
               <StatusBadge status={project.status} />
@@ -239,7 +239,7 @@ export default function XbotProject() {
 
         {/* Generate Brief CTA — shown when no brief exists */}
         {!brief && (
-          <div className="border border-indigo-500/30 rounded-xl bg-indigo-500/5 p-6 mb-8 text-center">
+          <div className="border border-emerald-500/60/30 rounded-xl bg-emerald-500/5 p-6 mb-8 text-center">
             <div className="text-4xl mb-3">🤖</div>
             <h2 className="text-lg font-semibold text-white mb-2">Ready to Generate Your Logistics Brief</h2>
             <p className="text-white/50 text-sm mb-5 max-w-lg mx-auto">
@@ -249,7 +249,7 @@ export default function XbotProject() {
             <Button
               onClick={handleGenerateBrief}
               disabled={isGenerating}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white border-0 px-8 py-2.5"
+              className="bg-emerald-600/80 hover:bg-emerald-500 text-white border-0 px-8 py-2.5"
             >
               {isGenerating ? (
                 <span className="flex items-center gap-2">
@@ -275,11 +275,11 @@ export default function XbotProject() {
         {brief && (
           <div className="space-y-6">
             {/* Summary Banner */}
-            <div className="border border-indigo-500/30 rounded-xl bg-indigo-500/5 p-5">
+            <div className="border border-emerald-500/60/30 rounded-xl bg-emerald-500/5 p-5">
               <div className="flex items-start gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-mono text-indigo-400">XBOT BRIEF</span>
+                    <span className="text-xs font-mono text-emerald-400">XBOT BRIEF</span>
                     <span className="text-white/30 text-xs">
                       Generated {new Date(brief.generatedAt).toLocaleDateString()}
                     </span>
@@ -339,7 +339,7 @@ export default function XbotProject() {
                           className={`absolute left-2.5 w-3 h-3 rounded-full border-2 top-1 ${
                             item.critical
                               ? "border-amber-500 bg-amber-500/20"
-                              : "border-indigo-500 bg-indigo-500/20"
+                              : "border-emerald-500/60 bg-emerald-500/20"
                           }`}
                         />
                         <div className="flex-1 pb-1">
@@ -416,12 +416,12 @@ export default function XbotProject() {
                       key={i}
                       className={`p-3 rounded-lg border ${
                         item.included
-                          ? "border-indigo-500/30 bg-indigo-500/5"
+                          ? "border-emerald-500/60/30 bg-emerald-500/5"
                           : "border-white/8 bg-white/2 opacity-50"
                       }`}
                     >
                       <div className="flex items-start gap-2">
-                        <span className={`text-sm mt-0.5 ${item.included ? "text-indigo-400" : "text-white/30"}`}>
+                        <span className={`text-sm mt-0.5 ${item.included ? "text-emerald-400" : "text-white/30"}`}>
                           {item.included ? "✓" : "○"}
                         </span>
                         <div>
@@ -463,7 +463,7 @@ export default function XbotProject() {
                               href={opt.website.startsWith("http") ? opt.website : `https://${opt.website}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-indigo-400 text-xs hover:underline"
+                              className="text-emerald-400 text-xs hover:underline"
                             >
                               {opt.website}
                             </a>

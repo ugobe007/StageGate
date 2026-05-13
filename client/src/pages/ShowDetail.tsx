@@ -84,7 +84,7 @@ function NotifyMeInline({ showId }: { showId: number }) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="your@email.com"
-        className="flex-1 px-3 py-2 text-sm rounded border outline-none focus:border-indigo-500"
+        className="flex-1 px-3 py-2 text-sm rounded border outline-none focus:border-emerald-400"
         style={{ borderColor: BORDER, background: BG, color: TEXT_HI }}
         onKeyDown={(e) => { if (e.key === "Enter" && email) notifyMutation.mutate({ showId, email }); }}
       />

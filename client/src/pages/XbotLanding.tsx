@@ -1,79 +1,23 @@
-import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 
-const WORKFLOW_STEPS = [
-  {
-    num: "01",
-    title: "Robot Profile",
-    desc: "Tell XBOT about your robot — make, model, dimensions, weight, and any special handling requirements.",
-    icon: "🤖",
-  },
-  {
-    num: "02",
-    title: "Origin & Shipping",
-    desc: "Enter your origin country, city, preferred shipping method (air/sea/ground), and estimated arrival date.",
-    icon: "✈️",
-  },
-  {
-    num: "03",
-    title: "Customs Details",
-    desc: "Provide HS codes, ATA Carnet eligibility, and customs broker preference. XBOT suggests codes if unknown.",
-    icon: "🛃",
-  },
-  {
-    num: "04",
-    title: "Target Show",
-    desc: "Select your Las Vegas trade show, booth number, and setup/teardown dates.",
-    icon: "🎪",
-  },
-  {
-    num: "05",
-    title: "Services",
-    desc: "Choose from warehousing, staging, activation, drayage, crating, and ground transport options.",
-    icon: "⚙️",
-  },
-  {
-    num: "06",
-    title: "Contacts",
-    desc: "Add primary, on-site, and emergency contacts for the logistics team to coordinate with.",
-    icon: "👤",
-  },
+const STEPS = [
+  { num: "01", title: "Robot Profile", desc: "Make, model, dimensions, weight, power requirements, and special handling notes." },
+  { num: "02", title: "Origin & Shipping", desc: "Origin country and city, shipping method (air/sea/ground), flight or vessel number, ETA, and port of entry." },
+  { num: "03", title: "Customs", desc: "HS code (XBOT suggests if unknown), ATA Carnet eligibility, and customs broker preference." },
+  { num: "04", title: "Target Show", desc: "Select your Las Vegas trade show, booth number, and setup/teardown dates." },
+  { num: "05", title: "Services", desc: "Dockside handling, ground transport, warehousing, staging, activation, and promotional support." },
+  { num: "06", title: "Contacts", desc: "Primary, on-site, and emergency contacts for the logistics team." },
 ];
 
-const BRIEF_OUTPUTS = [
-  {
-    title: "Logistics Timeline",
-    desc: "Date-by-date plan from ship-by deadline through teardown, with critical milestones flagged.",
-    icon: "📅",
-  },
-  {
-    title: "Customs Checklist",
-    desc: "Required documents and steps for US customs clearance, specific to your robot type and origin.",
-    icon: "🛃",
-  },
-  {
-    title: "Service Package",
-    desc: "Confirmed list of StageGate services included in your logistics plan.",
-    icon: "⚙️",
-  },
-  {
-    title: "Ground Transport Options",
-    desc: "Las Vegas freight and drayage companies if you need to arrange your own transport.",
-    icon: "🚛",
-  },
-  {
-    title: "HS Code Suggestion",
-    desc: "AI-suggested Harmonized System code for your specific robot type to streamline customs.",
-    icon: "📋",
-  },
-  {
-    title: "ATA Carnet Eligibility",
-    desc: "Determination of whether your shipment qualifies for temporary duty-free import.",
-    icon: "📄",
-  },
+const OUTPUTS = [
+  { num: "A", title: "Logistics Timeline", desc: "Date-by-date plan from ship-by deadline through teardown, with critical milestones flagged." },
+  { num: "B", title: "Customs Checklist", desc: "Required documents and steps for US customs clearance, specific to your robot type and origin country." },
+  { num: "C", title: "Service Package", desc: "Confirmed list of StageGate services included in your logistics plan, with pricing guidance." },
+  { num: "D", title: "Ground Transport Options", desc: "Vetted Las Vegas carriers with rate estimates and StageGate-managed drayage options." },
 ];
 
 const STATUS_LABELS: Record<string, string> = {
@@ -85,206 +29,208 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function XbotLanding() {
-  const [, navigate] = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { data: projectsData } = trpc.xbot.listProjects.useQuery(undefined, {
     enabled: isAuthenticated,
   });
 
   return (
-    <div className="min-h-screen bg-[#0d0f14] text-white">
+    <div style={{ background: "#080808", color: "#ececec", minHeight: "100vh" }}>
       <Navbar />
 
-      {/* Hero */}
-      <section className="pt-28 pb-20 px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center gap-2 mb-6">
-            <span className="text-xs font-mono text-indigo-400 border border-indigo-500/40 px-2 py-0.5 rounded">
-              XBOT
-            </span>
-            <span className="text-white/30 text-xs">Automated Logistics Workflow Engine</span>
-          </div>
-          <div className="max-w-3xl">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight mb-6">
-              <span className="text-white">Your Robot's Journey</span>
-              <br />
-              <span className="text-indigo-400">Planned in Minutes.</span>
-            </h1>
-            <p className="text-white/60 text-lg sm:text-xl leading-relaxed mb-8 max-w-2xl">
-              XBOT guides you through a 6-step intake form and generates a complete inbound
-              logistics brief — customs checklist, timeline, service package, and ground transport
-              options — automatically.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Button
-                onClick={() => navigate("/xbot/new")}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white border-0 px-8 py-3 text-base font-semibold"
-              >
-                Start Logistics Intake →
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="border border-white/20 text-white/70 hover:bg-white/5 hover:text-white px-8 py-3 text-base"
-              >
-                How It Works
-              </Button>
-            </div>
-            <p className="text-white/30 text-sm mt-4">
-              No account required to start. Registration only needed to submit your service request.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Strip */}
-      <section className="border-t border-b border-white/8 py-8 px-4">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6">
-          {[
-            { value: "6", label: "Intake Steps" },
-            { value: "~60s", label: "Brief Generation" },
-            { value: "15+", label: "Las Vegas Shows" },
-            { value: "24h", label: "Coordinator Response" },
-          ].map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="text-2xl sm:text-3xl font-black text-white">{stat.value}</p>
-              <p className="text-white/40 text-xs mt-1">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Saved Projects (authenticated users only) */}
-      {isAuthenticated && projectsData && projectsData.projects.length > 0 && (
-        <section className="py-10 px-4 border-t border-white/8">
-          <div className="max-w-5xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <p className="text-xs font-mono text-indigo-400 mb-1">YOUR PROJECTS</p>
-                <h2 className="text-xl font-bold text-white">Saved Logistics Plans</h2>
+      {/* ── HERO — problem statement ─────────────────────────────────────────── */}
+      <section style={{ padding: "8rem 0 6rem", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="container">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6rem", alignItems: "start" }}>
+            {/* Left — editorial problem statement */}
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "2.5rem" }}>
+                <span className="badge-emerald">XBOT</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)" }}>
+                  Automated Logistics Intelligence
+                </span>
               </div>
-              <Button
-                onClick={() => navigate("/xbot/new")}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white border-0 text-sm"
-              >
-                + New Project
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {projectsData.projects.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => navigate(`/xbot/project/${p.id}`)}
-                  className="text-left border border-white/10 rounded-xl bg-white/3 p-4 hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-all"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="text-white/90 font-semibold text-sm">
-                      {p.robotMake && p.robotModel
-                        ? `${p.robotMake} ${p.robotModel}`
-                        : `Project #${p.id}`}
-                    </p>
-                    <span className="text-xs font-mono px-2 py-0.5 rounded border border-white/15 text-white/50">
-                      {STATUS_LABELS[p.status] ?? p.status}
-                    </span>
-                  </div>
-                  {p.originCountry && (
-                    <p className="text-white/40 text-xs">
-                      From {p.originCity ? `${p.originCity}, ` : ""}{p.originCountry}
-                    </p>
-                  )}
-                  <p className="text-white/30 text-xs mt-1">
-                    Updated {new Date(p.updatedAt).toLocaleDateString()}
-                  </p>
+
+              <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4.5rem)", fontWeight: 800, lineHeight: 1.0, letterSpacing: "-0.05em", marginBottom: "2.5rem" }}>
+                Your robot is<br />
+                sitting in a crate.<br />
+                <span style={{ color: "rgba(255,255,255,0.28)" }}>Customs paperwork</span><br />
+                <span style={{ color: "rgba(255,255,255,0.28)" }}>is missing.</span>
+              </h1>
+
+              <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.45)", lineHeight: 1.7, marginBottom: "1rem", maxWidth: "46ch" }}>
+                The show opens in 72 hours. Your freight broker has never handled a humanoid. The ATA Carnet is in the wrong format. Ground transport hasn't confirmed.
+              </p>
+              <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.45)", lineHeight: 1.7, marginBottom: "2.5rem", maxWidth: "46ch" }}>
+                XBOT fixes this. Tell it about your robot and your route. In under 60 seconds it generates a complete logistics brief — customs checklist, timeline, service package, and ground transport options — tailored to your specific hardware.
+              </p>
+
+              <Link href="/xbot/new">
+                <button className="btn-primary" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem" }}>
+                  Start Logistics Intake <ArrowRight size={15} />
                 </button>
+              </Link>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.6875rem", color: "rgba(255,255,255,0.18)", marginTop: "1rem" }}>
+                No account required · Auto-saved to your browser
+              </p>
+            </div>
+
+            {/* Right — what you get, inline text */}
+            <div style={{ paddingTop: "5rem" }}>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)", marginBottom: "1.5rem" }}>
+                What XBOT generates
+              </p>
+              {OUTPUTS.map((out, i) => (
+                <div key={i} style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "1.25rem 0" }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "1.25rem", marginBottom: "0.4rem" }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(0,255,135,0.45)", flexShrink: 0, minWidth: "1rem" }}>{out.num}</span>
+                    <span style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#fff" }}>{out.title}</span>
+                  </div>
+                  <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.6, paddingLeft: "2.25rem" }}>{out.desc}</p>
+                </div>
+              ))}
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "1.25rem" }}>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "rgba(255,255,255,0.20)", fontStyle: "italic" }}>
+                  Generated in under 60 seconds.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6-STEP INTAKE ────────────────────────────────────────────────────── */}
+      <section style={{ padding: "7rem 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="container">
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: "1rem" }}>
+            The Intake Process
+          </p>
+          <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: "4rem", maxWidth: "28ch" }}>
+            Six steps. One brief. Complete logistics clarity.
+          </h2>
+
+          {/* Horizontal ruled list — no cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
+            {STEPS.map((step, i) => (
+              <div key={i} style={{
+                borderLeft: i % 3 === 0 ? "none" : "1px solid rgba(255,255,255,0.07)",
+                borderTop: i >= 3 ? "1px solid rgba(255,255,255,0.07)" : "none",
+                padding: "2rem " + (i % 3 < 2 ? "2rem" : "0") + " 2rem " + (i % 3 === 0 ? "0" : "2rem"),
+              }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "1.75rem", fontWeight: 700, color: "rgba(255,255,255,0.05)", letterSpacing: "-0.05em", lineHeight: 1, marginBottom: "1.25rem" }}>
+                  {step.num}
+                </div>
+                <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.5rem", letterSpacing: "-0.02em" }}>{step.title}</h3>
+                <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.65 }}>{step.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: "3rem", paddingTop: "2rem", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: "1.5rem" }}>
+            <Link href="/xbot/new">
+              <button className="btn-primary">Begin Intake <ArrowRight size={14} /></button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS — inline, no cards ──────────────────────────────────── */}
+      <section style={{ padding: "7rem 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="container">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6rem", alignItems: "start" }}>
+            <div>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: "1rem" }}>
+                How XBOT Works
+              </p>
+              <h2 style={{ fontSize: "clamp(2rem, 3.5vw, 2.75rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: "1.5rem" }}>
+                AI-generated logistics intelligence, not a generic form.
+              </h2>
+              <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.40)", lineHeight: 1.7, maxWidth: "44ch" }}>
+                XBOT doesn't just collect your information — it reasons about your specific robot, route, and show to generate a logistics brief that a human expert would produce after hours of research. Customs requirements change by country, by robot type, by show. XBOT knows this.
+              </p>
+            </div>
+            <div>
+              {[
+                { label: "Customs intelligence", desc: "HS code suggestions, ATA Carnet eligibility checks, and country-specific import requirements — all pre-computed for your robot type." },
+                { label: "Timeline generation", desc: "Working backwards from your show date, XBOT calculates every ship-by, clear-by, and setup deadline with buffer for delays." },
+                { label: "Service matching", desc: "Based on your robot's specs and your selected show, XBOT recommends the right StageGate service package." },
+                { label: "Transport options", desc: "Las Vegas drayage, warehouse-to-booth ground transport, and vetted carrier options with rate estimates." },
+              ].map((item, i) => (
+                <div key={i} style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "1.25rem 0" }}>
+                  <div style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#fff", marginBottom: "0.35rem" }}>{item.label}</div>
+                  <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.65 }}>{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SAVED PROJECTS (authenticated users) ─────────────────────────────── */}
+      {isAuthenticated && projectsData && projectsData.projects.length > 0 && (
+        <section style={{ padding: "6rem 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="container">
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "2.5rem", flexWrap: "wrap", gap: "1rem" }}>
+              <div>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: "0.75rem" }}>
+                  Your Projects
+                </p>
+                <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.05 }}>
+                  Saved logistics briefs
+                </h2>
+              </div>
+              <Link href="/xbot/new">
+                <button className="btn-primary" style={{ fontSize: "0.75rem", padding: "0.5rem 1.25rem" }}>New Intake <ArrowRight size={12} /></button>
+              </Link>
+            </div>
+
+            <div>
+              {projectsData.projects.map((project, i) => (
+                <div key={project.id} style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "1.25rem 0", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "2rem" }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "1.5rem" }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(255,255,255,0.18)", minWidth: "1.5rem" }}>{String(i + 1).padStart(2, "0")}</span>
+                    <div>
+                      <div style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#fff", marginBottom: "0.2rem" }}>
+                        {project.robotMake || "Unnamed Robot"} {project.robotModel || ""}
+                      </div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.6875rem", color: "rgba(255,255,255,0.25)" }}>
+                        {STATUS_LABELS[project.status] ?? project.status} · {project.updatedAt ? new Date(project.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
+                      </div>
+                    </div>
+                  </div>
+                  <Link href={`/xbot/project/${project.id}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "#00ff87", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                    View brief <ArrowUpRight size={12} />
+                  </Link>
+                </div>
               ))}
             </div>
           </div>
         </section>
       )}
 
-      {/* How It Works */}
-      <section id="how-it-works" className="py-20 px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-12">
-            <p className="text-xs font-mono text-indigo-400 mb-3">HOW IT WORKS</p>
-            <h2 className="text-3xl sm:text-4xl font-black text-white">
-              Six Steps. One Brief.
-            </h2>
-            <p className="text-white/50 mt-3 max-w-xl">
-              XBOT collects everything it needs to generate a complete logistics plan for your robot's
-              journey from anywhere in the world to Las Vegas.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {WORKFLOW_STEPS.map((step) => (
-              <div
-                key={step.num}
-                className="border border-white/10 rounded-xl bg-white/3 p-5 hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all group"
-              >
-                <div className="flex items-start gap-3 mb-3">
-                  <span className="text-2xl">{step.icon}</span>
-                  <span className="text-xs font-mono text-indigo-400/60 group-hover:text-indigo-400 transition-colors mt-1">
-                    {step.num}
-                  </span>
-                </div>
-                <h3 className="text-white/90 font-semibold text-sm mb-1">{step.title}</h3>
-                <p className="text-white/45 text-xs leading-relaxed">{step.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* What XBOT Generates */}
-      <section className="py-20 px-4 border-t border-white/8">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-12">
-            <p className="text-xs font-mono text-amber-500 mb-3">LOGISTICS BRIEF</p>
-            <h2 className="text-3xl sm:text-4xl font-black text-white">
-              What XBOT Generates
-            </h2>
-            <p className="text-white/50 mt-3 max-w-xl">
-              After completing the intake form, XBOT's AI engine produces a comprehensive brief
-              tailored to your robot, origin, and target show.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {BRIEF_OUTPUTS.map((output) => (
-              <div
-                key={output.title}
-                className="border border-white/10 rounded-xl bg-white/3 p-5"
-              >
-                <span className="text-2xl mb-3 block">{output.icon}</span>
-                <h3 className="text-white/90 font-semibold text-sm mb-1">{output.title}</h3>
-                <p className="text-white/45 text-xs leading-relaxed">{output.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-20 px-4 border-t border-white/8">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-xs font-mono text-indigo-400 mb-4">GET STARTED</p>
-          <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
-            Ready to Plan Your Robot's Arrival?
+      {/* ── FINAL CTA ────────────────────────────────────────────────────────── */}
+      <section style={{ padding: "8rem 0" }}>
+        <div className="container">
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: "1.5rem" }}>
+            Ready?
+          </p>
+          <h2 style={{ fontSize: "clamp(2.5rem, 6vw, 5rem)", fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em", marginBottom: "2rem", maxWidth: "18ch" }}>
+            Stop scrambling.<br />
+            <span style={{ color: "#00ff87" }}>Start with XBOT.</span>
           </h2>
-          <p className="text-white/50 mb-8 max-w-lg mx-auto">
-            Start the XBOT intake form now — no account required. Your progress is saved
-            automatically so you can return and finish later.
+          <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.35)", maxWidth: "44ch", lineHeight: 1.65, marginBottom: "2.5rem" }}>
+            No account required. Complete the 6-step intake and get your logistics brief in under 60 seconds.
           </p>
-          <Button
-            onClick={() => navigate("/xbot/new")}
-            className="border border-amber-500 text-amber-400 bg-transparent hover:bg-amber-500/10 px-10 py-3 text-base font-semibold"
-          >
-            Start XBOT Intake →
-          </Button>
-          <p className="text-white/25 text-xs mt-4">
-            Supports robots from any country. Las Vegas shows only.
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+            <Link href="/xbot/new">
+              <button className="btn-primary" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem" }}>
+                Start Logistics Intake <ArrowRight size={15} />
+              </button>
+            </Link>
+            <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              Back to StageGate <ArrowRight size={12} />
+            </Link>
+          </div>
         </div>
       </section>
     </div>

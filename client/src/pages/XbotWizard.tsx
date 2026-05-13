@@ -161,7 +161,7 @@ function StepRobotProfile({
             placeholder="e.g. Unitree, Boston Dynamics, UBTECH"
             value={form.robotMake}
             onChange={(e) => onChange("robotMake", e.target.value)}
-            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500"
+            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400"
           />
         </div>
         <div className="space-y-2">
@@ -170,7 +170,7 @@ function StepRobotProfile({
             placeholder="e.g. G1, Spot, Walker X"
             value={form.robotModel}
             onChange={(e) => onChange("robotModel", e.target.value)}
-            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500"
+            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400"
           />
         </div>
       </div>
@@ -181,7 +181,7 @@ function StepRobotProfile({
             placeholder="e.g. 60 × 45 × 130"
             value={form.robotDimensions}
             onChange={(e) => onChange("robotDimensions", e.target.value)}
-            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500"
+            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400"
           />
         </div>
         <div className="space-y-2">
@@ -190,7 +190,7 @@ function StepRobotProfile({
             placeholder="e.g. 35"
             value={form.robotWeight}
             onChange={(e) => onChange("robotWeight", e.target.value)}
-            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500"
+            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400"
           />
         </div>
       </div>
@@ -200,7 +200,7 @@ function StepRobotProfile({
           placeholder="e.g. 110V/220V AC, 15A, or battery only"
           value={form.powerRequirements}
           onChange={(e) => onChange("powerRequirements", e.target.value)}
-          className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500"
+          className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400"
         />
       </div>
       <div className="space-y-2">
@@ -210,7 +210,7 @@ function StepRobotProfile({
           value={form.specialHandling}
           onChange={(e) => onChange("specialHandling", e.target.value)}
           rows={3}
-          className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500 resize-none"
+          className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400 resize-none"
         />
       </div>
     </div>
@@ -233,7 +233,7 @@ function StepOriginShipping({
             placeholder="e.g. China, Japan, Germany"
             value={form.originCountry}
             onChange={(e) => onChange("originCountry", e.target.value)}
-            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500"
+            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400"
           />
         </div>
         <div className="space-y-2">
@@ -242,7 +242,7 @@ function StepOriginShipping({
             placeholder="e.g. Shenzhen, Tokyo, Munich"
             value={form.originCity}
             onChange={(e) => onChange("originCity", e.target.value)}
-            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500"
+            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400"
           />
         </div>
       </div>
@@ -252,7 +252,7 @@ function StepOriginShipping({
           value={form.shippingMethod}
           onValueChange={(v) => onChange("shippingMethod", v)}
         >
-          <SelectTrigger className="bg-white/5 border-white/15 text-white focus:border-indigo-500">
+          <SelectTrigger className="bg-white/5 border-white/15 text-white focus:border-emerald-400">
             <SelectValue placeholder="Select shipping method" />
           </SelectTrigger>
           <SelectContent className="bg-[#1a1d27] border-white/15 text-white">
@@ -269,7 +269,7 @@ function StepOriginShipping({
             placeholder="e.g. CA881, COSCO SHIPPING"
             value={form.flightVesselNumber}
             onChange={(e) => onChange("flightVesselNumber", e.target.value)}
-            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500"
+            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400"
           />
         </div>
         <div className="space-y-2">
@@ -278,7 +278,7 @@ function StepOriginShipping({
             type="date"
             value={form.eta}
             onChange={(e) => onChange("eta", e.target.value)}
-            className="bg-white/5 border-white/15 text-white focus:border-indigo-500"
+            className="bg-white/5 border-white/15 text-white focus:border-emerald-400"
           />
         </div>
       </div>
@@ -288,7 +288,7 @@ function StepOriginShipping({
           value={form.portOfEntry}
           onValueChange={(v) => onChange("portOfEntry", v)}
         >
-          <SelectTrigger className="bg-white/5 border-white/15 text-white focus:border-indigo-500">
+          <SelectTrigger className="bg-white/5 border-white/15 text-white focus:border-emerald-400">
             <SelectValue placeholder="Select port of entry" />
           </SelectTrigger>
           <SelectContent className="bg-[#1a1d27] border-white/15 text-white">
@@ -328,7 +328,7 @@ function StepCustoms({
           placeholder="e.g. 8479.89 — leave blank for XBOT to suggest one"
           value={form.hsCode}
           onChange={(e) => onChange("hsCode", e.target.value)}
-          className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500"
+          className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400"
         />
         <p className="text-white/40 text-xs">
           XBOT will suggest the most appropriate HS code for your robot type in the logistics brief.
@@ -339,7 +339,7 @@ function StepCustoms({
           id="ataCarnet"
           checked={form.ataCarnet}
           onCheckedChange={(v) => onBoolChange("ataCarnet", !!v)}
-          className="mt-0.5 border-white/30 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+          className="mt-0.5 border-white/30 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
         />
         <div>
           <Label htmlFor="ataCarnet" className="text-white/90 text-sm cursor-pointer">
@@ -357,7 +357,7 @@ function StepCustoms({
           value={form.customsBroker}
           onValueChange={(v) => onChange("customsBroker", v)}
         >
-          <SelectTrigger className="bg-white/5 border-white/15 text-white focus:border-indigo-500">
+          <SelectTrigger className="bg-white/5 border-white/15 text-white focus:border-emerald-400">
             <SelectValue placeholder="Select customs broker" />
           </SelectTrigger>
           <SelectContent className="bg-[#1a1d27] border-white/15 text-white">
@@ -374,7 +374,7 @@ function StepCustoms({
             placeholder="e.g. ABC Customs Brokers Inc."
             value={form.customsBrokerName}
             onChange={(e) => onChange("customsBrokerName", e.target.value)}
-            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500"
+            className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400"
           />
         </div>
       )}
@@ -403,7 +403,7 @@ function StepTargetShow({
             value={form.showId ? String(form.showId) : ""}
             onValueChange={(v) => onChange("showId", v ? parseInt(v) : null)}
           >
-            <SelectTrigger className="bg-white/5 border-white/15 text-white focus:border-indigo-500">
+            <SelectTrigger className="bg-white/5 border-white/15 text-white focus:border-emerald-400">
               <SelectValue placeholder="Select a Las Vegas trade show" />
             </SelectTrigger>
             <SelectContent className="bg-[#1a1d27] border-white/15 text-white max-h-64">
@@ -432,7 +432,7 @@ function StepTargetShow({
           placeholder="e.g. 4521, Hall C-12"
           value={form.boothNumber}
           onChange={(e) => onChange("boothNumber", e.target.value)}
-          className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500"
+          className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400"
         />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -442,7 +442,7 @@ function StepTargetShow({
             type="date"
             value={form.setupDate}
             onChange={(e) => onChange("setupDate", e.target.value)}
-            className="bg-white/5 border-white/15 text-white focus:border-indigo-500"
+            className="bg-white/5 border-white/15 text-white focus:border-emerald-400"
           />
         </div>
         <div className="space-y-2">
@@ -451,7 +451,7 @@ function StepTargetShow({
             type="date"
             value={form.teardownDate}
             onChange={(e) => onChange("teardownDate", e.target.value)}
-            className="bg-white/5 border-white/15 text-white focus:border-indigo-500"
+            className="bg-white/5 border-white/15 text-white focus:border-emerald-400"
           />
         </div>
       </div>
@@ -494,7 +494,7 @@ function StepServices({
                 onClick={() => toggleService(svc.key)}
                 className={`text-left p-4 rounded-lg border transition-all ${
                   selected
-                    ? "border-indigo-500 bg-indigo-500/10 text-white"
+                    ? "border-emerald-500/60 bg-emerald-500/8 text-white"
                     : "border-white/10 bg-white/3 text-white/70 hover:border-white/25 hover:bg-white/5"
                 }`}
               >
@@ -507,7 +507,7 @@ function StepServices({
                   </div>
                   <div
                     className={`w-4 h-4 rounded border flex-shrink-0 mt-0.5 flex items-center justify-center ${
-                      selected ? "border-indigo-500 bg-indigo-600" : "border-white/20"
+                      selected ? "border-emerald-500 bg-emerald-600/80" : "border-white/20"
                     }`}
                   >
                     {selected && (
@@ -528,7 +528,7 @@ function StepServices({
           value={form.groundTransportProvider}
           onValueChange={(v) => onChange("groundTransportProvider", v)}
         >
-          <SelectTrigger className="bg-white/5 border-white/15 text-white focus:border-indigo-500">
+          <SelectTrigger className="bg-white/5 border-white/15 text-white focus:border-emerald-400">
             <SelectValue placeholder="How should we handle ground transport?" />
           </SelectTrigger>
           <SelectContent className="bg-[#1a1d27] border-white/15 text-white">
@@ -553,7 +553,7 @@ function StepContacts({
     <div className="space-y-6">
       <div>
         <h3 className="text-white/90 text-sm font-semibold mb-3 flex items-center gap-2">
-          <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">1</span>
+          <span className="w-5 h-5 rounded-full bg-emerald-600/80 text-white text-xs flex items-center justify-center">1</span>
           Primary Contact *
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -563,7 +563,7 @@ function StepContacts({
               placeholder="Jane Smith"
               value={form.primaryName}
               onChange={(e) => onChange("primaryName", e.target.value)}
-              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500 h-9 text-sm"
+              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400 h-9 text-sm"
             />
           </div>
           <div className="space-y-1.5">
@@ -573,7 +573,7 @@ function StepContacts({
               placeholder="jane@company.com"
               value={form.primaryEmail}
               onChange={(e) => onChange("primaryEmail", e.target.value)}
-              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500 h-9 text-sm"
+              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400 h-9 text-sm"
             />
           </div>
           <div className="space-y-1.5">
@@ -582,7 +582,7 @@ function StepContacts({
               placeholder="+1 555 000 0000"
               value={form.primaryPhone}
               onChange={(e) => onChange("primaryPhone", e.target.value)}
-              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500 h-9 text-sm"
+              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400 h-9 text-sm"
             />
           </div>
         </div>
@@ -599,7 +599,7 @@ function StepContacts({
               placeholder="John Doe"
               value={form.onsiteName}
               onChange={(e) => onChange("onsiteName", e.target.value)}
-              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500 h-9 text-sm"
+              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400 h-9 text-sm"
             />
           </div>
           <div className="space-y-1.5">
@@ -609,7 +609,7 @@ function StepContacts({
               placeholder="john@company.com"
               value={form.onsiteEmail}
               onChange={(e) => onChange("onsiteEmail", e.target.value)}
-              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500 h-9 text-sm"
+              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400 h-9 text-sm"
             />
           </div>
           <div className="space-y-1.5">
@@ -618,7 +618,7 @@ function StepContacts({
               placeholder="+1 555 000 0000"
               value={form.onsitePhone}
               onChange={(e) => onChange("onsitePhone", e.target.value)}
-              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500 h-9 text-sm"
+              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400 h-9 text-sm"
             />
           </div>
         </div>
@@ -635,7 +635,7 @@ function StepContacts({
               placeholder="Emergency Contact"
               value={form.emergencyName}
               onChange={(e) => onChange("emergencyName", e.target.value)}
-              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500 h-9 text-sm"
+              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400 h-9 text-sm"
             />
           </div>
           <div className="space-y-1.5">
@@ -644,7 +644,7 @@ function StepContacts({
               placeholder="+1 555 000 0000"
               value={form.emergencyPhone}
               onChange={(e) => onChange("emergencyPhone", e.target.value)}
-              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-indigo-500 h-9 text-sm"
+              className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400 h-9 text-sm"
             />
           </div>
         </div>
@@ -844,7 +844,7 @@ export default function XbotWizard() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs font-mono text-indigo-400 border border-indigo-500/40 px-2 py-0.5 rounded">
+            <span className="text-xs font-mono text-emerald-400 border border-emerald-500/60/40 px-2 py-0.5 rounded">
               XBOT
             </span>
             <span className="text-white/30 text-xs">Automated Logistics Intake</span>
@@ -877,9 +877,9 @@ export default function XbotWizard() {
                     className={[
                       "w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 transition-all duration-400",
                       isCompleted
-                        ? "bg-indigo-600 border-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.6)]"
+                        ? "bg-emerald-600/80 border-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.6)]"
                         : isActive
-                        ? "bg-[#0d0f14] border-indigo-400 text-indigo-300 shadow-[0_0_14px_rgba(99,102,241,0.45)]"
+                        ? "bg-[#0d0f14] border-indigo-400 text-emerald-300 shadow-[0_0_14px_rgba(99,102,241,0.45)]"
                         : "bg-white/5 border-white/15 text-white/30",
                     ].join(" ")}
                   >
@@ -895,7 +895,7 @@ export default function XbotWizard() {
                   <span
                     className={[
                       "hidden sm:block text-[10px] font-medium transition-colors duration-300 text-center max-w-[64px] leading-tight",
-                      isCompleted ? "text-indigo-400" : isActive ? "text-white" : "text-white/30",
+                      isCompleted ? "text-emerald-400" : isActive ? "text-white" : "text-white/30",
                     ].join(" ")}
                   >
                     {step.label}
@@ -923,7 +923,7 @@ export default function XbotWizard() {
               Step {currentStep} of {STEPS.length}
             </span>
             <span
-              className="text-[10px] font-mono text-indigo-400 transition-all duration-500"
+              className="text-[10px] font-mono text-emerald-400 transition-all duration-500"
             >
               {progressPercent}% complete
             </span>
@@ -936,7 +936,7 @@ export default function XbotWizard() {
           <div className="flex items-center gap-3 px-6 sm:px-8 pt-6 pb-5 border-b border-white/8">
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center text-xl
-                         bg-indigo-600/15 border border-indigo-500/30 transition-all duration-300"
+                         bg-emerald-600/80/15 border border-emerald-500/60/30 transition-all duration-300"
             >
               {STEPS[currentStep - 1].icon}
             </div>
@@ -1004,7 +1004,7 @@ export default function XbotWizard() {
                 <Button
                   onClick={handleNext}
                   disabled={isSaving || !isInitialized || isAnimating}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white border-0 px-6"
+                  className="bg-emerald-600/80 hover:bg-emerald-500 text-white border-0 px-6"
                 >
                   {isSaving ? "Saving…" : "Continue →"}
                 </Button>
