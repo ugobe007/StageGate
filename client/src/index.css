@@ -213,8 +213,8 @@
     transition: border-color 0.2s, box-shadow 0.2s;
   }
   .card-base:hover {
-    border-color: rgba(79,110,247,0.30);
-    box-shadow: 0 0 0 1px rgba(79,110,247,0.10);
+    border-color: rgba(0,255,135,0.20);
+    box-shadow: 0 0 0 1px rgba(0,255,135,0.06);
   }
 
   /* Divider */

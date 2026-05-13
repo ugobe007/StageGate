@@ -877,9 +877,9 @@ export default function XbotWizard() {
                     className={[
                       "w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 transition-all duration-400",
                       isCompleted
-                        ? "bg-emerald-600/80 border-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.6)]"
+                        ? "bg-emerald-600/80 border-emerald-500 text-white shadow-[0_0_12px_rgba(0,255,135,0.4)]"
                         : isActive
-                        ? "bg-[#0d0f14] border-indigo-400 text-emerald-300 shadow-[0_0_14px_rgba(99,102,241,0.45)]"
+                        ? "bg-[#0d0f14] border-emerald-500/60 text-emerald-300 shadow-[0_0_14px_rgba(0,255,135,0.25)]"
                         : "bg-white/5 border-white/15 text-white/30",
                     ].join(" ")}
                   >
@@ -912,7 +912,7 @@ export default function XbotWizard() {
               style={{
                 width: `${progressPercent}%`,
                 background: "linear-gradient(90deg, #6366f1 0%, #818cf8 100%)",
-                boxShadow: progressPercent > 0 ? "0 0 8px rgba(99,102,241,0.7)" : "none",
+                boxShadow: progressPercent > 0 ? "0 0 8px rgba(0,255,135,0.5)" : "none",
               }}
             />
           </div>

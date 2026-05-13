@@ -281,15 +281,15 @@
 
 ## v5.0 — Editorial Redesign: Typography-First, No Generic Cards
 
-- [ ] Design language: emerald green (#00ff87) accent on near-black, Blade Runner / Tron aesthetic — NOT generic SaaS dark
-- [ ] Remove all padded card boxes from info panels — use inline text, ruled lines, raw grid
-- [ ] Home hero: asymmetric layout, massive editorial type, no centered-everything formula
-- [ ] Home services: horizontal ruled list with large numbers, no icon cards
-- [ ] Home XBOT section: story-driven narrative ("Your robot is sitting in a crate somewhere. XBOT fixes that.") with emotional hook before CTA
-- [ ] Home Robot Guild: editorial pull-quote style, not a feature card
-- [ ] XBOT landing: open with a problem statement, not a feature list — give users a reason to care
-- [ ] XBOT wizard info panels: inline text labels flush to content, no background boxes or padding wrappers
-- [ ] Global: replace all rounded card borders with thin ruled lines or no border at all
-- [ ] Global: emerald green replaces indigo as the primary accent color
-- [ ] Global: amber orange for CTAs (stroke only, no fill on secondary actions)
-- [ ] Typography: tighten letter-spacing on headings, use tabular numbers for stats
+- [x] Design language: emerald green (#00ff87) accent on near-black, Blade Runner / Tron aesthetic — NOT generic SaaS dark
+- [x] Remove all padded card boxes from info panels — use inline text, ruled lines, raw grid
+- [x] Home hero: asymmetric layout, massive editorial type, no centered-everything formula
+- [x] Home services: horizontal ruled list with large numbers, no icon cards
+- [x] Home XBOT section: story-driven narrative ("Your robot is sitting in a crate somewhere. XBOT fixes that.") with emotional hook before CTA
+- [x] Home Robot Guild: editorial pull-quote style, not a feature card
+- [x] XBOT landing: open with a problem statement, not a feature list — give users a reason to care
+- [x] XBOT wizard info panels: inline text labels flush to content, no background boxes or padding wrappers
+- [x] Global: replace all rounded card borders with thin ruled lines or no border at all
+- [x] Global: emerald green replaces indigo as the primary accent color
+- [x] Global: amber orange for CTAs (stroke only, no fill on secondary actions)
+- [x] Typography: tighten letter-spacing on headings, use tabular numbers for stats
