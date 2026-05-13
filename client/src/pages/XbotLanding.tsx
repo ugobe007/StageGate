@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -28,15 +29,103 @@ const STATUS_LABELS: Record<string, string> = {
   completed: "Completed",
 };
 
+const SESSION_KEY = "xbot_session_token";
+const PROJECT_KEY = "xbot_project_id";
+const BANNER_DISMISSED_KEY = "xbot_resume_banner_dismissed";
+
 export default function XbotLanding() {
   const { user, isAuthenticated } = useAuth();
   const { data: projectsData } = trpc.xbot.listProjects.useQuery(undefined, {
     enabled: isAuthenticated,
   });
 
+  // Resume banner: detect unfinished draft in localStorage
+  const [resumeBanner, setResumeBanner] = useState<{
+    projectId: number;
+    token: string;
+  } | null>(null);
+  const [bannerVisible, setBannerVisible] = useState(false);
+
+  useEffect(() => {
+    if (sessionStorage.getItem(BANNER_DISMISSED_KEY)) return;
+    const token = localStorage.getItem(SESSION_KEY);
+    const rawId = localStorage.getItem(PROJECT_KEY);
+    if (token && rawId) {
+      const projectId = parseInt(rawId, 10);
+      if (!isNaN(projectId)) {
+        setResumeBanner({ projectId, token });
+        setBannerVisible(true);
+      }
+    }
+  }, []);
+
+  function dismissBanner() {
+    setBannerVisible(false);
+    sessionStorage.setItem(BANNER_DISMISSED_KEY, "1");
+  }
+
   return (
     <div style={{ background: "#080808", color: "#ececec", minHeight: "100vh" }}>
       <Navbar />
+
+      {/* ── Resume Banner ─────────────────────────────────────────────────── */}
+      {bannerVisible && resumeBanner && (
+        <div
+          style={{
+            borderBottom: "1px solid rgba(0,255,135,0.18)",
+            background: "rgba(0,255,135,0.04)",
+            padding: "0.75rem 0",
+          }}
+        >
+          <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "0.625rem",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "#00ff87",
+                  flexShrink: 0,
+                }}
+              >
+                Draft saved
+              </span>
+              <span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.65)" }}>
+                You have an unfinished logistics plan. Pick up where you left off.
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexShrink: 0 }}>
+              <Link href={`/xbot/project/${resumeBanner.projectId}`}>
+                <button
+                  className="btn-primary"
+                  style={{ padding: "0.4rem 1rem", fontSize: "0.75rem" }}
+                >
+                  Continue <ArrowRight size={13} />
+                </button>
+              </Link>
+              <button
+                onClick={dismissBanner}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "rgba(255,255,255,0.30)",
+                  cursor: "pointer",
+                  padding: "0.25rem",
+                  display: "flex",
+                  alignItems: "center",
+                  transition: "color 0.15s",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.70)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.30)")}
+                aria-label="Dismiss banner"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── HERO — problem statement ─────────────────────────────────────────── */}
       <section style={{ padding: "8rem 0 6rem", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>

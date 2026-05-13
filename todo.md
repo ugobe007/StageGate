@@ -293,3 +293,9 @@
 - [x] Global: emerald green replaces indigo as the primary accent color
 - [x] Global: amber orange for CTAs (stroke only, no fill on secondary actions)
 - [x] Typography: tighten letter-spacing on headings, use tabular numbers for stats
+
+## v5.1 — XBOT Resume Banner
+- [x] Detect unfinished XBOT intake in localStorage (xbot_session_token + xbot_project_id keys)
+- [x] Show dismissible banner at top of /xbot page with "Draft saved" label and "Continue" CTA
+- [x] Banner dismisses on click of × and sets a sessionStorage flag so it doesn't re-appear mid-session
+- [x] Banner only shows if a valid projectId + sessionToken exist in localStorage
