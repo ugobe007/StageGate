@@ -591,3 +591,8 @@ export async function getAllUsers() {
   if (!db) throw new Error("DB unavailable");
   return db.select().from(users).orderBy(desc(users.createdAt));
 }
+export async function updateUserRole(userId: number, role: "admin" | "user") {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(users).set({ role }).where(eq(users.id, userId));
+}

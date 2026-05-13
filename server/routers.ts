@@ -874,9 +874,12 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         emailConfidence: z.enum(["verified", "high", "medium", "low"]).optional(),
         notes: z.string().optional(),
         videoMessageUrl: z.string().optional(),
+        followUpDate: z.string().optional().nullable(),
       }))
       .mutation(async ({ input }) => {
-        const { id, ...data } = input;
+        const { id, followUpDate, ...rest } = input;
+        const data: Parameters<typeof db.updateProspect>[1] = { ...rest };
+        if (followUpDate !== undefined) data.followUpDate = followUpDate ? new Date(followUpDate) : null;
         await db.updateProspect(id, data);
         return { success: true };
       }),
@@ -1047,6 +1050,13 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     getUsers: adminProcedure.query(async () => {
       return db.getAllUsers();
     }),
+    setUserRole: adminProcedure
+      .input(z.object({ userId: z.number(), role: z.enum(["admin", "user"]) }))
+      .mutation(async ({ input, ctx }) => {
+        if (input.userId === ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Cannot change your own role" });
+        await db.updateUserRole(input.userId, input.role);
+        return { success: true };
+      }),
     getSiteStats: adminProcedure.query(async () => {
       const [users, orders, demos, quotes, leads, prospects] = await Promise.all([
         db.getAllUsers(),

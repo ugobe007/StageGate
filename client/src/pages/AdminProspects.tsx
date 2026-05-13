@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Navbar from "@/components/Navbar";
-import { ExternalLink, Mail, RefreshCw, ChevronDown, Check, X, Clock, Phone, AlertCircle, Square, CheckSquare, Zap, ArrowUpDown, ArrowUp, ArrowDown, Download } from "lucide-react";
+import { ExternalLink, Mail, RefreshCw, ChevronDown, Check, X, Clock, Phone, AlertCircle, Square, CheckSquare, Zap, ArrowUpDown, ArrowUp, ArrowDown, Download, Upload, Calendar } from "lucide-react";
 
 type ProspectStatus = "new" | "contacted" | "responded" | "scheduled" | "converted" | "not_interested";
 
@@ -132,13 +132,63 @@ export default function AdminProspects() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Sort state
-  type SortKey = "company" | "status" | "";
+  type SortKey = "company" | "status" | "followUpDate" | "";
   type SortDir = "asc" | "desc";
   const [sortKey, setSortKey] = useState<SortKey>("");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortKey(key); setSortDir("asc"); }
+  };
+  // Follow-up date editing state
+  const [editingFollowUpId, setEditingFollowUpId] = useState<number | null>(null);
+  // CSV import state
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const [csvPreview, setCsvPreview] = useState<{ company: string; contactName?: string; contactEmail?: string; shows?: string; notes?: string }[] | null>(null);
+  const [csvImporting, setCsvImporting] = useState(false);
+  const bulkImport = trpc.prospects.bulkImport.useMutation({
+    onSuccess: () => { setCsvPreview(null); setCsvImporting(false); refetch(); },
+    onError: () => setCsvImporting(false),
+  });
+  const handleCsvFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) return;
+      const headers = lines[0].split(",").map(h => h.replace(/^"|"$/g, "").trim().toLowerCase());
+      const colIdx = (names: string[]) => names.map(n => headers.findIndex(h => h.includes(n))).find(i => i >= 0) ?? -1;
+      const companyIdx = colIdx(["company", "organization", "org"]);
+      const nameIdx = colIdx(["contact", "name", "person"]);
+      const emailIdx = colIdx(["email"]);
+      const showsIdx = colIdx(["show", "event"]);
+      const notesIdx = colIdx(["note", "comment"]);
+      const parsed = lines.slice(1).map(line => {
+        const cols = line.split(",").map(c => c.replace(/^"|"$/g, "").trim());
+        return {
+          company: companyIdx >= 0 ? cols[companyIdx] : "",
+          contactName: nameIdx >= 0 ? cols[nameIdx] : undefined,
+          contactEmail: emailIdx >= 0 ? cols[emailIdx] : undefined,
+          shows: showsIdx >= 0 ? cols[showsIdx] : undefined,
+          notes: notesIdx >= 0 ? cols[notesIdx] : undefined,
+        };
+      }).filter(r => r.company);
+      setCsvPreview(parsed);
+    };
+    reader.readAsText(file);
+  };
+  const confirmCsvImport = () => {
+    if (!csvPreview || csvImporting) return;
+    setCsvImporting(true);
+    bulkImport.mutate({
+      prospects: csvPreview.map(r => ({
+        company: r.company,
+        contactName: r.contactName,
+        contactEmail: r.contactEmail,
+        shows: r.shows ? [r.shows] : [],
+        notes: r.notes,
+      }))
+    });
   };
 
   // Reply notes inline state: prospectId → note text (undefined = not showing, string = showing)
@@ -235,6 +285,11 @@ export default function AdminProspects() {
     let cmp = 0;
     if (sortKey === "company") cmp = a.company.localeCompare(b.company);
     else if (sortKey === "status") cmp = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
+    else if (sortKey === "followUpDate") {
+      const aDate = (a as Record<string, unknown>).followUpDate ? new Date(String((a as Record<string, unknown>).followUpDate)).getTime() : Infinity;
+      const bDate = (b as Record<string, unknown>).followUpDate ? new Date(String((b as Record<string, unknown>).followUpDate)).getTime() : Infinity;
+      cmp = aDate - bDate;
+    }
     return sortDir === "asc" ? cmp : -cmp;
   });
 
@@ -307,6 +362,29 @@ export default function AdminProspects() {
                 }}
               >
                 <Download size={11} /> CSV
+              </button>
+              {/* Hidden file input for CSV import */}
+              <input
+                ref={csvInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                style={{ display: "none" }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleCsvFile(f); e.target.value = ""; }}
+              />
+              <button
+                onClick={() => csvInputRef.current?.click()}
+                title="Import prospects from CSV"
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.3rem",
+                  fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em", textTransform: "uppercase",
+                  padding: "0.3rem 0.65rem",
+                  border: "1px solid rgba(245,158,11,0.30)",
+                  color: "rgba(245,158,11,0.70)",
+                  background: "transparent", cursor: "pointer", borderRadius: "0.125rem",
+                  transition: "all 0.15s",
+                }}
+              >
+                <Upload size={11} /> Import
               </button>
               <button onClick={() => refetch()} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.40)", padding: "0.25rem" }}>
                 <RefreshCw size={14} />
@@ -605,7 +683,7 @@ export default function AdminProspects() {
             {/* Table header row with Select All */}
             <div style={{
               display: "grid",
-              gridTemplateColumns: "1.5rem 2fr 1.5fr 1fr 1fr auto",
+              gridTemplateColumns: "1.5rem 2fr 1.5fr 1fr 1fr 1fr auto",
               gap: "1.5rem",
               alignItems: "center",
               padding: "0.5rem 0",
@@ -628,6 +706,10 @@ export default function AdminProspects() {
               <button onClick={() => toggleSort("status")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: sortKey === "status" ? "rgba(255,255,255,0.60)" : "rgba(255,255,255,0.20)", padding: 0 }}>
                 Status
                 {sortKey === "status" ? (sortDir === "asc" ? <ArrowUp size={9} /> : <ArrowDown size={9} />) : <ArrowUpDown size={9} style={{ opacity: 0.4 }} />}
+              </button>
+              <button onClick={() => toggleSort("followUpDate")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: sortKey === "followUpDate" ? "rgba(255,255,255,0.60)" : "rgba(255,255,255,0.20)", padding: 0 }}>
+                Follow-up
+                {sortKey === "followUpDate" ? (sortDir === "asc" ? <ArrowUp size={9} /> : <ArrowDown size={9} />) : <ArrowUpDown size={9} style={{ opacity: 0.4 }} />}
               </button>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)" }}>Action</span>
             </div>
@@ -660,7 +742,7 @@ export default function AdminProspects() {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1.5rem 2fr 1.5fr 1fr 1fr auto",
+                      gridTemplateColumns: "1.5rem 2fr 1.5fr 1fr 1fr 1fr auto",
                       gap: "1.5rem",
                       alignItems: "center",
                       padding: "1rem 0",
@@ -731,6 +813,48 @@ export default function AdminProspects() {
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(0,255,135,0.45)", letterSpacing: "0.04em" }}>
                           {formatRelativeTime(new Date(String((p as Record<string, unknown>).repliedAt)))}
                         </span>
+                      )}
+                    </div>
+
+                    {/* Follow-up date */}
+                    <div onClick={e => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                      {editingFollowUpId === p.id ? (
+                        <input
+                          autoFocus
+                          type="date"
+                          defaultValue={(p as Record<string, unknown>).followUpDate ? new Date(String((p as Record<string, unknown>).followUpDate)).toISOString().slice(0,10) : ""}
+                          onBlur={e => {
+                            updateProspect.mutate({ id: p.id, followUpDate: e.target.value || null });
+                            setEditingFollowUpId(null);
+                          }}
+                          onKeyDown={e => { if (e.key === "Escape") setEditingFollowUpId(null); }}
+                          style={{
+                            fontFamily: "var(--font-mono)", fontSize: "0.5625rem",
+                            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.20)",
+                            color: "#fff", padding: "0.25rem 0.4rem", borderRadius: "0.125rem",
+                            outline: "none", width: "8rem",
+                          }}
+                        />
+                      ) : (p as Record<string, unknown>).followUpDate ? (
+                        <button
+                          onClick={() => setEditingFollowUpId(p.id)}
+                          title="Edit follow-up date"
+                          style={{ background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
+                        >
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: new Date(String((p as Record<string, unknown>).followUpDate)) < new Date() ? "#f87171" : "#f59e0b", letterSpacing: "0.04em" }}>
+                            <Calendar size={9} style={{ display: "inline", marginRight: "0.25rem", verticalAlign: "middle" }} />
+                            {new Date(String((p as Record<string, unknown>).followUpDate)).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          </span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setEditingFollowUpId(p.id)}
+                          title="Set follow-up date"
+                          style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: "0.2rem" }}
+                        >
+                          <Calendar size={9} style={{ color: "rgba(255,255,255,0.15)" }} />
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.45rem", color: "rgba(255,255,255,0.15)", letterSpacing: "0.06em" }}>Set</span>
+                        </button>
                       )}
                     </div>
 
@@ -995,6 +1119,73 @@ export default function AdminProspects() {
           </div>
         )}
       </div>
+
+      {/* CSV Import Preview Modal */}
+      {csvPreview && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.80)", zIndex: 1000,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
+        }} onClick={() => setCsvPreview(null)}>
+          <div style={{
+            background: "#111", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.5rem",
+            padding: "2rem", maxWidth: "48rem", width: "100%", maxHeight: "80vh", overflow: "auto",
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+              <div>
+                <h2 style={{ fontFamily: "var(--font-mono)", fontSize: "0.875rem", color: "#fff", margin: 0, letterSpacing: "-0.02em" }}>Import Preview</h2>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(255,255,255,0.40)", margin: "0.25rem 0 0" }}>
+                  {csvPreview.length} prospect{csvPreview.length !== 1 ? "s" : ""} detected
+                </p>
+              </div>
+              <button onClick={() => setCsvPreview(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.40)" }}>
+                <X size={16} />
+              </button>
+            </div>
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", marginBottom: "1rem" }}>
+              {csvPreview.slice(0, 10).map((r, i) => (
+                <div key={i} style={{
+                  display: "grid", gridTemplateColumns: "2fr 1.5fr 2fr", gap: "1rem",
+                  padding: "0.6rem 0", borderBottom: "1px solid rgba(255,255,255,0.05)",
+                  fontFamily: "var(--font-mono)", fontSize: "0.625rem",
+                }}>
+                  <span style={{ color: "#fff", fontWeight: 600 }}>{r.company}</span>
+                  <span style={{ color: "rgba(255,255,255,0.50)" }}>{r.contactName ?? "—"}</span>
+                  <span style={{ color: "#f59e0b" }}>{r.contactEmail ?? "—"}</span>
+                </div>
+              ))}
+              {csvPreview.length > 10 && (
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: "rgba(255,255,255,0.30)", padding: "0.5rem 0", margin: 0 }}>
+                  + {csvPreview.length - 10} more…
+                </p>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setCsvPreview(null)}
+                style={{
+                  fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.08em", textTransform: "uppercase",
+                  padding: "0.5rem 1.25rem", border: "1px solid rgba(255,255,255,0.15)",
+                  color: "rgba(255,255,255,0.50)", background: "transparent", cursor: "pointer", borderRadius: "0.25rem",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmCsvImport}
+                disabled={csvImporting}
+                style={{
+                  fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.08em", textTransform: "uppercase",
+                  padding: "0.5rem 1.25rem", border: "1px solid rgba(245,158,11,0.50)",
+                  color: "#f59e0b", background: "rgba(245,158,11,0.08)", cursor: csvImporting ? "wait" : "pointer",
+                  borderRadius: "0.25rem", opacity: csvImporting ? 0.6 : 1,
+                }}
+              >
+                {csvImporting ? "Importing…" : `Import ${csvPreview.length} Prospects`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

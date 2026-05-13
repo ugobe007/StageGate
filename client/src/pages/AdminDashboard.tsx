@@ -5,21 +5,27 @@ import { trpc } from "@/lib/trpc";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { useState } from "react";
 import {
   Building2, Calendar, Package, Users, TrendingUp, ArrowRight,
   Loader2, AlertCircle, Zap, FileText, Play,
-  ShieldCheck, BarChart3, UserCheck
+  ShieldCheck, BarChart3, UserCheck, Shield, ShieldOff
 } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, isAuthenticated, loading } = useAuth();
+  const [togglingRoleId, setTogglingRoleId] = useState<number | null>(null);
 
   const { data: allOrders } = trpc.orders.allOrders.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: shows } = trpc.shows.list.useQuery();
   const { data: allLeads } = trpc.leads.all.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: allProfiles } = trpc.company.getAllProfiles.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: siteStats } = trpc.admin.getSiteStats.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
-  const { data: allUsers } = trpc.admin.getUsers.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
+  const { data: allUsers, refetch: refetchUsers } = trpc.admin.getUsers.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
+  const setUserRole = trpc.admin.setUserRole.useMutation({
+    onSuccess: () => { setTogglingRoleId(null); refetchUsers(); },
+    onError: () => setTogglingRoleId(null),
+  });
 
   if (loading) {
     return (
@@ -265,13 +271,13 @@ export default function AdminDashboard() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
-                      {["Name", "Email", "Role", "Joined", "Last Sign In"].map(h => (
+                      {["Name", "Email", "Role", "Joined", "Last Sign In", "Actions"].map(h => (
                         <th key={h} className="text-left pb-3 pr-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {allUsers.map((u) => (
+                    {allUsers.map((u: { id: number; name: string | null; email: string | null; role: string; createdAt: Date; lastSignedIn: Date }) => (
                       <tr key={u.id} className="border-b border-border/40 hover:bg-secondary/20 transition-colors">
                         <td className="py-3 pr-4 font-medium text-foreground">{u.name || <span className="text-muted-foreground italic">—</span>}</td>
                         <td className="py-3 pr-4 text-muted-foreground font-mono text-xs">{u.email || "—"}</td>
@@ -281,7 +287,33 @@ export default function AdminDashboard() {
                           </Badge>
                         </td>
                         <td className="py-3 pr-4 text-muted-foreground text-xs">{new Date(u.createdAt).toLocaleDateString()}</td>
-                        <td className="py-3 text-muted-foreground text-xs">{new Date(u.lastSignedIn).toLocaleDateString()}</td>
+                        <td className="py-3 pr-4 text-muted-foreground text-xs">{new Date(u.lastSignedIn).toLocaleDateString()}</td>
+                        <td className="py-3">
+                          {u.id !== user?.id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={togglingRoleId === u.id}
+                              onClick={() => {
+                                setTogglingRoleId(u.id);
+                                setUserRole.mutate({ userId: u.id, role: u.role === "admin" ? "user" : "admin" });
+                              }}
+                              className={`text-xs gap-1 border-border h-7 px-2 ${
+                                u.role === "admin"
+                                  ? "text-destructive hover:text-destructive hover:border-destructive/50"
+                                  : "text-primary hover:text-primary hover:border-primary/50"
+                              }`}
+                            >
+                              {togglingRoleId === u.id ? (
+                                <Loader2 size={10} className="animate-spin" />
+                              ) : u.role === "admin" ? (
+                                <><ShieldOff size={10} /> Demote</>
+                              ) : (
+                                <><Shield size={10} /> Promote</>
+                              )}
+                            </Button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

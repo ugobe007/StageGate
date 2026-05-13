@@ -65,6 +65,9 @@ vi.mock("./db", () => ({
   bulkInsertProspects: vi.fn().mockResolvedValue(undefined),
   createOutreachCampaign: vi.fn().mockResolvedValue({ id: 1 }),
   listOutreachCampaigns: vi.fn().mockResolvedValue([]),
+  getAllUsers: vi.fn().mockResolvedValue([{ id: 2, name: "Bob", email: "bob@example.com", role: "user", createdAt: new Date(), lastSignedIn: new Date() }]),
+  updateUserRole: vi.fn().mockResolvedValue(undefined),
+  getAllDemoRequests: vi.fn().mockResolvedValue([]),
 }));
 
 // Mock LLM
@@ -573,5 +576,35 @@ describe("prospects.markReplied", () => {
   it("rejects unauthenticated requests", async () => {
     const caller = appRouter.createCaller(createPublicCtx());
     await expect(caller.prospects.markReplied({ id: 1 })).rejects.toThrow();
+  });
+});
+
+// ─── Admin.setUserRole Tests ──────────────────────────────────────────────────
+
+describe("admin.setUserRole", () => {
+  it("allows admin to promote a user to admin", async () => {
+    const { updateUserRole } = await import("./db");
+    const caller = appRouter.createCaller(createAdminCtx());
+    const result = await caller.admin.setUserRole({ userId: 2, role: "admin" });
+    expect(result).toEqual({ success: true });
+    expect(vi.mocked(updateUserRole)).toHaveBeenCalledWith(2, "admin");
+  });
+
+  it("allows admin to demote an admin to user", async () => {
+    const { updateUserRole } = await import("./db");
+    const caller = appRouter.createCaller(createAdminCtx());
+    const result = await caller.admin.setUserRole({ userId: 2, role: "user" });
+    expect(result).toEqual({ success: true });
+    expect(vi.mocked(updateUserRole)).toHaveBeenCalledWith(2, "user");
+  });
+
+  it("rejects non-admin users", async () => {
+    const caller = appRouter.createCaller(createUserCtx("user"));
+    await expect(caller.admin.setUserRole({ userId: 2, role: "admin" })).rejects.toThrow();
+  });
+
+  it("rejects unauthenticated requests", async () => {
+    const caller = appRouter.createCaller(createPublicCtx());
+    await expect(caller.admin.setUserRole({ userId: 2, role: "admin" })).rejects.toThrow();
   });
 });
