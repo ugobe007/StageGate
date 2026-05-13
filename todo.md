@@ -464,12 +464,12 @@
 
 ## v8.2 — Agent Failure Alerts, Daily Follow-up Digest, Prospect Kanban
 
-- [ ] Agent run failure alerts: call notifyOwner when any AI agent procedure catches an error (leads.discover, leads.generateEmail, xbot.generateBrief, sendIntroEmail, bulkSendEmails)
-- [ ] Daily follow-up digest: Heartbeat cron at 9am UTC — query prospects with followUpDate <= today and status != responded/converted, send notifyOwner with list
-- [ ] Add /api/scheduled/followup-digest Express handler in server/_core/index.ts
-- [ ] Prospect Kanban view: toggle button (Table / Kanban) in AdminProspects header
-- [ ] Kanban columns: New, Contacted, Responded, Scheduled, Converted — each shows prospect cards with company, contact, follow-up date
-- [ ] Clicking a Kanban card opens the same edit panel as the table row
+- [x] Agent run failure alerts: call notifyOwner when any AI agent procedure catches an error (leads.discover, leads.generateEmail, xbot.generateBrief, sendIntroEmail, bulkSendEmails)
+- [x] Daily follow-up digest: Heartbeat cron at 9am UTC — query prospects with followUpDate <= today and status != responded/converted, send notifyOwner with list
+- [x] Add /api/scheduled/followup-digest Express handler in server/_core/index.ts
+- [x] Prospect Kanban view: toggle button (Table / Kanban) in AdminProspects header
+- [x] Kanban columns: New, Contacted, Responded, Scheduled, Converted — each shows prospect cards with company, contact, follow-up date
+- [x] Clicking a Kanban card opens the same edit panel as the table row
 
 ## v8.2 — Agent Alerts, Daily Digest, Kanban View
 - [x] Agent failure alerts: notifyOwner on catch in all 5 AI agent procedures (leads.discover, leads.generateEmail, xbot.generateBrief, prospects.sendIntroEmail, prospects.bulkSendEmails)
