@@ -230,17 +230,16 @@
 - [x] Result count reflects combined search + status filter
 - [x] Empty state message mentions the search query
 
-## v4.0 — Conversion-Focused Full Rebuild (Robot Guild + Dribbble Reference)
-
-- [ ] CSS: Space Grotesk font, near-black bg (#050508), electric blue accent (#4f6ef7), violet secondary (#7c3aed), refined tokens
-- [ ] Navbar: minimal 4-link nav + 2 CTA buttons (How It Works ghost, Register filled)
-- [ ] Hero: full-bleed robot photo background, massive headline overlay, positioning statement, 2 CTAs
-- [ ] Service value strip: 5 cards in priority order (Warehouse, Ship/Receive, Stage, Activate, Promote) with numbered badges
-- [ ] How It Works: 4-step numbered section with descriptions
-- [ ] Shows preview: next 3 upcoming Las Vegas shows with date + register link
-- [ ] Robot Guild partner section: logo + description + link
-- [ ] Final CTA: "Schedule Your Robot" full-width section
-- [ ] Footer: minimal links + contact
+### v4.0 — Conversion-Focused Full Rebuild (Robot Guild + Dribbble Reference)
+- [x] CSS: Space Grotesk font, near-black bg (#050508), electric blue accent (#4f6ef7), violet secondary (#7c3aed), refined tokens
+- [x] Navbar: minimal 4-link nav + 2 CTA buttons (How It Works ghost, Register filled)
+- [x] Hero: full-bleed robot photo background, massive headline overlay, positioning statement, 2 CTAs
+- [x] Service value strip: 5 cards in priority order (Warehouse, Ship/Receive, Stage, Activate, Promote) with numbered badges
+- [x] How It Works: 4-step numbered section with descriptions
+- [x] Shows preview: next 3 upcoming Las Vegas shows with date + register link
+- [x] Robot Guild partner section: logo + description + link
+- [x] Final CTA: "Schedule Your Robot" full-width section
+- [x] Footer: minimal links + contact
 
 ## v4.1 — XBOT AI Logistics Agent
 
@@ -271,3 +270,11 @@
 - [x] Add XBOT nav link to Navbar
 - [x] Add XBOT entry point section to Home page
 - [x] Write vitest tests for xbot procedures (18 tests, 72 total passing)
+
+## v4.2 — XBOT Wizard UX: Progress Bar + Step Transitions
+
+- [x] Progress bar: animated fill from 0% to 100% across 6 steps (step N = N/6 * 100%)
+- [x] Step label strip: show all 6 step names with active/completed state indicators
+- [x] Smooth slide/fade transition animation when advancing or going back between steps
+- [x] Direction-aware animation: slide left when advancing, slide right when going back
+- [x] Transition does not block auto-save (save fires before animation completes)

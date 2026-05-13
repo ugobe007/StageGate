@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -663,6 +663,11 @@ export default function XbotWizard() {
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  // Animation state
+  const [animKey, setAnimKey] = useState(0);
+  const [animDir, setAnimDir] = useState<"forward" | "back">("forward");
+  const [isAnimating, setIsAnimating] = useState(false);
+  const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const createProject = trpc.xbot.createProject.useMutation();
   const updateProject = trpc.xbot.updateProject.useMutation();
@@ -771,7 +776,26 @@ export default function XbotWizard() {
     }
   }, [projectId, sessionToken, isInitialized, form, currentStep, updateProject]);
 
-  const handleNext = async () => {
+  // Cleanup animation timer on unmount
+  useEffect(() => {
+    return () => {
+      if (animTimerRef.current) clearTimeout(animTimerRef.current);
+    };
+  }, []);
+
+  const transitionToStep = useCallback((nextStep: number, dir: "forward" | "back") => {
+    setAnimDir(dir);
+    setIsAnimating(true);
+    if (animTimerRef.current) clearTimeout(animTimerRef.current);
+    animTimerRef.current = setTimeout(() => {
+      setCurrentStep(nextStep);
+      setAnimKey((k) => k + 1);
+      setIsAnimating(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 220); // half the transition duration — swap content mid-fade
+  }, []);
+
+  const handleNext = () => {
     // Validate required fields per step
     if (currentStep === 1 && (!form.robotMake || !form.robotModel)) {
       toast.error("Please enter the robot make and model to continue.");
@@ -782,18 +806,16 @@ export default function XbotWizard() {
       return;
     }
 
-    await saveStep();
-
     if (currentStep < 6) {
-      setCurrentStep((s) => s + 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      // Fire save in background — transition starts immediately
+      saveStep().catch(() => { /* silent */ });
+      transitionToStep(currentStep + 1, "forward");
     }
   };
 
   const handleBack = () => {
     if (currentStep > 1) {
-      setCurrentStep((s) => s - 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      transitionToStep(currentStep - 1, "back");
     }
   };
 
@@ -811,7 +833,8 @@ export default function XbotWizard() {
     }
   };
 
-  const progressPercent = ((currentStep - 1) / (STEPS.length - 1)) * 100;
+  // step N / 6 * 100 → step 1 = 17%, step 6 = 100%
+  const progressPercent = Math.round((currentStep / STEPS.length) * 100);
 
   return (
     <div className="min-h-screen bg-[#0d0f14] text-white">
@@ -837,57 +860,96 @@ export default function XbotWizard() {
 
         {/* Progress Bar */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            {STEPS.map((step) => (
-              <div
-                key={step.id}
-                className={`flex flex-col items-center gap-1 ${
-                  step.id <= currentStep ? "opacity-100" : "opacity-30"
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border transition-all ${
-                    step.id < currentStep
-                      ? "bg-indigo-600 border-indigo-600 text-white"
-                      : step.id === currentStep
-                      ? "bg-indigo-600/20 border-indigo-500 text-indigo-300"
-                      : "bg-white/5 border-white/15 text-white/40"
-                  }`}
-                >
-                  {step.id < currentStep ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : (
-                    <span className="text-xs font-mono">{step.id}</span>
-                  )}
-                </div>
-                <span className="text-[10px] text-white/50 hidden sm:block">{step.label}</span>
-              </div>
-            ))}
-          </div>
-          <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+          {/* Step bubbles + labels */}
+          <div className="relative flex items-start justify-between mb-4">
+            {/* Connector track behind bubbles */}
             <div
-              className="h-full bg-indigo-600 rounded-full transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
+              className="absolute top-4 left-4 right-4 h-px bg-white/10"
+              aria-hidden="true"
             />
+            {STEPS.map((step) => {
+              const isCompleted = step.id < currentStep;
+              const isActive = step.id === currentStep;
+              return (
+                <div key={step.id} className="relative flex flex-col items-center gap-1.5 z-10">
+                  {/* Bubble */}
+                  <div
+                    className={[
+                      "w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 transition-all duration-400",
+                      isCompleted
+                        ? "bg-indigo-600 border-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.6)]"
+                        : isActive
+                        ? "bg-[#0d0f14] border-indigo-400 text-indigo-300 shadow-[0_0_14px_rgba(99,102,241,0.45)]"
+                        : "bg-white/5 border-white/15 text-white/30",
+                    ].join(" ")}
+                  >
+                    {isCompleted ? (
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <span className="text-[11px] font-mono font-bold">{step.id}</span>
+                    )}
+                  </div>
+                  {/* Label */}
+                  <span
+                    className={[
+                      "hidden sm:block text-[10px] font-medium transition-colors duration-300 text-center max-w-[64px] leading-tight",
+                      isCompleted ? "text-indigo-400" : isActive ? "text-white" : "text-white/30",
+                    ].join(" ")}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Animated progress track */}
+          <div className="h-1.5 bg-white/8 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-[width] duration-500 ease-in-out"
+              style={{
+                width: `${progressPercent}%`,
+                background: "linear-gradient(90deg, #6366f1 0%, #818cf8 100%)",
+                boxShadow: progressPercent > 0 ? "0 0 8px rgba(99,102,241,0.7)" : "none",
+              }}
+            />
+          </div>
+
+          {/* Percentage label */}
+          <div className="flex items-center justify-between mt-1.5">
+            <span className="text-[10px] font-mono text-white/30">
+              Step {currentStep} of {STEPS.length}
+            </span>
+            <span
+              className="text-[10px] font-mono text-indigo-400 transition-all duration-500"
+            >
+              {progressPercent}% complete
+            </span>
           </div>
         </div>
 
         {/* Step Card */}
-        <div className="border border-white/10 rounded-xl bg-white/3 p-6 sm:p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-2xl">{STEPS[currentStep - 1].icon}</span>
-            <div>
-              <p className="text-white/40 text-xs font-mono">
-                STEP {currentStep} OF {STEPS.length}
+        <div className="border border-white/10 rounded-xl bg-white/3 overflow-hidden">
+          {/* Card header */}
+          <div className="flex items-center gap-3 px-6 sm:px-8 pt-6 pb-5 border-b border-white/8">
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-xl
+                         bg-indigo-600/15 border border-indigo-500/30 transition-all duration-300"
+            >
+              {STEPS[currentStep - 1].icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white/40 text-[10px] font-mono uppercase tracking-wider">
+                Step {currentStep} of {STEPS.length}
               </p>
-              <h2 className="text-lg font-semibold text-white">
+              <h2 className="text-base sm:text-lg font-semibold text-white leading-tight">
                 {STEPS[currentStep - 1].label}
               </h2>
             </div>
             {isSaving && (
-              <span className="ml-auto text-xs text-white/30 flex items-center gap-1">
+              <span className="text-xs text-white/30 flex items-center gap-1.5 shrink-0">
                 <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -897,32 +959,42 @@ export default function XbotWizard() {
             )}
           </div>
 
-          {/* Step Content */}
-          {currentStep === 1 && (
-            <StepRobotProfile form={form} onChange={handleChange} />
-          )}
-          {currentStep === 2 && (
-            <StepOriginShipping form={form} onChange={handleChange} />
-          )}
-          {currentStep === 3 && (
-            <StepCustoms form={form} onChange={handleChange} onBoolChange={handleChange} />
-          )}
-          {currentStep === 4 && (
-            <StepTargetShow form={form} onChange={handleChange} />
-          )}
-          {currentStep === 5 && (
-            <StepServices form={form} onServicesChange={handleServicesChange} onChange={handleChange} />
-          )}
-          {currentStep === 6 && (
-            <StepContacts form={form} onChange={handleChange} />
-          )}
+          {/* Step Content — direction-aware slide+fade */}
+          <div
+            key={animKey}
+            className="px-6 sm:px-8 py-6"
+            style={{
+              animation: isAnimating
+                ? `xbot-exit-${animDir} 220ms ease-in forwards`
+                : `xbot-enter-${animDir} 280ms ease-out both`,
+            }}
+          >
+            {currentStep === 1 && (
+              <StepRobotProfile form={form} onChange={handleChange} />
+            )}
+            {currentStep === 2 && (
+              <StepOriginShipping form={form} onChange={handleChange} />
+            )}
+            {currentStep === 3 && (
+              <StepCustoms form={form} onChange={handleChange} onBoolChange={handleChange} />
+            )}
+            {currentStep === 4 && (
+              <StepTargetShow form={form} onChange={handleChange} />
+            )}
+            {currentStep === 5 && (
+              <StepServices form={form} onServicesChange={handleServicesChange} onChange={handleChange} />
+            )}
+            {currentStep === 6 && (
+              <StepContacts form={form} onChange={handleChange} />
+            )}
+          </div>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/10">
+          <div className="flex items-center justify-between px-6 sm:px-8 pb-6 pt-4 border-t border-white/8">
             <Button
               variant="ghost"
               onClick={handleBack}
-              disabled={currentStep === 1}
+              disabled={currentStep === 1 || isAnimating}
               className="text-white/50 hover:text-white hover:bg-white/5 disabled:opacity-30"
             >
               ← Back
@@ -931,7 +1003,7 @@ export default function XbotWizard() {
               {currentStep < 6 ? (
                 <Button
                   onClick={handleNext}
-                  disabled={isSaving || !isInitialized}
+                  disabled={isSaving || !isInitialized || isAnimating}
                   className="bg-indigo-600 hover:bg-indigo-500 text-white border-0 px-6"
                 >
                   {isSaving ? "Saving…" : "Continue →"}
@@ -939,7 +1011,7 @@ export default function XbotWizard() {
               ) : (
                 <Button
                   onClick={handleFinish}
-                  disabled={isSaving || !isInitialized}
+                  disabled={isSaving || !isInitialized || isAnimating}
                   className="border border-amber-500 text-amber-400 bg-transparent hover:bg-amber-500/10 px-6"
                 >
                   {isSaving ? "Saving…" : "Generate Logistics Brief →"}
