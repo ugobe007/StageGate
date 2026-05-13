@@ -114,6 +114,18 @@ export default function AdminProspects() {
     onSuccess: () => refetch(),
   });
 
+  const [replyingId, setReplyingId] = useState<number | null>(null);
+  const markReplied = trpc.prospects.markReplied.useMutation({
+    onMutate: (vars) => {
+      setReplyingId(vars.id);
+    },
+    onSuccess: () => {
+      setReplyingId(null);
+      refetch();
+    },
+    onError: () => setReplyingId(null),
+  });
+
   if (!user) {
     return (
       <div style={{ minHeight: "100vh", background: "#080808" }}>
@@ -551,6 +563,31 @@ export default function AdminProspects() {
                           <><Mail size={10} /> Send</>
                         )}
                       </button>
+                      {/* Mark as Replied — only shown when status is new or contacted */}
+                      {(p.status === "new" || p.status === "contacted") && (
+                        <button
+                          onClick={() => markReplied.mutate({ id: p.id })}
+                          disabled={replyingId === p.id}
+                          title="Mark as Replied"
+                          style={{
+                            display: "flex", alignItems: "center", gap: "0.3rem",
+                            fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em", textTransform: "uppercase",
+                            padding: "0.3rem 0.65rem",
+                            border: "1px solid rgba(0,255,135,0.35)",
+                            color: "#00ff87",
+                            background: "transparent",
+                            cursor: replyingId === p.id ? "wait" : "pointer",
+                            borderRadius: "0.125rem",
+                            opacity: replyingId === p.id ? 0.5 : 1,
+                            transition: "all 0.15s",
+                          }}
+                        >
+                          {replyingId === p.id
+                            ? <RefreshCw size={10} style={{ animation: "spin 1s linear infinite" }} />
+                            : <><Check size={10} /> Replied</>
+                          }
+                        </button>
+                      )}
                       <ChevronDown size={14} style={{ color: "rgba(255,255,255,0.25)", transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
                     </div>
                   </div>

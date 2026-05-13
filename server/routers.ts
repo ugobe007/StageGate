@@ -881,6 +881,14 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return { success: true };
       }),
 
+    // Quick status update: mark a prospect as replied/responded
+    markReplied: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.updateProspect(input.id, { status: "responded" });
+        return { success: true };
+      }),
+
     // Bulk import prospects from JSON
     bulkImport: adminProcedure
       .input(z.object({

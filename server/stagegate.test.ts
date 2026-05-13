@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
-import { getTradeShowById, createShowNotification } from "./db";
+import { getTradeShowById, createShowNotification, updateProspect, getProspectById } from "./db";
 
 // Mock the database helpers using actual function names from server/db.ts
 vi.mock("./db", () => ({
@@ -58,6 +58,13 @@ vi.mock("./db", () => ({
   createQuoteRequest: vi.fn().mockResolvedValue({ id: 10, status: "new" }),
   getAllQuoteRequests: vi.fn().mockResolvedValue([]),
   updateQuoteRequestStatus: vi.fn().mockResolvedValue(undefined),
+  listProspects: vi.fn().mockResolvedValue([]),
+  getProspectById: vi.fn().mockResolvedValue({ id: 1, company: "Acme Robotics", status: "contacted", contactEmail: "test@acme.com" }),
+  updateProspect: vi.fn().mockResolvedValue(undefined),
+  createProspect: vi.fn().mockResolvedValue({ id: 1 }),
+  bulkInsertProspects: vi.fn().mockResolvedValue(undefined),
+  createOutreachCampaign: vi.fn().mockResolvedValue({ id: 1 }),
+  listOutreachCampaigns: vi.fn().mockResolvedValue([]),
 }));
 
 // Mock LLM
@@ -526,5 +533,36 @@ describe("shows.get", () => {
     const caller = appRouter.createCaller(createPublicCtx());
     const result = await caller.shows.get({ id: 9999 });
     expect(result).toBeNull();
+  });
+});
+
+// ─── prospects.markReplied Tests ─────────────────────────────────────────────
+
+describe("prospects.markReplied", () => {
+  beforeEach(() => {
+    vi.mocked(updateProspect).mockResolvedValue(undefined);
+    vi.mocked(getProspectById).mockResolvedValue({
+      id: 1,
+      company: "Acme Robotics",
+      status: "contacted",
+      contactEmail: "test@acme.com",
+    } as any);
+  });
+
+  it("allows admin to mark a prospect as responded", async () => {
+    const caller = appRouter.createCaller(createAdminCtx());
+    const result = await caller.prospects.markReplied({ id: 1 });
+    expect(result).toEqual({ success: true });
+    expect(vi.mocked(updateProspect)).toHaveBeenCalledWith(1, { status: "responded" });
+  });
+
+  it("rejects non-admin users", async () => {
+    const caller = appRouter.createCaller(createUserCtx("user"));
+    await expect(caller.prospects.markReplied({ id: 1 })).rejects.toThrow();
+  });
+
+  it("rejects unauthenticated requests", async () => {
+    const caller = appRouter.createCaller(createPublicCtx());
+    await expect(caller.prospects.markReplied({ id: 1 })).rejects.toThrow();
   });
 });

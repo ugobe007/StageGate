@@ -371,3 +371,11 @@
 - [x] www.onstage.bot CNAME → cname.manus.space (Manus hosting) — DNS propagated
 - [ ] onstage.bot @ A record: set to 66.241.124.90 in GoDaddy (currently wrong — 104.18.26.246)
 - [ ] Register onstage.bot in Manus Settings → Domains for SSL cert provisioning
+
+## v7.4 — Mark as Replied Button on Prospect Rows
+
+- [x] Add prospects.markReplied tRPC mutation (sets status = "responded" for a given prospectId)
+- [x] Show "Mark as Replied" button on each row with status = "contacted" or "new"
+- [x] Button disappears once status is "responded" (row refetches and shows Responded badge)
+- [x] One-click: fires mutation, spinner during request, refetches on success
+- [x] Add 3 vitest tests for prospects.markReplied (admin allowed, user rejected, public rejected) — 75 tests total passing
