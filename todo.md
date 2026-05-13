@@ -389,3 +389,13 @@
 - [x] Display relative timestamp (just now / Xm ago / Xh ago / Xd ago / Xmo ago) below Responded badge
 - [x] Timestamp shown in monospace emerald text (rgba(0,255,135,0.45)), only when repliedAt is set
 - [x] Updated vitest test verifies repliedAt is a Date instance within the call window — 75 tests passing
+
+## v7.6 — CSV Export, Sortable Columns, Reply Notes Prompt
+
+- [x] CSV export: "Download CSV" button exports current filtered view (company, contact, email, status, repliedAt, shows, notes)
+- [x] CSV is generated client-side (no server round-trip), respects active search/filter/sort state
+- [x] Sortable columns: Company and Status column headers are clickable, toggle asc/desc sort
+- [x] Sort indicator (▲/▼/⇅) shown next to active sort column header
+- [x] Reply notes prompt: after clicking "Mark as Replied", inline text input appears for one-line summary
+- [x] Reply notes saved to prospect notes field via updateProspect mutation
+- [x] Pressing Enter or clicking ✓ commits the note; pressing Escape or clicking ✗ dismisses without saving

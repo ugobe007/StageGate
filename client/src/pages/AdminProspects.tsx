@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Navbar from "@/components/Navbar";
-import { ExternalLink, Mail, RefreshCw, ChevronDown, Check, X, Clock, Phone, AlertCircle, Square, CheckSquare, Zap } from "lucide-react";
+import { ExternalLink, Mail, RefreshCw, ChevronDown, Check, X, Clock, Phone, AlertCircle, Square, CheckSquare, Zap, ArrowUpDown, ArrowUp, ArrowDown, Download } from "lucide-react";
 
 type ProspectStatus = "new" | "contacted" | "responded" | "scheduled" | "converted" | "not_interested";
 
@@ -128,17 +128,69 @@ export default function AdminProspects() {
     onSuccess: () => refetch(),
   });
 
+  // Sort state
+  type SortKey = "company" | "status" | "";
+  type SortDir = "asc" | "desc";
+  const [sortKey, setSortKey] = useState<SortKey>("");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  // Reply notes inline state: prospectId → note text (undefined = not showing, string = showing)
+  const [replyNotes, setReplyNotes] = useState<Record<number, string>>({});
   const [replyingId, setReplyingId] = useState<number | null>(null);
   const markReplied = trpc.prospects.markReplied.useMutation({
     onMutate: (vars) => {
       setReplyingId(vars.id);
     },
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
       setReplyingId(null);
+      // After marking replied, show the inline notes prompt
+      setReplyNotes(prev => ({ ...prev, [vars.id]: "" }));
       refetch();
     },
     onError: () => setReplyingId(null),
   });
+
+  const saveReplyNote = (prospectId: number) => {
+    const note = replyNotes[prospectId];
+    if (note && note.trim()) {
+      updateProspect.mutate({ id: prospectId, notes: note.trim() });
+    }
+    setReplyNotes(prev => { const next = { ...prev }; delete next[prospectId]; return next; });
+  };
+
+  const dismissReplyNote = (prospectId: number) => {
+    setReplyNotes(prev => { const next = { ...prev }; delete next[prospectId]; return next; });
+  };
+
+  // CSV export helper
+  const exportCSV = () => {
+    const headers = ["Company", "Contact Name", "Title", "Email", "Email Confidence", "Status", "Replied At", "Shows", "Notes", "Website"];
+    const rows = sortedProspects.map(p => [
+      p.company,
+      p.contactName ?? "",
+      p.contactTitle ?? "",
+      p.contactEmail ?? "",
+      String((p as Record<string, unknown>).emailConfidence ?? ""),
+      p.status,
+      (p as Record<string, unknown>).repliedAt ? new Date(String((p as Record<string, unknown>).repliedAt)).toISOString() : "",
+      ((p.shows as string[] | null) ?? []).join(" | "),
+      (p.notes ?? "").replace(/\n/g, " "),
+      p.website ?? "",
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const label = statusFilter ? statusFilter : "all";
+    a.download = `prospects-${label}-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (!user) {
     return (
@@ -166,6 +218,14 @@ export default function AdminProspects() {
   const prospects = (data?.prospects ?? []).filter(p =>
     hideContacted && statusFilter === "" ? p.status !== "contacted" : true
   );
+
+  const STATUS_ORDER: Record<string, number> = { new: 0, contacted: 1, responded: 2, scheduled: 3, converted: 4, not_interested: 5 };
+  const sortedProspects = sortKey === "" ? prospects : [...prospects].sort((a, b) => {
+    let cmp = 0;
+    if (sortKey === "company") cmp = a.company.localeCompare(b.company);
+    else if (sortKey === "status") cmp = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
+    return sortDir === "asc" ? cmp : -cmp;
+  });
 
   // Helpers for selection
   const allVisibleIds = prospects.map(p => p.id);
@@ -222,6 +282,21 @@ export default function AdminProspects() {
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "#00ff87" }}>
                 {prospects.length}{hideContacted && statusFilter === "" ? ` of ${(allData?.prospects ?? []).length}` : ""} prospects{hideContacted && statusFilter === "" ? " (contacted hidden)" : ""}
               </span>
+              <button
+                onClick={exportCSV}
+                title="Download CSV"
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.3rem",
+                  fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em", textTransform: "uppercase",
+                  padding: "0.3rem 0.65rem",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  color: "rgba(255,255,255,0.50)",
+                  background: "transparent", cursor: "pointer", borderRadius: "0.125rem",
+                  transition: "all 0.15s",
+                }}
+              >
+                <Download size={11} /> CSV
+              </button>
               <button onClick={() => refetch()} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.40)", padding: "0.25rem" }}>
                 <RefreshCw size={14} />
               </button>
@@ -445,14 +520,20 @@ export default function AdminProspects() {
               >
                 {allSelected ? <CheckSquare size={14} /> : <Square size={14} />}
               </button>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)" }}>Company / Robot</span>
+              <button onClick={() => toggleSort("company")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: sortKey === "company" ? "rgba(255,255,255,0.60)" : "rgba(255,255,255,0.20)", padding: 0 }}>
+                Company / Robot
+                {sortKey === "company" ? (sortDir === "asc" ? <ArrowUp size={9} /> : <ArrowDown size={9} />) : <ArrowUpDown size={9} style={{ opacity: 0.4 }} />}
+              </button>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)" }}>Shows</span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)" }}>LV</span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)" }}>Status</span>
+              <button onClick={() => toggleSort("status")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: sortKey === "status" ? "rgba(255,255,255,0.60)" : "rgba(255,255,255,0.20)", padding: 0 }}>
+                Status
+                {sortKey === "status" ? (sortDir === "asc" ? <ArrowUp size={9} /> : <ArrowDown size={9} />) : <ArrowUpDown size={9} style={{ opacity: 0.4 }} />}
+              </button>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)" }}>Action</span>
             </div>
 
-            {prospects.map((p, i) => {
+            {sortedProspects.map((p, i) => {
               const cfg = STATUS_CONFIG[p.status as ProspectStatus] ?? STATUS_CONFIG.new;
               const isExpanded = expandedId === p.id;
               const shows = (p.shows as string[] | null) ?? [];
@@ -608,6 +689,34 @@ export default function AdminProspects() {
                             : <><Check size={10} /> Replied</>
                           }
                         </button>
+                      )}
+                      {/* Inline reply notes prompt — appears after Mark as Replied */}
+                      {replyNotes[p.id] !== undefined && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }} onClick={e => e.stopPropagation()}>
+                          <input
+                            autoFocus
+                            type="text"
+                            placeholder="Add reply note… (Enter to save)"
+                            value={replyNotes[p.id]}
+                            onChange={e => setReplyNotes(prev => ({ ...prev, [p.id]: e.target.value }))}
+                            onKeyDown={e => {
+                              if (e.key === "Enter") { e.preventDefault(); saveReplyNote(p.id); }
+                              if (e.key === "Escape") dismissReplyNote(p.id);
+                            }}
+                            style={{
+                              fontFamily: "var(--font-mono)", fontSize: "0.5625rem",
+                              background: "rgba(0,255,135,0.06)", border: "1px solid rgba(0,255,135,0.30)",
+                              color: "#fff", padding: "0.3rem 0.5rem", borderRadius: "0.125rem",
+                              outline: "none", width: "14rem",
+                            }}
+                          />
+                          <button onClick={() => saveReplyNote(p.id)} title="Save note" style={{ background: "none", border: "none", cursor: "pointer", color: "#00ff87", padding: "0.2rem", lineHeight: 1 }}>
+                            <Check size={11} />
+                          </button>
+                          <button onClick={() => dismissReplyNote(p.id)} title="Dismiss" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.30)", padding: "0.2rem", lineHeight: 1 }}>
+                            <X size={11} />
+                          </button>
+                        </div>
                       )}
                       <ChevronDown size={14} style={{ color: "rgba(255,255,255,0.25)", transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
                     </div>
