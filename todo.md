@@ -407,3 +407,10 @@
 - [x] Search input renders above the table, below the status filter tabs
 - [x] Clears with Escape key or x button; border highlights when active
 - [x] CSV export respects the active search filter (uses sortedProspects which is post-filter)
+
+## v7.8 — Outreach Stats Summary Bar
+
+- [x] Stats bar shows: Total, Contacted, Responded, Converted, Response Rate %, Conv. Rate %
+- [x] Computed from allData (full DB, not filtered view) so counts are always accurate
+- [x] Renders between the page header and the search input
+- [x] Visual style: monospace, minimal, 6-cell bordered grid — amber/emerald/indigo color coding

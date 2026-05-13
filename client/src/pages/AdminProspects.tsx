@@ -315,6 +315,54 @@ export default function AdminProspects() {
           </div>
         </div>
 
+        {/* Outreach Stats Summary Bar */}
+        {(() => {
+          const all = allData?.prospects ?? [];
+          const total = all.length;
+          const contacted = all.filter(p => p.status === "contacted" || p.status === "responded" || p.status === "scheduled" || p.status === "converted").length;
+          const responded = all.filter(p => p.status === "responded" || p.status === "scheduled" || p.status === "converted").length;
+          const converted = all.filter(p => p.status === "converted").length;
+          const responseRate = contacted > 0 ? Math.round((responded / contacted) * 100) : 0;
+          const conversionRate = responded > 0 ? Math.round((converted / responded) * 100) : 0;
+          const stats = [
+            { label: "Total", value: total, color: "rgba(255,255,255,0.55)" },
+            { label: "Contacted", value: contacted, color: "#f59e0b" },
+            { label: "Responded", value: responded, color: "#00ff87" },
+            { label: "Converted", value: converted, color: "#818cf8" },
+            { label: "Response Rate", value: `${responseRate}%`, color: responded > 0 ? "#00ff87" : "rgba(255,255,255,0.30)" },
+            { label: "Conv. Rate", value: `${conversionRate}%`, color: converted > 0 ? "#818cf8" : "rgba(255,255,255,0.30)" },
+          ];
+          return (
+            <div style={{
+              display: "flex",
+              alignItems: "stretch",
+              gap: 0,
+              marginBottom: "1.75rem",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "0.25rem",
+              overflow: "hidden",
+            }}>
+              {stats.map((s, i) => (
+                <div key={s.label} style={{
+                  flex: 1,
+                  padding: "0.75rem 1rem",
+                  borderRight: i < stats.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.25rem",
+                }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)" }}>
+                    {s.label}
+                  </span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "1.125rem", fontWeight: 700, color: s.color, letterSpacing: "-0.02em", lineHeight: 1 }}>
+                    {s.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
         {/* Search input */}
         <div style={{ marginBottom: "1.25rem", position: "relative", maxWidth: "28rem" }}>
           <input
