@@ -437,15 +437,15 @@
 - [x] 75 tests passing, 0 TypeScript errors
 
 ## v8.0 — CSV Import, Follow-up Date, Role Promotion
-- [ ] CSV prospect import: "Upload CSV" button in AdminProspects header
-- [ ] CSV parser: map columns (company, contactName, contactEmail, shows, notes) with preview table
-- [ ] Preview/confirm modal: shows parsed rows, skips duplicates by email, confirm bulk-creates
-- [ ] Add prospects.bulkCreate tRPC procedure (adminProcedure, deduplicates by email)
-- [ ] Follow-up date: add followUpDate column (datetime nullable) to prospects schema
-- [ ] Generate migration SQL and apply via webdev_execute_sql
-- [ ] Follow-up date: inline date picker in prospect row (shows "Set follow-up" when empty)
-- [ ] Follow-up date: sortable column in AdminProspects table
-- [ ] Follow-up date: highlight overdue rows (past date, not yet responded)
-- [ ] Admin role promotion: add admin.setUserRole tRPC procedure (adminProcedure)
-- [ ] Admin role promotion: "Promote" / "Demote" button in users table row in AdminDashboard
-- [ ] Cannot demote yourself (owner protection)
+- [x] CSV prospect import: "Upload CSV" button in AdminProspects header
+- [x] CSV parser: map columns (company, contactName, contactEmail, shows, notes) with preview table
+- [x] Preview/confirm modal: shows parsed rows, skips duplicates by email, confirm bulk-creates
+- [x] Add prospects.bulkCreate tRPC procedure (adminProcedure, deduplicates by email)
+- [x] Follow-up date: add followUpDate column (datetime nullable) to prospects schema
+- [x] Generate migration SQL and apply via webdev_execute_sql
+- [x] Follow-up date: inline date picker in prospect row (shows "Set follow-up" when empty)
+- [x] Follow-up date: sortable column in AdminProspects table
+- [x] Follow-up date: highlight overdue rows (past date, not yet responded)
+- [x] Admin role promotion: add admin.setUserRole tRPC procedure (adminProcedure)
+- [x] Admin role promotion: "Promote" / "Demote" button in users table row in AdminDashboard
+- [x] Cannot demote yourself (owner protection)
