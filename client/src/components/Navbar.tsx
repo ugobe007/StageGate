@@ -23,6 +23,7 @@ export default function Navbar() {
   const navLinks = [
     { href: "/services",  label: "Services" },
     { href: "/shows",     label: "Shows" },
+    { href: "/xbot",      label: "XBOT" },
     { href: "/stagehand", label: "StageHand™" },
     { href: "/stagepro",  label: "StagePro™" },
     ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),

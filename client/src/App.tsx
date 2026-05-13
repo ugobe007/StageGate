@@ -20,6 +20,9 @@ import AdminOrders from "./pages/AdminOrders";
 import AdminPartners from "./pages/AdminPartners";
 import ShowsCalendar from "./pages/ShowsCalendar";
 import ShowDetail from "./pages/ShowDetail";
+import XbotLanding from "./pages/XbotLanding";
+import XbotWizard from "./pages/XbotWizard";
+import XbotProject from "./pages/XbotProject";
 
 function Router() {
   return (
@@ -32,6 +35,11 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/shows" component={ShowsCalendar} />
       <Route path="/shows/:id" component={ShowDetail} />
+
+      {/* XBOT */}
+      <Route path="/xbot" component={XbotLanding} />
+      <Route path="/xbot/new" component={XbotWizard} />
+      <Route path="/xbot/project/:id" component={XbotProject} />
 
       {/* Client */}
       <Route path="/dashboard" component={ClientDashboard} />

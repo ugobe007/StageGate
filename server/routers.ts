@@ -601,5 +601,225 @@ Subject line and body only.`,
         return { success: true };
       }),
   }),
+
+  // ─── XBOT AI Logistics Agent ───────────────────────────────────────────────
+  xbot: router({
+    // Create a new logistics project (anonymous or authenticated)
+    createProject: publicProcedure
+      .input(z.object({
+        robotMake: z.string().optional(),
+        robotModel: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const crypto = await import("crypto");
+        const sessionToken = crypto.randomBytes(48).toString("hex");
+        const userId = ctx.user?.id ?? null;
+        const project = await db.createXbotProject({ sessionToken, userId, ...input });
+        return { projectId: project.id, sessionToken };
+      }),
+
+    // Get a project by id + sessionToken (anonymous) or userId (authenticated)
+    getProject: publicProcedure
+      .input(z.object({
+        projectId: z.number(),
+        sessionToken: z.string().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const project = await db.getXbotProject(input.projectId);
+        if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+        const isOwner = (ctx.user && project.userId === ctx.user.id) ||
+          (input.sessionToken && project.sessionToken === input.sessionToken);
+        if (!isOwner) throw new TRPCError({ code: "FORBIDDEN" });
+        const brief = await db.getXbotBrief(input.projectId);
+        return { project, brief };
+      }),
+
+    // Update project step data
+    updateProject: publicProcedure
+      .input(z.object({
+        projectId: z.number(),
+        sessionToken: z.string().optional(),
+        data: z.object({
+          robotMake: z.string().optional(),
+          robotModel: z.string().optional(),
+          robotDimensions: z.string().optional(),
+          robotWeight: z.string().optional(),
+          powerRequirements: z.string().optional(),
+          specialHandling: z.string().optional(),
+          originCountry: z.string().optional(),
+          originCity: z.string().optional(),
+          shippingMethod: z.enum(["air", "sea", "ground"]).optional(),
+          flightVesselNumber: z.string().optional(),
+          eta: z.string().optional(), // ISO date string
+          portOfEntry: z.string().optional(),
+          hsCode: z.string().optional(),
+          ataCarnet: z.boolean().optional(),
+          customsBroker: z.enum(["stagegate", "own", "tbd"]).optional(),
+          customsBrokerName: z.string().optional(),
+          showId: z.number().optional(),
+          boothNumber: z.string().optional(),
+          setupDate: z.string().optional(),
+          teardownDate: z.string().optional(),
+          selectedServices: z.array(z.string()).optional(),
+          groundTransportProvider: z.enum(["stagegate", "own", "directory"]).optional(),
+          contacts: z.object({
+            primary: z.object({ name: z.string(), email: z.string(), phone: z.string() }),
+            onsite: z.object({ name: z.string(), email: z.string(), phone: z.string() }).optional(),
+            emergency: z.object({ name: z.string(), phone: z.string() }).optional(),
+          }).optional(),
+          currentStep: z.number().optional(),
+        }),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const project = await db.getXbotProject(input.projectId);
+        if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+        const isOwner = (ctx.user && project.userId === ctx.user.id) ||
+          (input.sessionToken && project.sessionToken === input.sessionToken);
+        if (!isOwner) throw new TRPCError({ code: "FORBIDDEN" });
+        // Convert date strings to Date objects
+        const updateData: Record<string, unknown> = { ...input.data };
+        if (input.data.eta) updateData.eta = new Date(input.data.eta);
+        if (input.data.setupDate) updateData.setupDate = new Date(input.data.setupDate);
+        if (input.data.teardownDate) updateData.teardownDate = new Date(input.data.teardownDate);
+        await db.updateXbotProject(input.projectId, updateData);
+        return { success: true };
+      }),
+
+    // Generate logistics brief via LLM
+    generateBrief: publicProcedure
+      .input(z.object({
+        projectId: z.number(),
+        sessionToken: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const project = await db.getXbotProject(input.projectId);
+        if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+        const isOwner = (ctx.user && project.userId === ctx.user.id) ||
+          (input.sessionToken && project.sessionToken === input.sessionToken);
+        if (!isOwner) throw new TRPCError({ code: "FORBIDDEN" });
+
+        // Get show details if showId provided
+        let showInfo = "";
+        if (project.showId) {
+          const show = await db.getTradeShowById(project.showId);
+          if (show) showInfo = `Target show: ${show.name} at ${show.venue}, Las Vegas. Setup: ${show.startDate?.toISOString().split("T")[0]}. Teardown: ${show.endDate?.toISOString().split("T")[0]}.`;
+        }
+
+        const prompt = `You are a logistics expert specializing in international trade show freight for robotics companies. Generate a comprehensive logistics brief for the following robot shipment to Las Vegas.
+
+Robot: ${project.robotMake || "Unknown"} ${project.robotModel || ""}
+Dimensions: ${project.robotDimensions || "Not specified"}
+Weight: ${project.robotWeight || "Not specified"} kg
+Power: ${project.powerRequirements || "Not specified"}
+Special handling: ${project.specialHandling || "None"}
+
+Origin: ${project.originCity || "Unknown"}, ${project.originCountry || "Unknown"}
+Shipping method: ${project.shippingMethod || "Not specified"}
+Flight/Vessel: ${project.flightVesselNumber || "Not specified"}
+ETA: ${project.eta ? new Date(project.eta).toISOString().split("T")[0] : "Not specified"}
+Port of entry: ${project.portOfEntry || "Not specified"}
+
+Customs:
+- HS Code provided: ${project.hsCode || "None — suggest one"}
+- ATA Carnet requested: ${project.ataCarnet ? "Yes" : "No"}
+- Customs broker: ${project.customsBroker}
+
+${showInfo}
+
+Selected services: ${(project.selectedServices as string[] | null)?.join(", ") || "Not specified"}
+Ground transport: ${project.groundTransportProvider || "Not specified"}
+
+Generate a JSON response with these exact fields:
+{
+  "timeline": [{"date": "YYYY-MM-DD", "label": "string", "description": "string", "critical": boolean}],
+  "customsChecklist": [{"item": "string", "required": boolean, "notes": "string"}],
+  "groundTransportOptions": [{"name": "string", "type": "string", "contact": "string", "website": "string", "notes": "string"}],
+  "servicePackage": [{"service": "string", "description": "string", "included": boolean}],
+  "hsCodeSuggestion": "string",
+  "ataCarnetEligible": boolean,
+  "shipByDeadline": "YYYY-MM-DD",
+  "summaryNotes": "string"
+}
+
+For timeline: include ship-by deadline, customs clearance window, dockside pickup, warehouse arrival, setup day, show days, teardown.
+For groundTransportOptions: include 3 real Las Vegas freight/drayage companies if provider is "directory".
+For hsCodeSuggestion: suggest the most appropriate HS code for this robot type.
+For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet based on origin country and robot type.`;
+
+        const llmResponse = await invokeLLM({
+          messages: [
+            { role: "system", content: "You are a logistics expert. Always respond with valid JSON only, no markdown." },
+            { role: "user", content: prompt },
+          ],
+          response_format: { type: "json_object" },
+        });
+
+        let briefData: Record<string, unknown>;
+        try {
+          const content = llmResponse.choices[0].message.content as string;
+          briefData = JSON.parse(content);
+        } catch {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to parse logistics brief" });
+        }
+
+        // Convert shipByDeadline string to Date
+        const shipByDeadline = briefData.shipByDeadline ? new Date(briefData.shipByDeadline as string) : null;
+
+        const brief = await db.upsertXbotBrief({
+          projectId: input.projectId,
+          timeline: briefData.timeline as never,
+          customsChecklist: briefData.customsChecklist as never,
+          groundTransportOptions: briefData.groundTransportOptions as never,
+          servicePackage: briefData.servicePackage as never,
+          hsCodeSuggestion: briefData.hsCodeSuggestion as string,
+          ataCarnetEligible: briefData.ataCarnetEligible as boolean,
+          shipByDeadline,
+          summaryNotes: briefData.summaryNotes as string,
+        });
+
+        // Update project status
+        await db.updateXbotProject(input.projectId, { status: "brief_generated" });
+
+        return { brief };
+      }),
+
+    // Submit service request (requires authentication)
+    submitServiceRequest: protectedProcedure
+      .input(z.object({ projectId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const project = await db.getXbotProject(input.projectId);
+        if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+        if (project.userId !== ctx.user.id && project.userId !== null) {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        // Claim anonymous project for this user
+        if (project.userId === null) {
+          await db.updateXbotProject(input.projectId, { userId: ctx.user.id });
+        }
+        await db.updateXbotProject(input.projectId, { status: "submitted" });
+        // Notify owner
+        const contacts = project.contacts as { primary?: { name?: string; email?: string } } | null;
+        await notifyOwner({
+          title: `New XBOT Service Request — ${project.robotMake || "Robot"} ${project.robotModel || ""}`,
+          content: `Company contact: ${contacts?.primary?.name || "Unknown"} (${contacts?.primary?.email || "no email"})\nRobot: ${project.robotMake} ${project.robotModel}\nOrigin: ${project.originCity}, ${project.originCountry}\nShipping: ${project.shippingMethod}\nServices: ${(project.selectedServices as string[] | null)?.join(", ") || "None selected"}`,
+        });
+        return { success: true };
+      }),
+
+    // List user's projects (authenticated)
+    listProjects: protectedProcedure
+      .query(async ({ ctx }) => {
+        const projects = await db.listXbotProjectsByUser(ctx.user.id);
+        return { projects };
+      }),
+
+    // Admin: list all projects
+    adminList: adminProcedure
+      .input(z.object({ status: z.string().optional() }))
+      .query(async ({ input }) => {
+        const projects = await db.listAllXbotProjects(input.status);
+        return { projects };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;

@@ -1,0 +1,16 @@
+{
+  "query": "SHOW TABLES LIKE 'xbot%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SHOW TABLES LIKE 'xbot%';",
+  "rows": [
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (xbot%)": "xbot_logistics_briefs"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (xbot%)": "xbot_projects"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (xbot%)\nxbot_logistics_briefs\nxbot_projects\n",
+  "stderr": "",
+  "execution_time_ms": 344
+}

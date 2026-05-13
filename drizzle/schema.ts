@@ -208,3 +208,69 @@ export const demoRequests = mysqlTable("demo_requests", {
 
 export type DemoRequest = typeof demoRequests.$inferSelect;
 export type InsertDemoRequest = typeof demoRequests.$inferInsert;
+
+// XBOT AI Logistics Agent — robot logistics projects
+export const xbotProjects = mysqlTable("xbot_projects", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionToken: varchar("sessionToken", { length: 128 }).notNull().unique(),
+  userId: int("userId"), // nullable — anonymous users allowed
+  // Step 1: Robot Profile
+  robotMake: varchar("robotMake", { length: 255 }),
+  robotModel: varchar("robotModel", { length: 255 }),
+  robotDimensions: varchar("robotDimensions", { length: 255 }), // LxWxH cm
+  robotWeight: varchar("robotWeight", { length: 100 }), // kg
+  powerRequirements: varchar("powerRequirements", { length: 255 }),
+  specialHandling: text("specialHandling"),
+  // Step 2: Origin & Shipping
+  originCountry: varchar("originCountry", { length: 100 }),
+  originCity: varchar("originCity", { length: 100 }),
+  shippingMethod: mysqlEnum("shippingMethod", ["air", "sea", "ground"]),
+  flightVesselNumber: varchar("flightVesselNumber", { length: 100 }),
+  eta: timestamp("eta"),
+  portOfEntry: varchar("portOfEntry", { length: 255 }),
+  // Step 3: Customs
+  hsCode: varchar("hsCode", { length: 20 }),
+  ataCarnet: boolean("ataCarnet").default(false),
+  customsBroker: mysqlEnum("customsBroker", ["stagegate", "own", "tbd"]).default("tbd"),
+  customsBrokerName: varchar("customsBrokerName", { length: 255 }),
+  // Step 4: Target Show
+  showId: int("showId"),
+  boothNumber: varchar("boothNumber", { length: 100 }),
+  setupDate: timestamp("setupDate"),
+  teardownDate: timestamp("teardownDate"),
+  // Step 5: Services (JSON array of service keys)
+  selectedServices: json("selectedServices").$type<string[]>(),
+  groundTransportProvider: mysqlEnum("groundTransportProvider", ["stagegate", "own", "directory"]),
+  // Step 6: Contacts
+  contacts: json("contacts").$type<{
+    primary: { name: string; email: string; phone: string };
+    onsite?: { name: string; email: string; phone: string };
+    emergency?: { name: string; phone: string };
+  }>(),
+  // Workflow
+  currentStep: int("currentStep").default(1).notNull(),
+  status: mysqlEnum("status", ["draft", "brief_generated", "submitted", "in_review", "confirmed"]).default("draft").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type XbotProject = typeof xbotProjects.$inferSelect;
+export type InsertXbotProject = typeof xbotProjects.$inferInsert;
+
+// XBOT generated logistics briefs
+export const xbotLogisticsBriefs = mysqlTable("xbot_logistics_briefs", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull().unique(),
+  timeline: json("timeline").$type<Array<{ date: string; label: string; description: string; critical: boolean }>>(),
+  customsChecklist: json("customsChecklist").$type<Array<{ item: string; required: boolean; notes: string }>>(),
+  groundTransportOptions: json("groundTransportOptions").$type<Array<{ name: string; type: string; contact: string; website: string; notes: string }>>(),
+  servicePackage: json("servicePackage").$type<Array<{ service: string; description: string; included: boolean }>>(),
+  hsCodeSuggestion: varchar("hsCodeSuggestion", { length: 20 }),
+  ataCarnetEligible: boolean("ataCarnetEligible"),
+  shipByDeadline: timestamp("shipByDeadline"),
+  summaryNotes: text("summaryNotes"),
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+});
+
+export type XbotLogisticsBrief = typeof xbotLogisticsBriefs.$inferSelect;
+export type InsertXbotLogisticsBrief = typeof xbotLogisticsBriefs.$inferInsert;

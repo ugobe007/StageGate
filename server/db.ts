@@ -20,6 +20,10 @@ import {
   InsertOrderItem,
   InsertLogisticsPartner,
   demoRequests,
+  xbotProjects,
+  xbotLogisticsBriefs,
+  InsertXbotProject,
+  InsertXbotLogisticsBrief,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -418,4 +422,92 @@ export async function updateDemoRequestStatus(
   const db = await getDb();
   if (!db) return;
   await db.update(demoRequests).set({ status }).where(eq(demoRequests.id, id));
+}
+
+// ─── XBOT AI Logistics Agent helpers ─────────────────────────────────────────
+
+export async function createXbotProject(data: InsertXbotProject) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const [result] = await db.insert(xbotProjects).values(data);
+  const id = (result as { insertId: number }).insertId;
+  const rows = await db.select().from(xbotProjects).where(eq(xbotProjects.id, id));
+  return rows[0];
+}
+
+export async function getXbotProject(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(xbotProjects).where(eq(xbotProjects.id, id));
+  return rows[0] ?? null;
+}
+
+export async function updateXbotProject(id: number, data: Partial<InsertXbotProject>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(xbotProjects).set(data).where(eq(xbotProjects.id, id));
+}
+
+export async function getXbotBrief(projectId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(xbotLogisticsBriefs)
+    .where(eq(xbotLogisticsBriefs.projectId, projectId));
+  return rows[0] ?? null;
+}
+
+export async function upsertXbotBrief(data: InsertXbotLogisticsBrief) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  // Check if brief already exists for this project
+  const existing = await getXbotBrief(data.projectId);
+  if (existing) {
+    await db
+      .update(xbotLogisticsBriefs)
+      .set({ ...data, generatedAt: new Date() })
+      .where(eq(xbotLogisticsBriefs.projectId, data.projectId));
+    const rows = await db
+      .select()
+      .from(xbotLogisticsBriefs)
+      .where(eq(xbotLogisticsBriefs.projectId, data.projectId));
+    return rows[0];
+  } else {
+    const [result] = await db.insert(xbotLogisticsBriefs).values(data);
+    const id = (result as { insertId: number }).insertId;
+    const rows = await db
+      .select()
+      .from(xbotLogisticsBriefs)
+      .where(eq(xbotLogisticsBriefs.id, id));
+    return rows[0];
+  }
+}
+
+export async function listXbotProjectsByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(xbotProjects)
+    .where(eq(xbotProjects.userId, userId))
+    .orderBy(desc(xbotProjects.updatedAt));
+}
+
+export async function listAllXbotProjects(status?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  if (status) {
+    return db
+      .select()
+      .from(xbotProjects)
+      .where(
+        eq(
+          xbotProjects.status,
+          status as "draft" | "brief_generated" | "submitted" | "in_review" | "confirmed"
+        )
+      )
+      .orderBy(desc(xbotProjects.createdAt));
+  }
+  return db.select().from(xbotProjects).orderBy(desc(xbotProjects.createdAt));
 }

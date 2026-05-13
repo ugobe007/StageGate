@@ -503,6 +503,67 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── XBOT ENTRY POINT ──────────────────────────────────────────────── */}
+      <section style={{ padding: "6rem 0", background: "rgba(13,15,24,0.60)", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+        <div className="container">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "center" }}>
+            <div>
+              <span className="section-label" style={{ display: "block", marginBottom: "1rem" }}>Logistics Intelligence</span>
+              <h2 style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)", fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.03em", marginBottom: "1.25rem" }}>
+                Meet{" "}
+                <span style={{ color: "#4f6ef7" }}>XBOT</span>
+                {" "}—{" "}
+                <span style={{ color: "rgba(255,255,255,0.70)" }}>Your AI Logistics Planner</span>
+              </h2>
+              <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.50)", lineHeight: 1.7, marginBottom: "2rem", maxWidth: "44ch" }}>
+                Complete a 6-step intake form and XBOT generates a custom logistics brief — customs checklist, timeline, service package, and ground transport options — in under 60 seconds.
+              </p>
+              <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+                <Link href="/xbot/new">
+                  <button className="btn-primary" style={{ fontSize: "0.9375rem", padding: "0.75rem 1.75rem" }}>
+                    Start Logistics Intake <ArrowRight size={15} />
+                  </button>
+                </Link>
+                <Link href="/xbot">
+                  <button className="btn-default" style={{ fontSize: "0.9375rem", padding: "0.75rem 1.75rem" }}>
+                    Learn About XBOT
+                  </button>
+                </Link>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+              {[
+                { icon: "🤖", label: "Robot Profile", num: "01" },
+                { icon: "✈️", label: "Origin & Shipping", num: "02" },
+                { icon: "🛃", label: "Customs", num: "03" },
+                { icon: "🎪", label: "Target Show", num: "04" },
+                { icon: "⚙️", label: "Services", num: "05" },
+                { icon: "👤", label: "Contacts", num: "06" },
+              ].map((step) => (
+                <div
+                  key={step.num}
+                  style={{
+                    padding: "1rem",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "0.75rem",
+                    background: "rgba(255,255,255,0.02)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                  }}
+                >
+                  <span style={{ fontSize: "1.25rem" }}>{step.icon}</span>
+                  <div>
+                    <p style={{ fontSize: "0.625rem", fontFamily: "monospace", color: "rgba(79,110,247,0.60)", marginBottom: "0.125rem" }}>{step.num}</p>
+                    <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.70)", fontWeight: 500 }}>{step.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── FINAL CTA ────────────────────────────────────────────────────────── */}
       <section style={{ padding: "8rem 0", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
         <div className="container" style={{ textAlign: "center" }}>

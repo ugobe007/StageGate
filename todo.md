@@ -241,3 +241,33 @@
 - [ ] Robot Guild partner section: logo + description + link
 - [ ] Final CTA: "Schedule Your Robot" full-width section
 - [ ] Footer: minimal links + contact
+
+## v4.1 — XBOT AI Logistics Agent
+
+- [x] DB: xbot_projects table (id, sessionToken, userId nullable, robotMake, robotModel, dimensions, weight, powerReqs, specialHandling, originCountry, originCity, shippingMethod, flightVesselNumber, eta, portOfEntry, hsCode, ataCarnet, customsBroker, showId, boothNumber, setupDate, teardownDate, services JSON, contacts JSON, status, createdAt, updatedAt)
+- [x] DB: xbot_logistics_briefs table (id, projectId, timeline JSON, customsChecklist JSON, groundTransportOptions JSON, servicePackage JSON, generatedAt)
+- [x] Migration generated and applied via webdev_execute_sql
+- [x] tRPC: xbot.createProject (public, returns sessionToken + projectId)
+- [x] tRPC: xbot.getProject (public, by id + sessionToken OR userId)
+- [x] tRPC: xbot.updateProject (public, by id + sessionToken OR userId)
+- [x] tRPC: xbot.generateBrief (public, triggers LLM generation of timeline/checklist/package)
+- [x] tRPC: xbot.submitServiceRequest (protected — registration gate)
+- [x] tRPC: xbot.listProjects (protected — user's saved projects)
+- [x] 6-step wizard UI at /xbot/new with step validation and auto-save
+- [x] Step 1: Robot Profile (make, model, dimensions, weight, power, handling)
+- [x] Step 2: Origin & Shipping (country, city, method, flight/vessel, ETA, port)
+- [x] Step 3: Customs (HS code auto-suggest via LLM, ATA Carnet check, broker choice)
+- [x] Step 4: Target Show (show selector from calendar, booth, dates)
+- [x] Step 5: Services (dockside, ground transport, warehouse, staging, support, promotion)
+- [x] Step 6: Contacts (primary, on-site, emergency)
+- [x] Auto-save to localStorage + server on each step
+- [x] XBOT project dashboard at /xbot/project/:id
+- [x] Logistics timeline display with all deadlines
+- [x] Customs checklist with document requirements
+- [x] Ground transport options (StageGate or vetted providers list)
+- [x] Service package summary
+- [x] Registration gate modal when submitting service request
+- [x] XBOT landing page at /xbot (entry point + saved projects for logged-in users)
+- [x] Add XBOT nav link to Navbar
+- [x] Add XBOT entry point section to Home page
+- [x] Write vitest tests for xbot procedures (18 tests, 72 total passing)
