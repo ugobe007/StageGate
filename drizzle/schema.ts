@@ -274,3 +274,44 @@ export const xbotLogisticsBriefs = mysqlTable("xbot_logistics_briefs", {
 
 export type XbotLogisticsBrief = typeof xbotLogisticsBriefs.$inferSelect;
 export type InsertXbotLogisticsBrief = typeof xbotLogisticsBriefs.$inferInsert;
+
+// ─── XBOT Prospects & Outreach ────────────────────────────────────────────────
+export const prospects = mysqlTable("prospects", {
+  id: int("id").primaryKey().autoincrement(),
+  company: varchar("company", { length: 200 }).notNull(),
+  robotName: varchar("robotName", { length: 200 }),
+  robotType: varchar("robotType", { length: 50 }),
+  hqCountry: varchar("hqCountry", { length: 100 }),
+  attendsLasVegas: varchar("attendsLasVegas", { length: 10 }).default("unknown"),
+  contactName: varchar("contactName", { length: 200 }),
+  contactEmail: varchar("contactEmail", { length: 200 }),
+  contactTitle: varchar("contactTitle", { length: 200 }),
+  contactDept: varchar("contactDept", { length: 100 }),
+  website: varchar("website", { length: 300 }),
+  shows: json("shows").$type<string[]>().default([]),
+  notes: text("notes"),
+  status: mysqlEnum("status", ["new", "contacted", "responded", "scheduled", "converted", "not_interested"]).default("new").notNull(),
+  videoMessageUrl: varchar("videoMessageUrl", { length: 500 }),
+  scheduledCallAt: timestamp("scheduledCallAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Prospect = typeof prospects.$inferSelect;
+export type InsertProspect = typeof prospects.$inferInsert;
+
+export const outreachCampaigns = mysqlTable("outreach_campaigns", {
+  id: int("id").primaryKey().autoincrement(),
+  prospectId: int("prospectId").notNull(),
+  emailSentAt: timestamp("emailSentAt"),
+  emailSubject: varchar("emailSubject", { length: 300 }),
+  emailBody: text("emailBody"),
+  emailStatus: mysqlEnum("emailStatus", ["pending", "sent", "failed", "opened", "replied"]).default("pending").notNull(),
+  videoMessageUrl: varchar("videoMessageUrl", { length: 500 }),
+  responseStatus: mysqlEnum("responseStatus", ["none", "positive", "negative", "scheduled"]).default("none").notNull(),
+  scheduledCallAt: timestamp("scheduledCallAt"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type OutreachCampaign = typeof outreachCampaigns.$inferSelect;
+export type InsertOutreachCampaign = typeof outreachCampaigns.$inferInsert;

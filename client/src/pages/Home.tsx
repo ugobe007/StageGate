@@ -85,7 +85,7 @@ export default function Home() {
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.55rem 2rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <span className="badge-emerald">New</span>
-            <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.50)" }}>
+            <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.75)" }}>
               Now accepting bookings for CES 2027 and NAB 2026 in Las Vegas
             </span>
           </div>
@@ -107,7 +107,7 @@ export default function Home() {
         <div className="container" style={{ position: "relative", zIndex: 10, paddingBottom: "7rem", paddingTop: "5rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "flex-end" }}>
           {/* Left column — editorial type */}
           <div>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.6875rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", marginBottom: "2rem" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.6875rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", marginBottom: "2rem" }}>
               Las Vegas · Robotics Activation Infrastructure
             </p>
             <h1 style={{ fontSize: "clamp(3.5rem, 8vw, 7.5rem)", fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em", marginBottom: "2rem" }}>
@@ -116,7 +116,7 @@ export default function Home() {
               <span style={{ color: "rgba(255,255,255,0.70)" }}>We Handle</span><br />
               <span style={{ color: "rgba(255,255,255,0.70)" }}>Everything Else.</span>
             </h1>
-            <p style={{ fontSize: "clamp(1rem, 1.5vw, 1.125rem)", color: "rgba(255,255,255,0.45)", maxWidth: "46ch", lineHeight: 1.65, marginBottom: "3rem" }}>
+            <p style={{ fontSize: "clamp(1rem, 1.5vw, 1.125rem)", color: "rgba(255,255,255,0.75)", maxWidth: "46ch", lineHeight: 1.65, marginBottom: "3rem" }}>
               The first warehouse, staging, and activation service built for robots.
               From crate to show floor — one partner, zero surprises.
             </p>
@@ -186,10 +186,10 @@ export default function Home() {
                 The first end-to-end logistics partner{" "}
                 <span style={{ color: "#00ff87" }}>built for robots.</span>
               </h2>
-              <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.45)", lineHeight: 1.75, marginBottom: "1.25rem", maxWidth: "52ch" }}>
+              <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.75, marginBottom: "1.25rem", maxWidth: "52ch" }}>
                 Robotics companies spend months preparing for trade shows — and then scramble at the last minute with freight, storage, setup, and support. StageGate eliminates that chaos.
               </p>
-              <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.45)", lineHeight: 1.75, marginBottom: "2.5rem", maxWidth: "52ch" }}>
+              <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.75, marginBottom: "2.5rem", maxWidth: "52ch" }}>
                 We warehouse your robots in Las Vegas year-round, stage them for each show, activate them on the floor, and provide certified technical support throughout. One partner. Zero surprises.
               </p>
               <Link href="/register">
@@ -205,7 +205,7 @@ export default function Home() {
                     <span style={{ fontSize: "1rem", fontWeight: 600, color: "#fff" }}>{svc.title}</span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(255,255,255,0.18)" }}>{svc.num}</span>
                   </div>
-                  <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.38)", lineHeight: 1.6 }}>{svc.desc}</p>
+                  <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.6 }}>{svc.desc}</p>
                 </div>
               ))}
               <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "1.5rem" }}>
@@ -234,7 +234,7 @@ export default function Home() {
                   {step.num}
                 </div>
                 <h3 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem", letterSpacing: "-0.02em" }}>{step.title}</h3>
-                <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.38)", lineHeight: 1.65 }}>{step.desc}</p>
+                <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.65 }}>{step.desc}</p>
               </div>
             ))}
           </div>
@@ -253,7 +253,7 @@ export default function Home() {
                 Las Vegas 2026 schedule.
               </h2>
             </div>
-            <Link href="/shows" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.40)", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            <Link href="/shows" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.75)", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>
               View full calendar <ArrowRight size={12} />
             </Link>
           </div>
@@ -269,7 +269,7 @@ export default function Home() {
                   Upcoming
                 </div>
                 <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff", marginBottom: "0.5rem", letterSpacing: "-0.02em" }}>{show.name}</h3>
-                <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", marginBottom: "0.35rem" }}>{show.venue}</p>
+                <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.75)", marginBottom: "0.35rem" }}>{show.venue}</p>
                 <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-mono)", marginBottom: "1.5rem" }}>
                   {show.startDate ? new Date(show.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "TBD"} – {show.endDate ? new Date(show.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "TBD"}
                 </p>
@@ -305,7 +305,7 @@ export default function Home() {
               <img src={IMG_GRID_3} alt="Robot at CES" style={{ width: "100%", height: "220px", objectFit: "cover", display: "block" }} />
             </div>
             <div style={{ overflow: "hidden", background: "#111", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Link href="/shows" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem", color: "rgba(255,255,255,0.30)", textDecoration: "none" }}>
+              <Link href="/shows" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem", color: "rgba(255,255,255,0.75)", textDecoration: "none" }}>
                 <ArrowUpRight size={20} />
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.10em", textTransform: "uppercase" }}>View all shows</span>
               </Link>
@@ -324,13 +324,13 @@ export default function Home() {
             </p>
             <h2 style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: "2rem" }}>
               Your robot is sitting in a crate somewhere.<br />
-              <span style={{ color: "rgba(255,255,255,0.35)" }}>Customs paperwork is missing.</span><br />
-              <span style={{ color: "rgba(255,255,255,0.35)" }}>The show opens in 72 hours.</span>
+              <span style={{ color: "rgba(255,255,255,0.75)" }}>Customs paperwork is missing.</span><br />
+              <span style={{ color: "rgba(255,255,255,0.75)" }}>The show opens in 72 hours.</span>
             </h2>
-            <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.45)", lineHeight: 1.7, marginBottom: "0.75rem" }}>
+            <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: "0.75rem" }}>
               This is the situation most robotics teams face before every major trade show. Freight brokers who don't understand robot hardware. Customs agents who've never seen an ATA Carnet for a humanoid. Ground transport that shows up late.
             </p>
-            <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.45)", lineHeight: 1.7 }}>
+            <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
               <span style={{ color: "#00ff87", fontWeight: 600 }}>XBOT</span> is StageGate's AI logistics planner. Tell it about your robot, your origin, and your target show. In under 60 seconds it generates a complete logistics brief — customs checklist, timeline, service package, and ground transport options — tailored to your specific hardware and route.
             </p>
           </div>
@@ -357,7 +357,7 @@ export default function Home() {
             <Link href="/xbot/new">
               <button className="btn-primary">Start Logistics Intake <ArrowRight size={14} /></button>
             </Link>
-            <Link href="/xbot" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            <Link href="/xbot" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.75)", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>
               Learn About XBOT <ArrowRight size={12} />
             </Link>
           </div>
@@ -378,7 +378,7 @@ export default function Home() {
                   "Get your robot in front of press, buyers, and industry leaders — beyond the trade show floor."
                 </p>
               </blockquote>
-              <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.40)", lineHeight: 1.7, marginBottom: "2rem", maxWidth: "44ch" }}>
+              <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: "2rem", maxWidth: "44ch" }}>
                 StageGate partners with The Robot Guild to offer exclusive access to curated showroom events, media days, and promotional activations across Las Vegas.
               </p>
               <a href="https://www.therobotguild.com/" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "#00ff87", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
@@ -389,7 +389,7 @@ export default function Home() {
             {/* Right — inline text list, no card */}
             <div style={{ paddingTop: "4rem" }}>
               <p style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#fff", marginBottom: "0.5rem" }}>The Robot Guild</p>
-              <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.65, marginBottom: "2rem" }}>
+              <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.65, marginBottom: "2rem" }}>
                 Las Vegas' premier robotics events and showroom network. Connecting robot makers with media, investors, and enterprise buyers through curated live experiences.
               </p>
               {["Curated showroom events", "Media day access", "Industry buyer introductions", "Promotional activations"].map((item, i) => (
@@ -413,7 +413,7 @@ export default function Home() {
             Schedule your robot for{" "}
             <span style={{ color: "#00ff87" }}>Las Vegas.</span>
           </h2>
-          <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.35)", maxWidth: "48ch", lineHeight: 1.65, marginBottom: "3rem" }}>
+          <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.75)", maxWidth: "48ch", lineHeight: 1.65, marginBottom: "3rem" }}>
             Register free, select your show, and let StageGate handle the rest. Warehousing, staging, activation, and support — all in one place.
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>

@@ -118,6 +118,11 @@ export default function AdminDashboard() {
                   <Play size={14} /> Demos
                 </Button>
               </Link>
+              <Link href="/admin/prospects">
+                <Button variant="outline" size="sm" className="border-border gap-1.5">
+                  <Users size={14} /> Prospects
+                </Button>
+              </Link>
             </div>
           </div>
 
@@ -231,6 +236,7 @@ export default function AdminDashboard() {
               { href: "/admin/partners", icon: TrendingUp, label: "Logistics Partners", desc: "Manage customs, transport, and insurance partners", color: "border-purple-500/30 bg-purple-500/5" },
               { href: "/admin/quotes", icon: FileText, label: "Quote Requests", desc: "Review and respond to inbound quote requests", color: "border-green-500/30 bg-green-500/5" },
               { href: "/admin/demos", icon: Play, label: "Demo Requests", desc: "Track and manage inbound demo requests", color: "border-violet-500/30 bg-violet-500/5" },
+              { href: "/admin/prospects", icon: Users, label: "XBOT Prospects", desc: "Robotics companies for outreach — send AI-personalized emails", color: "border-emerald-500/30 bg-emerald-500/5" },
             ].map((item) => (
               <Link key={item.href} href={item.href}>
                 <div className={`p-5 rounded-xl border ${item.color} hover:opacity-90 transition-all cursor-pointer group`}>

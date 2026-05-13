@@ -1,0 +1,61 @@
+{
+  "query": "SELECT DATABASE() as current_db; SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SELECT DATABASE() as current_db; SHOW TABLES;",
+  "rows": [
+    {
+      "current_db": "LwE9ahmaKQsfHr8pVsGoiJ"
+    },
+    {
+      "current_db": "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ"
+    },
+    {
+      "current_db": "__drizzle_migrations"
+    },
+    {
+      "current_db": "company_profiles"
+    },
+    {
+      "current_db": "demo_requests"
+    },
+    {
+      "current_db": "exhibitor_leads"
+    },
+    {
+      "current_db": "logistics_partners"
+    },
+    {
+      "current_db": "order_items"
+    },
+    {
+      "current_db": "outreach_campaigns"
+    },
+    {
+      "current_db": "quote_requests"
+    },
+    {
+      "current_db": "service_orders"
+    },
+    {
+      "current_db": "services"
+    },
+    {
+      "current_db": "show_notifications"
+    },
+    {
+      "current_db": "trade_shows"
+    },
+    {
+      "current_db": "users"
+    },
+    {
+      "current_db": "xbot_logistics_briefs"
+    },
+    {
+      "current_db": "xbot_projects"
+    }
+  ],
+  "messages": [],
+  "stdout": "current_db\nLwE9ahmaKQsfHr8pVsGoiJ\nTables_in_LwE9ahmaKQsfHr8pVsGoiJ\n__drizzle_migrations\ncompany_profiles\ndemo_requests\nexhibitor_leads\nlogistics_partners\norder_items\noutreach_campaigns\nquote_requests\nservice_orders\nservices\nshow_notifications\ntrade_shows\nusers\nxbot_logistics_briefs\nxbot_projects\n",
+  "stderr": "",
+  "execution_time_ms": 268
+}

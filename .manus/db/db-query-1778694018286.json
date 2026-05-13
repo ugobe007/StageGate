@@ -1,0 +1,13 @@
+{
+  "query": "SHOW TABLES LIKE 'prospects'; SHOW TABLES LIKE 'outreach_campaigns';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SHOW TABLES LIKE 'prospects'; SHOW TABLES LIKE 'outreach_campaigns';",
+  "rows": [
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (outreach_campaigns)": "outreach_campaigns"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (outreach_campaigns)\noutreach_campaigns\n",
+  "stderr": "",
+  "execution_time_ms": 273
+}

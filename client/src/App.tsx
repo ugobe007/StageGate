@@ -23,6 +23,8 @@ import ShowDetail from "./pages/ShowDetail";
 import XbotLanding from "./pages/XbotLanding";
 import XbotWizard from "./pages/XbotWizard";
 import XbotProject from "./pages/XbotProject";
+import AdminProspects from "./pages/AdminProspects";
+import VideoIntake from "./pages/VideoIntake";
 
 function Router() {
   return (
@@ -53,6 +55,10 @@ function Router() {
       <Route path="/admin/partners" component={AdminPartners} />
       <Route path="/admin/quotes" component={AdminQuotes} />
       <Route path="/admin/demos" component={AdminDemoRequests} />
+      <Route path="/admin/prospects" component={AdminProspects} />
+
+      {/* Video intake */}
+      <Route path="/xbot/video" component={VideoIntake} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

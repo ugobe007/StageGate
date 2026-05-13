@@ -62,10 +62,11 @@
 
   body {
     background-color: #080808;
-    color: #ececec;
+    color: #e8e8e8;
     font-family: var(--font-sans);
     font-size: 1rem;
-    line-height: 1.6;
+    font-weight: 500;
+    line-height: 1.65;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -96,56 +97,59 @@
 /* ── Components ─────────────────────────────────────────────────────────────── */
 @layer components {
 
-  /* Primary CTA — amber stroke, no fill */
+  /* Primary CTA — amber filled, high-contrast */
   .btn-primary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.75rem;
+    padding: 0.85rem 2.25rem;
     border-radius: 0.25rem;
     font-size: 0.875rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    font-weight: 800;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     line-height: 1;
-    border: 1px solid #f59e0b;
-    color: #f59e0b;
-    background: transparent;
-    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    border: none;
+    color: #0a0a0a;
+    background: #f59e0b;
+    box-shadow: 0 0 0 0 rgba(245,158,11,0);
+    transition: background 0.15s, box-shadow 0.2s, transform 0.1s;
     cursor: pointer;
     white-space: nowrap;
   }
   .btn-primary:hover {
-    background: rgba(245,158,11,0.08);
-    box-shadow: 0 0 20px rgba(245,158,11,0.25);
+    background: #fbbf24;
+    box-shadow: 0 0 32px rgba(245,158,11,0.60), 0 0 10px rgba(245,158,11,0.35);
+    transform: translateY(-1px);
   }
-  .btn-primary:active { opacity: 0.85; }
-  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-primary:active { transform: translateY(0); opacity: 0.92; }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
-  /* Ghost CTA — white stroke */
+  /* Ghost CTA — white stroke, visible */
   .btn-default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.75rem;
+    padding: 0.85rem 2.25rem;
     border-radius: 0.25rem;
     font-size: 0.875rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     line-height: 1;
-    border: 1px solid rgba(255,255,255,0.15);
-    color: rgba(255,255,255,0.55);
+    border: 1px solid rgba(255,255,255,0.35);
+    color: rgba(255,255,255,0.85);
     background: transparent;
-    transition: border-color 0.15s, color 0.15s;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
     cursor: pointer;
     white-space: nowrap;
   }
   .btn-default:hover {
-    border-color: rgba(255,255,255,0.40);
+    border-color: rgba(255,255,255,0.70);
     color: #fff;
+    background: rgba(255,255,255,0.05);
   }
   .btn-default:active { opacity: 0.85; }
 

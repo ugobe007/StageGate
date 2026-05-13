@@ -821,5 +821,176 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return { projects };
       }),
   }),
+
+  // ─── Prospects & Outreach ───────────────────────────────────────────────────
+  prospects: router({
+    // List all prospects (admin only)
+    list: adminProcedure
+      .input(z.object({ status: z.string().optional() }))
+      .query(async ({ input }) => {
+        const items = await db.listProspects(input.status);
+        return { prospects: items };
+      }),
+
+    // Get single prospect
+    get: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const prospect = await db.getProspectById(input.id);
+        if (!prospect) throw new TRPCError({ code: "NOT_FOUND" });
+        return { prospect };
+      }),
+
+    // Create a prospect
+    create: adminProcedure
+      .input(z.object({
+        company: z.string().min(1),
+        robotName: z.string().optional(),
+        robotType: z.string().optional(),
+        hqCountry: z.string().optional(),
+        attendsLasVegas: z.enum(["yes", "no", "unknown"]).optional(),
+        contactName: z.string().optional(),
+        contactEmail: z.string().email().optional(),
+        contactTitle: z.string().optional(),
+        contactDept: z.string().optional(),
+        website: z.string().optional(),
+        shows: z.array(z.string()).optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await db.createProspect(input as Parameters<typeof db.createProspect>[0]);
+        return { success: true };
+      }),
+
+    // Update a prospect
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["new", "contacted", "responded", "scheduled", "converted", "not_interested"]).optional(),
+        contactName: z.string().optional(),
+        contactEmail: z.string().email().optional(),
+        contactTitle: z.string().optional(),
+        notes: z.string().optional(),
+        videoMessageUrl: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await db.updateProspect(id, data);
+        return { success: true };
+      }),
+
+    // Bulk import prospects from JSON
+    bulkImport: adminProcedure
+      .input(z.object({
+        prospects: z.array(z.object({
+          company: z.string(),
+          robotName: z.string().optional(),
+          robotType: z.string().optional(),
+          hqCountry: z.string().optional(),
+          attendsLasVegas: z.string().optional(),
+          contactName: z.string().optional(),
+          contactEmail: z.string().optional(),
+          contactTitle: z.string().optional(),
+          contactDept: z.string().optional(),
+          website: z.string().optional(),
+          shows: z.array(z.string()).optional(),
+          notes: z.string().optional(),
+        }))
+      }))
+      .mutation(async ({ input }) => {
+        await db.bulkInsertProspects(input.prospects as Parameters<typeof db.bulkInsertProspects>[0]);
+        return { imported: input.prospects.length };
+      }),
+
+    // Send intro email via LLM-generated personalized copy
+    sendIntroEmail: adminProcedure
+      .input(z.object({ prospectId: z.number() }))
+      .mutation(async ({ input }) => {
+        const prospect = await db.getProspectById(input.prospectId);
+        if (!prospect) throw new TRPCError({ code: "NOT_FOUND" });
+
+        // Generate personalized email via LLM
+        const llmRes = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are XBOT, an AI logistics coordinator for StageGate — a Las Vegas-based company that handles all robot logistics for trade shows: international shipping, customs clearance, warehousing, staging, activation, and on-site support. Write a concise, professional, and compelling outreach email (150-200 words) to a robotics company. The tone is direct, knowledgeable, and peer-to-peer (robot-to-robot company). Do NOT use generic phrases like 'I hope this email finds you well'. Start with a specific observation about their robot. End with a clear CTA to register at https://stagegate.ai or schedule a call. Return ONLY the email body text, no subject line, no greeting header.`,
+            },
+            {
+              role: "user",
+              content: `Company: ${prospect.company}\nRobot: ${prospect.robotName ?? "their robot"}\nRobot type: ${prospect.robotType ?? "unknown"}\nShows they attend: ${(prospect.shows as string[] ?? []).join(", ") || "major trade shows"}\nContact dept: ${prospect.contactDept ?? "operations"}`,
+            },
+          ],
+        });
+
+        const rawContent = llmRes.choices?.[0]?.message?.content;
+        const emailBody = typeof rawContent === "string" ? rawContent : (Array.isArray(rawContent) ? rawContent.map((c: { type: string; text?: string }) => c.type === "text" ? c.text ?? "" : "").join("") : "");
+        const emailSubject = `StageGate: Las Vegas Robot Logistics for ${prospect.company}`;
+
+        // Log the campaign
+        await db.createOutreachCampaign({
+          prospectId: prospect.id,
+          emailSubject,
+          emailBody,
+          emailStatus: "sent",
+          emailSentAt: new Date(),
+        });
+
+        // Update prospect status
+        await db.updateProspect(prospect.id, { status: "contacted" });
+
+        // Notify owner
+        await notifyOwner({
+          title: `XBOT Outreach: ${prospect.company}`,
+          content: `Email sent to ${prospect.company} (${prospect.robotName ?? "robot"}).\n\nSubject: ${emailSubject}\n\n${emailBody}`,
+        });
+
+        return { success: true, emailSubject, emailBody };
+      }),
+  }),
+
+  // ─── Video Message Intake (public — for prospects to submit) ────────────────
+  videoIntake: router({
+    submit: publicProcedure
+      .input(z.object({
+        company: z.string().min(1),
+        contactName: z.string().optional(),
+        contactEmail: z.string().email().optional(),
+        robotName: z.string().optional(),
+        videoUrl: z.string().url(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        // Find or create prospect
+        const existing = await db.listProspects();
+        const match = existing.find(p => p.company.toLowerCase() === input.company.toLowerCase());
+
+        if (match) {
+          await db.updateProspect(match.id, {
+            videoMessageUrl: input.videoUrl,
+            contactName: input.contactName ?? match.contactName ?? undefined,
+            contactEmail: input.contactEmail ?? match.contactEmail ?? undefined,
+            status: "responded",
+          });
+        } else {
+          await db.createProspect({
+            company: input.company,
+            contactName: input.contactName,
+            contactEmail: input.contactEmail,
+            robotName: input.robotName,
+            videoMessageUrl: input.videoUrl,
+            notes: input.notes,
+            status: "responded",
+          });
+        }
+
+        await notifyOwner({
+          title: `New Video Message: ${input.company}`,
+          content: `${input.contactName ?? "Someone"} from ${input.company} submitted a video message.\nRobot: ${input.robotName ?? "unknown"}\nVideo: ${input.videoUrl}\nNotes: ${input.notes ?? ""}`,
+        });
+
+        return { success: true };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;

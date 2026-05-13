@@ -1,0 +1,15 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `prospects` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `company` varchar(200) NOT NULL,\n  `robot_name` varchar(200),\n  `robot_type` varchar(50),\n  `hq_country` varchar(100),\n  `attends_las_vegas` varchar(10) DEFAULT 'unknown',\n  `contact_name` varchar(200),\n  `contact_email` varchar(200),\n  `contact_title` varchar(200),\n  `contact_dept` varchar(100),\n  `website` varchar(300),\n  `shows` json DEFAULT ('[]'),\n  `notes` text,\n  `status` enum('new','contacted','responded','scheduled','converted','not_interested') NOT NULL DEFAULT 'new',\n  `video_message_url` varchar(500),\n  `scheduled_call_at` timestamp NULL,\n  `created_at` timestamp NOT NULL DEFAULT (now()),\n  `updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n  CONSTRAINT `prospects_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute CREATE TABLE IF NOT EXISTS `prospects` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `company` varchar(200) NOT NULL,\n  `robot_name` varchar(200),\n  `robot_type` varchar(50),\n  `hq_country` varchar(100),\n  `attends_las_vegas` varchar(10) DEFAULT 'unknown',\n  `contact_name` varchar(200),\n  `contact_email` varchar(200),\n  `contact_title` varchar(200),\n  `contact_dept` varchar(100),\n  `website` varchar(300),\n  `shows` json DEFAULT ('[]'),\n  `notes` text,\n  `status` enum('new','contacted','responded','scheduled','converted','not_interested') NOT NULL DEFAULT 'new',\n  `video_message_url` varchar(500),\n  `scheduled_call_at` timestamp NULL,\n  `created_at` timestamp NOT NULL DEFAULT (now()),\n  `updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n  CONSTRAINT `prospects_id` PRIMARY KEY(`id`)\n);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 13 column 29 near \"'[]'),",
+    "  `notes` text,",
+    "  `status` enum('new','contacted','responded','scheduled','converted','not_interested') NOT NULL DEFAULT 'new',",
+    "  `video_message_url` varchar(500),",
+    "  `scheduled_call_at` timestamp NULL,",
+    "  `created_at` timestamp NOT NULL DEFAULT (now()),",
+    "  `updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,",
+    "  CONSTRAINT `prospects_id`"
+  ]
+}

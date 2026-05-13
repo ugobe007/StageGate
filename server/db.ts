@@ -24,6 +24,12 @@ import {
   xbotLogisticsBriefs,
   InsertXbotProject,
   InsertXbotLogisticsBrief,
+  prospects,
+  outreachCampaigns,
+  InsertProspect,
+  InsertOutreachCampaign,
+  Prospect,
+  OutreachCampaign,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -511,3 +517,71 @@ export async function listAllXbotProjects(status?: string) {
   }
   return db.select().from(xbotProjects).orderBy(desc(xbotProjects.createdAt));
 }
+
+// ─── Prospects ────────────────────────────────────────────────────────────────
+export async function listProspects(status?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  if (status) {
+    return db
+      .select()
+      .from(prospects)
+      .where(eq(prospects.status, status as Prospect["status"]))
+      .orderBy(desc(prospects.createdAt));
+  }
+  return db.select().from(prospects).orderBy(desc(prospects.createdAt));
+}
+
+export async function getProspectById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(prospects).where(eq(prospects.id, id));
+  return rows[0] ?? null;
+}
+
+export async function createProspect(data: InsertProspect) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(prospects).values(data);
+  return result[0];
+}
+
+export async function updateProspect(id: number, data: Partial<InsertProspect>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(prospects).set(data).where(eq(prospects.id, id));
+}
+
+export async function bulkInsertProspects(data: InsertProspect[]) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  if (data.length === 0) return;
+  await db.insert(prospects).values(data);
+}
+
+// ─── Outreach Campaigns ───────────────────────────────────────────────────────
+export async function listOutreachByProspect(prospectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(outreachCampaigns)
+    .where(eq(outreachCampaigns.prospectId, prospectId))
+    .orderBy(desc(outreachCampaigns.createdAt));
+}
+
+export async function createOutreachCampaign(data: InsertOutreachCampaign) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(outreachCampaigns).values(data);
+  return result[0];
+}
+
+export async function updateOutreachCampaign(id: number, data: Partial<InsertOutreachCampaign>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(outreachCampaigns).set(data).where(eq(outreachCampaigns.id, id));
+}
+
+// Suppress unused import warnings
+export type { Prospect, OutreachCampaign };
