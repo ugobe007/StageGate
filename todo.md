@@ -449,3 +449,15 @@
 - [x] Admin role promotion: add admin.setUserRole tRPC procedure (adminProcedure)
 - [x] Admin role promotion: "Promote" / "Demote" button in users table row in AdminDashboard
 - [x] Cannot demote yourself (owner protection)
+
+## v8.1 — AI Agents & Workflows Admin Section
+
+- [ ] Add admin.getAgentStats tRPC procedure: returns live counts for each agent (runs, last run time, success/fail)
+- [ ] Add agent_runs table to schema (agentName, status, triggeredBy, startedAt, completedAt, inputSummary, outputSummary, errorMessage)
+- [ ] Instrument existing AI procedures (leads.discover, leads.generateEmail, xbot.generateBrief, prospects.sendIntroEmail, prospects.bulkSendEmails) to log runs to agent_runs table
+- [ ] Build AdminAgents.tsx page with agent cards, run history table, and manual trigger buttons
+- [ ] Add /admin/agents route to App.tsx
+- [ ] Add "AI Agents" nav button to AdminDashboard header
+- [ ] Agent cards show: name, description, last run time, total runs, success rate, status badge (idle/running/error)
+- [ ] Run history table shows last 20 runs across all agents: agent, status, triggered by, duration, timestamp
+- [ ] Manual trigger buttons for: Discover Leads (select show), Generate Brief (select project), Bulk Outreach (select prospects)

@@ -68,6 +68,10 @@ vi.mock("./db", () => ({
   getAllUsers: vi.fn().mockResolvedValue([{ id: 2, name: "Bob", email: "bob@example.com", role: "user", createdAt: new Date(), lastSignedIn: new Date() }]),
   updateUserRole: vi.fn().mockResolvedValue(undefined),
   getAllDemoRequests: vi.fn().mockResolvedValue([]),
+  createAgentRun: vi.fn().mockResolvedValue(1),
+  completeAgentRun: vi.fn().mockResolvedValue(undefined),
+  getAgentRunStats: vi.fn().mockResolvedValue([]),
+  getRecentAgentRuns: vi.fn().mockResolvedValue([]),
 }));
 
 // Mock LLM

@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `agent_runs` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`agentName` varchar(100) NOT NULL,\n\t`status` enum('running','success','error') NOT NULL DEFAULT 'running',\n\t`triggeredBy` varchar(100) DEFAULT 'admin',\n\t`inputSummary` varchar(500),\n\t`outputSummary` varchar(500),\n\t`errorMessage` text,\n\t`startedAt` timestamp NOT NULL DEFAULT (now()),\n\t`completedAt` timestamp,\n\t`durationMs` int,\n\tCONSTRAINT `agent_runs_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute CREATE TABLE `agent_runs` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`agentName` varchar(100) NOT NULL,\n\t`status` enum('running','success','error') NOT NULL DEFAULT 'running',\n\t`triggeredBy` varchar(100) DEFAULT 'admin',\n\t`inputSummary` varchar(500),\n\t`outputSummary` varchar(500),\n\t`errorMessage` text,\n\t`startedAt` timestamp NOT NULL DEFAULT (now()),\n\t`completedAt` timestamp,\n\t`durationMs` int,\n\tCONSTRAINT `agent_runs_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 351
+}

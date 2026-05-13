@@ -64,6 +64,13 @@
       "when": 1778714156781,
       "tag": "0008_nosy_tempest",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1778714991542,
+      "tag": "0009_first_lifeguard",
+      "breakpoints": true
     }
   ]
 }

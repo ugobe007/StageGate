@@ -319,3 +319,19 @@ export const outreachCampaigns = mysqlTable("outreach_campaigns", {
 });
 export type OutreachCampaign = typeof outreachCampaigns.$inferSelect;
 export type InsertOutreachCampaign = typeof outreachCampaigns.$inferInsert;
+
+// ─── AI Agent Run Log ─────────────────────────────────────────────────────────
+export const agentRuns = mysqlTable("agent_runs", {
+  id: int("id").primaryKey().autoincrement(),
+  agentName: varchar("agentName", { length: 100 }).notNull(),
+  status: mysqlEnum("status", ["running", "success", "error"]).notNull().default("running"),
+  triggeredBy: varchar("triggeredBy", { length: 100 }).default("admin"),
+  inputSummary: varchar("inputSummary", { length: 500 }),
+  outputSummary: varchar("outputSummary", { length: 500 }),
+  errorMessage: text("errorMessage"),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  durationMs: int("durationMs"),
+});
+export type AgentRun = typeof agentRuns.$inferSelect;
+export type InsertAgentRun = typeof agentRuns.$inferInsert;

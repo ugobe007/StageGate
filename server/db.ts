@@ -30,6 +30,9 @@ import {
   InsertOutreachCampaign,
   Prospect,
   OutreachCampaign,
+  agentRuns,
+  InsertAgentRun,
+  AgentRun,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -596,3 +599,49 @@ export async function updateUserRole(userId: number, role: "admin" | "user") {
   if (!db) throw new Error("DB unavailable");
   await db.update(users).set({ role }).where(eq(users.id, userId));
 }
+
+// ─── Agent Run Log Helpers ────────────────────────────────────────────────────
+export async function createAgentRun(data: Omit<InsertAgentRun, "id" | "startedAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const [result] = await db.insert(agentRuns).values({ ...data, startedAt: new Date() });
+  return (result as { insertId: number }).insertId as number;
+}
+
+export async function completeAgentRun(id: number, status: "success" | "error", opts: { outputSummary?: string; errorMessage?: string } = {}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const completedAt = new Date();
+  await db.update(agentRuns).set({
+    status,
+    completedAt,
+    outputSummary: opts.outputSummary,
+    errorMessage: opts.errorMessage,
+  }).where(eq(agentRuns.id, id));
+}
+
+export async function getRecentAgentRuns(limit = 50): Promise<AgentRun[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(agentRuns).orderBy(desc(agentRuns.startedAt)).limit(limit);
+}
+
+export async function getAgentRunStats(): Promise<Array<{ agentName: string; totalRuns: number; successRuns: number; errorRuns: number; lastRunAt: Date | null }>> {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(agentRuns).orderBy(desc(agentRuns.startedAt));
+  const statsMap = new Map<string, { totalRuns: number; successRuns: number; errorRuns: number; lastRunAt: Date | null }>();
+  for (const row of rows) {
+    if (!statsMap.has(row.agentName)) {
+      statsMap.set(row.agentName, { totalRuns: 0, successRuns: 0, errorRuns: 0, lastRunAt: null });
+    }
+    const s = statsMap.get(row.agentName)!;
+    s.totalRuns++;
+    if (row.status === "success") s.successRuns++;
+    if (row.status === "error") s.errorRuns++;
+    if (!s.lastRunAt && row.startedAt) s.lastRunAt = row.startedAt;
+  }
+  return Array.from(statsMap.entries()).map(([agentName, stats]) => ({ agentName, ...stats }));
+}
+// Suppress unused import warnings
+export type { AgentRun, InsertAgentRun };

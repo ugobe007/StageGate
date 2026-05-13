@@ -327,7 +327,9 @@ export const appRouter = router({
           exhibitorListText: z.string().min(10),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        const runId = await db.createAgentRun({ agentName: "Lead Discovery", triggeredBy: ctx.user?.name ?? "admin", inputSummary: `Show ID: ${input.showId}, ${input.exhibitorListText.slice(0, 80)}...`, status: "running" });
+        try {
         const response = await invokeLLM({
           messages: [
             {
@@ -383,17 +385,22 @@ export const appRouter = router({
           });
           created.push(id);
         }
-        return { count: created.length, leadIds: created };
+          await db.completeAgentRun(runId, "success", { outputSummary: `Discovered ${created.length} robotics leads` });
+          return { count: created.length, leadIds: created };
+        } catch (err) {
+          await db.completeAgentRun(runId, "error", { errorMessage: err instanceof Error ? err.message : String(err) });
+          throw err;
+        }
       }),
-
-    // AI: Generate personalized outreach email for a lead
+    // AI: Generate personalized outreach email for a leadd
     generateEmail: adminProcedure
       .input(z.object({ leadId: z.number() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const lead = await db.getLeadById(input.leadId);
         if (!lead) throw new TRPCError({ code: "NOT_FOUND" });
+        const runId = await db.createAgentRun({ agentName: "Lead Email Generator", triggeredBy: ctx.user?.name ?? "admin", inputSummary: `Lead: ${lead.companyName}`, status: "running" });
+        try {
         const show = await db.getTradeShowById(lead.showId);
-
         const response = await invokeLLM({
           messages: [
             {
@@ -421,9 +428,13 @@ Subject line and body only.`,
 
         const emailDraft = (response.choices[0]?.message?.content as string) || "";
         await db.updateLead(input.leadId, { emailDraft });
+        await db.completeAgentRun(runId, "success", { outputSummary: `Email draft generated for ${lead.companyName}` });
         return { emailDraft };
+        } catch (err) {
+          await db.completeAgentRun(runId, "error", { errorMessage: err instanceof Error ? err.message : String(err) });
+          throw err;
+        }
       }),
-
     markEmailed: adminProcedure
       .input(z.object({ leadId: z.number() }))
       .mutation(async ({ input }) => {
@@ -918,9 +929,10 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     // Send intro email via LLM-generated personalized copy
     sendIntroEmail: adminProcedure
       .input(z.object({ prospectId: z.number() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const prospect = await db.getProspectById(input.prospectId);
         if (!prospect) throw new TRPCError({ code: "NOT_FOUND" });
+        const runId = await db.createAgentRun({ agentName: "XBOT Outreach", triggeredBy: ctx.user?.name ?? "admin", inputSummary: `Prospect: ${prospect.company}`, status: "running" });
 
         // Generate personalized email via LLM
         const llmRes = await invokeLLM({
@@ -958,12 +970,13 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           content: `Email sent to ${prospect.company} (${prospect.robotName ?? "robot"}).\n\nSubject: ${emailSubject}\n\n${emailBody}`,
         });
 
+         await db.completeAgentRun(runId, "success", { outputSummary: `Email sent to ${prospect.company}` });
          return { success: true, emailSubject, emailBody };
       }),
-
     bulkSendEmails: adminProcedure
       .input(z.object({ prospectIds: z.array(z.number()).min(1).max(50) }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        const runId = await db.createAgentRun({ agentName: "XBOT Bulk Outreach", triggeredBy: ctx.user?.name ?? "admin", inputSummary: `${input.prospectIds.length} prospects`, status: "running" });
         const results: { id: number; success: boolean; company: string; error?: string }[] = [];
         for (const prospectId of input.prospectIds) {
           try {
@@ -1000,6 +1013,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           title: `XBOT Bulk Outreach: ${sent} emails sent`,
           content: `Bulk send complete.\n\nSent: ${sent}\nFailed: ${failed}\n\nDetails:\n${results.map(r => `${r.company}: ${r.success ? "✓ sent" : `✗ ${r.error}`}`).join("\n")}`,
         });
+        await db.completeAgentRun(runId, failed === results.length ? "error" : "success", { outputSummary: `Sent: ${sent}, Failed: ${failed}` });
         return { sent, failed, results };
       }),
   }),
@@ -1056,6 +1070,14 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         if (input.userId === ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Cannot change your own role" });
         await db.updateUserRole(input.userId, input.role);
         return { success: true };
+      }),
+    getAgentStats: adminProcedure.query(async () => {
+      return db.getAgentRunStats();
+    }),
+    getAgentRuns: adminProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).optional() }))
+      .query(async ({ input }) => {
+        return db.getRecentAgentRuns(input.limit ?? 50);
       }),
     getSiteStats: adminProcedure.query(async () => {
       const [users, orders, demos, quotes, leads, prospects] = await Promise.all([

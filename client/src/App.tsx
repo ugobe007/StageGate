@@ -16,6 +16,7 @@ import AdminQuotes from "@/pages/AdminQuotes";
 import AdminDemoRequests from "@/pages/AdminDemoRequests";
 import AdminShows from "./pages/AdminShows";
 import AdminLeads from "./pages/AdminLeads";
+import AdminAgents from "./pages/AdminAgents";
 import AdminOrders from "./pages/AdminOrders";
 import AdminPartners from "./pages/AdminPartners";
 import ShowsCalendar from "./pages/ShowsCalendar";
@@ -57,6 +58,7 @@ function Router() {
       <Route path="/admin/quotes" component={AdminQuotes} />
       <Route path="/admin/demos" component={AdminDemoRequests} />
       <Route path="/admin/prospects" component={AdminProspects} />
+      <Route path="/admin/agents" component={AdminAgents} />
 
       {/* Video intake */}
       <Route path="/xbot/video" component={VideoIntake} />
