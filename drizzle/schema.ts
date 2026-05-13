@@ -293,6 +293,8 @@ export const prospects = mysqlTable("prospects", {
   status: mysqlEnum("status", ["new", "contacted", "responded", "scheduled", "converted", "not_interested"]).default("new").notNull(),
   videoMessageUrl: varchar("videoMessageUrl", { length: 500 }),
   scheduledCallAt: timestamp("scheduledCallAt"),
+  contactLinkedIn: varchar("contactLinkedIn", { length: 512 }),
+  emailConfidence: varchar("emailConfidence", { length: 20 }).default("low"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

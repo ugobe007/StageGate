@@ -331,3 +331,15 @@
 - [x] Wire Meetup/Google Calendar booking URL into Schedule Call CTA across all pages and email templates
 - [x] Verify email drafts are properly personalized per prospect (robot name, show, pitch)
 - [x] Add direct link to /admin/prospects in the nav so owner can review and send emails
+
+## v7.0 — LinkedIn Decision-Maker Research + Schedule Page + Email Management
+
+- [x] Research LinkedIn decision-makers for all 78 prospect companies (Head of Operations, VP Logistics, CTO, CEO)
+- [x] Default email: support@DOMAIN; fallback patterns: lastname@, firstname@, firstnamelastname@, firstinitiallastname@
+- [x] Update prospect records in DB with contactName, contactTitle, contactEmail, contactLinkedIn, emailConfidence
+- [x] Build /schedule page with embedded Google Calendar iframe (America/Los_Angeles timezone)
+- [x] Add /schedule link to Navbar and footer
+- [x] Update all "Schedule a Call" CTAs to link to /schedule
+- [x] Admin prospects: inline editable contactEmail, contactName, contactTitle, contactLinkedIn fields per row
+- [x] Admin prospects: email confidence badge (verified/high/medium/low) displayed per contact
+- [x] Admin prospects: Edit/Save toggle per row for contact fields

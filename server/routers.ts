@@ -870,6 +870,8 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         contactName: z.string().optional(),
         contactEmail: z.string().email().optional(),
         contactTitle: z.string().optional(),
+        contactLinkedIn: z.string().optional(),
+        emailConfidence: z.enum(["verified", "high", "medium", "low"]).optional(),
         notes: z.string().optional(),
         videoMessageUrl: z.string().optional(),
       }))

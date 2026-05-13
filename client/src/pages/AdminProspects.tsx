@@ -33,6 +33,14 @@ export default function AdminProspects() {
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [editNotes, setEditNotes] = useState<Record<number, string>>({});
+  const [editContact, setEditContact] = useState<Record<number, {
+    contactName?: string;
+    contactTitle?: string;
+    contactEmail?: string;
+    contactLinkedIn?: string;
+    emailConfidence?: string;
+  }>>({});
+  const [editingContactId, setEditingContactId] = useState<number | null>(null);
 
   const { data, isLoading, refetch } = trpc.prospects.list.useQuery(
     { status: statusFilter || undefined },
@@ -233,13 +241,124 @@ export default function AdminProspects() {
                   {isExpanded && (
                     <div style={{ padding: "0 0 1.5rem 2rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
                       <div>
-                        <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: "0.75rem" }}>Contact Info</p>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-                          {p.contactName && <span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.75)" }}>{p.contactName}{p.contactTitle && <span style={{ color: "rgba(255,255,255,0.35)", marginLeft: "0.5rem" }}>· {p.contactTitle}</span>}</span>}
-                          {p.contactEmail && <a href={`mailto:${p.contactEmail}`} style={{ fontSize: "0.8125rem", color: "#f59e0b", fontFamily: "var(--font-mono)" }}>{p.contactEmail}</a>}
-                          {p.contactDept && <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-mono)" }}>Dept: {p.contactDept}</span>}
-                          {!p.contactName && !p.contactEmail && <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.25)" }}>No contact info yet</span>}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+                          <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", margin: 0 }}>Contact Info</p>
+                          <button
+                            onClick={() => {
+                              if (editingContactId === p.id) {
+                                // Save
+                                const fields = editContact[p.id] ?? {};
+                                if (Object.keys(fields).length > 0) {
+                                  const { emailConfidence, ...rest } = fields;
+                                  updateProspect.mutate({
+                                    id: p.id,
+                                    ...rest,
+                                    ...(emailConfidence ? { emailConfidence: emailConfidence as "verified" | "high" | "medium" | "low" } : {}),
+                                  });
+                                }
+                                setEditingContactId(null);
+                              } else {
+                                setEditingContactId(p.id);
+                                setEditContact(prev => ({
+                                  ...prev,
+                                  [p.id]: {
+                                    contactName: p.contactName ?? "",
+                                    contactTitle: p.contactTitle ?? "",
+                                    contactEmail: p.contactEmail ?? "",
+                                    contactLinkedIn: ((p as Record<string, unknown>).contactLinkedIn as string) ?? "",
+                                    emailConfidence: (((p as Record<string, unknown>).emailConfidence as string) ?? "low") as "verified" | "high" | "medium" | "low",
+                                  }
+                                }));
+                              }
+                            }}
+                            style={{
+                              fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em",
+                              textTransform: "uppercase", padding: "0.2rem 0.5rem",
+                              border: `1px solid ${editingContactId === p.id ? "rgba(0,255,135,0.40)" : "rgba(255,255,255,0.12)"}`,
+                              color: editingContactId === p.id ? "#00ff87" : "rgba(255,255,255,0.40)",
+                              background: "transparent", cursor: "pointer", borderRadius: "0.125rem",
+                            }}
+                          >
+                            {editingContactId === p.id ? (<><Check size={9} style={{ display: "inline", marginRight: 3 }} /><span>Save</span></>) : <span>Edit</span>}
+                          </button>
                         </div>
+
+                        {editingContactId === p.id ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                            {([
+                              { key: "contactName", label: "Name", placeholder: "Full name" },
+                              { key: "contactTitle", label: "Title", placeholder: "VP of Operations" },
+                              { key: "contactEmail", label: "Email", placeholder: "name@company.com" },
+                              { key: "contactLinkedIn", label: "LinkedIn", placeholder: "https://linkedin.com/in/..." },
+                            ] as { key: keyof typeof editContact[number]; label: string; placeholder: string }[]).map(({ key, label, placeholder }) => (
+                              <div key={key} style={{ display: "grid", gridTemplateColumns: "70px 1fr", alignItems: "center", gap: "0.5rem" }}>
+                                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: "rgba(255,255,255,0.30)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{label}</span>
+                                <input
+                                  type="text"
+                                  value={editContact[p.id]?.[key] ?? ""}
+                                  onChange={e => setEditContact(prev => ({ ...prev, [p.id]: { ...prev[p.id], [key]: e.target.value } }))}
+                                  placeholder={placeholder}
+                                  style={{
+                                    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)",
+                                    borderRadius: "0.125rem", color: "rgba(255,255,255,0.80)", fontSize: "0.8125rem",
+                                    padding: "0.3rem 0.5rem", fontFamily: "var(--font-mono)", width: "100%",
+                                  }}
+                                />
+                              </div>
+                            ))}
+                            <div style={{ display: "grid", gridTemplateColumns: "70px 1fr", alignItems: "center", gap: "0.5rem" }}>
+                              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: "rgba(255,255,255,0.30)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Confidence</span>
+                              <select
+                                value={editContact[p.id]?.emailConfidence ?? "low"}
+                                onChange={e => setEditContact(prev => ({ ...prev, [p.id]: { ...prev[p.id], emailConfidence: e.target.value } }))}
+                                style={{
+                                  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)",
+                                  borderRadius: "0.125rem", color: "rgba(255,255,255,0.80)", fontSize: "0.8125rem",
+                                  padding: "0.3rem 0.5rem", fontFamily: "var(--font-mono)",
+                                }}
+                              >
+                                <option value="verified">Verified</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                              </select>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                            {p.contactName && (
+                              <span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.80)" }}>
+                                {p.contactName}
+                                {p.contactTitle && <span style={{ color: "rgba(255,255,255,0.35)", marginLeft: "0.5rem" }}>· {p.contactTitle}</span>}
+                              </span>
+                            )}
+                            {p.contactEmail && (
+                              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                <a href={`mailto:${p.contactEmail}`} style={{ fontSize: "0.8125rem", color: "#f59e0b", fontFamily: "var(--font-mono)" }}>{p.contactEmail}</a>
+                                {!!String((p as Record<string, unknown>).emailConfidence ?? "") && (
+                                  <span style={{
+                                    fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.08em", textTransform: "uppercase",
+                                    padding: "0.1rem 0.35rem", borderRadius: "0.125rem",
+                                    border: `1px solid ${{ verified: "rgba(0,255,135,0.40)", high: "rgba(0,255,135,0.25)", medium: "rgba(245,158,11,0.35)", low: "rgba(255,255,255,0.12)" }[String((p as Record<string, unknown>).emailConfidence ?? "")] ?? "rgba(255,255,255,0.12)"}`,
+                                    color: { verified: "#00ff87", high: "rgba(0,255,135,0.70)", medium: "#f59e0b", low: "rgba(255,255,255,0.30)" }[String((p as Record<string, unknown>).emailConfidence ?? "")] ?? "rgba(255,255,255,0.30)",
+                                  }}>
+                                    {String((p as Record<string, unknown>).emailConfidence ?? "")}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {!!(p as Record<string, unknown>).contactLinkedIn && (
+                              <a href={String((p as Record<string, unknown>).contactLinkedIn)} target="_blank" rel="noopener noreferrer"
+                                style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                                <ExternalLink size={10} /><span>LinkedIn</span>
+                              </a>
+                            )}
+                            {!p.contactName && !p.contactEmail && (
+                              <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.20)" }}>No contact info — click Edit to add</span>
+                            )}
+                          </div>
+                        )}
+
                         {p.videoMessageUrl && (
                           <div style={{ marginTop: "1rem" }}>
                             <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(0,255,135,0.60)", marginBottom: "0.5rem" }}>Video Message Received</p>

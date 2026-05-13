@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE prospects\n  ADD COLUMN contactName VARCHAR(255) DEFAULT NULL,\n  ADD COLUMN contactTitle VARCHAR(255) DEFAULT NULL,\n  ADD COLUMN contactEmail VARCHAR(255) DEFAULT NULL,\n  ADD COLUMN contactLinkedIn VARCHAR(512) DEFAULT NULL,\n  ADD COLUMN emailConfidence VARCHAR(20) DEFAULT 'low';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute ALTER TABLE prospects\n  ADD COLUMN contactName VARCHAR(255) DEFAULT NULL,\n  ADD COLUMN contactTitle VARCHAR(255) DEFAULT NULL,\n  ADD COLUMN contactEmail VARCHAR(255) DEFAULT NULL,\n  ADD COLUMN contactLinkedIn VARCHAR(512) DEFAULT NULL,\n  ADD COLUMN emailConfidence VARCHAR(20) DEFAULT 'low';",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1060 (42S21) at line 1: Duplicate column name 'contactName'"
+  ]
+}

@@ -25,6 +25,7 @@ import XbotWizard from "./pages/XbotWizard";
 import XbotProject from "./pages/XbotProject";
 import AdminProspects from "./pages/AdminProspects";
 import VideoIntake from "./pages/VideoIntake";
+import Schedule from "./pages/Schedule";
 
 function Router() {
   return (
@@ -59,6 +60,9 @@ function Router() {
 
       {/* Video intake */}
       <Route path="/xbot/video" component={VideoIntake} />
+
+      {/* Schedule */}
+      <Route path="/schedule" component={Schedule} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
