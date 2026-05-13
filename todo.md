@@ -363,3 +363,11 @@
 - [x] "Hide Contacted" quick-toggle button appears when All filter is active — excludes contacted rows in one click
 - [x] Toggle turns red when active with "● Hiding Contacted" label
 - [x] Row count label updates: "X of 78 prospects (contacted hidden)" when toggle is on
+
+## v7.3 — Domain Update: onstage.bot
+
+- [x] Updated all hardcoded stagegate.ai references to https://onstage.bot in server/routers.ts (both single-send and bulk-send email LLM prompts)
+- [x] Confirmed zero remaining references to stagegate.ai or stagegate-ai-lwe9ahma.manus.space in codebase
+- [x] www.onstage.bot CNAME → cname.manus.space (Manus hosting) — DNS propagated
+- [ ] onstage.bot @ A record: set to 66.241.124.90 in GoDaddy (currently wrong — 104.18.26.246)
+- [ ] Register onstage.bot in Manus Settings → Domains for SSL cert provisioning
