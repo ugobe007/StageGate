@@ -128,6 +128,9 @@ export default function AdminProspects() {
     onSuccess: () => refetch(),
   });
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Sort state
   type SortKey = "company" | "status" | "";
   type SortDir = "asc" | "desc";
@@ -215,9 +218,17 @@ export default function AdminProspects() {
     );
   }
 
-  const prospects = (data?.prospects ?? []).filter(p =>
-    hideContacted && statusFilter === "" ? p.status !== "contacted" : true
-  );
+  const prospects = (data?.prospects ?? []).filter(p => {
+    if (hideContacted && statusFilter === "" && p.status === "contacted") return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const matchCompany = p.company.toLowerCase().includes(q);
+      const matchContact = (p.contactName ?? "").toLowerCase().includes(q);
+      const matchEmail = (p.contactEmail ?? "").toLowerCase().includes(q);
+      if (!matchCompany && !matchContact && !matchEmail) return false;
+    }
+    return true;
+  });
 
   const STATUS_ORDER: Record<string, number> = { new: 0, contacted: 1, responded: 2, scheduled: 3, converted: 4, not_interested: 5 };
   const sortedProspects = sortKey === "" ? prospects : [...prospects].sort((a, b) => {
@@ -302,6 +313,46 @@ export default function AdminProspects() {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Search input */}
+        <div style={{ marginBottom: "1.25rem", position: "relative", maxWidth: "28rem" }}>
+          <input
+            type="text"
+            placeholder="Search company, contact, or email…"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => { if (e.key === "Escape") setSearchQuery(""); }}
+            style={{
+              width: "100%",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.75rem",
+              background: "rgba(255,255,255,0.04)",
+              border: `1px solid ${searchQuery ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.10)"}`,
+              color: "#fff",
+              padding: "0.55rem 2.25rem 0.55rem 0.85rem",
+              borderRadius: "0.25rem",
+              outline: "none",
+              transition: "border-color 0.15s",
+              boxSizing: "border-box" as const,
+            }}
+          />
+          {searchQuery ? (
+            <button
+              onClick={() => setSearchQuery("")}
+              style={{
+                position: "absolute", right: "0.6rem", top: "50%", transform: "translateY(-50%)",
+                background: "none", border: "none", cursor: "pointer",
+                color: "rgba(255,255,255,0.40)", padding: 0, lineHeight: 1,
+              }}
+            >
+              <X size={13} />
+            </button>
+          ) : (
+            <span style={{ position: "absolute", right: "0.7rem", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.20)", pointerEvents: "none", lineHeight: 1 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            </span>
+          )}
         </div>
 
         {/* Status filter tabs */}

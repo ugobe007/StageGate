@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "37729a1e-4763-4ed3-becc-95b0e2d7b40e",
+  "id": "2755beb8-115f-4153-aac4-07c51bea7ab8",
   "prevId": "d4e2c9b9-8a90-4ac6-b3bb-d20a1fe3fbb4",
   "tables": {
     "company_profiles": {
@@ -695,6 +695,28 @@
         },
         "scheduledCallAt": {
           "name": "scheduledCallAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "contactLinkedIn": {
+          "name": "contactLinkedIn",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "emailConfidence": {
+          "name": "emailConfidence",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'low'"
+        },
+        "repliedAt": {
+          "name": "repliedAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false,

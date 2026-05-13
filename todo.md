@@ -399,3 +399,11 @@
 - [x] Reply notes prompt: after clicking "Mark as Replied", inline text input appears for one-line summary
 - [x] Reply notes saved to prospect notes field via updateProspect mutation
 - [x] Pressing Enter or clicking ✓ commits the note; pressing Escape or clicking ✗ dismisses without saving
+
+## v7.7 — Real-time Search Filter in Prospect Database
+
+- [x] Add searchQuery state (string) to AdminProspects
+- [x] Filter prospects by company, contactName, or contactEmail (case-insensitive) before sort
+- [x] Search input renders above the table, below the status filter tabs
+- [x] Clears with Escape key or x button; border highlights when active
+- [x] CSV export respects the active search filter (uses sortedProspects which is post-filter)
