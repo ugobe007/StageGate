@@ -77,8 +77,20 @@ export default function AdminProspects() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkSending, setBulkSending] = useState(false);
   const [bulkUpdating, setBulkUpdating] = useState(false);
-  const [bulkStatusTarget, setBulkStatusTarget] = useState<ProspectStatus>("contacted");
+  const DESTRUCTIVE_STATUSES: ProspectStatus[] = ["not_interested", "converted"];
+  const [bulkStatusTarget, setBulkStatusTargetRaw] = useState<ProspectStatus>(() => {
+    try {
+      const saved = localStorage.getItem("sg_bulk_status_target") as ProspectStatus | null;
+      return saved && STATUS_CONFIG[saved] ? saved : "contacted";
+    } catch { return "contacted"; }
+  });
+  const setBulkStatusTarget = (s: ProspectStatus) => {
+    setBulkStatusTargetRaw(s);
+    try { localStorage.setItem("sg_bulk_status_target", s); } catch {}
+    setPendingConfirm(false);
+  };
   const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
+  const [pendingConfirm, setPendingConfirm] = useState(false);
 
   const bulkUpdateStatusMutation = trpc.prospects.bulkUpdateStatus.useMutation({
     onSuccess: (data) => {
@@ -93,6 +105,11 @@ export default function AdminProspects() {
 
   const handleBulkUpdateStatus = () => {
     if (selectedIds.size === 0 || bulkUpdating) return;
+    if (DESTRUCTIVE_STATUSES.includes(bulkStatusTarget) && !pendingConfirm) {
+      setPendingConfirm(true);
+      return;
+    }
+    setPendingConfirm(false);
     setBulkUpdating(true);
     bulkUpdateStatusMutation.mutate({ ids: Array.from(selectedIds), status: bulkStatusTarget });
   };
@@ -664,29 +681,69 @@ export default function AdminProspects() {
                 <ChevronDown size={9} style={{ marginLeft: "auto", opacity: 0.6 }} />
               </button>
 
-              {/* Confirm button */}
-              <button
-                onClick={handleBulkUpdateStatus}
-                disabled={bulkUpdating || selectedIds.size === 0}
-                style={{
-                  display: "flex", alignItems: "center", gap: "0.4rem",
-                  fontFamily: "var(--font-mono)", fontSize: "0.5625rem", fontWeight: 700,
-                  letterSpacing: "0.08em", textTransform: "uppercase",
-                  padding: "0.35rem 0.75rem",
-                  background: bulkUpdating ? "rgba(99,102,241,0.20)" : "rgba(99,102,241,0.18)",
-                  color: bulkUpdating ? "rgba(129,140,248,0.50)" : "#818cf8",
-                  border: "1px solid rgba(99,102,241,0.35)",
-                  cursor: bulkUpdating ? "wait" : "pointer",
+              {/* Confirm button — or inline confirmation guard for destructive statuses */}
+              {pendingConfirm ? (
+                <div style={{ display: "flex", alignItems: "center", gap: "0.35rem",
+                  padding: "0.35rem 0.65rem",
+                  background: "rgba(239,68,68,0.08)",
+                  border: "1px solid rgba(239,68,68,0.35)",
                   borderRadius: "0 0.125rem 0.125rem 0",
-                  transition: "all 0.15s",
-                }}
-              >
-                {bulkUpdating ? (
-                  <><RefreshCw size={10} style={{ animation: "spin 1s linear infinite" }} /> Updating...</>
-                ) : (
-                  <><ArrowRight size={10} /> Move {selectedIds.size}</>
-                )}
-              </button>
+                }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(239,68,68,0.85)",
+                    letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                    Move {selectedIds.size} to {STATUS_CONFIG[bulkStatusTarget].label}?
+                  </span>
+                  <button
+                    onClick={handleBulkUpdateStatus}
+                    style={{ display: "flex", alignItems: "center", gap: "0.25rem",
+                      fontFamily: "var(--font-mono)", fontSize: "0.5rem", fontWeight: 700,
+                      letterSpacing: "0.08em", textTransform: "uppercase",
+                      padding: "0.2rem 0.5rem",
+                      background: "rgba(239,68,68,0.15)", color: "#f87171",
+                      border: "1px solid rgba(239,68,68,0.40)",
+                      cursor: "pointer", borderRadius: "0.125rem",
+                    }}
+                  >
+                    <Check size={9} /> Confirm
+                  </button>
+                  <button
+                    onClick={() => setPendingConfirm(false)}
+                    style={{ display: "flex", alignItems: "center", gap: "0.25rem",
+                      fontFamily: "var(--font-mono)", fontSize: "0.5rem", fontWeight: 700,
+                      letterSpacing: "0.08em", textTransform: "uppercase",
+                      padding: "0.2rem 0.5rem",
+                      background: "transparent", color: "rgba(255,255,255,0.35)",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      cursor: "pointer", borderRadius: "0.125rem",
+                    }}
+                  >
+                    <X size={9} /> Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleBulkUpdateStatus}
+                  disabled={bulkUpdating || selectedIds.size === 0}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "0.4rem",
+                    fontFamily: "var(--font-mono)", fontSize: "0.5625rem", fontWeight: 700,
+                    letterSpacing: "0.08em", textTransform: "uppercase",
+                    padding: "0.35rem 0.75rem",
+                    background: bulkUpdating ? "rgba(99,102,241,0.20)" : "rgba(99,102,241,0.18)",
+                    color: bulkUpdating ? "rgba(129,140,248,0.50)" : "#818cf8",
+                    border: "1px solid rgba(99,102,241,0.35)",
+                    cursor: bulkUpdating ? "wait" : "pointer",
+                    borderRadius: "0 0.125rem 0.125rem 0",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {bulkUpdating ? (
+                    <><RefreshCw size={10} style={{ animation: "spin 1s linear infinite" }} /> Updating...</>
+                  ) : (
+                    <><ArrowRight size={10} /> Move {selectedIds.size}</>
+                  )}
+                </button>
+              )}
 
               {/* Status dropdown */}
               {bulkStatusOpen && (

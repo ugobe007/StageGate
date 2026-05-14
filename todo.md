@@ -497,3 +497,10 @@
 - [x] Show color-coded status options matching STATUS_CONFIG colors
 - [x] Update toast message to reflect the chosen status label
 - [x] Keep existing "Send Email" button and other toolbar elements intact
+
+## v8.5 — Bulk Toolbar: localStorage Persistence + Confirmation Guard
+
+- [x] Persist bulkStatusTarget in localStorage (key: "sg_bulk_status_target") so last-used status survives page reload
+- [x] Add pendingConfirm state for destructive statuses (not_interested, converted)
+- [x] Show inline "Move N to X? Confirm / Cancel" prompt instead of firing mutation immediately for destructive statuses
+- [x] Auto-reset pendingConfirm when selection changes or status picker changes
