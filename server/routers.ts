@@ -857,6 +857,61 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return { prospect };
       }),
 
+    // AI-generated company brief + draft outreach message
+    getBrief: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const prospect = await db.getProspectById(input.id);
+        if (!prospect) throw new TRPCError({ code: "NOT_FOUND" });
+
+        const shows = (prospect.shows as string[] | null) ?? [];
+        const showList = shows.length ? shows.join(", ") : "upcoming trade shows";
+        const robot = [prospect.robotName, prospect.robotType].filter(Boolean).join(" — ") || "robot";
+        const contact = prospect.contactName ? `Contact: ${prospect.contactName}${prospect.contactTitle ? `, ${prospect.contactTitle}` : ""}. ` : "";
+        const country = prospect.hqCountry ? `HQ: ${prospect.hqCountry}. ` : "";
+
+        const result = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are a sharp B2B sales intelligence assistant for StageGate — a robotics activation company that handles robot receiving, unpacking, testing, staging, and delivery at trade shows. You write concise, factual, and actionable briefs about robotics companies. Be specific. No fluff. No filler sentences. Output valid JSON only.`,
+            },
+            {
+              role: "user",
+              content: `Write a CRM brief for this robotics company:\n\nCompany: ${prospect.company}\nRobot: ${robot}\n${country}${contact}Shows: ${showList}\n\nReturn JSON with exactly these fields:\n- summary: 2 sentences max. What the company does and what robot they're bringing.\n- showIntel: 1 sentence per show. What they likely need at each event.\n- whyStageGate: 1 sentence. Why StageGate is the right fit.\n- draftMessage: A short outreach email (4-6 sentences). Personalized to their robot and show. End with a soft CTA to schedule a StageGate intake call. Sign off as the StageGate team. No subject line.`,
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "prospect_brief",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  summary: { type: "string" },
+                  showIntel: { type: "string" },
+                  whyStageGate: { type: "string" },
+                  draftMessage: { type: "string" },
+                },
+                required: ["summary", "showIntel", "whyStageGate", "draftMessage"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const raw = result.choices?.[0]?.message?.content ?? "{}";
+        const brief = JSON.parse(typeof raw === "string" ? raw : JSON.stringify(raw)) as {
+          summary: string;
+          showIntel: string;
+          whyStageGate: string;
+          draftMessage: string;
+        };
+
+        return { brief, prospect };
+      }),
+
     // Create a prospect
     create: adminProcedure
       .input(z.object({

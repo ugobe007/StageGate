@@ -596,3 +596,10 @@
 
 - [x] Add prospects.create tRPC mutation (company name + status, optional shows)
 - [x] Add inline AddCard form at bottom of each Pipeline column: + Add Company button expands to input, Enter/click to create, Escape to cancel
+
+## v9.6 — Pipeline CRM Panel Redesign
+
+- [x] Add prospects.getBrief tRPC query: AI-generated company brief (what they do, robot type, shows attending, why StageGate fits) + draft outreach message
+- [x] Redesign PipelineDetailPanel: business card header (company, robot, contact), AI brief section, draft message with edit+send, clear action buttons (Send Draft, Advance Stage, Create Job)
+- [x] Redesign kanban cards: cleaner, show robot type badge, event pill, country
+- [x] Make the board layout feel like Linear/Stripe: tighter typography, clear visual hierarchy, no wasted space

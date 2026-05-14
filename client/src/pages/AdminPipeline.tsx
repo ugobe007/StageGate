@@ -19,17 +19,20 @@ import { getLoginUrl } from "@/const";
 import Navbar from "@/components/Navbar";
 import { Link } from "wouter";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Send, X, GripVertical, Plus, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Loader2, RefreshCw, Send, X, GripVertical, Plus, Check,
+  Building2, Bot, MapPin, Mail, Linkedin, Globe, ArrowRight,
+  Sparkles, ChevronRight, ExternalLink,
+} from "lucide-react";
 
 // ─── Pipeline stages ──────────────────────────────────────────────────────────
 
 const PIPELINE_STAGES = [
-  { key: "new",       label: "Prospects"  },
-  { key: "contacted", label: "Contacted"  },
-  { key: "responded", label: "Replied"    },
-  { key: "scheduled", label: "Qualified"  },
-  { key: "converted", label: "Jobs"       },
+  { key: "new",       label: "Prospects",  color: "bg-slate-100 text-slate-600"   },
+  { key: "contacted", label: "Contacted",  color: "bg-blue-50 text-blue-600"      },
+  { key: "responded", label: "Replied",    color: "bg-amber-50 text-amber-600"    },
+  { key: "scheduled", label: "Qualified",  color: "bg-emerald-50 text-emerald-600"},
+  { key: "converted", label: "Jobs",       color: "bg-violet-50 text-violet-600"  },
 ] as const;
 
 type StageKey = typeof PIPELINE_STAGES[number]["key"];
@@ -55,32 +58,6 @@ type Prospect = {
   createdAt: string;
 };
 
-// ─── Operational context per show ─────────────────────────────────────────────
-
-const SHOW_CONTEXT: Record<string, { need: string; risk: string }> = {
-  "CES":      { need: "Robot receiving, unpacking, testing, staging, and delivery",        risk: "Last-minute booth failure, technician travel, calibration issues, shipping delays" },
-  "MANIFEST": { need: "Warehouse automation demo setup and floor logistics",                risk: "Customs delays, floor space conflicts, safety certification" },
-  "HIMSS":    { need: "Medical robot calibration, sterile handling, and delivery",          risk: "Regulatory compliance, sterile handling requirements" },
-  "NAB":      { need: "Broadcast robot setup and AV integration",                          risk: "Cable management, live broadcast risk, last-minute AV failures" },
-  "MODEX":    { need: "Material handling demo, forklift sync, and floor activation",       risk: "Floor space conflicts, safety certification, heavy equipment logistics" },
-};
-
-function getShowContext(shows: string[] | null) {
-  if (!shows?.length) return { need: "Robot receiving, unpacking, testing, staging, and delivery", risk: "Last-minute booth failure, technician travel, calibration issues, shipping delays" };
-  for (const show of shows) {
-    for (const [key, ctx] of Object.entries(SHOW_CONTEXT)) {
-      if (show.toUpperCase().includes(key)) return ctx;
-    }
-  }
-  return { need: "Robot receiving, unpacking, testing, staging, and delivery", risk: "Last-minute booth failure, technician travel, calibration issues, shipping delays" };
-}
-
-function buildSuggestedMessage(prospect: Prospect): string {
-  const event = prospect.shows?.[0] ?? "your upcoming event";
-  const name = prospect.company;
-  return `Hi ${name},\n\nWe help robotics teams arriving for ${event} receive, unpack, test, stage, and deliver their robots before the show floor opens.\n\nThis helps avoid last-minute failures, technician travel, and setup issues when the demo matters most.\n\nWould it be useful to schedule a quick StageGate intake call?`;
-}
-
 // ─── Draggable Card ───────────────────────────────────────────────────────────
 
 function DraggableCard({
@@ -99,65 +76,80 @@ function DraggableCard({
     data: { prospect },
   });
 
-  const style = transform
-    ? { transform: CSS.Translate.toString(transform) }
-    : undefined;
+  const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
+  const stage = PIPELINE_STAGES.find(s => s.key === prospect.status);
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      className={`border rounded-lg p-3 text-sm transition-colors select-none ${
+      style={{ ...style, borderColor: isSelected ? "#111" : undefined }}
+      className={`group rounded-lg border text-sm transition-all select-none ${
         isDragging
-          ? "opacity-40"
+          ? "opacity-30"
           : isSelected
-          ? "border-neutral-900 bg-neutral-50"
-          : "border-neutral-200 bg-white hover:border-neutral-900"
+          ? "bg-white shadow-sm"
+          : "border-neutral-200 bg-white hover:border-neutral-400 hover:shadow-sm"
       }`}
     >
-      {/* Drag handle + company name row */}
-      <div className="flex items-start gap-1.5">
-        <button
-          {...listeners}
-          {...attributes}
-          className="mt-0.5 text-neutral-300 hover:text-neutral-500 cursor-grab active:cursor-grabbing shrink-0 focus:outline-none"
-          onClick={e => e.stopPropagation()}
-          aria-label="Drag to reorder"
-        >
-          <GripVertical size={13} />
-        </button>
-        <div className="flex-1 min-w-0 cursor-pointer" onClick={onClick}>
-          <div className="font-medium text-neutral-900 leading-tight truncate">{prospect.company}</div>
-          {prospect.shows?.length ? (
-            <div className="text-xs text-neutral-500 mt-0.5 truncate">
-              {prospect.shows.slice(0, 2).join(", ")}
-              {prospect.shows.length > 2 ? ` +${prospect.shows.length - 2}` : ""}
+      <div className="p-3">
+        {/* Drag handle row */}
+        <div className="flex items-start gap-1.5">
+          <button
+            {...listeners}
+            {...attributes}
+            className="mt-0.5 text-neutral-200 hover:text-neutral-400 cursor-grab active:cursor-grabbing shrink-0 focus:outline-none opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={e => e.stopPropagation()}
+            aria-label="Drag"
+          >
+            <GripVertical size={12} />
+          </button>
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={onClick}>
+            <div className="font-semibold text-neutral-900 leading-tight truncate text-[13px]">
+              {prospect.company}
             </div>
-          ) : null}
-          {prospect.robotName && (
-            <div className="text-xs text-neutral-400 mt-1 truncate">{prospect.robotName}</div>
-          )}
+            {prospect.robotName && (
+              <div className="flex items-center gap-1 mt-1">
+                <Bot size={10} className="text-neutral-400 shrink-0" />
+                <span className="text-[11px] text-neutral-500 truncate">{prospect.robotName}</span>
+              </div>
+            )}
+            {prospect.shows?.length ? (
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {prospect.shows.slice(0, 2).map(s => (
+                  <span key={s} className="inline-block bg-neutral-100 text-neutral-600 text-[10px] px-1.5 py-0.5 rounded font-medium">
+                    {s}
+                  </span>
+                ))}
+                {prospect.shows.length > 2 && (
+                  <span className="text-[10px] text-neutral-400">+{prospect.shows.length - 2}</span>
+                )}
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
+      {prospect.hqCountry && (
+        <div className="px-3 pb-2.5 flex items-center gap-1">
+          <MapPin size={9} className="text-neutral-300" />
+          <span className="text-[10px] text-neutral-400">{prospect.hqCountry}</span>
+        </div>
+      )}
     </div>
   );
 }
 
-// Overlay card shown while dragging
 function DragOverlayCard({ prospect }: { prospect: Prospect }) {
   return (
-    <div className="border border-neutral-900 rounded-lg p-3 text-sm bg-white shadow-lg w-52 rotate-1">
-      <div className="font-medium text-neutral-900 leading-tight truncate">{prospect.company}</div>
-      {prospect.shows?.length ? (
-        <div className="text-xs text-neutral-500 mt-0.5 truncate">
-          {prospect.shows.slice(0, 2).join(", ")}
-        </div>
-      ) : null}
+    <div className="border border-neutral-900 rounded-lg p-3 text-sm bg-white shadow-xl w-52 rotate-1">
+      <div className="font-semibold text-neutral-900 text-[13px] truncate">{prospect.company}</div>
+      {prospect.robotName && (
+        <div className="text-[11px] text-neutral-500 mt-0.5 truncate">{prospect.robotName}</div>
+      )}
     </div>
   );
 }
 
-// ─── Inline Add Card Form ────────────────────────────────────────────────────
+// ─── Inline Add Card Form ─────────────────────────────────────────────────────
 
 function AddCardForm({
   stageKey,
@@ -171,14 +163,10 @@ function AddCardForm({
   const [company, setCompany] = useState("");
   const [event, setEvent] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const create = trpc.prospects.create.useMutation({
-    onSuccess: () => {
-      toast.success(`${company.trim()} added`);
-      onCreated();
-    },
+    onSuccess: () => { toast.success(`${company.trim()} added`); onCreated(); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -188,7 +176,7 @@ function AddCardForm({
     create.mutate({
       company: name,
       shows: event.trim() ? [event.trim()] : undefined,
-      status: stageKey as "new" | "contacted" | "responded" | "scheduled" | "converted",
+      status: stageKey as StageKey,
     });
   }
 
@@ -198,14 +186,14 @@ function AddCardForm({
   }
 
   return (
-    <div className="border border-neutral-900 rounded-lg p-2.5 bg-white space-y-1.5">
+    <div className="border border-neutral-900 rounded-lg p-2.5 bg-white space-y-1.5 shadow-sm">
       <input
         ref={inputRef}
         value={company}
         onChange={e => setCompany(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Company name"
-        className="w-full text-sm border border-neutral-200 rounded px-2 py-1.5 focus:outline-none focus:border-neutral-900 placeholder:text-neutral-400"
+        className="w-full text-[13px] border border-neutral-200 rounded px-2 py-1.5 focus:outline-none focus:border-neutral-900 placeholder:text-neutral-400"
       />
       <input
         value={event}
@@ -225,7 +213,7 @@ function AddCardForm({
         </button>
         <button
           onClick={onCancel}
-          className="px-2.5 border border-neutral-200 rounded text-xs text-neutral-500 hover:border-neutral-900 hover:text-neutral-900"
+          className="px-2.5 border border-neutral-200 rounded text-xs text-neutral-500 hover:border-neutral-900"
         >
           <X size={11} />
         </button>
@@ -239,6 +227,7 @@ function AddCardForm({
 function DroppableColumn({
   stageKey,
   label,
+  color,
   items,
   isLoading,
   isOver,
@@ -249,6 +238,7 @@ function DroppableColumn({
 }: {
   stageKey: string;
   label: string;
+  color: string;
   items: Prospect[];
   isLoading: boolean;
   isOver: boolean;
@@ -261,28 +251,28 @@ function DroppableColumn({
   const [adding, setAdding] = useState(false);
 
   return (
-    <div className="flex flex-col border-r border-neutral-200 last:border-r-0">
+    <div className="flex flex-col border-r border-neutral-100 last:border-r-0 min-w-0">
       {/* Column header */}
-      <div className="px-4 py-3 border-b border-neutral-200 flex items-center justify-between">
-        <h2 className="text-sm font-medium text-neutral-900">{label}</h2>
-        <span className="text-xs text-neutral-500 tabular-nums">{items.length}</span>
+      <div className="px-3 py-3 border-b border-neutral-100 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${color}`}>{label}</span>
+        </div>
+        <span className="text-xs text-neutral-400 tabular-nums shrink-0">{items.length}</span>
       </div>
 
       {/* Drop zone */}
       <div
         ref={setNodeRef}
-        className={`flex-1 overflow-y-auto p-3 space-y-2 transition-colors ${
+        className={`flex-1 overflow-y-auto p-2 space-y-1.5 transition-colors ${
           isOver ? "bg-neutral-50" : "bg-white"
         }`}
       >
         {isLoading ? (
           <div className="flex items-center justify-center h-20">
-            <Loader2 size={16} className="animate-spin text-neutral-300" />
+            <Loader2 size={14} className="animate-spin text-neutral-300" />
           </div>
-        ) : items.length === 0 ? (
-          <div className={`text-xs text-center pt-8 transition-colors ${isOver ? "text-neutral-500" : "text-neutral-300"}`}>
-            {isOver ? "Drop here" : "No companies"}
-          </div>
+        ) : items.length === 0 && !isOver ? (
+          <div className="text-[11px] text-center pt-10 text-neutral-300">Empty</div>
         ) : (
           items.map(p => (
             <DraggableCard
@@ -294,14 +284,11 @@ function DroppableColumn({
             />
           ))
         )}
-        {/* Extra drop target at bottom when column has items */}
-        {items.length > 0 && isOver && (
-          <div className="h-10 border-2 border-dashed border-neutral-300 rounded-lg flex items-center justify-center text-xs text-neutral-400">
-            Drop here
-          </div>
+        {isOver && (
+          <div className="h-8 border-2 border-dashed border-neutral-200 rounded-lg" />
         )}
 
-        {/* Inline add form */}
+        {/* Inline add */}
         {adding ? (
           <AddCardForm
             stageKey={stageKey}
@@ -311,9 +298,9 @@ function DroppableColumn({
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="w-full flex items-center gap-1.5 text-xs text-neutral-400 hover:text-neutral-700 py-1.5 px-1 rounded hover:bg-neutral-50 transition-colors"
+            className="w-full flex items-center gap-1.5 text-[11px] text-neutral-300 hover:text-neutral-600 py-1.5 px-1 rounded hover:bg-neutral-50 transition-colors"
           >
-            <Plus size={12} />
+            <Plus size={11} />
             Add Company
           </button>
         )}
@@ -322,9 +309,9 @@ function DroppableColumn({
   );
 }
 
-// ─── Detail Panel ─────────────────────────────────────────────────────────────
+// ─── CRM Detail Panel ─────────────────────────────────────────────────────────
 
-function PipelineDetailPanel({
+function CRMPanel({
   prospect,
   onClose,
   onStatusChange,
@@ -333,143 +320,260 @@ function PipelineDetailPanel({
   onClose: () => void;
   onStatusChange: (id: number, status: string) => void;
 }) {
-  const [message, setMessage] = useState(() => buildSuggestedMessage(prospect));
-  const [sending, setSending] = useState(false);
-
   const ctx = trpc.useUtils();
-  const showCtx = getShowContext(prospect.shows);
-  const stageLabel = PIPELINE_STAGES.find(s => s.key === prospect.status)?.label ?? prospect.status;
+  const stage = PIPELINE_STAGES.find(s => s.key === prospect.status);
+  const nextStage = PIPELINE_STAGES[PIPELINE_STAGES.findIndex(s => s.key === prospect.status) + 1];
+
+  // AI brief — auto-fetches on open
+  const { data: briefData, isLoading: briefLoading, error: briefError } = trpc.prospects.getBrief.useQuery(
+    { id: prospect.id },
+    { staleTime: 5 * 60 * 1000 } // cache for 5 min
+  );
+
+  const [draftMessage, setDraftMessage] = useState<string>("");
+  const [draftEdited, setDraftEdited] = useState(false);
+
+  // Populate draft from AI brief once loaded
+  useEffect(() => {
+    if (briefData?.brief?.draftMessage && !draftEdited) {
+      setDraftMessage(briefData.brief.draftMessage);
+    }
+  }, [briefData, draftEdited]);
+
+  // Reset draft when prospect changes
+  useEffect(() => {
+    setDraftMessage("");
+    setDraftEdited(false);
+  }, [prospect.id]);
 
   const updateStatus = trpc.prospects.bulkUpdateStatus.useMutation({
-    onSuccess: () => {
-      ctx.prospects.list.invalidate();
-      toast.success("Status updated");
-    },
+    onSuccess: () => { ctx.prospects.list.invalidate(); toast.success("Stage updated"); },
     onError: (e) => toast.error(e.message),
   });
 
   const generateDraft = trpc.admin.generateDrafts.useMutation({
-    onSuccess: () => {
-      toast.success("Draft generated — go to Outreach to review and send");
-      setSending(false);
-    },
-    onError: (e) => {
-      toast.error(e.message);
-      setSending(false);
-    },
+    onSuccess: () => toast.success("Draft queued in Outreach"),
+    onError: (e) => toast.error(e.message),
   });
 
-  function handleSendMessage() {
+  function handleAdvanceStage() {
+    if (!nextStage) return;
+    updateStatus.mutate({ ids: [prospect.id], status: nextStage.key });
+    onStatusChange(prospect.id, nextStage.key);
+  }
+
+  function handleSendDraft() {
     if (!prospect.contactEmail) {
-      toast.error("No email address on file for this prospect");
+      toast.error("No email on file — add a contact email first");
       return;
     }
-    setSending(true);
     generateDraft.mutate({ prospectIds: [prospect.id] });
   }
 
-  function handleMarkQualified() {
-    updateStatus.mutate({ ids: [prospect.id], status: "scheduled" });
-    onStatusChange(prospect.id, "scheduled");
-  }
+  const confidenceColor: Record<string, string> = {
+    verified: "text-emerald-600 bg-emerald-50",
+    high:     "text-blue-600 bg-blue-50",
+    medium:   "text-amber-600 bg-amber-50",
+    low:      "text-red-500 bg-red-50",
+  };
 
   return (
-    <aside className="fixed right-0 top-0 h-full w-[420px] border-l border-neutral-200 bg-white p-6 shadow-xl z-50 overflow-y-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-semibold text-neutral-900">{prospect.company}</h2>
-          <p className="text-sm text-neutral-500">
-            {prospect.shows?.join(", ") ?? "No event assigned"}
-            {prospect.hqCountry ? ` · ${prospect.hqCountry}` : ""}
-          </p>
-        </div>
-        <button onClick={onClose} className="text-neutral-400 hover:text-neutral-900 mt-0.5" aria-label="Close panel">
-          <X size={16} />
-        </button>
-      </div>
-
-      {/* Current Stage */}
-      <section className="mb-6">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Current Stage</h3>
-        <div className="border border-neutral-200 rounded-md p-3 text-sm capitalize text-neutral-800">{stageLabel}</div>
-      </section>
-
-      {/* Robot */}
-      {(prospect.robotName || prospect.robotType) && (
-        <section className="mb-6">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Robot</h3>
-          <div className="border border-neutral-200 rounded-md p-3 text-sm text-neutral-800 space-y-1">
-            {prospect.robotName && <div className="font-medium">{prospect.robotName}</div>}
-            {prospect.robotType && <div className="text-neutral-500">{prospect.robotType}</div>}
+    <aside className="fixed right-0 top-0 h-full w-[480px] bg-white border-l border-neutral-200 shadow-2xl z-50 flex flex-col overflow-hidden">
+      {/* ── Header / Business Card ── */}
+      <div className="px-6 pt-6 pb-5 border-b border-neutral-100">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${stage?.color ?? "bg-neutral-100 text-neutral-500"}`}>
+                {stage?.label ?? prospect.status}
+              </span>
+              {nextStage && (
+                <button
+                  onClick={handleAdvanceStage}
+                  disabled={updateStatus.isPending}
+                  className="flex items-center gap-1 text-[11px] text-neutral-400 hover:text-neutral-900 transition-colors"
+                >
+                  <ArrowRight size={11} />
+                  Move to {nextStage.label}
+                </button>
+              )}
+            </div>
+            <h2 className="text-xl font-bold text-neutral-900 leading-tight truncate">{prospect.company}</h2>
+            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+              {prospect.robotName && (
+                <span className="flex items-center gap-1 text-[12px] text-neutral-500">
+                  <Bot size={11} className="text-neutral-400" />
+                  {prospect.robotName}
+                  {prospect.robotType && <span className="text-neutral-400">· {prospect.robotType}</span>}
+                </span>
+              )}
+              {prospect.hqCountry && (
+                <span className="flex items-center gap-1 text-[12px] text-neutral-400">
+                  <MapPin size={10} />
+                  {prospect.hqCountry}
+                </span>
+              )}
+            </div>
           </div>
-        </section>
-      )}
-
-      {/* Operational Context */}
-      <section className="mb-6">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Operational Context</h3>
-        <div className="space-y-2 text-sm text-neutral-700">
-          <p><span className="font-medium text-neutral-900">Likely need:</span> {showCtx.need}.</p>
-          <p><span className="font-medium text-neutral-900">Risk:</span> {showCtx.risk}.</p>
-          <p><span className="font-medium text-neutral-900">Recommended offer:</span> StageGate intake and event-readiness support.</p>
+          <button onClick={onClose} className="text-neutral-300 hover:text-neutral-700 ml-3 mt-0.5 shrink-0">
+            <X size={16} />
+          </button>
         </div>
-      </section>
 
-      {/* Contact */}
-      {(prospect.contactName || prospect.contactEmail) && (
-        <section className="mb-6">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Contact</h3>
-          <div className="text-sm text-neutral-700 space-y-1">
+        {/* Shows */}
+        {prospect.shows?.length ? (
+          <div className="flex flex-wrap gap-1.5">
+            {prospect.shows.map(s => (
+              <span key={s} className="text-[11px] bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded font-medium">
+                {s}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        {/* Contact row */}
+        {(prospect.contactName || prospect.contactEmail) && (
+          <div className="mt-3 flex items-center gap-3 flex-wrap">
             {prospect.contactName && (
-              <div>
-                <span className="font-medium text-neutral-900">{prospect.contactName}</span>
-                {prospect.contactTitle && <span className="text-neutral-500"> · {prospect.contactTitle}</span>}
-              </div>
+              <span className="text-[12px] font-medium text-neutral-800">
+                {prospect.contactName}
+                {prospect.contactTitle && <span className="font-normal text-neutral-500"> · {prospect.contactTitle}</span>}
+              </span>
             )}
             {prospect.contactEmail && (
-              <a href={`mailto:${prospect.contactEmail}`} className="text-blue-600 hover:underline text-xs">{prospect.contactEmail}</a>
+              <a
+                href={`mailto:${prospect.contactEmail}`}
+                className="flex items-center gap-1 text-[11px] text-blue-600 hover:underline"
+              >
+                <Mail size={10} />
+                {prospect.contactEmail}
+                {prospect.emailConfidence && (
+                  <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${confidenceColor[prospect.emailConfidence] ?? "bg-neutral-100 text-neutral-500"}`}>
+                    {prospect.emailConfidence}
+                  </span>
+                )}
+              </a>
+            )}
+            {prospect.contactLinkedIn && (
+              <a href={prospect.contactLinkedIn} target="_blank" rel="noreferrer" className="text-neutral-400 hover:text-blue-600">
+                <Linkedin size={12} />
+              </a>
+            )}
+            {prospect.website && (
+              <a href={prospect.website} target="_blank" rel="noreferrer" className="text-neutral-400 hover:text-neutral-700">
+                <Globe size={12} />
+              </a>
             )}
           </div>
-        </section>
-      )}
+        )}
+      </div>
 
-      {/* Suggested Message */}
-      <section className="mb-6">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Suggested Message</h3>
-        <textarea
-          className="w-full h-44 border border-neutral-200 rounded-md p-3 text-sm resize-none focus:outline-none focus:border-neutral-900 bg-white text-neutral-800 leading-relaxed"
-          value={message}
-          onChange={e => setMessage(e.target.value)}
-        />
-      </section>
+      {/* ── Scrollable body ── */}
+      <div className="flex-1 overflow-y-auto">
 
-      {/* Actions */}
-      <div className="grid grid-cols-2 gap-3">
+        {/* AI Brief */}
+        <div className="px-6 py-5 border-b border-neutral-100">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles size={13} className="text-amber-500" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Company Brief</span>
+          </div>
+
+          {briefLoading ? (
+            <div className="space-y-2">
+              <div className="h-3 bg-neutral-100 rounded animate-pulse w-full" />
+              <div className="h-3 bg-neutral-100 rounded animate-pulse w-4/5" />
+              <div className="h-3 bg-neutral-100 rounded animate-pulse w-3/5" />
+            </div>
+          ) : briefError ? (
+            <p className="text-[12px] text-red-500">Could not generate brief. Check API connection.</p>
+          ) : briefData?.brief ? (
+            <div className="space-y-3">
+              <p className="text-[13px] text-neutral-700 leading-relaxed">{briefData.brief.summary}</p>
+              <div className="bg-neutral-50 rounded-lg p-3 space-y-2">
+                <div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 block mb-0.5">Show Intel</span>
+                  <p className="text-[12px] text-neutral-600 leading-relaxed">{briefData.brief.showIntel}</p>
+                </div>
+                <div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 block mb-0.5">Why StageGate</span>
+                  <p className="text-[12px] text-neutral-600 leading-relaxed">{briefData.brief.whyStageGate}</p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        {/* Draft Message */}
+        <div className="px-6 py-5 border-b border-neutral-100">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Send size={12} className="text-neutral-400" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Draft Message</span>
+            </div>
+            {draftEdited && (
+              <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Edited</span>
+            )}
+          </div>
+
+          {briefLoading ? (
+            <div className="space-y-2">
+              <div className="h-3 bg-neutral-100 rounded animate-pulse w-full" />
+              <div className="h-3 bg-neutral-100 rounded animate-pulse w-5/6" />
+              <div className="h-3 bg-neutral-100 rounded animate-pulse w-4/6" />
+              <div className="h-3 bg-neutral-100 rounded animate-pulse w-full" />
+            </div>
+          ) : (
+            <textarea
+              className="w-full h-44 text-[13px] text-neutral-800 leading-relaxed border border-neutral-200 rounded-lg p-3 resize-none focus:outline-none focus:border-neutral-900 bg-white placeholder:text-neutral-400"
+              value={draftMessage}
+              placeholder="AI draft will appear here once brief loads…"
+              onChange={e => { setDraftMessage(e.target.value); setDraftEdited(true); }}
+            />
+          )}
+        </div>
+
+        {/* Notes */}
+        {prospect.notes && (
+          <div className="px-6 py-4 border-b border-neutral-100">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 block mb-1.5">Notes</span>
+            <p className="text-[12px] text-neutral-600 leading-relaxed">{prospect.notes}</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Action bar ── */}
+      <div className="px-6 py-4 border-t border-neutral-100 bg-white space-y-2">
+        {/* Primary: Send Draft */}
         <button
-          onClick={handleSendMessage}
-          disabled={sending || generateDraft.isPending}
-          className="border border-neutral-900 text-neutral-900 rounded-md py-2 text-sm hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+          onClick={handleSendDraft}
+          disabled={generateDraft.isPending || briefLoading}
+          className="w-full flex items-center justify-center gap-2 bg-neutral-900 text-white rounded-lg py-2.5 text-[13px] font-medium hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          {(sending || generateDraft.isPending) ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-          Send Message
+          {generateDraft.isPending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+          Send Draft to Outreach Queue
         </button>
-        <Link href="/admin/outreach">
-          <button className="w-full bg-neutral-900 text-white rounded-md py-2 text-sm hover:bg-neutral-800">Create Job</button>
-        </Link>
-        <button
-          onClick={() => toast.info("Schedule call — coming soon")}
-          className="border border-neutral-200 rounded-md py-2 text-sm hover:border-neutral-900 text-neutral-700"
-        >
-          Schedule Call
-        </button>
-        <button
-          onClick={handleMarkQualified}
-          disabled={updateStatus.isPending || prospect.status === "scheduled" || prospect.status === "converted"}
-          className="border border-neutral-200 rounded-md py-2 text-sm hover:border-neutral-900 text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Mark Qualified
-        </button>
+
+        {/* Secondary row */}
+        <div className="grid grid-cols-2 gap-2">
+          {nextStage ? (
+            <button
+              onClick={handleAdvanceStage}
+              disabled={updateStatus.isPending}
+              className="flex items-center justify-center gap-1.5 border border-neutral-200 rounded-lg py-2 text-[12px] text-neutral-700 hover:border-neutral-900 hover:bg-neutral-50 transition-colors"
+            >
+              <ChevronRight size={12} />
+              Advance to {nextStage.label}
+            </button>
+          ) : (
+            <div />
+          )}
+          <Link href="/admin/outreach">
+            <button className="w-full flex items-center justify-center gap-1.5 border border-neutral-200 rounded-lg py-2 text-[12px] text-neutral-700 hover:border-neutral-900 hover:bg-neutral-50 transition-colors">
+              <ExternalLink size={12} />
+              View Outreach
+            </button>
+          </Link>
+        </div>
       </div>
     </aside>
   );
@@ -481,9 +585,7 @@ export default function AdminPipeline() {
   const { user, isAuthenticated, loading } = useAuth();
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
   const [filterShow, setFilterShow] = useState<string>("all");
-  // Local status overrides for optimistic DnD updates
   const [statusOverrides, setStatusOverrides] = useState<Record<number, string>>({});
-  // Active drag state
   const [activeDragProspect, setActiveDragProspect] = useState<Prospect | null>(null);
   const [overColumnKey, setOverColumnKey] = useState<string | null>(null);
 
@@ -496,105 +598,80 @@ export default function AdminPipeline() {
 
   const updateStatus = trpc.prospects.bulkUpdateStatus.useMutation({
     onError: (e, vars) => {
-      // Rollback optimistic update
       setStatusOverrides(prev => {
         const next = { ...prev };
         for (const id of vars.ids) delete next[id];
         return next;
       });
-      toast.error(`Failed to move card: ${e.message}`);
+      toast.error(`Failed: ${e.message}`);
     },
-    onSuccess: () => {
-      ctx.prospects.list.invalidate();
-    },
+    onSuccess: () => ctx.prospects.list.invalidate(),
   });
 
   const rawProspects = (data?.prospects ?? []) as unknown as Prospect[];
 
-  // Apply local status overrides for optimistic DnD
-  const prospects = useMemo(() => {
-    return rawProspects.map(p =>
-      statusOverrides[p.id] !== undefined ? { ...p, status: statusOverrides[p.id] } : p
-    );
-  }, [rawProspects, statusOverrides]);
+  const prospects = useMemo(() =>
+    rawProspects.map(p => statusOverrides[p.id] !== undefined ? { ...p, status: statusOverrides[p.id] } : p),
+    [rawProspects, statusOverrides]
+  );
 
-  // Collect unique shows for filter
   const allShows = useMemo(() => {
     const set = new Set<string>();
     for (const p of prospects) for (const s of p.shows ?? []) set.add(s);
     return Array.from(set).sort();
   }, [prospects]);
 
-  // Filter by show
-  const filtered = useMemo(() => {
-    if (filterShow === "all") return prospects;
-    return prospects.filter(p => p.shows?.includes(filterShow));
-  }, [prospects, filterShow]);
-
-  // Group by pipeline stage
-  const columns = useMemo(() => {
-    return PIPELINE_STAGES.map(stage => ({
-      ...stage,
-      items: filtered.filter(p => p.status === stage.key),
-    }));
-  }, [filtered]);
-
-  // DnD sensors — require 8px movement before drag starts (prevents accidental drags on click)
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  const filtered = useMemo(() =>
+    filterShow === "all" ? prospects : prospects.filter(p => p.shows?.includes(filterShow)),
+    [prospects, filterShow]
   );
 
+  const columns = useMemo(() =>
+    PIPELINE_STAGES.map(stage => ({ ...stage, items: filtered.filter(p => p.status === stage.key) })),
+    [filtered]
+  );
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
   function handleDragStart(event: DragStartEvent) {
-    const prospect = event.active.data.current?.prospect as Prospect | undefined;
-    if (prospect) setActiveDragProspect(prospect);
+    const p = event.active.data.current?.prospect as Prospect | undefined;
+    if (p) setActiveDragProspect(p);
   }
 
   function handleDragOver(event: DragOverEvent) {
     const overId = event.over?.id as string | undefined;
-    if (overId?.startsWith("col-")) {
-      setOverColumnKey(overId.replace("col-", ""));
-    } else {
-      setOverColumnKey(null);
-    }
+    setOverColumnKey(overId?.startsWith("col-") ? overId.replace("col-", "") : null);
   }
 
   function handleDragEnd(event: DragEndEvent) {
     setActiveDragProspect(null);
     setOverColumnKey(null);
-
     const { active, over } = event;
     if (!over) return;
-
     const overId = over.id as string;
     if (!overId.startsWith("col-")) return;
-
     const targetStatus = overId.replace("col-", "") as StageKey;
-    const prospect = active.data.current?.prospect as Prospect | undefined;
-    if (!prospect) return;
-
-    // No-op if same column
-    const currentStatus = statusOverrides[prospect.id] ?? prospect.status;
+    const p = active.data.current?.prospect as Prospect | undefined;
+    if (!p) return;
+    const currentStatus = statusOverrides[p.id] ?? p.status;
     if (currentStatus === targetStatus) return;
-
-    // Optimistic update
-    setStatusOverrides(prev => ({ ...prev, [prospect.id]: targetStatus }));
-
-    // Update selected panel if it's the dragged card
-    setSelectedProspect(prev =>
-      prev?.id === prospect.id ? { ...prev, status: targetStatus } : prev
-    );
-
-    // Sync to Supabase
-    updateStatus.mutate({ ids: [prospect.id], status: targetStatus });
-
+    setStatusOverrides(prev => ({ ...prev, [p.id]: targetStatus }));
+    setSelectedProspect(prev => prev?.id === p.id ? { ...prev, status: targetStatus } : prev);
+    updateStatus.mutate({ ids: [p.id], status: targetStatus });
     const targetLabel = PIPELINE_STAGES.find(s => s.key === targetStatus)?.label ?? targetStatus;
-    toast.success(`${prospect.company} → ${targetLabel}`);
+    toast.success(`${p.company} → ${targetLabel}`);
   }
+
+  // Funnel totals
+  const totalByStage = useMemo(() =>
+    Object.fromEntries(PIPELINE_STAGES.map(s => [s.key, filtered.filter(p => p.status === s.key).length])),
+    [filtered]
+  );
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <Loader2 className="animate-spin text-neutral-400" size={28} />
+        <Loader2 className="animate-spin text-neutral-300" size={24} />
       </div>
     );
   }
@@ -620,18 +697,33 @@ export default function AdminPipeline() {
   }
 
   return (
-    <main className="min-h-screen bg-white text-neutral-900">
-      {/* Header */}
-      <div className="border-b border-neutral-200 px-6 py-5 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Pipeline</h1>
-          <p className="text-sm text-neutral-500 mt-0.5">Track how prospects turn into StageGate jobs</p>
+    <main className="min-h-screen bg-white text-neutral-900 flex flex-col">
+      {/* ── Top bar ── */}
+      <div className="border-b border-neutral-100 px-6 py-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-6">
+          <div>
+            <h1 className="text-[15px] font-bold text-neutral-900">Pipeline</h1>
+            <p className="text-[11px] text-neutral-400 mt-0.5">Revenue funnel · {filtered.length} companies</p>
+          </div>
+          {/* Funnel summary */}
+          <div className="hidden lg:flex items-center gap-1 text-[11px] text-neutral-500">
+            {PIPELINE_STAGES.map((s, i) => (
+              <span key={s.key} className="flex items-center gap-1">
+                <span className={`px-2 py-0.5 rounded-full font-semibold ${s.color}`}>
+                  {totalByStage[s.key] ?? 0}
+                </span>
+                <span className="text-neutral-400">{s.label}</span>
+                {i < PIPELINE_STAGES.length - 1 && <ChevronRight size={10} className="text-neutral-300 mx-0.5" />}
+              </span>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-2">
           <select
             value={filterShow}
             onChange={e => setFilterShow(e.target.value)}
-            className="text-xs border border-neutral-200 rounded px-2.5 py-1.5 bg-white text-neutral-700 focus:outline-none focus:ring-1 focus:ring-neutral-400"
+            className="text-[11px] border border-neutral-200 rounded-md px-2.5 py-1.5 bg-white text-neutral-700 focus:outline-none focus:ring-1 focus:ring-neutral-400"
           >
             <option value="all">All Events</option>
             {allShows.map(s => <option key={s} value={s}>{s}</option>)}
@@ -641,52 +733,49 @@ export default function AdminPipeline() {
             className="text-neutral-400 hover:text-neutral-700 p-1.5 rounded hover:bg-neutral-100"
             aria-label="Refresh"
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={13} />
           </button>
-          <Link href="/admin/outreach">
-            <Button size="sm" className="bg-neutral-900 text-white hover:bg-neutral-800 text-xs gap-1.5">
-              <Send size={12} /> Outreach
-            </Button>
-          </Link>
         </div>
       </div>
 
-      {/* Kanban board */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid grid-cols-5 gap-0 h-[calc(100vh-89px)] overflow-hidden">
-          {columns.map(col => (
-            <DroppableColumn
-              key={col.key}
-              stageKey={col.key}
-              label={col.label}
-              items={col.items}
-              isLoading={isLoading}
-              isOver={overColumnKey === col.key}
-              selectedId={selectedProspect?.id ?? null}
-              draggingId={activeDragProspect?.id ?? null}
-              onCardClick={p => setSelectedProspect(p)}
-              onCreated={() => ctx.prospects.list.invalidate()}
-            />
-          ))}
-        </div>
+      {/* ── Kanban board ── */}
+      <div className="flex-1 overflow-hidden">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-5 gap-0 h-full">
+            {columns.map(col => (
+              <DroppableColumn
+                key={col.key}
+                stageKey={col.key}
+                label={col.label}
+                color={col.color}
+                items={col.items}
+                isLoading={isLoading}
+                isOver={overColumnKey === col.key}
+                selectedId={selectedProspect?.id ?? null}
+                draggingId={activeDragProspect?.id ?? null}
+                onCardClick={p => setSelectedProspect(p)}
+                onCreated={() => ctx.prospects.list.invalidate()}
+              />
+            ))}
+          </div>
 
-        {/* Drag overlay — floating card while dragging */}
-        <DragOverlay dropAnimation={null}>
-          {activeDragProspect ? <DragOverlayCard prospect={activeDragProspect} /> : null}
-        </DragOverlay>
-      </DndContext>
+          <DragOverlay dropAnimation={null}>
+            {activeDragProspect ? <DragOverlayCard prospect={activeDragProspect} /> : null}
+          </DragOverlay>
+        </DndContext>
+      </div>
 
-      {/* Side panel */}
+      {/* ── CRM Panel ── */}
       {selectedProspect && (
         <>
-          <div className="fixed inset-0 bg-black/10 z-40" onClick={() => setSelectedProspect(null)} />
-          <PipelineDetailPanel
+          <div className="fixed inset-0 bg-black/5 z-40" onClick={() => setSelectedProspect(null)} />
+          <CRMPanel
             prospect={selectedProspect}
             onClose={() => setSelectedProspect(null)}
             onStatusChange={(id, status) => {
