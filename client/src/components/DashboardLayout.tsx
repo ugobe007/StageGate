@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Bot, ClipboardList, Star, Package, FileText, Calendar, Telescope } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Bot, ClipboardList, Star, Package, FileText, Calendar, Telescope, Send } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -32,6 +32,7 @@ const menuItems = [
   { icon: Telescope, label: "Leads", path: "/admin/leads" },
   { icon: Star, label: "XBOT Prospects", path: "/admin/prospects" },
   { icon: Bot, label: "AI Agents", path: "/admin/agents" },
+  { icon: Send, label: "Outreach", path: "/admin/outreach" },
   { icon: Calendar, label: "Shows", path: "/admin/shows" },
   { icon: Package, label: "Orders", path: "/admin/orders" },
   { icon: ClipboardList, label: "Demo Requests", path: "/admin/demos" },

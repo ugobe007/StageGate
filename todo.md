@@ -566,3 +566,7 @@
 - [x] Bulk send toolbar: select approved drafts → Send Selected → fires Resend for each
 - [x] SEND button on prospect row opens draft inline for review before sending
 - [x] Auto-update prospect status to Contacted after successful send
+
+## v9.1 — Outreach Sidebar Nav Link
+
+- [x] Add "Outreach" link to Admin sidebar in DashboardLayout (icon: Send, path: /admin/outreach)
