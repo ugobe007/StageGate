@@ -514,3 +514,19 @@
 - [x] Add SUPABASE_DATABASE_URL secret; getDb() prefers it over built-in DATABASE_URL
 - [x] Server confirms "Connected to Supabase (Postgres)" on startup
 - [x] 82 tests passing, 0 TypeScript errors
+
+## v8.7 — Supabase Data Population & Agent DB Wiring
+
+- [x] Migrate 78 prospects from MySQL to Supabase
+- [x] Migrate 20 trade_shows from MySQL to Supabase
+- [x] Migrate 8 services from MySQL to Supabase
+- [x] Migrate 7 logistics_partners from MySQL to Supabase
+- [x] Migrate 4 xbot_projects from MySQL to Supabase
+- [x] Migrate 1 user from MySQL to Supabase
+- [x] Add getDbHealth() workflow helper (ping Supabase, return table row counts)
+- [x] Add seedReferenceData() workflow (idempotent seed for services + logistics_partners)
+- [x] Add getProspectsByStatus() and getProspectsByShow() lookup helpers
+- [x] Add getXbotProjectWithBrief() join helper
+- [x] Verify XBOT procedures use Supabase-backed db (createAgentRun, completeAgentRun, createXbotProject, upsertXbotBrief)
+- [x] Add admin tRPC procedure: dbHealth (returns Supabase connection status + row counts per table)
+- [x] Expose dbHealth in AdminDashboard as a live status card

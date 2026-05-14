@@ -7,6 +7,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import * as db from "./db";
+import * as workflows from "./workflows";
 
 // Admin-only middleware
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -1093,6 +1094,12 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       .query(async ({ input }) => {
         return db.getRecentAgentRuns(input.limit ?? 50);
       }),
+    dbHealth: adminProcedure.query(async () => {
+      return workflows.getDbHealth();
+    }),
+    pipelineStats: adminProcedure.query(async () => {
+      return workflows.getPipelineStats();
+    }),
     getSiteStats: adminProcedure.query(async () => {
       const [users, orders, demos, quotes, leads, prospects] = await Promise.all([
         db.getAllUsers(),
