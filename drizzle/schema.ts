@@ -1,283 +1,271 @@
 import {
-  int,
-  mysqlEnum,
-  mysqlTable,
+  integer,
+  pgTable,
   text,
   timestamp,
   varchar,
   decimal,
   boolean,
-  json,
-} from "drizzle-orm/mysql-core";
+  jsonb,
+  serial,
+} from "drizzle-orm/pg-core";
 
-export const users = mysqlTable("users", {
-  id: int("id").autoincrement().primaryKey(),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  role: text("role").notNull().default("user"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+  lastSignedIn: timestamp("lastSignedIn", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 // Company profiles linked to users
-export const companyProfiles = mysqlTable("company_profiles", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const companyProfiles = pgTable("company_profiles", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   companyName: varchar("companyName", { length: 255 }).notNull(),
   website: varchar("website", { length: 512 }),
   contactName: varchar("contactName", { length: 255 }),
   contactEmail: varchar("contactEmail", { length: 320 }),
   contactPhone: varchar("contactPhone", { length: 64 }),
   country: varchar("country", { length: 100 }),
-  robotTypes: text("robotTypes"), // JSON array stored as text
+  robotTypes: text("robotTypes"),
   description: text("description"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type CompanyProfile = typeof companyProfiles.$inferSelect;
 export type InsertCompanyProfile = typeof companyProfiles.$inferInsert;
 
 // Trade shows
-export const tradeShows = mysqlTable("trade_shows", {
-  id: int("id").autoincrement().primaryKey(),
+export const tradeShows = pgTable("trade_shows", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   location: varchar("location", { length: 255 }),
   venue: varchar("venue", { length: 255 }),
   city: varchar("city", { length: 100 }),
-  startDate: timestamp("startDate"),
-  endDate: timestamp("endDate"),
+  startDate: timestamp("startDate", { withTimezone: true }),
+  endDate: timestamp("endDate", { withTimezone: true }),
   website: varchar("website", { length: 512 }),
   exhibitorListUrl: varchar("exhibitorListUrl", { length: 512 }),
-  status: mysqlEnum("status", ["upcoming", "active", "completed"]).default("upcoming").notNull(),
+  status: text("status").notNull().default("upcoming"),
   description: text("description"),
-  roboticsRelevance: int("roboticsRelevance").default(3), // 1-5 scale
-  estimatedExhibitors: int("estimatedExhibitors"),
-  roboticsExhibitors: int("roboticsExhibitors"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  roboticsRelevance: integer("roboticsRelevance").default(3),
+  estimatedExhibitors: integer("estimatedExhibitors"),
+  roboticsExhibitors: integer("roboticsExhibitors"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type TradeShow = typeof tradeShows.$inferSelect;
 export type InsertTradeShow = typeof tradeShows.$inferInsert;
 
 // Exhibitor leads discovered by AI
-export const exhibitorLeads = mysqlTable("exhibitor_leads", {
-  id: int("id").autoincrement().primaryKey(),
-  showId: int("showId").notNull(),
+export const exhibitorLeads = pgTable("exhibitor_leads", {
+  id: serial("id").primaryKey(),
+  showId: integer("showId").notNull(),
   companyName: varchar("companyName", { length: 255 }).notNull(),
   website: varchar("website", { length: 512 }),
   contactEmail: varchar("contactEmail", { length: 320 }),
   contactName: varchar("contactName", { length: 255 }),
-  outreachStatus: mysqlEnum("outreachStatus", ["new", "emailed", "responded", "registered"]).default("new").notNull(),
+  outreachStatus: text("outreachStatus").notNull().default("new"),
   aiSummary: text("aiSummary"),
   emailDraft: text("emailDraft"),
   notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type ExhibitorLead = typeof exhibitorLeads.$inferSelect;
 export type InsertExhibitorLead = typeof exhibitorLeads.$inferInsert;
 
 // Service catalog
-export const services = mysqlTable("services", {
-  id: int("id").autoincrement().primaryKey(),
+export const services = pgTable("services", {
+  id: serial("id").primaryKey(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
-  brand: mysqlEnum("brand", ["stagegate", "stagehand", "stagepro"]).default("stagegate").notNull(),
-  category: mysqlEnum("category", ["logistics", "activation", "support", "marketing", "training", "showroom"]).notNull(),
+  brand: text("brand").notNull().default("stagegate"),
+  category: text("category").notNull(),
   description: text("description"),
   basePrice: decimal("basePrice", { precision: 10, scale: 2 }),
   priceUnit: varchar("priceUnit", { length: 100 }),
-  pricingTiers: text("pricingTiers"), // JSON stored as text
-  phase: mysqlEnum("phase", ["phase1", "phase2"]).default("phase1").notNull(),
-  isActive: boolean("isActive").default(true).notNull(),
-  sortOrder: int("sortOrder").default(0),
+  pricingTiers: text("pricingTiers"),
+  phase: text("phase").notNull().default("phase1"),
+  isActive: boolean("isActive").notNull().default(true),
+  sortOrder: integer("sortOrder").default(0),
 });
 
 export type Service = typeof services.$inferSelect;
 export type InsertService = typeof services.$inferInsert;
 
 // Service orders
-export const serviceOrders = mysqlTable("service_orders", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  showId: int("showId").notNull(),
-  status: mysqlEnum("status", ["pending", "confirmed", "in_progress", "completed", "cancelled"]).default("pending").notNull(),
+export const serviceOrders = pgTable("service_orders", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  showId: integer("showId").notNull(),
+  status: text("status").notNull().default("pending"),
   totalAmount: decimal("totalAmount", { precision: 10, scale: 2 }),
   notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type ServiceOrder = typeof serviceOrders.$inferSelect;
 export type InsertServiceOrder = typeof serviceOrders.$inferInsert;
 
 // Order line items
-export const orderItems = mysqlTable("order_items", {
-  id: int("id").autoincrement().primaryKey(),
-  orderId: int("orderId").notNull(),
-  serviceId: int("serviceId").notNull(),
-  quantity: int("quantity").default(1).notNull(),
+export const orderItems = pgTable("order_items", {
+  id: serial("id").primaryKey(),
+  orderId: integer("orderId").notNull(),
+  serviceId: integer("serviceId").notNull(),
+  quantity: integer("quantity").notNull().default(1),
   unitPrice: decimal("unitPrice", { precision: 10, scale: 2 }),
-  configuration: text("configuration"), // JSON stored as text
+  configuration: text("configuration"),
 });
 
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = typeof orderItems.$inferInsert;
 
 // Logistics partners directory
-export const logisticsPartners = mysqlTable("logistics_partners", {
-  id: int("id").autoincrement().primaryKey(),
+export const logisticsPartners = pgTable("logistics_partners", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  serviceType: mysqlEnum("serviceType", ["customs", "transporter", "insurance", "parts", "general"]).notNull(),
+  serviceType: text("serviceType").notNull(),
   contactName: varchar("contactName", { length: 255 }),
   contactEmail: varchar("contactEmail", { length: 320 }),
   contactPhone: varchar("contactPhone", { length: 64 }),
   website: varchar("website", { length: 512 }),
   city: varchar("city", { length: 100 }),
   notes: text("notes"),
-  isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  isActive: boolean("isActive").notNull().default(true),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type LogisticsPartner = typeof logisticsPartners.$inferSelect;
 export type InsertLogisticsPartner = typeof logisticsPartners.$inferInsert;
 
 // Show booking notification requests
-export const showNotifications = mysqlTable("show_notifications", {
-  id: int("id").autoincrement().primaryKey(),
-  showId: int("showId").notNull(),
+export const showNotifications = pgTable("show_notifications", {
+  id: serial("id").primaryKey(),
+  showId: integer("showId").notNull(),
   email: varchar("email", { length: 320 }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type ShowNotification = typeof showNotifications.$inferSelect;
 export type InsertShowNotification = typeof showNotifications.$inferInsert;
 
 // Quote requests from prospective clients
-export const quoteRequests = mysqlTable("quote_requests", {
-  id: int("id").autoincrement().primaryKey(),
-  // Contact info
+export const quoteRequests = pgTable("quote_requests", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(),
   company: varchar("company", { length: 255 }).notNull(),
   phone: varchar("phone", { length: 64 }),
-  // Robot details
   robotType: varchar("robotType", { length: 255 }).notNull(),
-  robotCount: int("robotCount").default(1).notNull(),
+  robotCount: integer("robotCount").notNull().default(1),
   robotDimensions: varchar("robotDimensions", { length: 255 }),
   robotWeight: varchar("robotWeight", { length: 100 }),
-  // Show and services
-  showId: int("showId"),
-  showName: varchar("showName", { length: 255 }), // fallback if show not in DB
-  serviceIds: text("serviceIds"), // JSON array of service IDs
-  // Additional info
+  showId: integer("showId"),
+  showName: varchar("showName", { length: 255 }),
+  serviceIds: text("serviceIds"),
   notes: text("notes"),
-  // Admin workflow
-  status: mysqlEnum("status", ["new", "reviewing", "quoted", "converted", "closed"]).default("new").notNull(),
+  status: text("status").notNull().default("new"),
   adminNotes: text("adminNotes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type QuoteRequest = typeof quoteRequests.$inferSelect;
 export type InsertQuoteRequest = typeof quoteRequests.$inferInsert;
 
 // Demo requests from prospective clients
-export const demoRequests = mysqlTable("demo_requests", {
-  id: int("id").autoincrement().primaryKey(),
+export const demoRequests = pgTable("demo_requests", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(),
   company: varchar("company", { length: 255 }).notNull(),
   robotType: varchar("robotType", { length: 255 }).notNull(),
-  preferredShowId: int("preferredShowId"),
+  preferredShowId: integer("preferredShowId"),
   preferredShowName: varchar("preferredShowName", { length: 255 }),
   message: text("message"),
-  status: mysqlEnum("status", ["new", "contacted", "scheduled", "completed", "closed"]).default("new").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  status: text("status").notNull().default("new"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type DemoRequest = typeof demoRequests.$inferSelect;
 export type InsertDemoRequest = typeof demoRequests.$inferInsert;
 
 // XBOT AI Logistics Agent — robot logistics projects
-export const xbotProjects = mysqlTable("xbot_projects", {
-  id: int("id").autoincrement().primaryKey(),
+export const xbotProjects = pgTable("xbot_projects", {
+  id: serial("id").primaryKey(),
   sessionToken: varchar("sessionToken", { length: 128 }).notNull().unique(),
-  userId: int("userId"), // nullable — anonymous users allowed
-  // Step 1: Robot Profile
+  userId: integer("userId"),
   robotMake: varchar("robotMake", { length: 255 }),
   robotModel: varchar("robotModel", { length: 255 }),
-  robotDimensions: varchar("robotDimensions", { length: 255 }), // LxWxH cm
-  robotWeight: varchar("robotWeight", { length: 100 }), // kg
+  robotDimensions: varchar("robotDimensions", { length: 255 }),
+  robotWeight: varchar("robotWeight", { length: 100 }),
   powerRequirements: varchar("powerRequirements", { length: 255 }),
   specialHandling: text("specialHandling"),
-  // Step 2: Origin & Shipping
   originCountry: varchar("originCountry", { length: 100 }),
   originCity: varchar("originCity", { length: 100 }),
-  shippingMethod: mysqlEnum("shippingMethod", ["air", "sea", "ground"]),
+  shippingMethod: text("shippingMethod"),
   flightVesselNumber: varchar("flightVesselNumber", { length: 100 }),
-  eta: timestamp("eta"),
+  eta: timestamp("eta", { withTimezone: true }),
   portOfEntry: varchar("portOfEntry", { length: 255 }),
-  // Step 3: Customs
   hsCode: varchar("hsCode", { length: 20 }),
   ataCarnet: boolean("ataCarnet").default(false),
-  customsBroker: mysqlEnum("customsBroker", ["stagegate", "own", "tbd"]).default("tbd"),
+  customsBroker: text("customsBroker").default("tbd"),
   customsBrokerName: varchar("customsBrokerName", { length: 255 }),
-  // Step 4: Target Show
-  showId: int("showId"),
+  showId: integer("showId"),
   boothNumber: varchar("boothNumber", { length: 100 }),
-  setupDate: timestamp("setupDate"),
-  teardownDate: timestamp("teardownDate"),
-  // Step 5: Services (JSON array of service keys)
-  selectedServices: json("selectedServices").$type<string[]>(),
-  groundTransportProvider: mysqlEnum("groundTransportProvider", ["stagegate", "own", "directory"]),
-  // Step 6: Contacts
-  contacts: json("contacts").$type<{
+  setupDate: timestamp("setupDate", { withTimezone: true }),
+  teardownDate: timestamp("teardownDate", { withTimezone: true }),
+  selectedServices: jsonb("selectedServices").$type<string[]>(),
+  groundTransportProvider: text("groundTransportProvider"),
+  contacts: jsonb("contacts").$type<{
     primary: { name: string; email: string; phone: string };
     onsite?: { name: string; email: string; phone: string };
     emergency?: { name: string; phone: string };
   }>(),
-  // Workflow
-  currentStep: int("currentStep").default(1).notNull(),
-  status: mysqlEnum("status", ["draft", "brief_generated", "submitted", "in_review", "confirmed"]).default("draft").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  currentStep: integer("currentStep").notNull().default(1),
+  status: text("status").notNull().default("draft"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type XbotProject = typeof xbotProjects.$inferSelect;
 export type InsertXbotProject = typeof xbotProjects.$inferInsert;
 
 // XBOT generated logistics briefs
-export const xbotLogisticsBriefs = mysqlTable("xbot_logistics_briefs", {
-  id: int("id").autoincrement().primaryKey(),
-  projectId: int("projectId").notNull().unique(),
-  timeline: json("timeline").$type<Array<{ date: string; label: string; description: string; critical: boolean }>>(),
-  customsChecklist: json("customsChecklist").$type<Array<{ item: string; required: boolean; notes: string }>>(),
-  groundTransportOptions: json("groundTransportOptions").$type<Array<{ name: string; type: string; contact: string; website: string; notes: string }>>(),
-  servicePackage: json("servicePackage").$type<Array<{ service: string; description: string; included: boolean }>>(),
+export const xbotLogisticsBriefs = pgTable("xbot_logistics_briefs", {
+  id: serial("id").primaryKey(),
+  projectId: integer("projectId").notNull().unique(),
+  timeline: jsonb("timeline").$type<Array<{ date: string; label: string; description: string; critical: boolean }>>(),
+  customsChecklist: jsonb("customsChecklist").$type<Array<{ item: string; required: boolean; notes: string }>>(),
+  groundTransportOptions: jsonb("groundTransportOptions").$type<Array<{ name: string; type: string; contact: string; website: string; notes: string }>>(),
+  servicePackage: jsonb("servicePackage").$type<Array<{ service: string; description: string; included: boolean }>>(),
   hsCodeSuggestion: varchar("hsCodeSuggestion", { length: 20 }),
   ataCarnetEligible: boolean("ataCarnetEligible"),
-  shipByDeadline: timestamp("shipByDeadline"),
+  shipByDeadline: timestamp("shipByDeadline", { withTimezone: true }),
   summaryNotes: text("summaryNotes"),
-  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  generatedAt: timestamp("generatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type XbotLogisticsBrief = typeof xbotLogisticsBriefs.$inferSelect;
 export type InsertXbotLogisticsBrief = typeof xbotLogisticsBriefs.$inferInsert;
 
 // ─── XBOT Prospects & Outreach ────────────────────────────────────────────────
-export const prospects = mysqlTable("prospects", {
-  id: int("id").primaryKey().autoincrement(),
+export const prospects = pgTable("prospects", {
+  id: serial("id").primaryKey(),
   company: varchar("company", { length: 200 }).notNull(),
   robotName: varchar("robotName", { length: 200 }),
   robotType: varchar("robotType", { length: 50 }),
@@ -288,50 +276,51 @@ export const prospects = mysqlTable("prospects", {
   contactTitle: varchar("contactTitle", { length: 200 }),
   contactDept: varchar("contactDept", { length: 100 }),
   website: varchar("website", { length: 300 }),
-  shows: json("shows").$type<string[]>().default([]),
+  shows: jsonb("shows").$type<string[]>().default([]),
   notes: text("notes"),
-  status: mysqlEnum("status", ["new", "contacted", "responded", "scheduled", "converted", "not_interested"]).default("new").notNull(),
+  status: text("status").notNull().default("new"),
   videoMessageUrl: varchar("videoMessageUrl", { length: 500 }),
-  scheduledCallAt: timestamp("scheduledCallAt"),
+  scheduledCallAt: timestamp("scheduledCallAt", { withTimezone: true }),
   contactLinkedIn: varchar("contactLinkedIn", { length: 512 }),
   emailConfidence: varchar("emailConfidence", { length: 20 }).default("low"),
-  repliedAt: timestamp("repliedAt"),
-  followUpDate: timestamp("followUpDate"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  repliedAt: timestamp("repliedAt", { withTimezone: true }),
+  followUpDate: timestamp("followUpDate", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 export type Prospect = typeof prospects.$inferSelect;
 export type InsertProspect = typeof prospects.$inferInsert;
+export type ProspectStatus = "new" | "contacted" | "responded" | "scheduled" | "converted" | "not_interested";
 
-export const outreachCampaigns = mysqlTable("outreach_campaigns", {
-  id: int("id").primaryKey().autoincrement(),
-  prospectId: int("prospectId").notNull(),
-  emailSentAt: timestamp("emailSentAt"),
+export const outreachCampaigns = pgTable("outreach_campaigns", {
+  id: serial("id").primaryKey(),
+  prospectId: integer("prospectId").notNull(),
+  emailSentAt: timestamp("emailSentAt", { withTimezone: true }),
   emailSubject: varchar("emailSubject", { length: 300 }),
   emailBody: text("emailBody"),
-  emailStatus: mysqlEnum("emailStatus", ["pending", "sent", "failed", "opened", "replied"]).default("pending").notNull(),
+  emailStatus: text("emailStatus").notNull().default("pending"),
   videoMessageUrl: varchar("videoMessageUrl", { length: 500 }),
-  responseStatus: mysqlEnum("responseStatus", ["none", "positive", "negative", "scheduled"]).default("none").notNull(),
-  scheduledCallAt: timestamp("scheduledCallAt"),
+  responseStatus: text("responseStatus").notNull().default("none"),
+  scheduledCallAt: timestamp("scheduledCallAt", { withTimezone: true }),
   notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 export type OutreachCampaign = typeof outreachCampaigns.$inferSelect;
 export type InsertOutreachCampaign = typeof outreachCampaigns.$inferInsert;
 
 // ─── AI Agent Run Log ─────────────────────────────────────────────────────────
-export const agentRuns = mysqlTable("agent_runs", {
-  id: int("id").primaryKey().autoincrement(),
+export const agentRuns = pgTable("agent_runs", {
+  id: serial("id").primaryKey(),
   agentName: varchar("agentName", { length: 100 }).notNull(),
-  status: mysqlEnum("status", ["running", "success", "error"]).notNull().default("running"),
+  status: text("status").notNull().default("running"),
   triggeredBy: varchar("triggeredBy", { length: 100 }).default("admin"),
   inputSummary: varchar("inputSummary", { length: 500 }),
   outputSummary: varchar("outputSummary", { length: 500 }),
   errorMessage: text("errorMessage"),
-  startedAt: timestamp("startedAt").defaultNow().notNull(),
-  completedAt: timestamp("completedAt"),
-  durationMs: int("durationMs"),
+  startedAt: timestamp("startedAt", { withTimezone: true }).defaultNow().notNull(),
+  completedAt: timestamp("completedAt", { withTimezone: true }),
+  durationMs: integer("durationMs"),
 });
 export type AgentRun = typeof agentRuns.$inferSelect;
 export type InsertAgentRun = typeof agentRuns.$inferInsert;

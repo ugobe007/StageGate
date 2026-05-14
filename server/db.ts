@@ -1,5 +1,6 @@
 import { eq, desc, and, like, lte, isNotNull, notInArray, inArray } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import {
   InsertUser,
   users,
@@ -39,9 +40,15 @@ import { ENV } from "./_core/env";
 let _db: ReturnType<typeof drizzle> | null = null;
 
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  const connString = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+  if (!_db && connString) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const pool = new Pool({
+        connectionString: connString,
+        ssl: { rejectUnauthorized: false },
+      });
+      _db = drizzle(pool);
+      console.log("[Database] Connected to", process.env.SUPABASE_DATABASE_URL ? "Supabase (Postgres)" : "built-in DB");
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -85,7 +92,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
 
-  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
+  await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet });
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -112,8 +119,8 @@ export async function upsertCompanyProfile(data: InsertCompanyProfile) {
     await db.update(companyProfiles).set(data).where(eq(companyProfiles.userId, data.userId));
     return existing.id;
   } else {
-    const result = await db.insert(companyProfiles).values(data);
-    return (result[0] as any).insertId as number;
+    const [inserted] = await db.insert(companyProfiles).values(data).returning({ id: companyProfiles.id });
+    return inserted!.id;
   }
 }
 
@@ -170,8 +177,8 @@ export async function getTradeShowById(id: number) {
 export async function createTradeShow(data: InsertTradeShow) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const result = await db.insert(tradeShows).values(data);
-  return (result[0] as any).insertId as number;
+  const [inserted] = await db.insert(tradeShows).values(data).returning({ id: tradeShows.id });
+  return inserted!.id;
 }
 
 export async function updateTradeShow(id: number, data: Partial<InsertTradeShow>) {
@@ -210,8 +217,8 @@ export async function getLeadById(id: number) {
 export async function createLead(data: InsertExhibitorLead) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const result = await db.insert(exhibitorLeads).values(data);
-  return (result[0] as any).insertId as number;
+  const [inserted] = await db.insert(exhibitorLeads).values(data).returning({ id: exhibitorLeads.id });
+  return inserted!.id;
 }
 
 export async function updateLead(id: number, data: Partial<InsertExhibitorLead>) {
@@ -265,8 +272,8 @@ export async function getOrderById(id: number) {
 export async function createOrder(data: InsertServiceOrder) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const result = await db.insert(serviceOrders).values(data);
-  return (result[0] as any).insertId as number;
+  const [inserted] = await db.insert(serviceOrders).values(data).returning({ id: serviceOrders.id });
+  return inserted!.id;
 }
 
 export async function createOrderItem(data: InsertOrderItem) {
@@ -308,8 +315,8 @@ export async function getLogisticsPartnerById(id: number) {
 export async function createLogisticsPartner(data: InsertLogisticsPartner) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const result = await db.insert(logisticsPartners).values(data);
-  return (result[0] as any).insertId as number;
+  const [inserted] = await db.insert(logisticsPartners).values(data).returning({ id: logisticsPartners.id });
+  return inserted!.id;
 }
 
 export async function updateLogisticsPartner(id: number, data: Partial<InsertLogisticsPartner>) {
@@ -338,8 +345,8 @@ export async function createShowNotification(showId: number, email: string): Pro
   if (existing.length > 0) {
     return { id: existing[0]!.id, alreadyExists: true };
   }
-  const result = await db.insert(showNotifications).values({ showId, email });
-  return { id: (result[0] as any).insertId as number, alreadyExists: false };
+  const [inserted] = await db.insert(showNotifications).values({ showId, email }).returning({ id: showNotifications.id });
+  return { id: inserted!.id, alreadyExists: false };
 }
 
 export async function getShowNotificationsByShowId(showId: number) {
@@ -438,9 +445,8 @@ export async function updateDemoRequestStatus(
 export async function createXbotProject(data: InsertXbotProject) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  const [result] = await db.insert(xbotProjects).values(data);
-  const id = (result as { insertId: number }).insertId;
-  const rows = await db.select().from(xbotProjects).where(eq(xbotProjects.id, id));
+  const [inserted] = await db.insert(xbotProjects).values(data).returning({ id: xbotProjects.id });
+  const rows = await db.select().from(xbotProjects).where(eq(xbotProjects.id, inserted!.id));
   return rows[0];
 }
 
@@ -483,12 +489,11 @@ export async function upsertXbotBrief(data: InsertXbotLogisticsBrief) {
       .where(eq(xbotLogisticsBriefs.projectId, data.projectId));
     return rows[0];
   } else {
-    const [result] = await db.insert(xbotLogisticsBriefs).values(data);
-    const id = (result as { insertId: number }).insertId;
+    const [inserted] = await db.insert(xbotLogisticsBriefs).values(data).returning({ id: xbotLogisticsBriefs.id });
     const rows = await db
       .select()
       .from(xbotLogisticsBriefs)
-      .where(eq(xbotLogisticsBriefs.id, id));
+      .where(eq(xbotLogisticsBriefs.id, inserted!.id));
     return rows[0];
   }
 }
@@ -545,8 +550,8 @@ export async function getProspectById(id: number) {
 export async function createProspect(data: InsertProspect) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  const result = await db.insert(prospects).values(data);
-  return result[0];
+  const [inserted] = await db.insert(prospects).values(data).returning({ id: prospects.id });
+  return inserted;
 }
 
 export async function updateProspect(id: number, data: Partial<InsertProspect>) {
@@ -576,8 +581,8 @@ export async function listOutreachByProspect(prospectId: number) {
 export async function createOutreachCampaign(data: InsertOutreachCampaign) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  const result = await db.insert(outreachCampaigns).values(data);
-  return result[0];
+  const [inserted] = await db.insert(outreachCampaigns).values(data).returning({ id: outreachCampaigns.id });
+  return inserted;
 }
 
 export async function updateOutreachCampaign(id: number, data: Partial<InsertOutreachCampaign>) {
@@ -604,8 +609,8 @@ export async function updateUserRole(userId: number, role: "admin" | "user") {
 export async function createAgentRun(data: Omit<InsertAgentRun, "id" | "startedAt">) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  const [result] = await db.insert(agentRuns).values({ ...data, startedAt: new Date() });
-  return (result as { insertId: number }).insertId as number;
+  const [inserted] = await db.insert(agentRuns).values({ ...data, startedAt: new Date() }).returning({ id: agentRuns.id });
+  return inserted!.id;
 }
 
 export async function completeAgentRun(id: number, status: "success" | "error", opts: { outputSummary?: string; errorMessage?: string } = {}) {

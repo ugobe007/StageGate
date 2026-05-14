@@ -504,3 +504,13 @@
 - [x] Add pendingConfirm state for destructive statuses (not_interested, converted)
 - [x] Show inline "Move N to X? Confirm / Cancel" prompt instead of firing mutation immediately for destructive statuses
 - [x] Auto-reset pendingConfirm when selection changes or status picker changes
+
+## v8.6 — Supabase Postgres Migration
+
+- [x] Convert drizzle/schema.ts from MySQL (mysqlTable, mysqlEnum) to Postgres (pgTable, serial, jsonb, timestamptz)
+- [x] Install pg + @types/pg, switch drizzle import to drizzle-orm/node-postgres
+- [x] Fix all MySQL-specific patterns in db.ts: onDuplicateKeyUpdate → onConflictDoUpdate, insertId → .returning()
+- [x] Generate supabase_schema.sql and run all 16 tables against Supabase via transaction pooler
+- [x] Add SUPABASE_DATABASE_URL secret; getDb() prefers it over built-in DATABASE_URL
+- [x] Server confirms "Connected to Supabase (Postgres)" on startup
+- [x] 82 tests passing, 0 TypeScript errors
