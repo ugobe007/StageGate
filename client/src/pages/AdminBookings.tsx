@@ -1,0 +1,541 @@
+import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { useLocation } from "wouter";
+import { toast } from "sonner";
+import {
+  ClipboardList, ChevronDown, ChevronUp, ExternalLink,
+  Mail, Phone, Globe, Bot, Calendar, Package,
+  CheckCircle, XCircle, Clock, Eye, FileText, AlertCircle,
+  RefreshCw, StickyNote,
+} from "lucide-react";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type BookingStatus = "new" | "reviewed" | "quoted" | "confirmed" | "cancelled";
+
+const STATUS_CONFIG: Record<BookingStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
+  new:       { label: "New",       color: "#60a5fa", bg: "rgba(96,165,250,0.10)",  icon: <AlertCircle size={12} /> },
+  reviewed:  { label: "Reviewed",  color: "#f59e0b", bg: "rgba(245,158,11,0.10)",  icon: <Eye size={12} /> },
+  quoted:    { label: "Quoted",    color: "#a78bfa", bg: "rgba(167,139,250,0.10)", icon: <FileText size={12} /> },
+  confirmed: { label: "Confirmed", color: "#34d399", bg: "rgba(52,211,153,0.10)",  icon: <CheckCircle size={12} /> },
+  cancelled: { label: "Cancelled", color: "#f87171", bg: "rgba(248,113,113,0.10)", icon: <XCircle size={12} /> },
+};
+
+const ALL_STATUSES: BookingStatus[] = ["new", "reviewed", "quoted", "confirmed", "cancelled"];
+
+const SERVICE_LABELS: Record<string, string> = {
+  receiving:       "Receiving & Intake",
+  staging:         "Staging & Setup",
+  delivery:        "Delivery to Booth",
+  full_activation: "Full Activation",
+  storage:         "Storage",
+  return:          "Return Logistics",
+  customs:         "Customs Support",
+  insurance:       "Insurance",
+};
+
+function formatDate(d: Date | string | null | undefined): string {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function formatRelative(d: Date | string | null | undefined): string {
+  if (!d) return "—";
+  const diff = Date.now() - new Date(d).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return formatDate(d);
+}
+
+// ─── Detail Panel ─────────────────────────────────────────────────────────────
+
+function BookingDetailPanel({
+  booking,
+  onStatusChange,
+  onClose,
+}: {
+  booking: {
+    id: number;
+    company: string;
+    contactName: string;
+    contactEmail: string;
+    contactPhone?: string | null;
+    website?: string | null;
+    country?: string | null;
+    robotName?: string | null;
+    robotType?: string | null;
+    robotCount?: number | null;
+    robotDimensions?: string | null;
+    robotWeight?: string | null;
+    specialHandling?: string | null;
+    showName?: string | null;
+    showDate?: string | null;
+    boothNumber?: string | null;
+    services?: unknown;
+    status: string;
+    adminNotes?: string | null;
+    createdAt?: Date | string | null;
+    updatedAt?: Date | string | null;
+  };
+  onStatusChange: (id: number, status: BookingStatus, notes?: string) => void;
+  onClose: () => void;
+}) {
+  const [notes, setNotes] = useState(booking.adminNotes ?? "");
+  const [savingStatus, setSavingStatus] = useState<BookingStatus | null>(null);
+  const cfg = STATUS_CONFIG[booking.status as BookingStatus] ?? STATUS_CONFIG.new;
+  const services = (booking.services as string[] | null) ?? [];
+
+  const handleStatusChange = async (status: BookingStatus) => {
+    setSavingStatus(status);
+    await onStatusChange(booking.id, status, notes || undefined);
+    setSavingStatus(null);
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 50,
+      display: "flex", alignItems: "flex-start", justifyContent: "flex-end",
+      background: "rgba(0,0,0,0.60)",
+    }} onClick={onClose}>
+      <div
+        style={{
+          width: 520, height: "100vh", overflowY: "auto",
+          background: "#0a0a0a", borderLeft: "1px solid rgba(255,255,255,0.08)",
+          display: "flex", flexDirection: "column",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ padding: "1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: "0.3rem",
+                padding: "0.2rem 0.6rem", borderRadius: "0.25rem",
+                background: cfg.bg, color: cfg.color,
+                fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em", textTransform: "uppercase",
+              }}>
+                {cfg.icon} {cfg.label}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(255,255,255,0.30)" }}>
+                #{booking.id} · {formatRelative(booking.createdAt)}
+              </span>
+            </div>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#fff", margin: 0 }}>{booking.company}</h2>
+            {booking.country && (
+              <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.45)", margin: "0.2rem 0 0" }}>{booking.country}</p>
+            )}
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.35)", padding: "0.25rem", lineHeight: 1, fontSize: "1.25rem" }}>×</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+
+          {/* Contact */}
+          <section>
+            <h3 style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", margin: "0 0 0.75rem" }}>Contact</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ color: "rgba(255,255,255,0.35)", flexShrink: 0 }}><Mail size={13} /></span>
+                <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#fff" }}>{booking.contactName}</span>
+                <a href={`mailto:${booking.contactEmail}`} style={{ fontSize: "0.8125rem", color: "#60a5fa", textDecoration: "none" }}>{booking.contactEmail}</a>
+              </div>
+              {booking.contactPhone && (
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={{ color: "rgba(255,255,255,0.35)", flexShrink: 0 }}><Phone size={13} /></span>
+                  <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.70)" }}>{booking.contactPhone}</span>
+                </div>
+              )}
+              {booking.website && (
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={{ color: "rgba(255,255,255,0.35)", flexShrink: 0 }}><Globe size={13} /></span>
+                  <a href={booking.website} target="_blank" rel="noopener noreferrer" style={{ fontSize: "0.8125rem", color: "#60a5fa", textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                    {booking.website.replace(/^https?:\/\//, "")} <ExternalLink size={10} />
+                  </a>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Robot */}
+          {(booking.robotName || booking.robotType) && (
+            <section>
+              <h3 style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", margin: "0 0 0.75rem" }}>Robot</h3>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "0.875rem 1rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                  <Bot size={14} style={{ color: "rgba(255,255,255,0.40)" }} />
+                  <span style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#fff" }}>{booking.robotName ?? "Unnamed Robot"}</span>
+                  {booking.robotType && (
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.08em", textTransform: "uppercase", padding: "0.1rem 0.4rem", borderRadius: "0.25rem", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.50)" }}>
+                      {booking.robotType}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.4rem 1rem" }}>
+                  {booking.robotCount && booking.robotCount > 1 && (
+                    <div>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(255,255,255,0.30)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Count</span>
+                      <p style={{ margin: "0.1rem 0 0", fontSize: "0.8125rem", color: "rgba(255,255,255,0.80)" }}>{booking.robotCount}</p>
+                    </div>
+                  )}
+                  {booking.robotDimensions && (
+                    <div>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(255,255,255,0.30)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Dimensions</span>
+                      <p style={{ margin: "0.1rem 0 0", fontSize: "0.8125rem", color: "rgba(255,255,255,0.80)" }}>{booking.robotDimensions}</p>
+                    </div>
+                  )}
+                  {booking.robotWeight && (
+                    <div>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(255,255,255,0.30)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Weight</span>
+                      <p style={{ margin: "0.1rem 0 0", fontSize: "0.8125rem", color: "rgba(255,255,255,0.80)" }}>{booking.robotWeight}</p>
+                    </div>
+                  )}
+                </div>
+                {booking.specialHandling && (
+                  <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(255,255,255,0.30)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Special Handling</span>
+                    <p style={{ margin: "0.1rem 0 0", fontSize: "0.8125rem", color: "rgba(255,255,255,0.80)", lineHeight: 1.5 }}>{booking.specialHandling}</p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Show */}
+          {(booking.showName || booking.showDate) && (
+            <section>
+              <h3 style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", margin: "0 0 0.75rem" }}>Event</h3>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "0.875rem 1rem" }}>
+                <Calendar size={16} style={{ color: "rgba(255,255,255,0.40)", flexShrink: 0 }} />
+                <div>
+                  <p style={{ margin: 0, fontSize: "0.9375rem", fontWeight: 700, color: "#fff" }}>{booking.showName ?? "TBD"}</p>
+                  {booking.showDate && <p style={{ margin: "0.15rem 0 0", fontSize: "0.8125rem", color: "rgba(255,255,255,0.50)" }}>{booking.showDate}</p>}
+                  {booking.boothNumber && <p style={{ margin: "0.15rem 0 0", fontSize: "0.8125rem", color: "rgba(255,255,255,0.50)" }}>Booth {booking.boothNumber}</p>}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Services */}
+          {services.length > 0 && (
+            <section>
+              <h3 style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", margin: "0 0 0.75rem" }}>Services Requested</h3>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                {services.map(s => (
+                  <span key={s} style={{
+                    display: "inline-flex", alignItems: "center", gap: "0.3rem",
+                    padding: "0.3rem 0.6rem", borderRadius: "0.25rem",
+                    border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.75)",
+                    fontSize: "0.75rem",
+                  }}>
+                    <Package size={11} style={{ color: "rgba(255,255,255,0.40)" }} />
+                    {SERVICE_LABELS[s] ?? s}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Admin Notes */}
+          <section>
+            <h3 style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", margin: "0 0 0.75rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <StickyNote size={11} /> Admin Notes
+            </h3>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Add internal notes, pricing, follow-up actions…"
+              rows={4}
+              style={{
+                width: "100%", boxSizing: "border-box",
+                background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.10)",
+                borderRadius: "0.375rem", padding: "0.75rem",
+                color: "#fff", fontSize: "0.8125rem", lineHeight: 1.6,
+                resize: "vertical", outline: "none",
+                fontFamily: "inherit",
+              }}
+            />
+          </section>
+        </div>
+
+        {/* Status Actions */}
+        <div style={{ padding: "1.25rem 1.5rem", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", margin: "0 0 0.5rem" }}>Update Status</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.4rem" }}>
+            {ALL_STATUSES.filter(s => s !== (booking.status as BookingStatus)).map(status => {
+              const c = STATUS_CONFIG[status];
+              const isLoading = savingStatus === status;
+              return (
+                <button
+                  key={status}
+                  onClick={() => handleStatusChange(status)}
+                  disabled={isLoading}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem",
+                    padding: "0.5rem 0.75rem", borderRadius: "0.375rem",
+                    background: c.bg, border: `1px solid ${c.color}40`,
+                    color: c.color, fontSize: "0.75rem", fontWeight: 600,
+                    cursor: isLoading ? "not-allowed" : "pointer",
+                    opacity: isLoading ? 0.6 : 1,
+                    transition: "opacity 0.15s",
+                  }}
+                >
+                  {isLoading ? <RefreshCw size={11} style={{ animation: "spin 1s linear infinite" }} /> : c.icon}
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+export default function AdminBookings() {
+  const { user, loading: authLoading } = useAuth();
+  const [, navigate] = useLocation();
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  const { data: bookings = [], isLoading: bookingsLoading, refetch } = trpc.bookings.list.useQuery(
+    { status: statusFilter || undefined },
+    { enabled: !!user && user.role === "admin" }
+  );
+
+  const updateStatus = trpc.bookings.updateStatus.useMutation({
+    onSuccess: () => {
+      refetch();
+      toast.success("Status updated");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleStatusChange = async (id: number, status: BookingStatus, adminNotes?: string) => {
+    await updateStatus.mutateAsync({ id, status, adminNotes });
+  };
+
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      </div>
+    );
+  }
+
+  if (!user || user.role !== "admin") {
+    navigate("/");
+    return null;
+  }
+
+  // Summary counts
+  const counts: { [key: string]: number } = {};
+  for (const b of bookings) {
+    const s = b.status as string;
+    counts[s] = (counts[s] ?? 0) + 1;
+  }
+
+  const selectedBooking = selectedId != null ? bookings.find(b => b.id === selectedId) ?? null : null;
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#000", color: "#fff" }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
+
+      {/* Page header */}
+      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", padding: "1.5rem 2rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <ClipboardList size={18} style={{ color: "rgba(255,255,255,0.50)" }} />
+          <div>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", margin: "0 0 0.15rem" }}>Admin / Bookings</p>
+            <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#fff", margin: 0 }}>Intake Requests</h1>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(255,255,255,0.40)" }}>
+            {bookings.length} request{bookings.length !== 1 ? "s" : ""}
+          </span>
+          <button
+            onClick={() => refetch()}
+            style={{ background: "none", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.375rem", padding: "0.35rem 0.6rem", color: "rgba(255,255,255,0.50)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem" }}
+          >
+            <RefreshCw size={12} /> Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        {ALL_STATUSES.map(s => {
+          const cfg = STATUS_CONFIG[s];
+          const n = counts[s] ?? 0;
+          return (
+            <div
+              key={s}
+              onClick={() => setStatusFilter(statusFilter === s ? "" : s)}
+              style={{
+                padding: "1rem 1.5rem", cursor: "pointer",
+                borderRight: "1px solid rgba(255,255,255,0.06)",
+                background: statusFilter === s ? cfg.bg : "transparent",
+                transition: "background 0.15s",
+              }}
+            >
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.12em", textTransform: "uppercase", color: statusFilter === s ? cfg.color : "rgba(255,255,255,0.30)", margin: "0 0 0.3rem" }}>{cfg.label}</p>
+              <p style={{ fontSize: "1.5rem", fontWeight: 700, color: statusFilter === s ? cfg.color : "#fff", margin: 0 }}>{n}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: "1.5rem 2rem" }}>
+        {bookingsLoading ? (
+          <div style={{ display: "flex", justifyContent: "center", padding: "4rem 0" }}>
+            <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          </div>
+        ) : bookings.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "5rem 0" }}>
+            <ClipboardList size={32} style={{ color: "rgba(255,255,255,0.15)", marginBottom: "1rem" }} />
+            <p style={{ fontSize: "1rem", fontWeight: 600, color: "rgba(255,255,255,0.50)", margin: "0 0 0.5rem" }}>
+              {statusFilter ? `No ${STATUS_CONFIG[statusFilter as BookingStatus]?.label ?? statusFilter} requests` : "No intake requests yet"}
+            </p>
+            <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.25)", margin: 0 }}>
+              Submissions from the /get-started page will appear here.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {/* Table header */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr auto",
+              gap: "1rem",
+              padding: "0.5rem 0",
+              borderBottom: "1px solid rgba(255,255,255,0.08)",
+              marginBottom: "0.25rem",
+            }}>
+              {["Company / Contact", "Robot", "Show", "Services", "Status", ""].map(h => (
+                <span key={h} style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)" }}>{h}</span>
+              ))}
+            </div>
+
+            {bookings.map(b => {
+              const cfg = STATUS_CONFIG[b.status as BookingStatus] ?? STATUS_CONFIG.new;
+              const services = (b.services as string[] | null) ?? [];
+              return (
+                <div
+                  key={b.id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr auto",
+                    gap: "1rem",
+                    alignItems: "center",
+                    padding: "0.875rem 0",
+                    borderBottom: "1px solid rgba(255,255,255,0.05)",
+                    cursor: "pointer",
+                    transition: "background 0.12s",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.02)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  onClick={() => setSelectedId(b.id === selectedId ? null : b.id)}
+                >
+                  {/* Company */}
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <span style={{ fontWeight: 700, fontSize: "0.9375rem", color: "#fff" }}>{b.company}</span>
+                      {b.country && <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.45rem", color: "rgba(255,255,255,0.30)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{b.country}</span>}
+                    </div>
+                    <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: "rgba(255,255,255,0.45)" }}>
+                      {b.contactName} · {b.contactEmail}
+                    </p>
+                    <p style={{ margin: "0.1rem 0 0", fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(255,255,255,0.25)", letterSpacing: "0.06em" }}>
+                      {formatRelative(b.createdAt)}
+                    </p>
+                  </div>
+
+                  {/* Robot */}
+                  <div>
+                    {b.robotName ? (
+                      <>
+                        <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{b.robotName}</p>
+                        {b.robotType && <p style={{ margin: "0.1rem 0 0", fontSize: "0.75rem", color: "rgba(255,255,255,0.40)" }}>{b.robotType}</p>}
+                        {b.robotCount && b.robotCount > 1 && <p style={{ margin: "0.1rem 0 0", fontSize: "0.75rem", color: "rgba(255,255,255,0.40)" }}>{b.robotCount} units</p>}
+                      </>
+                    ) : (
+                      <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.20)" }}>—</span>
+                    )}
+                  </div>
+
+                  {/* Show */}
+                  <div>
+                    {b.showName ? (
+                      <>
+                        <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{b.showName}</p>
+                        {b.showDate && <p style={{ margin: "0.1rem 0 0", fontSize: "0.75rem", color: "rgba(255,255,255,0.40)" }}>{b.showDate}</p>}
+                      </>
+                    ) : (
+                      <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.20)" }}>—</span>
+                    )}
+                  </div>
+
+                  {/* Services */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
+                    {services.slice(0, 2).map(s => (
+                      <span key={s} style={{
+                        fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.06em", textTransform: "uppercase",
+                        padding: "0.1rem 0.35rem", borderRadius: "0.2rem",
+                        border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.50)",
+                      }}>
+                        {SERVICE_LABELS[s] ?? s}
+                      </span>
+                    ))}
+                    {services.length > 2 && (
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.45rem", color: "rgba(255,255,255,0.30)" }}>+{services.length - 2}</span>
+                    )}
+                    {services.length === 0 && <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.20)" }}>—</span>}
+                  </div>
+
+                  {/* Status */}
+                  <div>
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: "0.3rem",
+                      padding: "0.2rem 0.5rem", borderRadius: "0.25rem",
+                      background: cfg.bg, color: cfg.color,
+                      fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.08em", textTransform: "uppercase",
+                    }}>
+                      {cfg.icon} {cfg.label}
+                    </span>
+                  </div>
+
+                  {/* Expand */}
+                  <div style={{ color: "rgba(255,255,255,0.25)" }}>
+                    {selectedId === b.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Detail panel overlay */}
+      {selectedBooking && (
+        <BookingDetailPanel
+          booking={selectedBooking}
+          onStatusChange={handleStatusChange}
+          onClose={() => setSelectedId(null)}
+        />
+      )}
+    </div>
+  );
+}

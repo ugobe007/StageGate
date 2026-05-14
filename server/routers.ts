@@ -1681,12 +1681,53 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         });
         return { success: true };
       }),
-    // Admin: list all booking requests
-    list: adminProcedure.query(async () => {
-      const dbConn = await getDb();
-      if (!dbConn) return [];
-      return dbConn.select().from(bookingRequests).orderBy(desc(bookingRequests.createdAt));
-    }),
+    // Admin: list all booking requests (with optional status/show filters)
+    list: adminProcedure
+      .input(z.object({
+        status: z.string().optional(),
+        showName: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        const rows = await dbConn.select().from(bookingRequests).orderBy(desc(bookingRequests.createdAt));
+        let filtered = rows;
+        if (input?.status) filtered = filtered.filter(r => r.status === input.status);
+        if (input?.showName) filtered = filtered.filter(r =>
+          r.showName?.toLowerCase().includes(input.showName!.toLowerCase()));
+        return filtered;
+      }),
+
+    // Admin: get single booking request
+    get: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const rows = await dbConn.select().from(bookingRequests).where(eq(bookingRequests.id, input.id));
+        if (!rows[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found" });
+        return rows[0];
+      }),
+
+    // Admin: update booking status and notes
+    updateStatus: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["new", "reviewed", "quoted", "confirmed", "cancelled"]),
+        adminNotes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        await dbConn.update(bookingRequests)
+          .set({
+            status: input.status,
+            ...(input.adminNotes !== undefined ? { adminNotes: input.adminNotes } : {}),
+            updatedAt: new Date(),
+          })
+          .where(eq(bookingRequests.id, input.id));
+        return { success: true };
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

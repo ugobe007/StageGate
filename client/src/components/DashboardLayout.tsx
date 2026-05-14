@@ -35,6 +35,7 @@ const menuItems = [
   { icon: Bot, label: "AI Agents", path: "/admin/agents" },
   { icon: Kanban, label: "Pipeline", path: "/admin/pipeline" },
   { icon: Send, label: "Outreach", path: "/admin/outreach" },
+  { icon: ClipboardList, label: "Bookings", path: "/admin/bookings" },
   { icon: Calendar, label: "Shows", path: "/admin/shows" },
   { icon: Package, label: "Orders", path: "/admin/orders" },
   { icon: ClipboardList, label: "Demo Requests", path: "/admin/demos" },

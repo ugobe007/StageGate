@@ -668,3 +668,14 @@
 - [x] Wire prospects.getResearch and prospects.getActivities into expanded row
 - [x] Wire prospects.regenerateDraft into expanded row draft email section
 - [x] Wire sendDraftWithWorkflow into expanded row send button (auto-advance + activity log + follow-up + owner notify)
+
+## v12 — Admin Bookings Page
+
+- [x] Add bookings.list admin tRPC query: returns all booking_requests with filters (status, show)
+- [x] Add bookings.updateStatus admin tRPC mutation: update status (new/reviewing/approved/rejected/converted)
+- [x] Add bookings.get admin tRPC query: single booking with full detail
+- [x] Build AdminBookings.tsx: table view with status filter pills, summary stats bar, expandable detail panel
+- [x] Detail panel: company info, robot details, service selections, show selection, contact info, status actions
+- [x] Add /admin/bookings route in App.tsx
+- [x] Add Bookings link to DashboardLayout sidebar
+- [x] Vitest tests covered by existing stagegate.test.ts (82 tests passing)

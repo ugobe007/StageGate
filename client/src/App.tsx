@@ -29,6 +29,7 @@ import AdminProspects from "./pages/AdminProspects";
 import AdminOutreach from "./pages/AdminOutreach";
 import AdminPipeline from "./pages/AdminPipeline";
 import AdminCompose from "./pages/AdminCompose";
+import AdminBookings from "./pages/AdminBookings";
 import VideoIntake from "./pages/VideoIntake";
 import Schedule from "./pages/Schedule";
 import DbStatusBanner from "@/components/DbStatusBanner";
@@ -68,6 +69,7 @@ function Router() {
       <Route path="/admin/outreach" component={AdminOutreach} />
       <Route path="/admin/pipeline" component={AdminPipeline} />
       <Route path="/admin/compose" component={AdminCompose} />
+      <Route path="/admin/bookings" component={AdminBookings} />
 
       {/* Video intake */}
       <Route path="/xbot/video" component={VideoIntake} />
