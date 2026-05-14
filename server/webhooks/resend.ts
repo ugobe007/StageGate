@@ -6,7 +6,7 @@
 import type { Request, Response } from "express";
 import crypto from "crypto";
 import { getDb } from "../db";
-import { emailTrackingEvents, prospectActivities } from "../../drizzle/schema";
+import { emailTrackingEvents, prospectActivities, draftEmails } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
 // Resend uses Svix-style webhook signing: HMAC-SHA256 over "timestamp.body"
@@ -105,21 +105,34 @@ export async function resendWebhookHandler(req: Request, res: Response): Promise
       return;
     }
 
-    // Try to find the prospect linked to this messageId via draft_emails
-    // Note: draftEmails does not store the Resend message ID, so we match by
-    // the recipient email address if available in the event payload.
+    // Try to find the prospect linked to this messageId.
+    // Strategy 1: match by Resend message ID stored on draft_emails (most reliable)
+    // Strategy 2: fall back to recipient email address
     let prospectId: number | null = null;
-    const recipientEmail = Array.isArray(data.to) ? data.to[0] : null;
-    if (recipientEmail) {
-      // Import prospects table inline to avoid circular deps
-      const { prospects: prospectsTable } = await import("../../drizzle/schema");
-      const found = await db
-        .select({ id: prospectsTable.id })
-        .from(prospectsTable)
-        .where(eq(prospectsTable.contactEmail, recipientEmail))
+
+    if (messageId) {
+      const draftRows = await db
+        .select({ prospectId: draftEmails.prospectId })
+        .from(draftEmails)
+        .where(eq(draftEmails.resendMessageId, messageId))
         .limit(1);
-      if (found[0]?.id) {
-        prospectId = found[0].id;
+      if (draftRows[0]?.prospectId) {
+        prospectId = draftRows[0].prospectId;
+      }
+    }
+
+    if (!prospectId) {
+      const recipientEmail = Array.isArray(data.to) ? data.to[0] : null;
+      if (recipientEmail) {
+        const { prospects: prospectsTable } = await import("../../drizzle/schema");
+        const found = await db
+          .select({ id: prospectsTable.id })
+          .from(prospectsTable)
+          .where(eq(prospectsTable.contactEmail, recipientEmail))
+          .limit(1);
+        if (found[0]?.id) {
+          prospectId = found[0].id;
+        }
       }
     }
 

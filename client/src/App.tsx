@@ -19,6 +19,7 @@ import AdminShows from "./pages/AdminShows";
 import AdminLeads from "./pages/AdminLeads";
 import AdminAgents from "./pages/AdminAgents";
 import AdminOrders from "./pages/AdminOrders";
+import AdminOrderDetail from "./pages/AdminOrderDetail";
 import AdminPartners from "./pages/AdminPartners";
 import ShowsCalendar from "./pages/ShowsCalendar";
 import ShowDetail from "./pages/ShowDetail";
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/shows" component={AdminShows} />
       <Route path="/admin/leads" component={AdminLeads} />
+      <Route path="/admin/orders/:id" component={AdminOrderDetail} />
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/partners" component={AdminPartners} />
       <Route path="/admin/quotes" component={AdminQuotes} />

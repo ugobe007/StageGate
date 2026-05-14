@@ -702,3 +702,25 @@
 - [x] On email.clicked: log activity (type=email_clicked, metadata includes url) to prospect_activities
 - [x] Add RESEND_WEBHOOK_SECRET to secrets
 - [x] Vitest: test webhook signature validation, test activity logging for opened/clicked events
+
+## v14 — Resend Message ID, Engagement Tab, Order Detail Page
+
+### v14.1 — Store Resend messageId on sent drafts
+- [x] Add resendMessageId column to draft_emails table in drizzle/schema.ts
+- [x] Run migration SQL via webdev_execute_sql
+- [x] Update sendDraftWithWorkflow (or equivalent send procedure) to store Resend messageId on the draft record after sending
+- [x] Update Resend webhook handler to match by messageId first (via draft_emails.resendMessageId), then fall back to recipient email
+
+### v14.2 — Engagement Tab in ProspectCRMCard
+- [x] Add prospects.getEmailEngagement tRPC query: returns email_tracking_events for a prospect ordered by occurredAt desc
+- [x] Add "Engagement" tab to ProspectCRMCard (4th tab alongside Overview/Research/Email/Activity)
+- [x] Engagement tab: timeline of opens and clicks with timestamps, event type icon, and URL for clicks
+- [x] Empty state: "No email engagement recorded yet — send an outreach email to start tracking"
+- [x] Vitest: test prospects.getEmailEngagement returns events in correct order
+
+### v14.3 — Order Detail Page for Converted Bookings
+- [x] Add orders.getDetail tRPC query: returns service_order with bookingId reference, status, notes, createdAt
+- [x] Build AdminOrderDetail.tsx page: order header (ID, status badge, created date), originating booking reference with link back to AdminBookings, order notes, status update controls
+- [x] Register /admin/orders/:id route in App.tsx
+- [x] Wire "View Order #N" toast link in AdminBookings convertToOrder success handler to navigate to /admin/orders/:id
+- [x] Vitest: test orders.getDetail returns correct order, rejects non-admin

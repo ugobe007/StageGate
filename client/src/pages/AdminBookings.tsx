@@ -101,10 +101,10 @@ function BookingDetailPanel({
         <span>
           Booking converted to{" "}
           <button
-            onClick={() => navigate("/admin/orders")}
+            onClick={() => navigate(`/admin/orders/${data.orderId}`)}
             style={{ color: "#f59e0b", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", padding: 0, font: "inherit" }}
           >
-            Order #{data.orderId}
+            Order #{data.orderId} →
           </button>
         </span>,
         { duration: 6000 }

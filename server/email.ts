@@ -102,12 +102,12 @@ export async function updateDraft(
   return row;
 }
 
-export async function markDraftSent(id: number) {
+export async function markDraftSent(id: number, resendMessageId?: string) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   const [row] = await db
     .update(draftEmails)
-    .set({ status: "sent", sentAt: new Date(), updatedAt: new Date() })
+    .set({ status: "sent", sentAt: new Date(), updatedAt: new Date(), ...(resendMessageId ? { resendMessageId } : {}) })
     .where(eq(draftEmails.id, id))
     .returning();
   return row;

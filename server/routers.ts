@@ -10,7 +10,7 @@ import * as db from "./db";
 import * as workflows from "./workflows";
 import * as emailHelpers from "./email";
 import { eq, desc, count } from "drizzle-orm";
-import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders } from "../drizzle/schema";
+import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents } from "../drizzle/schema";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 
@@ -272,6 +272,25 @@ export const appRouter = router({
     allOrders: adminProcedure.query(async () => {
       return db.getAllOrders();
     }),
+
+    // Get a single order with booking reference for the detail page
+    getDetail: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const orderRows = await dbConn.select().from(serviceOrders).where(eq(serviceOrders.id, input.id));
+        const order = orderRows[0];
+        if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+        // Fetch originating booking if present
+        let booking = null;
+        if (order.bookingId) {
+          const bookingRows = await dbConn.select().from(bookingRequests).where(eq(bookingRequests.id, order.bookingId));
+          booking = bookingRows[0] ?? null;
+        }
+        const items = await db.getOrderItems(input.id);
+        return { order, booking, items };
+      }),
   }),
 
   // ─── Leads (AI Discovery + Outreach) ──────────────────────────────────────
@@ -1152,6 +1171,18 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           .orderBy(desc(prospectActivities.createdAt));
         return activities;
       }),
+    // Get email engagement events (opens + clicks) for a prospect
+    getEmailEngagement: adminProcedure
+      .input(z.object({ prospectId: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        return dbConn
+          .select()
+          .from(emailTrackingEvents)
+          .where(eq(emailTrackingEvents.prospectId, input.prospectId))
+          .orderBy(desc(emailTrackingEvents.occurredAt));
+      }),
     // Log an activity for a prospect
     logActivity: adminProcedure
       .input(z.object({
@@ -1507,16 +1538,16 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         if (!entry) throw new TRPCError({ code: "NOT_FOUND", message: "Draft not found" });
         if (!entry.prospect.contactEmail) throw new TRPCError({ code: "BAD_REQUEST", message: "Prospect has no email address" });
 
-        await emailHelpers.sendEmail({
+        const sendResult = await emailHelpers.sendEmail({
           to: entry.prospect.contactEmail,
           subject: entry.draft.subject,
           body: entry.draft.body,
         });
 
-        await emailHelpers.markDraftSent(entry.draft.id);
+        await emailHelpers.markDraftSent(entry.draft.id, sendResult?.id);
         await db.updateProspectStatus(entry.prospect.id, "contacted");
 
-        return { success: true, sentTo: entry.prospect.contactEmail };
+        return { success: true, sentTo: entry.prospect.contactEmail, messageId: sendResult?.id };
       }),
 
     // Bulk send multiple approved drafts
@@ -1533,12 +1564,12 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         for (const entry of targets) {
           if (!entry.prospect.contactEmail) { failed++; continue; }
           try {
-            await emailHelpers.sendEmail({
+            const sendResult = await emailHelpers.sendEmail({
               to: entry.prospect.contactEmail,
               subject: entry.draft.subject,
               body: entry.draft.body,
             });
-            await emailHelpers.markDraftSent(entry.draft.id);
+            await emailHelpers.markDraftSent(entry.draft.id, sendResult?.id);
             await db.updateProspectStatus(entry.prospect.id, "contacted");
             sent++;
           } catch (e: unknown) {
@@ -1735,6 +1766,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           userId: 0,
           showId: 0,
           status: "pending",
+          bookingId: booking.id,
           notes: [
             `Converted from booking #${booking.id}`,
             `Company: ${booking.company}`,

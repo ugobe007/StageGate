@@ -112,6 +112,7 @@ export const serviceOrders = pgTable("service_orders", {
   status: text("status").notNull().default("pending"),
   totalAmount: decimal("totalAmount", { precision: 10, scale: 2 }),
   notes: text("notes"),
+  bookingId: integer("bookingId"), // originating booking_request id (if converted from a booking)
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -334,6 +335,7 @@ export const draftEmails = pgTable("draft_emails", {
   agentReasoning: text("agentReasoning"),
   status: text("status").notNull().default("pending"), // pending | approved | sent | discarded
   sentAt: timestamp("sentAt", { withTimezone: true }),
+  resendMessageId: text("resendMessageId"), // Resend API message ID for webhook tracking
   createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).notNull().defaultNow(),
 });

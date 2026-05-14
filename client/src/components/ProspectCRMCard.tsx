@@ -58,7 +58,15 @@ type ResearchData = {
   }>;
 };
 
-type PanelTab = "overview" | "research" | "email" | "activity";
+type PanelTab = "overview" | "research" | "email" | "activity" | "engagement";
+
+type EngagementEvent = {
+  id: number;
+  eventType: string;
+  url?: string | null;
+  occurredAt: string | Date;
+  messageId: string;
+};
 
 const PIPELINE_STAGES = [
   { key: "new",            label: "Prospects",    color: "bg-zinc-800 text-zinc-300"              },
@@ -106,6 +114,12 @@ export default function ProspectCRMCard({
   const { data: activitiesData, isLoading: activitiesLoading } = trpc.prospects.getActivities.useQuery(
     { prospectId: prospect.id },
     { staleTime: 2 * 60 * 1000 }
+  );
+
+  // Email engagement (opens + clicks from Resend webhooks)
+  const { data: engagementData, isLoading: engagementLoading } = trpc.prospects.getEmailEngagement.useQuery(
+    { prospectId: prospect.id },
+    { staleTime: 60 * 1000, enabled: activeTab === "engagement" }
   );
 
   const [draftMessage, setDraftMessage] = useState<string>("");
@@ -207,10 +221,11 @@ export default function ProspectCRMCard({
   } : null;
 
   const TABS: { key: PanelTab; label: string; icon: React.ReactNode }[] = [
-    { key: "overview",  label: "Overview",  icon: <Building2 size={11} /> },
-    { key: "research",  label: "Research",  icon: <Sparkles size={11} /> },
-    { key: "email",     label: "Email",     icon: <Send size={11} /> },
-    { key: "activity",  label: "Activity",  icon: <Activity size={11} /> },
+    { key: "overview",    label: "Overview",    icon: <Building2 size={11} /> },
+    { key: "research",    label: "Research",    icon: <Sparkles size={11} /> },
+    { key: "email",       label: "Email",       icon: <Send size={11} /> },
+    { key: "activity",    label: "Activity",    icon: <Activity size={11} /> },
+    { key: "engagement",  label: "Engagement",  icon: <TrendingUp size={11} /> },
   ];
 
   return (
@@ -667,6 +682,60 @@ export default function ProspectCRMCard({
             <p className="text-[11px] text-zinc-600 text-center">
               Sends email · advances to Contacted · schedules 3-day follow-up · logs activity
             </p>
+          </div>
+        )}
+
+        {/* ── ENGAGEMENT TAB ── */}
+        {activeTab === "engagement" && (
+          <div>
+            {engagementLoading ? (
+              <div className="space-y-3">
+                {[1,2,3].map(i => <div key={i} className="h-12 bg-zinc-800/60 rounded animate-pulse" />)}
+              </div>
+            ) : engagementData && (engagementData as unknown[]).length > 0 ? (
+              <div className="space-y-0">
+                {(engagementData as EngagementEvent[]).map(ev => {
+                  const isClick = ev.eventType === "email.clicked";
+                  return (
+                    <div key={ev.id} className="flex gap-3 py-3 border-b border-zinc-800/60 last:border-0">
+                      <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${isClick ? "bg-amber-500" : "bg-emerald-500"}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            {isClick
+                              ? <Zap size={10} className="text-amber-400" />
+                              : <Mail size={10} className="text-emerald-400" />}
+                            <span className="text-[12px] font-semibold text-zinc-200">
+                              {isClick ? "Link clicked" : "Email opened"}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-zinc-600 shrink-0 font-mono">
+                            {new Date(ev.occurredAt).toLocaleString()}
+                          </span>
+                        </div>
+                        {isClick && ev.url && (
+                          <a
+                            href={ev.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] text-blue-400 hover:underline truncate block mt-0.5"
+                          >
+                            {ev.url}
+                          </a>
+                        )}
+                        <p className="text-[10px] text-zinc-600 mt-0.5 font-mono">msg: {ev.messageId}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <TrendingUp size={24} className="text-zinc-700 mx-auto mb-2" />
+                <p className="text-[13px] font-semibold text-zinc-400">No email engagement yet</p>
+                <p className="text-[12px] text-zinc-600 mt-1">Opens and link clicks will appear here once the SPF record is active and emails are sending.</p>
+              </div>
+            )}
           </div>
         )}
 
