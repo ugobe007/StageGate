@@ -579,7 +579,7 @@
 
 ## v9.3 — Operations Console Redesign
 
-- [x] Build AdminPipeline.tsx: 5-column kanban (Prospects→Contacted→Replied→Qualified→Jobs) wired to real Supabase data, grouped by event, clickable cards
+- [x] Build AdminPipeline.tsx: 5-column kanban (Prospects→Contacted→Replied→Qualified→Jobs) wired to real Supabase data, grouped by event, clickable cards — redesigned with clean white panel, editable message textarea, 4 action buttons (Send Message, Create Job, Schedule Call, Mark Qualified)
 - [x] Add company side panel to AdminPipeline: event context, robot type, logistics need/risk, status, AI next step, Compose/Send/CreateJob actions
 - [ ] Build AdminCompose.tsx: Message Composer with recipients, AI context block, editable body with merge fields, Send/Preview per company
 - [ ] Redesign AdminProspects.tsx: grouped by trade show, group-level actions (Preview Message, Edit, Send to Group)

@@ -5,24 +5,22 @@ import { getLoginUrl } from "@/const";
 import Navbar from "@/components/Navbar";
 import { Link } from "wouter";
 import { toast } from "sonner";
-import {
-  Loader2, X, Send, ExternalLink, ChevronRight,
-  Building2, MapPin, Bot, Mail, Phone, User,
-  Zap, ArrowRight, Plus, RefreshCw
-} from "lucide-react";
+import { Loader2, RefreshCw, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
-// Pipeline stages mapped to DB status values
+// ─── Pipeline stages ──────────────────────────────────────────────────────────
+
 const PIPELINE_STAGES = [
-  { key: "new",           label: "Prospects",  color: "text-neutral-500", bg: "bg-neutral-100",  border: "border-neutral-200", dot: "bg-neutral-400" },
-  { key: "contacted",     label: "Contacted",  color: "text-blue-600",    bg: "bg-blue-50",      border: "border-blue-200",    dot: "bg-blue-500" },
-  { key: "responded",     label: "Replied",    color: "text-amber-600",   bg: "bg-amber-50",     border: "border-amber-200",   dot: "bg-amber-500" },
-  { key: "scheduled",     label: "Qualified",  color: "text-violet-600",  bg: "bg-violet-50",    border: "border-violet-200",  dot: "bg-violet-500" },
-  { key: "converted",     label: "Jobs",       color: "text-emerald-600", bg: "bg-emerald-50",   border: "border-emerald-200", dot: "bg-emerald-500" },
+  { key: "new",       label: "Prospects"  },
+  { key: "contacted", label: "Contacted"  },
+  { key: "responded", label: "Replied"    },
+  { key: "scheduled", label: "Qualified"  },
+  { key: "converted", label: "Jobs"       },
 ] as const;
 
 type StageKey = typeof PIPELINE_STAGES[number]["key"];
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type Prospect = {
   id: number;
@@ -43,38 +41,35 @@ type Prospect = {
   createdAt: string;
 };
 
-// Logistics context per show
+// ─── Operational context per show ─────────────────────────────────────────────
+
 const SHOW_CONTEXT: Record<string, { need: string; risk: string }> = {
-  "CES":      { need: "Robot staging + booth activation",      risk: "Last-minute setup failure, late shipment" },
-  "MANIFEST": { need: "Warehouse automation demo",             risk: "Customs delays, floor logistics" },
-  "HIMSS":    { need: "Medical robot calibration + delivery",  risk: "Regulatory compliance, sterile handling" },
-  "NAB":      { need: "Broadcast robot setup + AV integration",risk: "Cable management, live broadcast risk" },
-  "MODEX":    { need: "Material handling demo + forklift sync",risk: "Floor space conflicts, safety certification" },
+  "CES":      { need: "Robot receiving, unpacking, testing, staging, and delivery",        risk: "Last-minute booth failure, technician travel, calibration issues, shipping delays" },
+  "MANIFEST": { need: "Warehouse automation demo setup and floor logistics",                risk: "Customs delays, floor space conflicts, safety certification" },
+  "HIMSS":    { need: "Medical robot calibration, sterile handling, and delivery",          risk: "Regulatory compliance, sterile handling requirements" },
+  "NAB":      { need: "Broadcast robot setup and AV integration",                          risk: "Cable management, live broadcast risk, last-minute AV failures" },
+  "MODEX":    { need: "Material handling demo, forklift sync, and floor activation",       risk: "Floor space conflicts, safety certification, heavy equipment logistics" },
 };
 
 function getShowContext(shows: string[] | null) {
-  if (!shows?.length) return { need: "Trade show robot logistics", risk: "Shipping + setup failures" };
+  if (!shows?.length) return { need: "Robot receiving, unpacking, testing, staging, and delivery", risk: "Last-minute booth failure, technician travel, calibration issues, shipping delays" };
   for (const show of shows) {
     for (const [key, ctx] of Object.entries(SHOW_CONTEXT)) {
       if (show.toUpperCase().includes(key)) return ctx;
     }
   }
-  return { need: "Trade show robot logistics", risk: "Shipping + setup failures" };
+  return { need: "Robot receiving, unpacking, testing, staging, and delivery", risk: "Last-minute booth failure, technician travel, calibration issues, shipping delays" };
 }
 
-function getSuggestedNextStep(status: string): string {
-  switch (status) {
-    case "new":        return "Send personalized outreach email";
-    case "contacted":  return "Follow up if no reply in 3 days";
-    case "responded":  return "Offer StageGate intake call";
-    case "scheduled":  return "Send service quote + confirm booking";
-    case "converted":  return "Create StageGate job, assign team";
-    default:           return "Review and update status";
-  }
+function buildSuggestedMessage(prospect: Prospect): string {
+  const event = prospect.shows?.[0] ?? "your upcoming event";
+  const name = prospect.company;
+  return `Hi ${name},\n\nWe help robotics teams arriving for ${event} receive, unpack, test, stage, and deliver their robots before the show floor opens.\n\nThis helps avoid last-minute failures, technician travel, and setup issues when the demo matters most.\n\nWould it be useful to schedule a quick StageGate intake call?`;
 }
 
-// Side panel for a selected prospect
-function ProspectPanel({
+// ─── Detail Panel ─────────────────────────────────────────────────────────────
+
+function PipelineDetailPanel({
   prospect,
   onClose,
   onStatusChange,
@@ -83,14 +78,12 @@ function ProspectPanel({
   onClose: () => void;
   onStatusChange: (id: number, status: string) => void;
 }) {
-  const [composing, setComposing] = useState(false);
-  const [draftSubject, setDraftSubject] = useState("");
-  const [draftBody, setDraftBody] = useState("");
+  const [message, setMessage] = useState(() => buildSuggestedMessage(prospect));
   const [sending, setSending] = useState(false);
 
   const ctx = trpc.useUtils();
   const showCtx = getShowContext(prospect.shows);
-  const nextStep = getSuggestedNextStep(prospect.status);
+  const stageLabel = PIPELINE_STAGES.find(s => s.key === prospect.status)?.label ?? prospect.status;
 
   const updateStatus = trpc.prospects.bulkUpdateStatus.useMutation({
     onSuccess: () => {
@@ -101,19 +94,9 @@ function ProspectPanel({
   });
 
   const generateDraft = trpc.admin.generateDrafts.useMutation({
-    onSuccess: (data) => {
-      toast.success(`Draft generated for ${prospect.company}`);
-      setComposing(true);
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const sendDraft = trpc.admin.sendDraft.useMutation({
     onSuccess: () => {
-      toast.success(`Email sent to ${prospect.contactEmail}`);
+      toast.success(`Draft generated — go to Outreach to review and send`);
       setSending(false);
-      setComposing(false);
-      onStatusChange(prospect.id, "contacted");
     },
     onError: (e) => {
       toast.error(e.message);
@@ -121,213 +104,168 @@ function ProspectPanel({
     },
   });
 
-  const stageConfig = PIPELINE_STAGES.find(s => s.key === prospect.status) ?? PIPELINE_STAGES[0];
+  function handleSendMessage() {
+    if (!prospect.contactEmail) {
+      toast.error("No email address on file for this prospect");
+      return;
+    }
+    setSending(true);
+    generateDraft.mutate({ prospectIds: [prospect.id] });
+  }
+
+  function handleMarkQualified() {
+    updateStatus.mutate({ ids: [prospect.id], status: "scheduled" });
+    onStatusChange(prospect.id, "scheduled");
+  }
+
+  function handleAdvanceStage() {
+    const idx = PIPELINE_STAGES.findIndex(s => s.key === prospect.status);
+    const next = PIPELINE_STAGES[idx + 1];
+    if (next) {
+      updateStatus.mutate({ ids: [prospect.id], status: next.key });
+      onStatusChange(prospect.id, next.key);
+    }
+  }
 
   return (
-    <div className="fixed inset-y-0 right-0 w-[420px] bg-white border-l border-neutral-200 shadow-xl z-50 flex flex-col">
+    <aside className="fixed right-0 top-0 h-full w-[420px] border-l border-neutral-200 bg-white p-6 shadow-xl z-50 overflow-y-auto">
       {/* Header */}
-      <div className="flex items-start justify-between p-5 border-b border-neutral-100">
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${stageConfig.bg} ${stageConfig.color}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${stageConfig.dot}`} />
-              {stageConfig.label}
-            </span>
-          </div>
-          <h2 className="text-lg font-semibold text-neutral-900">{prospect.company}</h2>
-          {prospect.hqCountry && (
-            <div className="flex items-center gap-1 text-xs text-neutral-500 mt-0.5">
-              <MapPin size={11} /> {prospect.hqCountry}
-            </div>
-          )}
+          <h2 className="text-xl font-semibold text-neutral-900">{prospect.company}</h2>
+          <p className="text-sm text-neutral-500">
+            {prospect.shows?.join(", ") ?? "No event assigned"}
+            {prospect.hqCountry ? ` · ${prospect.hqCountry}` : ""}
+          </p>
         </div>
-        <button onClick={onClose} className="text-neutral-400 hover:text-neutral-700 mt-0.5">
-          <X size={18} />
+        <button
+          onClick={onClose}
+          className="text-sm text-neutral-500 hover:text-neutral-900 mt-0.5"
+          aria-label="Close panel"
+        >
+          <X size={16} />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {/* Robot */}
-        {(prospect.robotName || prospect.robotType) && (
-          <div className="px-5 py-4 border-b border-neutral-100">
-            <div className="flex items-center gap-2 text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">
-              <Bot size={12} /> Robot
-            </div>
-            <div className="text-sm font-medium text-neutral-900">{prospect.robotName ?? "—"}</div>
-            {prospect.robotType && <div className="text-xs text-neutral-500 mt-0.5">{prospect.robotType}</div>}
-          </div>
-        )}
-
-        {/* Event Context */}
-        <div className="px-5 py-4 border-b border-neutral-100">
-          <div className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-3">Context</div>
-          <div className="space-y-2">
-            {prospect.shows?.length ? (
-              <div className="flex items-start gap-2">
-                <span className="text-xs font-medium text-neutral-500 w-14 shrink-0 pt-0.5">Event</span>
-                <div className="flex flex-wrap gap-1">
-                  {prospect.shows.map(s => (
-                    <span key={s} className="text-xs bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded">{s}</span>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            <div className="flex items-start gap-2">
-              <span className="text-xs font-medium text-neutral-500 w-14 shrink-0 pt-0.5">Need</span>
-              <span className="text-xs text-neutral-700">{showCtx.need}</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-xs font-medium text-neutral-500 w-14 shrink-0 pt-0.5">Risk</span>
-              <span className="text-xs text-neutral-700">{showCtx.risk}</span>
-            </div>
-          </div>
+      {/* Current Stage */}
+      <section className="mb-6">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
+          Current Stage
+        </h3>
+        <div className="border border-neutral-200 rounded-md p-3 text-sm capitalize text-neutral-800">
+          {stageLabel}
         </div>
+      </section>
 
-        {/* Contact */}
-        <div className="px-5 py-4 border-b border-neutral-100">
-          <div className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-3">Contact</div>
-          <div className="space-y-2">
+      {/* Robot */}
+      {(prospect.robotName || prospect.robotType) && (
+        <section className="mb-6">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
+            Robot
+          </h3>
+          <div className="border border-neutral-200 rounded-md p-3 text-sm text-neutral-800 space-y-1">
+            {prospect.robotName && <div className="font-medium">{prospect.robotName}</div>}
+            {prospect.robotType && <div className="text-neutral-500">{prospect.robotType}</div>}
+          </div>
+        </section>
+      )}
+
+      {/* Operational Context */}
+      <section className="mb-6">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
+          Operational Context
+        </h3>
+        <div className="space-y-2 text-sm text-neutral-700">
+          <p>
+            <span className="font-medium text-neutral-900">Likely need:</span>{" "}
+            {showCtx.need}.
+          </p>
+          <p>
+            <span className="font-medium text-neutral-900">Risk:</span>{" "}
+            {showCtx.risk}.
+          </p>
+          <p>
+            <span className="font-medium text-neutral-900">Recommended offer:</span>{" "}
+            StageGate intake and event-readiness support.
+          </p>
+        </div>
+      </section>
+
+      {/* Contact */}
+      {(prospect.contactName || prospect.contactEmail) && (
+        <section className="mb-6">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
+            Contact
+          </h3>
+          <div className="text-sm text-neutral-700 space-y-1">
             {prospect.contactName && (
-              <div className="flex items-center gap-2 text-sm">
-                <User size={13} className="text-neutral-400 shrink-0" />
-                <span className="text-neutral-800">{prospect.contactName}</span>
-                {prospect.contactTitle && <span className="text-neutral-400 text-xs">· {prospect.contactTitle}</span>}
+              <div>
+                <span className="font-medium text-neutral-900">{prospect.contactName}</span>
+                {prospect.contactTitle && <span className="text-neutral-500"> · {prospect.contactTitle}</span>}
               </div>
             )}
             {prospect.contactEmail && (
-              <div className="flex items-center gap-2 text-sm">
-                <Mail size={13} className="text-neutral-400 shrink-0" />
-                <a href={`mailto:${prospect.contactEmail}`} className="text-blue-600 hover:underline text-xs">{prospect.contactEmail}</a>
-                {prospect.emailConfidence && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                    prospect.emailConfidence === "high" ? "bg-emerald-100 text-emerald-700" :
-                    prospect.emailConfidence === "medium" ? "bg-amber-100 text-amber-700" :
-                    "bg-neutral-100 text-neutral-500"
-                  }`}>{prospect.emailConfidence}</span>
-                )}
-              </div>
-            )}
-            {prospect.contactLinkedIn && (
-              <div className="flex items-center gap-2 text-sm">
-                <ExternalLink size={13} className="text-neutral-400 shrink-0" />
-                <a href={prospect.contactLinkedIn} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-xs">LinkedIn</a>
-              </div>
-            )}
-            {prospect.website && (
-              <div className="flex items-center gap-2 text-sm">
-                <ExternalLink size={13} className="text-neutral-400 shrink-0" />
-                <a href={prospect.website.startsWith("http") ? prospect.website : `https://${prospect.website}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-xs truncate max-w-[260px]">{prospect.website}</a>
-              </div>
+              <a href={`mailto:${prospect.contactEmail}`} className="text-blue-600 hover:underline text-xs">
+                {prospect.contactEmail}
+              </a>
             )}
           </div>
-        </div>
+        </section>
+      )}
 
-        {/* Suggested Next Step */}
-        <div className="px-5 py-4 border-b border-neutral-100">
-          <div className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Suggested Next Step</div>
-          <div className="flex items-center gap-2 text-sm text-neutral-800">
-            <Zap size={13} className="text-amber-500 shrink-0" />
-            {nextStep}
-          </div>
-        </div>
+      {/* Suggested Message */}
+      <section className="mb-6">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
+          Suggested Message
+        </h3>
+        <textarea
+          className="w-full h-44 border border-neutral-200 rounded-md p-3 text-sm resize-none focus:outline-none focus:border-neutral-900 bg-white text-neutral-800 leading-relaxed"
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+        />
+      </section>
 
-        {/* Notes */}
-        {prospect.notes && (
-          <div className="px-5 py-4 border-b border-neutral-100">
-            <div className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Notes</div>
-            <p className="text-xs text-neutral-600 leading-relaxed">{prospect.notes}</p>
-          </div>
-        )}
+      {/* Actions */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={handleSendMessage}
+          disabled={sending || generateDraft.isPending}
+          className="border border-neutral-900 text-neutral-900 rounded-md py-2 text-sm hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+        >
+          {(sending || generateDraft.isPending) ? (
+            <Loader2 size={13} className="animate-spin" />
+          ) : (
+            <Send size={13} />
+          )}
+          Send Message
+        </button>
 
-        {/* Compose area */}
-        {composing && (
-          <div className="px-5 py-4 border-b border-neutral-100 bg-neutral-50">
-            <div className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-3">Draft Email</div>
-            <input
-              className="w-full text-sm border border-neutral-200 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-1 focus:ring-neutral-400 bg-white"
-              placeholder="Subject"
-              value={draftSubject}
-              onChange={e => setDraftSubject(e.target.value)}
-            />
-            <textarea
-              className="w-full text-sm border border-neutral-200 rounded px-3 py-2 h-36 resize-none focus:outline-none focus:ring-1 focus:ring-neutral-400 bg-white"
-              placeholder="Email body…"
-              value={draftBody}
-              onChange={e => setDraftBody(e.target.value)}
-            />
-            <div className="flex gap-2 mt-2">
-              <Button
-                size="sm"
-                className="bg-neutral-900 text-white hover:bg-neutral-800 text-xs"
-                disabled={sending || !draftSubject || !draftBody || !prospect.contactEmail}
-                onClick={async () => {
-                  setSending(true);
-                  // Find the draft for this prospect and send it
-                  // For now, use sendDraft with the first pending draft
-                  toast.info("Sending…");
-                  setSending(false);
-                  setComposing(false);
-                  toast.success(`Email queued for ${prospect.company}`);
-                }}
-              >
-                {sending ? <Loader2 size={12} className="animate-spin mr-1" /> : <Send size={12} className="mr-1" />}
-                Send
-              </Button>
-              <Button size="sm" variant="outline" className="text-xs" onClick={() => setComposing(false)}>Cancel</Button>
-            </div>
-          </div>
-        )}
+        <Link href="/admin/outreach">
+          <button className="w-full bg-neutral-900 text-white rounded-md py-2 text-sm hover:bg-neutral-800">
+            Create Job
+          </button>
+        </Link>
+
+        <button
+          onClick={() => toast.info("Schedule call — coming soon")}
+          className="border border-neutral-200 rounded-md py-2 text-sm hover:border-neutral-900 text-neutral-700"
+        >
+          Schedule Call
+        </button>
+
+        <button
+          onClick={handleMarkQualified}
+          disabled={updateStatus.isPending || prospect.status === "scheduled" || prospect.status === "converted"}
+          className="border border-neutral-200 rounded-md py-2 text-sm hover:border-neutral-900 text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Mark Qualified
+        </button>
       </div>
-
-      {/* Actions footer */}
-      <div className="p-4 border-t border-neutral-100 space-y-2">
-        {!composing && (
-          <>
-            {prospect.contactEmail ? (
-              <Button
-                className="w-full bg-neutral-900 text-white hover:bg-neutral-800 text-sm justify-start gap-2"
-                onClick={() => {
-                  generateDraft.mutate({ prospectIds: [prospect.id] });
-                }}
-                disabled={generateDraft.isPending}
-              >
-                {generateDraft.isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                Compose Message
-              </Button>
-            ) : (
-              <Button className="w-full bg-neutral-900 text-white hover:bg-neutral-800 text-sm justify-start gap-2" disabled>
-                <Mail size={14} /> No email on file
-              </Button>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs justify-start gap-1.5 border-neutral-200"
-                onClick={() => {
-                  const nextIdx = PIPELINE_STAGES.findIndex(s => s.key === prospect.status);
-                  const next = PIPELINE_STAGES[nextIdx + 1];
-                  if (next) {
-                    updateStatus.mutate({ ids: [prospect.id], status: next.key });
-                    onStatusChange(prospect.id, next.key);
-                  }
-                }}
-                disabled={prospect.status === "converted" || updateStatus.isPending}
-              >
-                <ChevronRight size={12} /> Advance Stage
-              </Button>
-              <Link href={`/admin/outreach`}>
-                <Button variant="outline" size="sm" className="w-full text-xs justify-start gap-1.5 border-neutral-200">
-                  <Plus size={12} /> Create Job
-                </Button>
-              </Link>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+    </aside>
   );
 }
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AdminPipeline() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -364,9 +302,6 @@ export default function AdminPipeline() {
     }));
   }, [filtered]);
 
-  // Conversion funnel numbers
-  const funnel = PIPELINE_STAGES.map(s => filtered.filter(p => p.status === s.key).length);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -396,17 +331,16 @@ export default function AdminPipeline() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900">
-      {/* Top bar */}
-      <div className="border-b border-neutral-200 px-6 py-4 flex items-center justify-between">
+    <main className="min-h-screen bg-white text-neutral-900">
+      {/* Header */}
+      <div className="border-b border-neutral-200 px-6 py-5 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-neutral-900">Pipeline</h1>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            {filtered.length} prospects · {funnel[4]} converted
+          <h1 className="text-2xl font-semibold text-neutral-900">Pipeline</h1>
+          <p className="text-sm text-neutral-500 mt-0.5">
+            Track how prospects turn into StageGate jobs
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Show filter */}
           <select
             value={filterShow}
             onChange={e => setFilterShow(e.target.value)}
@@ -418,6 +352,7 @@ export default function AdminPipeline() {
           <button
             onClick={() => refetch()}
             className="text-neutral-400 hover:text-neutral-700 p-1.5 rounded hover:bg-neutral-100"
+            aria-label="Refresh"
           >
             <RefreshCw size={14} />
           </button>
@@ -429,36 +364,14 @@ export default function AdminPipeline() {
         </div>
       </div>
 
-      {/* Funnel summary bar */}
-      <div className="border-b border-neutral-100 px-6 py-2.5 flex items-center gap-1 text-xs text-neutral-500">
-        {PIPELINE_STAGES.map((stage, i) => (
-          <span key={stage.key} className="flex items-center gap-1">
-            <span className={`font-semibold ${stage.color}`}>{funnel[i]}</span>
-            <span>{stage.label}</span>
-            {i < PIPELINE_STAGES.length - 1 && <ArrowRight size={11} className="text-neutral-300 mx-0.5" />}
-          </span>
-        ))}
-        {filterShow !== "all" && (
-          <span className="ml-3 text-neutral-400">· filtered: <span className="font-medium text-neutral-600">{filterShow}</span></span>
-        )}
-      </div>
-
-      {/* Pipeline columns */}
-      <div className="flex gap-0 h-[calc(100vh-120px)] overflow-hidden">
-        {columns.map((col, colIdx) => (
-          <div
-            key={col.key}
-            className={`flex-1 flex flex-col border-r border-neutral-100 last:border-r-0 ${colIdx === 0 ? "" : ""}`}
-          >
+      {/* Kanban columns */}
+      <div className="grid grid-cols-5 gap-0 h-[calc(100vh-89px)] overflow-hidden">
+        {columns.map(col => (
+          <div key={col.key} className="flex flex-col border-r border-neutral-200 last:border-r-0">
             {/* Column header */}
-            <div className={`px-4 py-3 border-b border-neutral-100 ${col.bg}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${col.dot}`} />
-                  <span className={`text-xs font-semibold uppercase tracking-wide ${col.color}`}>{col.label}</span>
-                </div>
-                <span className="text-xs font-medium text-neutral-500 tabular-nums">{col.items.length}</span>
-              </div>
+            <div className="px-4 py-3 border-b border-neutral-200 flex items-center justify-between">
+              <h2 className="text-sm font-medium text-neutral-900">{col.label}</h2>
+              <span className="text-xs text-neutral-500 tabular-nums">{col.items.length}</span>
             </div>
 
             {/* Cards */}
@@ -468,38 +381,29 @@ export default function AdminPipeline() {
                   <Loader2 size={16} className="animate-spin text-neutral-300" />
                 </div>
               ) : col.items.length === 0 ? (
-                <div className="text-xs text-neutral-300 text-center pt-8">—</div>
+                <div className="text-xs text-neutral-400 text-center pt-8">No companies</div>
               ) : (
                 col.items.map(p => (
-                  <button
+                  <div
                     key={p.id}
                     onClick={() => setSelectedProspect(p)}
-                    className={`w-full text-left border rounded-lg p-3 hover:border-neutral-400 transition-colors cursor-pointer ${
+                    className={`border rounded-lg p-3 text-sm cursor-pointer transition-colors ${
                       selectedProspect?.id === p.id
-                        ? "border-neutral-800 bg-neutral-50"
-                        : "border-neutral-200 bg-white hover:bg-neutral-50"
+                        ? "border-neutral-900 bg-neutral-50"
+                        : "border-neutral-200 bg-white hover:border-neutral-900"
                     }`}
                   >
-                    <div className="font-medium text-sm text-neutral-900 leading-tight">{p.company}</div>
-                    {p.robotName && (
-                      <div className="text-xs text-neutral-500 mt-0.5 truncate">{p.robotName}</div>
-                    )}
+                    <div className="font-medium text-neutral-900 leading-tight">{p.company}</div>
                     {p.shows?.length ? (
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {p.shows.slice(0, 2).map(s => (
-                          <span key={s} className="text-[10px] bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded">{s}</span>
-                        ))}
-                        {p.shows.length > 2 && (
-                          <span className="text-[10px] text-neutral-400">+{p.shows.length - 2}</span>
-                        )}
+                      <div className="text-xs text-neutral-500 mt-0.5 truncate">
+                        {p.shows.slice(0, 2).join(", ")}
+                        {p.shows.length > 2 ? ` +${p.shows.length - 2}` : ""}
                       </div>
                     ) : null}
-                    {p.hqCountry && p.hqCountry !== "US" && p.hqCountry !== "USA" && (
-                      <div className="text-[10px] text-neutral-400 mt-1 flex items-center gap-1">
-                        <MapPin size={9} /> {p.hqCountry}
-                      </div>
+                    {p.robotName && (
+                      <div className="text-xs text-neutral-400 mt-1 truncate">{p.robotName}</div>
                     )}
-                  </button>
+                  </div>
                 ))
               )}
             </div>
@@ -507,14 +411,14 @@ export default function AdminPipeline() {
         ))}
       </div>
 
-      {/* Side panel */}
+      {/* Side panel overlay */}
       {selectedProspect && (
         <>
           <div
             className="fixed inset-0 bg-black/10 z-40"
             onClick={() => setSelectedProspect(null)}
           />
-          <ProspectPanel
+          <PipelineDetailPanel
             prospect={selectedProspect}
             onClose={() => setSelectedProspect(null)}
             onStatusChange={(id, status) => {
@@ -523,6 +427,6 @@ export default function AdminPipeline() {
           />
         </>
       )}
-    </div>
+    </main>
   );
 }
