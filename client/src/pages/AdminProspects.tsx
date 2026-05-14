@@ -77,10 +77,13 @@ export default function AdminProspects() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkSending, setBulkSending] = useState(false);
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [bulkStatusTarget, setBulkStatusTarget] = useState<ProspectStatus>("contacted");
+  const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
 
   const bulkUpdateStatusMutation = trpc.prospects.bulkUpdateStatus.useMutation({
     onSuccess: (data) => {
-      toast.success(`${data.updated} prospect${data.updated !== 1 ? 's' : ''} marked as Contacted`);
+      const label = STATUS_CONFIG[bulkStatusTarget]?.label ?? bulkStatusTarget;
+      toast.success(`${data.updated} prospect${data.updated !== 1 ? 's' : ''} moved to ${label}`);
       setSelectedIds(new Set());
       refetch();
     },
@@ -88,10 +91,10 @@ export default function AdminProspects() {
     onSettled: () => setBulkUpdating(false),
   });
 
-  const handleBulkMarkContacted = () => {
+  const handleBulkUpdateStatus = () => {
     if (selectedIds.size === 0 || bulkUpdating) return;
     setBulkUpdating(true);
-    bulkUpdateStatusMutation.mutate({ ids: Array.from(selectedIds), status: "contacted" });
+    bulkUpdateStatusMutation.mutate({ ids: Array.from(selectedIds), status: bulkStatusTarget });
   };
   const [bulkProgress, setBulkProgress] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [bulkResults, setBulkResults] = useState<{ id: number; success: boolean; company: string; error?: string }[]>([]);
@@ -635,28 +638,90 @@ export default function AdminProspects() {
               <X size={10} /> Clear
             </button>
 
-            {/* Mark as Contacted bulk action */}
-            <button
-              onClick={handleBulkMarkContacted}
-              disabled={bulkUpdating || selectedIds.size === 0}
-              style={{
-                display: "flex", alignItems: "center", gap: "0.4rem",
-                fontFamily: "var(--font-mono)", fontSize: "0.5625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
-                padding: "0.35rem 0.9rem",
-                background: bulkUpdating ? "rgba(99,102,241,0.20)" : "rgba(99,102,241,0.15)",
-                color: bulkUpdating ? "rgba(129,140,248,0.50)" : "#818cf8",
-                border: "1px solid rgba(99,102,241,0.35)",
-                cursor: bulkUpdating ? "wait" : "pointer",
-                borderRadius: "0.125rem",
-                transition: "all 0.15s",
-              }}
-            >
-              {bulkUpdating ? (
-                <><RefreshCw size={10} style={{ animation: "spin 1s linear infinite" }} /> Updating...</>
-              ) : (
-                <><ArrowRight size={10} /> Mark {selectedIds.size} Contacted</>
+            {/* Bulk move-to-status: two-part control — status picker + confirm */}
+            <div style={{ position: "relative", display: "flex", alignItems: "stretch", gap: 0 }}>
+              {/* Status picker button */}
+              <button
+                onClick={() => setBulkStatusOpen(o => !o)}
+                disabled={bulkUpdating}
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.35rem",
+                  fontFamily: "var(--font-mono)", fontSize: "0.5625rem", fontWeight: 700,
+                  letterSpacing: "0.08em", textTransform: "uppercase",
+                  padding: "0.35rem 0.65rem",
+                  background: "rgba(99,102,241,0.10)",
+                  color: STATUS_CONFIG[bulkStatusTarget].color,
+                  border: "1px solid rgba(99,102,241,0.35)",
+                  borderRight: "none",
+                  cursor: bulkUpdating ? "not-allowed" : "pointer",
+                  borderRadius: "0.125rem 0 0 0.125rem",
+                  transition: "all 0.15s",
+                  minWidth: "7rem",
+                }}
+              >
+                {STATUS_CONFIG[bulkStatusTarget].icon}
+                {STATUS_CONFIG[bulkStatusTarget].label}
+                <ChevronDown size={9} style={{ marginLeft: "auto", opacity: 0.6 }} />
+              </button>
+
+              {/* Confirm button */}
+              <button
+                onClick={handleBulkUpdateStatus}
+                disabled={bulkUpdating || selectedIds.size === 0}
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.4rem",
+                  fontFamily: "var(--font-mono)", fontSize: "0.5625rem", fontWeight: 700,
+                  letterSpacing: "0.08em", textTransform: "uppercase",
+                  padding: "0.35rem 0.75rem",
+                  background: bulkUpdating ? "rgba(99,102,241,0.20)" : "rgba(99,102,241,0.18)",
+                  color: bulkUpdating ? "rgba(129,140,248,0.50)" : "#818cf8",
+                  border: "1px solid rgba(99,102,241,0.35)",
+                  cursor: bulkUpdating ? "wait" : "pointer",
+                  borderRadius: "0 0.125rem 0.125rem 0",
+                  transition: "all 0.15s",
+                }}
+              >
+                {bulkUpdating ? (
+                  <><RefreshCw size={10} style={{ animation: "spin 1s linear infinite" }} /> Updating...</>
+                ) : (
+                  <><ArrowRight size={10} /> Move {selectedIds.size}</>
+                )}
+              </button>
+
+              {/* Status dropdown */}
+              {bulkStatusOpen && (
+                <div
+                  style={{
+                    position: "absolute", top: "calc(100% + 4px)", left: 0,
+                    background: "#0d0d0d", border: "1px solid rgba(99,102,241,0.35)",
+                    borderRadius: "0.25rem", zIndex: 100, minWidth: "10rem",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+                    overflow: "hidden",
+                  }}
+                >
+                  {(Object.entries(STATUS_CONFIG) as [ProspectStatus, typeof STATUS_CONFIG[ProspectStatus]][]).map(([key, cfg]) => (
+                    <button
+                      key={key}
+                      onClick={() => { setBulkStatusTarget(key); setBulkStatusOpen(false); }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "0.5rem",
+                        width: "100%", padding: "0.45rem 0.75rem",
+                        fontFamily: "var(--font-mono)", fontSize: "0.5625rem",
+                        letterSpacing: "0.08em", textTransform: "uppercase",
+                        color: cfg.color,
+                        background: bulkStatusTarget === key ? "rgba(255,255,255,0.06)" : "transparent",
+                        border: "none", cursor: "pointer", textAlign: "left",
+                        borderLeft: bulkStatusTarget === key ? `2px solid ${cfg.color}` : "2px solid transparent",
+                        transition: "background 0.1s",
+                      }}
+                    >
+                      {cfg.icon} {cfg.label}
+                      {bulkStatusTarget === key && <Check size={9} style={{ marginLeft: "auto" }} />}
+                    </button>
+                  ))}
+                </div>
               )}
-            </button>
+            </div>
 
             <div style={{ flex: 1 }} />
 

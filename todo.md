@@ -488,3 +488,12 @@
 - [x] Button only appears when selected rows include at least one non-contacted prospect
 - [x] On success: clear selection, refetch, show count in toast
 - [x] Add vitest test for prospects.bulkUpdateStatus (admin allowed, user rejected)
+
+
+## v8.4 — Bulk Status Dropdown
+
+- [x] Replace hardcoded "Mark Contacted" button with a status dropdown in the bulk toolbar (supports all 6 statuses)
+- [x] Add bulkStatusTarget state to track the chosen status before confirming
+- [x] Show color-coded status options matching STATUS_CONFIG colors
+- [x] Update toast message to reflect the chosen status label
+- [x] Keep existing "Send Email" button and other toolbar elements intact
