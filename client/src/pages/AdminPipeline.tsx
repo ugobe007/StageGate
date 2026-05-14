@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -22,17 +22,19 @@ import { toast } from "sonner";
 import {
   Loader2, RefreshCw, Send, X, GripVertical, Plus, Check,
   Building2, Bot, MapPin, Mail, Linkedin, Globe, ArrowRight,
-  Sparkles, ChevronRight, ExternalLink,
+  Sparkles, ChevronRight, ExternalLink, Users, Activity,
+  FileText, Zap, Clock, TrendingUp, Shield, Star,
+  Phone, Calendar, AlertCircle, CheckCircle2,
 } from "lucide-react";
 
 // ─── Pipeline stages ──────────────────────────────────────────────────────────
 
 const PIPELINE_STAGES = [
-  { key: "new",       label: "Prospects",  color: "bg-slate-100 text-slate-600"   },
-  { key: "contacted", label: "Contacted",  color: "bg-blue-50 text-blue-600"      },
-  { key: "responded", label: "Replied",    color: "bg-amber-50 text-amber-600"    },
-  { key: "scheduled", label: "Qualified",  color: "bg-emerald-50 text-emerald-600"},
-  { key: "converted", label: "Jobs",       color: "bg-violet-50 text-violet-600"  },
+  { key: "new",       label: "Prospects",  color: "bg-zinc-800 text-zinc-300",    dot: "bg-zinc-500"   },
+  { key: "contacted", label: "Contacted",  color: "bg-blue-900/60 text-blue-300", dot: "bg-blue-400"   },
+  { key: "responded", label: "Replied",    color: "bg-amber-900/60 text-amber-300", dot: "bg-amber-400" },
+  { key: "scheduled", label: "Qualified",  color: "bg-emerald-900/60 text-emerald-300", dot: "bg-emerald-400" },
+  { key: "converted", label: "Jobs",       color: "bg-violet-900/60 text-violet-300", dot: "bg-violet-400" },
 ] as const;
 
 type StageKey = typeof PIPELINE_STAGES[number]["key"];
@@ -56,6 +58,30 @@ type Prospect = {
   emailConfidence: string | null;
   followUpDate: string | null;
   createdAt: string;
+};
+
+type ResearchData = {
+  companyOverview: string;
+  robotSpecs: {
+    name: string;
+    type: string;
+    payload?: string;
+    speed?: string;
+    battery?: string;
+    navigation?: string;
+    useCases?: string[];
+  };
+  competitiveContext: string;
+  useCases: string[];
+  whyStageGate: string;
+  showIntel: string;
+  decisionMakers: Array<{
+    name: string;
+    title: string;
+    email?: string;
+    linkedin?: string;
+    confidence?: string;
+  }>;
 };
 
 // ─── Draggable Card ───────────────────────────────────────────────────────────
@@ -82,46 +108,49 @@ function DraggableCard({
   return (
     <div
       ref={setNodeRef}
-      style={{ ...style, borderColor: isSelected ? "#111" : undefined }}
-      className={`group rounded-lg border text-sm transition-all select-none ${
+      style={style}
+      className={`group rounded-lg border text-sm transition-all select-none cursor-pointer ${
         isDragging
-          ? "opacity-30"
+          ? "opacity-20"
           : isSelected
-          ? "bg-white shadow-sm"
-          : "border-neutral-200 bg-white hover:border-neutral-400 hover:shadow-sm"
+          ? "border-emerald-500/50 bg-zinc-800 shadow-lg shadow-emerald-500/10"
+          : "border-zinc-700/60 bg-zinc-800/60 hover:border-zinc-500 hover:bg-zinc-800"
       }`}
+      onClick={onClick}
     >
       <div className="p-3">
-        {/* Drag handle row */}
         <div className="flex items-start gap-1.5">
           <button
             {...listeners}
             {...attributes}
-            className="mt-0.5 text-neutral-200 hover:text-neutral-400 cursor-grab active:cursor-grabbing shrink-0 focus:outline-none opacity-0 group-hover:opacity-100 transition-opacity"
+            className="mt-0.5 text-zinc-600 hover:text-zinc-400 cursor-grab active:cursor-grabbing shrink-0 focus:outline-none opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={e => e.stopPropagation()}
             aria-label="Drag"
           >
             <GripVertical size={12} />
           </button>
-          <div className="flex-1 min-w-0 cursor-pointer" onClick={onClick}>
-            <div className="font-semibold text-neutral-900 leading-tight truncate text-[13px]">
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-white leading-tight truncate text-[13px]">
               {prospect.company}
             </div>
             {prospect.robotName && (
               <div className="flex items-center gap-1 mt-1">
-                <Bot size={10} className="text-neutral-400 shrink-0" />
-                <span className="text-[11px] text-neutral-500 truncate">{prospect.robotName}</span>
+                <Bot size={10} className="text-zinc-500 shrink-0" />
+                <span className="text-[11px] text-zinc-400 truncate">{prospect.robotName}</span>
+                {prospect.robotType && (
+                  <span className="text-[10px] text-zinc-600 truncate">· {prospect.robotType}</span>
+                )}
               </div>
             )}
             {prospect.shows?.length ? (
               <div className="flex flex-wrap gap-1 mt-1.5">
                 {prospect.shows.slice(0, 2).map(s => (
-                  <span key={s} className="inline-block bg-neutral-100 text-neutral-600 text-[10px] px-1.5 py-0.5 rounded font-medium">
+                  <span key={s} className="inline-block bg-zinc-700/60 text-zinc-300 text-[10px] px-1.5 py-0.5 rounded font-medium">
                     {s}
                   </span>
                 ))}
                 {prospect.shows.length > 2 && (
-                  <span className="text-[10px] text-neutral-400">+{prospect.shows.length - 2}</span>
+                  <span className="text-[10px] text-zinc-500">+{prospect.shows.length - 2}</span>
                 )}
               </div>
             ) : null}
@@ -130,8 +159,8 @@ function DraggableCard({
       </div>
       {prospect.hqCountry && (
         <div className="px-3 pb-2.5 flex items-center gap-1">
-          <MapPin size={9} className="text-neutral-300" />
-          <span className="text-[10px] text-neutral-400">{prospect.hqCountry}</span>
+          <MapPin size={9} className="text-zinc-600" />
+          <span className="text-[10px] text-zinc-500">{prospect.hqCountry}</span>
         </div>
       )}
     </div>
@@ -140,10 +169,10 @@ function DraggableCard({
 
 function DragOverlayCard({ prospect }: { prospect: Prospect }) {
   return (
-    <div className="border border-neutral-900 rounded-lg p-3 text-sm bg-white shadow-xl w-52 rotate-1">
-      <div className="font-semibold text-neutral-900 text-[13px] truncate">{prospect.company}</div>
+    <div className="border border-emerald-500/50 rounded-lg p-3 text-sm bg-zinc-800 shadow-2xl shadow-emerald-500/20 w-52 rotate-1">
+      <div className="font-semibold text-white text-[13px] truncate">{prospect.company}</div>
       {prospect.robotName && (
-        <div className="text-[11px] text-neutral-500 mt-0.5 truncate">{prospect.robotName}</div>
+        <div className="text-[11px] text-zinc-400 mt-0.5 truncate">{prospect.robotName}</div>
       )}
     </div>
   );
@@ -186,34 +215,34 @@ function AddCardForm({
   }
 
   return (
-    <div className="border border-neutral-900 rounded-lg p-2.5 bg-white space-y-1.5 shadow-sm">
+    <div className="border border-emerald-500/40 rounded-lg p-2.5 bg-zinc-800 space-y-1.5 shadow-lg">
       <input
         ref={inputRef}
         value={company}
         onChange={e => setCompany(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Company name"
-        className="w-full text-[13px] border border-neutral-200 rounded px-2 py-1.5 focus:outline-none focus:border-neutral-900 placeholder:text-neutral-400"
+        className="w-full text-[13px] border border-zinc-600 rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 placeholder:text-zinc-500 bg-zinc-900 text-white"
       />
       <input
         value={event}
         onChange={e => setEvent(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Event (e.g. CES 2026)"
-        className="w-full text-xs border border-neutral-200 rounded px-2 py-1.5 focus:outline-none focus:border-neutral-900 placeholder:text-neutral-400"
+        className="w-full text-xs border border-zinc-600 rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 placeholder:text-zinc-500 bg-zinc-900 text-white"
       />
       <div className="flex gap-1.5 pt-0.5">
         <button
           onClick={handleSubmit}
           disabled={!company.trim() || create.isPending}
-          className="flex-1 flex items-center justify-center gap-1 bg-neutral-900 text-white rounded py-1.5 text-xs hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex-1 flex items-center justify-center gap-1 bg-emerald-600 text-white rounded py-1.5 text-xs hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {create.isPending ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
           Add
         </button>
         <button
           onClick={onCancel}
-          className="px-2.5 border border-neutral-200 rounded text-xs text-neutral-500 hover:border-neutral-900"
+          className="px-2.5 border border-zinc-600 rounded text-xs text-zinc-400 hover:border-zinc-400"
         >
           <X size={11} />
         </button>
@@ -228,6 +257,7 @@ function DroppableColumn({
   stageKey,
   label,
   color,
+  dot,
   items,
   isLoading,
   isOver,
@@ -239,6 +269,7 @@ function DroppableColumn({
   stageKey: string;
   label: string;
   color: string;
+  dot: string;
   items: Prospect[];
   isLoading: boolean;
   isOver: boolean;
@@ -251,28 +282,29 @@ function DroppableColumn({
   const [adding, setAdding] = useState(false);
 
   return (
-    <div className="flex flex-col border-r border-neutral-100 last:border-r-0 min-w-0">
+    <div className="flex flex-col border-r border-zinc-800 last:border-r-0 min-w-0">
       {/* Column header */}
-      <div className="px-3 py-3 border-b border-neutral-100 flex items-center justify-between gap-2">
+      <div className="px-3 py-3 border-b border-zinc-800 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${color}`}>{label}</span>
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+          <span className="text-[12px] font-semibold text-zinc-200">{label}</span>
         </div>
-        <span className="text-xs text-neutral-400 tabular-nums shrink-0">{items.length}</span>
+        <span className="text-xs text-zinc-500 tabular-nums shrink-0 font-mono">{items.length}</span>
       </div>
 
       {/* Drop zone */}
       <div
         ref={setNodeRef}
         className={`flex-1 overflow-y-auto p-2 space-y-1.5 transition-colors ${
-          isOver ? "bg-neutral-50" : "bg-white"
+          isOver ? "bg-zinc-700/20" : ""
         }`}
       >
         {isLoading ? (
           <div className="flex items-center justify-center h-20">
-            <Loader2 size={14} className="animate-spin text-neutral-300" />
+            <Loader2 size={14} className="animate-spin text-zinc-600" />
           </div>
         ) : items.length === 0 && !isOver ? (
-          <div className="text-[11px] text-center pt-10 text-neutral-300">Empty</div>
+          <div className="text-[11px] text-center pt-10 text-zinc-600">Empty</div>
         ) : (
           items.map(p => (
             <DraggableCard
@@ -285,7 +317,7 @@ function DroppableColumn({
           ))
         )}
         {isOver && (
-          <div className="h-8 border-2 border-dashed border-neutral-200 rounded-lg" />
+          <div className="h-8 border-2 border-dashed border-emerald-500/30 rounded-lg" />
         )}
 
         {/* Inline add */}
@@ -298,7 +330,7 @@ function DroppableColumn({
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="w-full flex items-center gap-1.5 text-[11px] text-neutral-300 hover:text-neutral-600 py-1.5 px-1 rounded hover:bg-neutral-50 transition-colors"
+            className="w-full flex items-center gap-1.5 text-[11px] text-zinc-600 hover:text-zinc-300 py-1.5 px-1 rounded hover:bg-zinc-800 transition-colors"
           >
             <Plus size={11} />
             Add Company
@@ -311,6 +343,8 @@ function DroppableColumn({
 
 // ─── CRM Detail Panel ─────────────────────────────────────────────────────────
 
+type PanelTab = "overview" | "research" | "email" | "activity";
+
 function CRMPanel({
   prospect,
   onClose,
@@ -321,13 +355,26 @@ function CRMPanel({
   onStatusChange: (id: number, status: string) => void;
 }) {
   const ctx = trpc.useUtils();
+  const [activeTab, setActiveTab] = useState<PanelTab>("overview");
   const stage = PIPELINE_STAGES.find(s => s.key === prospect.status);
   const nextStage = PIPELINE_STAGES[PIPELINE_STAGES.findIndex(s => s.key === prospect.status) + 1];
 
   // AI brief — auto-fetches on open
-  const { data: briefData, isLoading: briefLoading, error: briefError } = trpc.prospects.getBrief.useQuery(
+  const { data: briefData, isLoading: briefLoading } = trpc.prospects.getBrief.useQuery(
     { id: prospect.id },
-    { staleTime: 5 * 60 * 1000 } // cache for 5 min
+    { staleTime: 5 * 60 * 1000 }
+  );
+
+  // Research data (nightly job results)
+  const { data: researchData, isLoading: researchLoading, refetch: refetchResearch } = trpc.prospects.getResearch.useQuery(
+    { prospectId: prospect.id },
+    { staleTime: 10 * 60 * 1000 }
+  );
+
+  // Activity log
+  const { data: activitiesData, isLoading: activitiesLoading } = trpc.prospects.getActivities.useQuery(
+    { prospectId: prospect.id },
+    { staleTime: 2 * 60 * 1000 }
   );
 
   const [draftMessage, setDraftMessage] = useState<string>("");
@@ -343,10 +390,11 @@ function CRMPanel({
     }
   }, [briefData, draftEdited]);
 
-  // Reset draft when prospect changes
+  // Reset when prospect changes
   useEffect(() => {
     setDraftMessage("");
     setDraftEdited(false);
+    setActiveTab("overview");
   }, [prospect.id]);
 
   const updateStatus = trpc.prospects.bulkUpdateStatus.useMutation({
@@ -362,21 +410,24 @@ function CRMPanel({
       setRegenerating(false);
       toast.success("Draft rewritten");
     },
-    onError: (e) => {
-      setRegenerating(false);
-      toast.error(e.message);
-    },
+    onError: (e) => { setRegenerating(false); toast.error(e.message); },
+  });
+
+  const triggerResearch = trpc.prospects.triggerResearch.useMutation({
+    onSuccess: () => { refetchResearch(); toast.success("Research queued — refreshing in a moment"); },
+    onError: (e) => toast.error(e.message),
   });
 
   const generateDraft = trpc.admin.generateDrafts.useMutation({
     onSuccess: () => {
       setSendSuccess(true);
+      // Log activity
+      ctx.prospects.getActivities.invalidate({ prospectId: prospect.id });
       toast.success(`Draft queued for ${prospect.company}`, {
         description: "Review and send from the Outreach queue.",
         action: { label: "View Outreach", onClick: () => window.location.href = "/admin/outreach" },
         duration: 5000,
       });
-      // Reset button after 2s
       setTimeout(() => setSendSuccess(false), 2000);
     },
     onError: (e) => toast.error(e.message),
@@ -396,227 +447,517 @@ function CRMPanel({
     generateDraft.mutate({ prospectIds: [prospect.id] });
   }
 
+  // researchData is the raw row from prospectResearch table
+  const research: ResearchData | null = researchData ? {
+    companyOverview: researchData.companyOverview ?? "",
+    robotSpecs: researchData.robotSpecs as ResearchData["robotSpecs"] ?? { name: "", type: "" },
+    competitiveContext: researchData.competitiveContext ?? "",
+    useCases: (researchData.useCases as string[]) ?? [],
+    whyStageGate: researchData.whyStageGate ?? "",
+    showIntel: researchData.showIntel ?? "",
+    decisionMakers: (researchData.decisionMakers as ResearchData["decisionMakers"]) ?? [],
+  } : null;
+
   const confidenceColor: Record<string, string> = {
-    verified: "text-emerald-600 bg-emerald-50",
-    high:     "text-blue-600 bg-blue-50",
-    medium:   "text-amber-600 bg-amber-50",
-    low:      "text-red-500 bg-red-50",
+    verified: "text-emerald-400 bg-emerald-900/40 border border-emerald-700/40",
+    high:     "text-blue-400 bg-blue-900/40 border border-blue-700/40",
+    medium:   "text-amber-400 bg-amber-900/40 border border-amber-700/40",
+    low:      "text-red-400 bg-red-900/40 border border-red-700/40",
   };
 
+  const TABS: { key: PanelTab; label: string; icon: React.ReactNode }[] = [
+    { key: "overview", label: "Overview", icon: <Building2 size={12} /> },
+    { key: "research", label: "Research", icon: <Sparkles size={12} /> },
+    { key: "email",    label: "Email",    icon: <Send size={12} /> },
+    { key: "activity", label: "Activity", icon: <Activity size={12} /> },
+  ];
+
   return (
-    <aside className="fixed right-0 top-0 h-full w-[480px] bg-white border-l border-neutral-200 shadow-2xl z-50 flex flex-col overflow-hidden">
-      {/* ── Header / Business Card ── */}
-      <div className="px-6 pt-6 pb-5 border-b border-neutral-100">
-        <div className="flex items-start justify-between mb-4">
+    <aside className="fixed right-0 top-0 h-full w-[500px] bg-zinc-900 border-l border-zinc-700/60 shadow-2xl z-50 flex flex-col overflow-hidden">
+
+      {/* ── Business Card Header ── */}
+      <div className="px-5 pt-5 pb-4 border-b border-zinc-800 bg-zinc-900">
+        <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${stage?.color ?? "bg-neutral-100 text-neutral-500"}`}>
+            {/* Stage pill + advance */}
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${stage?.color ?? "bg-zinc-800 text-zinc-400"}`}>
                 {stage?.label ?? prospect.status}
               </span>
               {nextStage && (
                 <button
                   onClick={handleAdvanceStage}
                   disabled={updateStatus.isPending}
-                  className="flex items-center gap-1 text-[11px] text-neutral-400 hover:text-neutral-900 transition-colors"
+                  className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-emerald-400 transition-colors"
                 >
-                  <ArrowRight size={11} />
+                  {updateStatus.isPending ? <Loader2 size={10} className="animate-spin" /> : <ArrowRight size={10} />}
                   Move to {nextStage.label}
                 </button>
               )}
             </div>
-            <h2 className="text-xl font-bold text-neutral-900 leading-tight truncate">{prospect.company}</h2>
+
+            {/* Company name */}
+            <h2 className="text-[20px] font-bold text-white leading-tight truncate">{prospect.company}</h2>
+
+            {/* Robot + country */}
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
               {prospect.robotName && (
-                <span className="flex items-center gap-1 text-[12px] text-neutral-500">
-                  <Bot size={11} className="text-neutral-400" />
-                  {prospect.robotName}
-                  {prospect.robotType && <span className="text-neutral-400">· {prospect.robotType}</span>}
+                <span className="flex items-center gap-1.5 text-[12px] text-zinc-300">
+                  <Bot size={12} className="text-zinc-500" />
+                  <span className="font-medium">{prospect.robotName}</span>
+                  {prospect.robotType && <span className="text-zinc-500">· {prospect.robotType}</span>}
                 </span>
               )}
               {prospect.hqCountry && (
-                <span className="flex items-center gap-1 text-[12px] text-neutral-400">
+                <span className="flex items-center gap-1 text-[12px] text-zinc-500">
                   <MapPin size={10} />
                   {prospect.hqCountry}
                 </span>
               )}
             </div>
           </div>
-          <button onClick={onClose} className="text-neutral-300 hover:text-neutral-700 ml-3 mt-0.5 shrink-0">
-            <X size={16} />
+          <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 ml-3 mt-0.5 shrink-0 p-1 rounded hover:bg-zinc-800">
+            <X size={15} />
           </button>
         </div>
 
         {/* Shows */}
         {prospect.shows?.length ? (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 mb-3">
             {prospect.shows.map(s => (
-              <span key={s} className="text-[11px] bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded font-medium">
-                {s}
+              <span key={s} className="text-[11px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded border border-zinc-700/60 font-medium">
+                📍 {s}
               </span>
             ))}
           </div>
         ) : null}
 
-        {/* Contact row */}
+        {/* Primary contact */}
         {(prospect.contactName || prospect.contactEmail) && (
-          <div className="mt-3 flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             {prospect.contactName && (
-              <span className="text-[12px] font-medium text-neutral-800">
+              <span className="text-[12px] font-semibold text-zinc-200">
                 {prospect.contactName}
-                {prospect.contactTitle && <span className="font-normal text-neutral-500"> · {prospect.contactTitle}</span>}
+                {prospect.contactTitle && <span className="font-normal text-zinc-500"> · {prospect.contactTitle}</span>}
               </span>
             )}
             {prospect.contactEmail && (
-              <a
-                href={`mailto:${prospect.contactEmail}`}
-                className="flex items-center gap-1 text-[11px] text-blue-600 hover:underline"
-              >
+              <a href={`mailto:${prospect.contactEmail}`} className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 hover:underline">
                 <Mail size={10} />
                 {prospect.contactEmail}
                 {prospect.emailConfidence && (
-                  <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${confidenceColor[prospect.emailConfidence] ?? "bg-neutral-100 text-neutral-500"}`}>
+                  <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${confidenceColor[prospect.emailConfidence] ?? "bg-zinc-800 text-zinc-400"}`}>
                     {prospect.emailConfidence}
                   </span>
                 )}
               </a>
             )}
-            {prospect.contactLinkedIn && (
-              <a href={prospect.contactLinkedIn} target="_blank" rel="noreferrer" className="text-neutral-400 hover:text-blue-600">
-                <Linkedin size={12} />
-              </a>
-            )}
-            {prospect.website && (
-              <a href={prospect.website} target="_blank" rel="noreferrer" className="text-neutral-400 hover:text-neutral-700">
-                <Globe size={12} />
-              </a>
-            )}
+            <div className="flex items-center gap-2">
+              {prospect.contactLinkedIn && (
+                <a href={prospect.contactLinkedIn} target="_blank" rel="noreferrer" className="text-zinc-600 hover:text-blue-400 transition-colors">
+                  <Linkedin size={13} />
+                </a>
+              )}
+              {prospect.website && (
+                <a href={prospect.website} target="_blank" rel="noreferrer" className="text-zinc-600 hover:text-zinc-300 transition-colors">
+                  <Globe size={13} />
+                </a>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* ── Scrollable body ── */}
+      {/* ── Tab bar ── */}
+      <div className="flex border-b border-zinc-800 bg-zinc-900 shrink-0">
+        {TABS.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold transition-colors ${
+              activeTab === tab.key
+                ? "text-white border-b-2 border-emerald-500"
+                : "text-zinc-500 hover:text-zinc-300 border-b-2 border-transparent"
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Tab content ── */}
       <div className="flex-1 overflow-y-auto">
 
-        {/* AI Brief */}
-        <div className="px-6 py-5 border-b border-neutral-100">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles size={13} className="text-amber-500" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Company Brief</span>
-          </div>
+        {/* ── OVERVIEW TAB ── */}
+        {activeTab === "overview" && (
+          <div className="p-5 space-y-5">
 
-          {briefLoading ? (
-            <div className="space-y-2">
-              <div className="h-3 bg-neutral-100 rounded animate-pulse w-full" />
-              <div className="h-3 bg-neutral-100 rounded animate-pulse w-4/5" />
-              <div className="h-3 bg-neutral-100 rounded animate-pulse w-3/5" />
-            </div>
-          ) : briefError ? (
-            <p className="text-[12px] text-red-500">Could not generate brief. Check API connection.</p>
-          ) : briefData?.brief ? (
-            <div className="space-y-3">
-              <p className="text-[13px] text-neutral-700 leading-relaxed">{briefData.brief.summary}</p>
-              <div className="bg-neutral-50 rounded-lg p-3 space-y-2">
-                <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 block mb-0.5">Show Intel</span>
-                  <p className="text-[12px] text-neutral-600 leading-relaxed">{briefData.brief.showIntel}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 block mb-0.5">Why StageGate</span>
-                  <p className="text-[12px] text-neutral-600 leading-relaxed">{briefData.brief.whyStageGate}</p>
-                </div>
+            {/* AI Company Brief */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles size={13} className="text-amber-400" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Company Brief</span>
               </div>
-            </div>
-          ) : null}
-        </div>
-
-        {/* Draft Message */}
-        <div className="px-6 py-5 border-b border-neutral-100">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Send size={12} className="text-neutral-400" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Draft Message</span>
-              {draftEdited && (
-                <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Edited</span>
+              {briefLoading ? (
+                <div className="space-y-2">
+                  {[1,2,3].map(i => <div key={i} className="h-3 bg-zinc-800 rounded animate-pulse" style={{ width: `${85 - i*10}%` }} />)}
+                </div>
+              ) : briefData?.brief ? (
+                <p className="text-[13px] text-zinc-200 leading-relaxed">{briefData.brief.summary}</p>
+              ) : (
+                <p className="text-[12px] text-zinc-500 italic">Brief not available — click Research tab to trigger AI analysis.</p>
               )}
             </div>
-            <div className="flex items-center gap-1.5">
-              <select
-                value={tone}
-                onChange={e => setTone(e.target.value as typeof tone)}
-                className="text-[10px] border border-neutral-200 rounded px-1.5 py-1 bg-white text-neutral-600 focus:outline-none focus:border-neutral-400"
-                disabled={regenerating}
-              >
-                <option value="professional">Professional</option>
-                <option value="friendly">Friendly</option>
-                <option value="concise">Concise</option>
-                <option value="bold">Bold</option>
-              </select>
+
+            {/* Show Intel */}
+            {briefData?.brief?.showIntel && (
+              <div className="bg-zinc-800/60 rounded-lg p-4 border border-zinc-700/40">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Calendar size={11} className="text-zinc-500" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Show Intel</span>
+                </div>
+                <p className="text-[12px] text-zinc-300 leading-relaxed">{briefData.brief.showIntel}</p>
+              </div>
+            )}
+
+            {/* Why StageGate */}
+            {briefData?.brief?.whyStageGate && (
+              <div className="bg-emerald-900/20 rounded-lg p-4 border border-emerald-700/30">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Zap size={11} className="text-emerald-400" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Why StageGate</span>
+                </div>
+                <p className="text-[12px] text-emerald-200 leading-relaxed">{briefData.brief.whyStageGate}</p>
+              </div>
+            )}
+
+            {/* Notes */}
+            {prospect.notes && (
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-1.5">Notes</span>
+                <p className="text-[12px] text-zinc-400 leading-relaxed">{prospect.notes}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── RESEARCH TAB ── */}
+        {activeTab === "research" && (
+          <div className="p-5 space-y-5">
+            {/* Trigger research button */}
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-zinc-500">
+                {researchData?.researchStatus === "done"
+                  ? `Last researched ${researchData.updatedAt ? new Date(researchData.updatedAt).toLocaleDateString() : "recently"}`
+                  : researchData?.researchStatus === "running"
+                  ? "Research in progress…"
+                  : "Not yet researched"}
+              </span>
               <button
-                onClick={() => regenerateDraft.mutate({ id: prospect.id, tone })}
-                disabled={regenerating || briefLoading}
-                className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-900 border border-neutral-200 hover:border-neutral-900 rounded px-2 py-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={() => triggerResearch.mutate({ prospectId: prospect.id })}
+                disabled={triggerResearch.isPending || researchData?.researchStatus === "running"}
+                className="flex items-center gap-1.5 text-[11px] text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded px-2.5 py-1.5 transition-colors disabled:opacity-40"
               >
-                {regenerating
-                  ? <Loader2 size={10} className="animate-spin" />
-                  : <RefreshCw size={10} />}
-                Regenerate
+                {triggerResearch.isPending ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
+                Run Research
               </button>
             </div>
+
+            {researchLoading ? (
+              <div className="space-y-3">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="space-y-1.5">
+                    <div className="h-2.5 bg-zinc-800 rounded animate-pulse w-24" />
+                    <div className="h-3 bg-zinc-800 rounded animate-pulse w-full" />
+                    <div className="h-3 bg-zinc-800 rounded animate-pulse w-4/5" />
+                  </div>
+                ))}
+              </div>
+            ) : research ? (
+              <div className="space-y-5">
+
+                {/* Company Overview */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Building2 size={11} className="text-zinc-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Company Overview</span>
+                  </div>
+                  <p className="text-[13px] text-zinc-200 leading-relaxed">{research.companyOverview}</p>
+                </div>
+
+                {/* Robot Specs */}
+                {research.robotSpecs && (
+                  <div className="bg-zinc-800/60 rounded-lg p-4 border border-zinc-700/40">
+                    <div className="flex items-center gap-1.5 mb-3">
+                      <Bot size={11} className="text-zinc-400" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Robot Specs — {research.robotSpecs.name}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { label: "Type", value: research.robotSpecs.type },
+                        { label: "Payload", value: research.robotSpecs.payload },
+                        { label: "Speed", value: research.robotSpecs.speed },
+                        { label: "Battery", value: research.robotSpecs.battery },
+                        { label: "Navigation", value: research.robotSpecs.navigation },
+                      ].filter(r => r.value).map(row => (
+                        <div key={row.label}>
+                          <span className="text-[10px] text-zinc-600 uppercase tracking-wide">{row.label}</span>
+                          <p className="text-[12px] text-zinc-300 font-medium">{row.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {research.robotSpecs.useCases?.length ? (
+                      <div className="mt-3 pt-3 border-t border-zinc-700/40">
+                        <span className="text-[10px] text-zinc-600 uppercase tracking-wide block mb-1.5">Use Cases</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {research.robotSpecs.useCases.map(uc => (
+                            <span key={uc} className="text-[10px] bg-zinc-700/60 text-zinc-300 px-2 py-0.5 rounded border border-zinc-600/40">{uc}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
+                {/* Competitive Context */}
+                {research.competitiveContext && (
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <TrendingUp size={11} className="text-zinc-500" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Competitive Context</span>
+                    </div>
+                    <p className="text-[12px] text-zinc-300 leading-relaxed">{research.competitiveContext}</p>
+                  </div>
+                )}
+
+                {/* Decision Makers */}
+                {research.decisionMakers?.length ? (
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-3">
+                      <Users size={11} className="text-zinc-500" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Decision Makers</span>
+                      <span className="text-[10px] text-zinc-600 ml-1">via Apollo.io</span>
+                    </div>
+                    <div className="space-y-2.5">
+                      {research.decisionMakers.map((dm, i) => (
+                        <div key={i} className="bg-zinc-800/60 rounded-lg p-3 border border-zinc-700/40">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[13px] font-semibold text-white">{dm.name}</div>
+                              <div className="text-[11px] text-zinc-400 mt-0.5">{dm.title}</div>
+                              {dm.email && (
+                                <a href={`mailto:${dm.email}`} className="flex items-center gap-1 text-[11px] text-blue-400 hover:underline mt-1">
+                                  <Mail size={9} />
+                                  {dm.email}
+                                </a>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {dm.confidence && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${confidenceColor[dm.confidence] ?? "bg-zinc-800 text-zinc-400"}`}>
+                                  {dm.confidence}
+                                </span>
+                              )}
+                              {dm.linkedin && (
+                                <a href={dm.linkedin} target="_blank" rel="noreferrer" className="text-zinc-600 hover:text-blue-400">
+                                  <Linkedin size={12} />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <Users size={24} className="text-zinc-700 mx-auto mb-2" />
+                    <p className="text-[12px] text-zinc-500">No decision makers found yet.</p>
+                    <p className="text-[11px] text-zinc-600 mt-1">Run Research to fetch contacts via Apollo.io</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <Sparkles size={28} className="text-zinc-700 mx-auto mb-3" />
+                <p className="text-[13px] text-zinc-400 font-medium">No research data yet</p>
+                <p className="text-[12px] text-zinc-600 mt-1 mb-4">The nightly job will research this company automatically, or click Run Research now.</p>
+                <button
+                  onClick={() => triggerResearch.mutate({ prospectId: prospect.id })}
+                  disabled={triggerResearch.isPending}
+                  className="inline-flex items-center gap-2 bg-emerald-600 text-white text-[12px] font-semibold px-4 py-2 rounded-lg hover:bg-emerald-500 transition-colors disabled:opacity-40"
+                >
+                  {triggerResearch.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                  Run Research Now
+                </button>
+              </div>
+            )}
           </div>
+        )}
 
-          {(briefLoading || regenerating) ? (
-            <div className="space-y-2">
-              <div className="h-3 bg-neutral-100 rounded animate-pulse w-full" />
-              <div className="h-3 bg-neutral-100 rounded animate-pulse w-5/6" />
-              <div className="h-3 bg-neutral-100 rounded animate-pulse w-4/6" />
-              <div className="h-3 bg-neutral-100 rounded animate-pulse w-full" />
-              <div className="h-3 bg-neutral-100 rounded animate-pulse w-3/4" />
-              {regenerating && (
-                <p className="text-[11px] text-neutral-400 pt-1 flex items-center gap-1">
-                  <Sparkles size={10} className="text-amber-400" />
-                  Rewriting draft…
-                </p>
-              )}
+        {/* ── EMAIL TAB ── */}
+        {activeTab === "email" && (
+          <div className="p-5 space-y-4">
+            {/* Tone + Regenerate */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Send size={12} className="text-zinc-500" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Intro Email Draft</span>
+                {draftEdited && (
+                  <span className="text-[10px] text-amber-400 bg-amber-900/30 border border-amber-700/40 px-1.5 py-0.5 rounded">Edited</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={tone}
+                  onChange={e => setTone(e.target.value as typeof tone)}
+                  className="text-[10px] border border-zinc-700 rounded px-1.5 py-1 bg-zinc-800 text-zinc-300 focus:outline-none focus:border-zinc-500"
+                  disabled={regenerating}
+                >
+                  <option value="professional">Professional</option>
+                  <option value="friendly">Friendly</option>
+                  <option value="concise">Concise</option>
+                  <option value="bold">Bold</option>
+                </select>
+                <button
+                  onClick={() => regenerateDraft.mutate({ id: prospect.id, tone })}
+                  disabled={regenerating || briefLoading}
+                  className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded px-2 py-1 transition-colors disabled:opacity-40"
+                >
+                  {regenerating ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
+                  Regenerate
+                </button>
+              </div>
             </div>
-          ) : (
-            <textarea
-              className="w-full h-44 text-[13px] text-neutral-800 leading-relaxed border border-neutral-200 rounded-lg p-3 resize-none focus:outline-none focus:border-neutral-900 bg-white placeholder:text-neutral-400"
-              value={draftMessage}
-              placeholder="AI draft will appear here once brief loads…"
-              onChange={e => { setDraftMessage(e.target.value); setDraftEdited(true); }}
-            />
-          )}
-        </div>
 
-        {/* Notes */}
-        {prospect.notes && (
-          <div className="px-6 py-4 border-b border-neutral-100">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 block mb-1.5">Notes</span>
-            <p className="text-[12px] text-neutral-600 leading-relaxed">{prospect.notes}</p>
+            {/* Draft textarea */}
+            {(briefLoading || regenerating) ? (
+              <div className="space-y-2 p-3 bg-zinc-800/60 rounded-lg border border-zinc-700/40">
+                {[1,2,3,4,5].map(i => <div key={i} className="h-3 bg-zinc-700 rounded animate-pulse" style={{ width: `${90 - i*5}%` }} />)}
+                {regenerating && (
+                  <p className="text-[11px] text-amber-400 pt-1 flex items-center gap-1">
+                    <Sparkles size={10} />
+                    Rewriting draft…
+                  </p>
+                )}
+              </div>
+            ) : (
+              <textarea
+                className="w-full h-52 text-[13px] text-zinc-200 leading-relaxed border border-zinc-700 rounded-lg p-3.5 resize-none focus:outline-none focus:border-emerald-500 bg-zinc-800/60 placeholder:text-zinc-600"
+                value={draftMessage}
+                placeholder="AI draft will appear here once brief loads…"
+                onChange={e => { setDraftMessage(e.target.value); setDraftEdited(true); }}
+              />
+            )}
+
+            {/* Signup link reminder */}
+            <div className="flex items-start gap-2 bg-zinc-800/40 rounded-lg p-3 border border-zinc-700/40">
+              <Globe size={12} className="text-zinc-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[11px] text-zinc-400">Registration link included in draft:</p>
+                <a href="/get-started" target="_blank" className="text-[11px] text-blue-400 hover:underline font-mono">
+                  onstage.bot/get-started
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── ACTIVITY TAB ── */}
+        {activeTab === "activity" && (
+          <div className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity size={12} className="text-zinc-500" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Activity Timeline</span>
+            </div>
+
+            {activitiesLoading ? (
+              <div className="space-y-3">
+                {[1,2,3].map(i => (
+                  <div key={i} className="flex gap-3">
+                    <div className="w-2 h-2 rounded-full bg-zinc-700 mt-1.5 shrink-0 animate-pulse" />
+                    <div className="flex-1 space-y-1">
+                      <div className="h-3 bg-zinc-800 rounded animate-pulse w-3/4" />
+                      <div className="h-2.5 bg-zinc-800 rounded animate-pulse w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (activitiesData as typeof activitiesData & { length?: number })?.length ? (
+              <div className="space-y-1">
+                {(activitiesData as Array<{id: number; type: string; title: string; description?: string | null; createdAt: string | Date}>).map((act: {
+                  id: number;
+                  type: string;
+                  title: string;
+                  description?: string | null;
+                  createdAt: string | Date;
+                }) => {
+                  const iconMap: Record<string, React.ReactNode> = {
+                    email_sent:           <Send size={10} className="text-blue-400" />,
+                    stage_changed:        <ArrowRight size={10} className="text-emerald-400" />,
+                    follow_up_scheduled:  <Clock size={10} className="text-amber-400" />,
+                    note_added:           <FileText size={10} className="text-zinc-400" />,
+                    call_scheduled:       <Phone size={10} className="text-violet-400" />,
+                    replied:              <CheckCircle2 size={10} className="text-emerald-400" />,
+                  };
+                  const dotColor: Record<string, string> = {
+                    email_sent:           "bg-blue-500",
+                    stage_changed:        "bg-emerald-500",
+                    follow_up_scheduled:  "bg-amber-500",
+                    note_added:           "bg-zinc-500",
+                    call_scheduled:       "bg-violet-500",
+                    replied:              "bg-emerald-500",
+                  };
+                  return (
+                    <div key={act.id} className="flex gap-3 py-2.5 border-b border-zinc-800/60 last:border-0">
+                      <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${dotColor[act.type] ?? "bg-zinc-600"}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-[12px] font-semibold text-zinc-200">{act.title}</span>
+                          <span className="text-[10px] text-zinc-600 shrink-0 font-mono">
+                            {new Date(act.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {act.description && (
+                          <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">{act.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <Activity size={24} className="text-zinc-700 mx-auto mb-2" />
+                <p className="text-[12px] text-zinc-500">No activity yet</p>
+                <p className="text-[11px] text-zinc-600 mt-1">Actions like sending emails and stage changes will appear here</p>
+              </div>
+            )}
           </div>
         )}
       </div>
 
       {/* ── Action bar ── */}
-      <div className="px-6 py-4 border-t border-neutral-100 bg-white space-y-2">
+      <div className="px-5 py-4 border-t border-zinc-800 bg-zinc-900 space-y-2.5">
         {/* Primary: Send Draft */}
         <button
-          onClick={handleSendDraft}
+          onClick={() => { setActiveTab("email"); handleSendDraft(); }}
           disabled={generateDraft.isPending || briefLoading || sendSuccess}
-          className={`w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-[13px] font-medium transition-all duration-300 disabled:cursor-not-allowed ${
+          className={`w-full flex items-center justify-center gap-2 rounded-lg py-3 text-[13px] font-bold transition-all duration-300 disabled:cursor-not-allowed ${
             sendSuccess
               ? "bg-emerald-600 text-white scale-[0.98]"
-              : "bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-40"
+              : "bg-white text-zinc-900 hover:bg-zinc-100 disabled:opacity-40"
           }`}
         >
           {generateDraft.isPending ? (
-            <Loader2 size={13} className="animate-spin" />
+            <Loader2 size={14} className="animate-spin" />
           ) : sendSuccess ? (
-            <Check size={13} className="animate-[scale-in_0.2s_ease-out]" />
+            <Check size={14} />
           ) : (
-            <Send size={13} />
+            <Send size={14} />
           )}
-          {sendSuccess ? "Queued!" : "Send Draft to Outreach Queue"}
+          {sendSuccess ? "Queued!" : "Send Intro Email to Outreach Queue"}
         </button>
 
         {/* Secondary row */}
@@ -625,17 +966,17 @@ function CRMPanel({
             <button
               onClick={handleAdvanceStage}
               disabled={updateStatus.isPending}
-              className="flex items-center justify-center gap-1.5 border border-neutral-200 rounded-lg py-2 text-[12px] text-neutral-700 hover:border-neutral-900 hover:bg-neutral-50 transition-colors"
+              className="flex items-center justify-center gap-1.5 border border-zinc-700 hover:border-zinc-500 rounded-lg py-2.5 text-[12px] font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
             >
-              <ChevronRight size={12} />
+              <ChevronRight size={13} />
               Advance to {nextStage.label}
             </button>
           ) : (
             <div />
           )}
           <Link href="/admin/outreach">
-            <button className="w-full flex items-center justify-center gap-1.5 border border-neutral-200 rounded-lg py-2 text-[12px] text-neutral-700 hover:border-neutral-900 hover:bg-neutral-50 transition-colors">
-              <ExternalLink size={12} />
+            <button className="w-full flex items-center justify-center gap-1.5 border border-zinc-700 hover:border-zinc-500 rounded-lg py-2.5 text-[12px] font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors">
+              <ExternalLink size={13} />
               View Outreach
             </button>
           </Link>
@@ -728,7 +1069,6 @@ export default function AdminPipeline() {
     toast.success(`${p.company} → ${targetLabel}`);
   }
 
-  // Funnel totals
   const totalByStage = useMemo(() =>
     Object.fromEntries(PIPELINE_STAGES.map(s => [s.key, filtered.filter(p => p.status === s.key).length])),
     [filtered]
@@ -736,18 +1076,18 @@ export default function AdminPipeline() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <Loader2 className="animate-spin text-neutral-300" size={24} />
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <Loader2 className="animate-spin text-zinc-600" size={24} />
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-zinc-950">
         <Navbar />
         <div className="pt-32 text-center">
-          <a href={getLoginUrl()} className="text-blue-600 underline text-sm">Sign in to continue</a>
+          <a href={getLoginUrl()} className="text-blue-400 underline text-sm">Sign in to continue</a>
         </div>
       </div>
     );
@@ -755,31 +1095,30 @@ export default function AdminPipeline() {
 
   if (user?.role !== "admin") {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-zinc-950">
         <Navbar />
-        <div className="pt-32 text-center text-sm text-neutral-500">Admin access required.</div>
+        <div className="pt-32 text-center text-sm text-zinc-500">Admin access required.</div>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-white text-neutral-900 flex flex-col">
+    <main className="min-h-screen bg-zinc-950 text-white flex flex-col">
       {/* ── Top bar ── */}
-      <div className="border-b border-neutral-100 px-6 py-4 flex items-center justify-between shrink-0">
+      <div className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between shrink-0 bg-zinc-900">
         <div className="flex items-center gap-6">
           <div>
-            <h1 className="text-[15px] font-bold text-neutral-900">Pipeline</h1>
-            <p className="text-[11px] text-neutral-400 mt-0.5">Revenue funnel · {filtered.length} companies</p>
+            <h1 className="text-[15px] font-bold text-white">Pipeline</h1>
+            <p className="text-[11px] text-zinc-500 mt-0.5">Revenue funnel · {filtered.length} companies</p>
           </div>
           {/* Funnel summary */}
-          <div className="hidden lg:flex items-center gap-1 text-[11px] text-neutral-500">
+          <div className="hidden lg:flex items-center gap-1 text-[11px]">
             {PIPELINE_STAGES.map((s, i) => (
               <span key={s.key} className="flex items-center gap-1">
-                <span className={`px-2 py-0.5 rounded-full font-semibold ${s.color}`}>
-                  {totalByStage[s.key] ?? 0}
-                </span>
-                <span className="text-neutral-400">{s.label}</span>
-                {i < PIPELINE_STAGES.length - 1 && <ChevronRight size={10} className="text-neutral-300 mx-0.5" />}
+                <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+                <span className="text-zinc-400 font-mono tabular-nums">{totalByStage[s.key] ?? 0}</span>
+                <span className="text-zinc-600">{s.label}</span>
+                {i < PIPELINE_STAGES.length - 1 && <ChevronRight size={10} className="text-zinc-700 mx-0.5" />}
               </span>
             ))}
           </div>
@@ -789,23 +1128,23 @@ export default function AdminPipeline() {
           <select
             value={filterShow}
             onChange={e => setFilterShow(e.target.value)}
-            className="text-[11px] border border-neutral-200 rounded-md px-2.5 py-1.5 bg-white text-neutral-700 focus:outline-none focus:ring-1 focus:ring-neutral-400"
+            className="text-[11px] border border-zinc-700 rounded-md px-2.5 py-1.5 bg-zinc-800 text-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-600"
           >
             <option value="all">All Events</option>
             {allShows.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           <button
             onClick={() => refetch()}
-            className="text-neutral-400 hover:text-neutral-700 p-1.5 rounded hover:bg-neutral-100"
+            className="text-zinc-500 hover:text-zinc-300 p-1.5 rounded hover:bg-zinc-800"
             aria-label="Refresh"
           >
-            <RefreshCw size={13} />
+            <RefreshCw size={14} />
           </button>
         </div>
       </div>
 
-      {/* ── Kanban board ── */}
-      <div className="flex-1 overflow-hidden">
+      {/* ── Board ── */}
+      <div className={`flex-1 flex overflow-hidden transition-all ${selectedProspect ? "mr-[500px]" : ""}`}>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -813,43 +1152,41 @@ export default function AdminPipeline() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-5 gap-0 h-full">
+          <div className="flex-1 grid overflow-hidden" style={{ gridTemplateColumns: `repeat(${PIPELINE_STAGES.length}, minmax(0, 1fr))` }}>
             {columns.map(col => (
               <DroppableColumn
                 key={col.key}
                 stageKey={col.key}
                 label={col.label}
                 color={col.color}
+                dot={col.dot}
                 items={col.items}
                 isLoading={isLoading}
                 isOver={overColumnKey === col.key}
                 selectedId={selectedProspect?.id ?? null}
                 draggingId={activeDragProspect?.id ?? null}
-                onCardClick={p => setSelectedProspect(p)}
-                onCreated={() => ctx.prospects.list.invalidate()}
+                onCardClick={p => setSelectedProspect(prev => prev?.id === p.id ? null : p)}
+                onCreated={() => refetch()}
               />
             ))}
           </div>
 
-          <DragOverlay dropAnimation={null}>
-            {activeDragProspect ? <DragOverlayCard prospect={activeDragProspect} /> : null}
+          <DragOverlay>
+            {activeDragProspect && <DragOverlayCard prospect={activeDragProspect} />}
           </DragOverlay>
         </DndContext>
       </div>
 
       {/* ── CRM Panel ── */}
       {selectedProspect && (
-        <>
-          <div className="fixed inset-0 bg-black/5 z-40" onClick={() => setSelectedProspect(null)} />
-          <CRMPanel
-            prospect={selectedProspect}
-            onClose={() => setSelectedProspect(null)}
-            onStatusChange={(id, status) => {
-              setStatusOverrides(prev => ({ ...prev, [id]: status }));
-              setSelectedProspect(prev => prev?.id === id ? { ...prev, status } : prev);
-            }}
-          />
-        </>
+        <CRMPanel
+          prospect={selectedProspect}
+          onClose={() => setSelectedProspect(null)}
+          onStatusChange={(id, status) => {
+            setStatusOverrides(prev => ({ ...prev, [id]: status }));
+            setSelectedProspect(prev => prev?.id === id ? { ...prev, status } : prev);
+          }}
+        />
       )}
     </main>
   );

@@ -612,3 +612,41 @@
 
 - [x] Add prospects.regenerateDraft tRPC mutation: takes prospect id + optional tone hint, returns a fresh AI-written draft message
 - [x] Add Regenerate button next to Draft Message header in CRMPanel: shows spinner while generating, replaces textarea content on success, marks draft as edited
+
+## v10 — Sales Intelligence + Automation
+
+### v10.1 — Database Schema
+- [x] Add prospect_research table: prospectId, companyOverview, robotSpecs (JSON), competitiveContext, useCases, decisionMakers (JSON), apolloData (JSON), researchedAt, researchStatus
+- [x] Add prospect_activities table: id, prospectId, type (email_sent/stage_changed/follow_up_scheduled/note_added), metadata (JSON), createdAt
+- [x] Run migration SQL via webdev_execute_sql
+
+### v10.2 — Nightly Research Background Job
+- [x] Add APOLLO_API_KEY secret via webdev_request_secrets
+- [x] Build server/research-agent.ts: AI researches company (overview, robot specs, use cases, competitive comparison) + Apollo.io people search for decision makers
+- [x] Add prospects.runResearch tRPC mutation: triggers research for a single prospect on-demand
+- [x] Add nightly heartbeat job that runs research for all unresearched prospects (researchStatus = 'pending')
+- [x] Store all results in prospect_research table
+
+### v10.3 — Post-Send Workflow
+- [x] On draft sent: auto-advance prospect to 'contacted' stage
+- [x] On draft sent: log activity (type=email_sent, metadata includes subject/preview)
+- [x] On draft sent: schedule follow-up reminder (3 days, stored as activity type=follow_up_scheduled)
+- [x] On draft sent: notify owner via notifyOwner helper
+- [x] Add prospects.getActivities tRPC query: returns activity timeline for a prospect
+
+### v10.4 — StageGate Registration Page
+- [x] Build /get-started page: service selection (Receiving, Staging, Delivery, Full Activation), company info form, robot details, show/event selection, submit creates a booking_request in DB
+- [x] Add booking_requests table to schema
+- [x] Add admin view for booking requests at /admin/bookings (pending)
+
+### v10.5 — CRM Panel Redesign
+- [x] Replace CRM panel with tabbed layout: Overview | Research | Email | Activity
+- [x] Overview tab: business card (company, robot, shows, contact), research status badge, "Run Research" button
+- [x] Research tab: AI company overview, robot specs table, competitive context, use cases — all from prospect_research
+- [x] Email tab: editable AI intro email with StageGate value prop + /get-started link, tone selector, Regenerate, Send buttons
+- [x] Activity tab: timeline of all activities (sent emails, stage changes, follow-ups)
+
+### v10.6 — Global Typography Overhaul
+- [x] Update index.css: muted-foreground raised to 0.65, secondary-foreground to 0.72, border brighter, body font-weight 400
+- [x] Update sidebar nav text to font-medium, user name font-semibold, email text-zinc-400
+- [x] AdminPipeline: full dark-theme native CRM panel, all text white/zinc-200/zinc-300 (no muted greys)

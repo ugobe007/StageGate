@@ -9,6 +9,7 @@ import Services from "./pages/Services";
 import StageHandPage from "./pages/StageHandPage";
 import StageProPage from "./pages/StageProPage";
 import Register from "./pages/Register";
+import GetStarted from "./pages/GetStarted";
 import ClientDashboard from "./pages/ClientDashboard";
 import ServiceOrder from "./pages/ServiceOrder";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/stagehand" component={StageHandPage} />
       <Route path="/stagepro" component={StageProPage} />
       <Route path="/register" component={Register} />
+      <Route path="/get-started" component={GetStarted} />
       <Route path="/shows" component={ShowsCalendar} />
       <Route path="/shows/:id" component={ShowDetail} />
 

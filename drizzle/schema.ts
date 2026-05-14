@@ -339,3 +339,92 @@ export const draftEmails = pgTable("draft_emails", {
 });
 export type DraftEmail = typeof draftEmails.$inferSelect;
 export type NewDraftEmail = typeof draftEmails.$inferInsert;
+
+// ─── Prospect Research (AI + Apollo nightly job) ──────────────────────────────
+export const prospectResearch = pgTable("prospect_research", {
+  id: serial("id").primaryKey(),
+  prospectId: integer("prospectId").notNull().unique().references(() => prospects.id, { onDelete: "cascade" }),
+  // AI-generated fields
+  companyOverview: text("companyOverview"),
+  robotSpecs: jsonb("robotSpecs").$type<{
+    name?: string;
+    type?: string;
+    height?: string;
+    weight?: string;
+    payload?: string;
+    battery?: string;
+    speed?: string;
+    sensors?: string[];
+    useCases?: string[];
+    price?: string;
+    availability?: string;
+  }>(),
+  competitiveContext: text("competitiveContext"),
+  useCases: jsonb("useCases").$type<string[]>(),
+  whyStageGate: text("whyStageGate"),
+  showIntel: text("showIntel"),
+  // Apollo.io contact data
+  decisionMakers: jsonb("decisionMakers").$type<Array<{
+    name: string;
+    title: string;
+    email?: string;
+    emailConfidence?: string;
+    linkedIn?: string;
+    department?: string;
+  }>>(),
+  apolloOrgId: varchar("apolloOrgId", { length: 100 }),
+  // Status tracking
+  researchStatus: text("researchStatus").notNull().default("pending"), // pending | running | done | failed
+  researchError: text("researchError"),
+  researchedAt: timestamp("researchedAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+});
+export type ProspectResearch = typeof prospectResearch.$inferSelect;
+export type InsertProspectResearch = typeof prospectResearch.$inferInsert;
+
+// ─── Prospect Activity Timeline ───────────────────────────────────────────────
+export const prospectActivities = pgTable("prospect_activities", {
+  id: serial("id").primaryKey(),
+  prospectId: integer("prospectId").notNull().references(() => prospects.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // email_sent | stage_changed | follow_up_scheduled | note_added | call_scheduled | replied
+  title: varchar("title", { length: 300 }).notNull(),
+  description: text("description"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+});
+export type ProspectActivity = typeof prospectActivities.$inferSelect;
+export type InsertProspectActivity = typeof prospectActivities.$inferInsert;
+
+// ─── Booking Requests (from /register page) ───────────────────────────────────
+export const bookingRequests = pgTable("booking_requests", {
+  id: serial("id").primaryKey(),
+  // Company info
+  company: varchar("company", { length: 255 }).notNull(),
+  contactName: varchar("contactName", { length: 255 }).notNull(),
+  contactEmail: varchar("contactEmail", { length: 320 }).notNull(),
+  contactPhone: varchar("contactPhone", { length: 64 }),
+  website: varchar("website", { length: 512 }),
+  country: varchar("country", { length: 100 }),
+  // Robot details
+  robotName: varchar("robotName", { length: 255 }),
+  robotType: varchar("robotType", { length: 100 }),
+  robotCount: integer("robotCount").default(1),
+  robotDimensions: varchar("robotDimensions", { length: 255 }),
+  robotWeight: varchar("robotWeight", { length: 100 }),
+  specialHandling: text("specialHandling"),
+  // Show/event
+  showName: varchar("showName", { length: 255 }),
+  showDate: varchar("showDate", { length: 100 }),
+  boothNumber: varchar("boothNumber", { length: 50 }),
+  // Services requested
+  services: jsonb("services").$type<string[]>().default([]),
+  // Status
+  status: text("status").notNull().default("new"), // new | reviewed | quoted | confirmed | cancelled
+  adminNotes: text("adminNotes"),
+  prospectId: integer("prospectId"), // link to prospect if matched
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+});
+export type BookingRequest = typeof bookingRequests.$inferSelect;
+export type InsertBookingRequest = typeof bookingRequests.$inferInsert;

@@ -10,8 +10,9 @@ import * as db from "./db";
 import * as workflows from "./workflows";
 import * as emailHelpers from "./email";
 import { eq, desc, count } from "drizzle-orm";
-import { draftEmails } from "../drizzle/schema";
+import { draftEmails, prospectResearch, prospectActivities, bookingRequests } from "../drizzle/schema";
 import { getDb } from "./db";
+import { researchProspect } from "./research-agent";
 
 // Admin-only middleware
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -1130,9 +1131,124 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         );
         return bulkResult;
       }),
+    // Get AI research data for a prospect
+    getResearch: adminProcedure
+      .input(z.object({ prospectId: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return null;
+        const [research] = await dbConn.select().from(prospectResearch)
+          .where(eq(prospectResearch.prospectId, input.prospectId));
+        return research ?? null;
+      }),
+    // Get activity timeline for a prospect
+    getActivities: adminProcedure
+      .input(z.object({ prospectId: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        const activities = await dbConn.select().from(prospectActivities)
+          .where(eq(prospectActivities.prospectId, input.prospectId))
+          .orderBy(desc(prospectActivities.createdAt));
+        return activities;
+      }),
+    // Log an activity for a prospect
+    logActivity: adminProcedure
+      .input(z.object({
+        prospectId: z.number(),
+        type: z.string(),
+        title: z.string(),
+        description: z.string().optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return { success: false };
+        await dbConn.insert(prospectActivities).values({
+          prospectId: input.prospectId,
+          type: input.type,
+          title: input.title,
+          description: input.description,
+          metadata: input.metadata,
+        });
+        return { success: true };
+      }),
+    // Trigger AI research for a single prospect (on-demand)
+    triggerResearch: adminProcedure
+      .input(z.object({ prospectId: z.number() }))
+      .mutation(async ({ input }) => {
+        // Fire and forget — don't await, return immediately
+        researchProspect(input.prospectId).catch(console.error);
+        return { started: true };
+      }),
+    // Send a draft email with full workflow: log activity, advance stage, schedule follow-up, notify owner
+    sendDraftWithWorkflow: adminProcedure
+      .input(z.object({
+        prospectId: z.number(),
+        subject: z.string(),
+        body: z.string(),
+        advanceStage: z.boolean().default(true),
+        scheduleFollowUp: z.boolean().default(true),
+        followUpDays: z.number().default(3),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const prospect = await db.getProspectById(input.prospectId);
+        if (!prospect) throw new TRPCError({ code: "NOT_FOUND" });
 
+        // 1. Save draft email record
+        await dbConn.insert(draftEmails).values({
+          prospectId: input.prospectId,
+          subject: input.subject,
+          body: input.body,
+          status: "sent",
+          sentAt: new Date(),
+        });
+
+        // 2. Log activity
+        await dbConn.insert(prospectActivities).values({
+          prospectId: input.prospectId,
+          type: "email_sent",
+          title: `Email sent: ${input.subject}`,
+          description: input.body.slice(0, 200) + (input.body.length > 200 ? "..." : ""),
+          metadata: { subject: input.subject, sentBy: ctx.user?.name ?? "admin" },
+        });
+
+        // 3. Advance stage to 'contacted' if requested
+        if (input.advanceStage && prospect.status === "new") {
+          await db.updateProspect(input.prospectId, { status: "contacted" });
+          await dbConn.insert(prospectActivities).values({
+            prospectId: input.prospectId,
+            type: "stage_changed",
+            title: "Stage advanced: Prospects → Contacted",
+            metadata: { from: "new", to: "contacted" },
+          });
+        }
+
+        // 4. Schedule follow-up
+        if (input.scheduleFollowUp) {
+          const followUpDate = new Date();
+          followUpDate.setDate(followUpDate.getDate() + input.followUpDays);
+          await db.updateProspect(input.prospectId, { followUpDate });
+          await dbConn.insert(prospectActivities).values({
+            prospectId: input.prospectId,
+            type: "follow_up_scheduled",
+            title: `Follow-up scheduled for ${followUpDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`,
+            metadata: { followUpDate: followUpDate.toISOString(), days: input.followUpDays },
+          });
+        }
+
+        // 5. Notify owner
+        await notifyOwner({
+          title: `📧 Outreach sent: ${prospect.company}`,
+          content: `Email sent to ${prospect.company} (${prospect.contactName ?? prospect.contactEmail ?? "no contact"}).\n\nSubject: ${input.subject}\n\nFollow-up scheduled in ${input.followUpDays} days.`,
+        });
+
+        return { success: true };
+      }),
   }),
-  // ─── Video Message Intake (public — for prospects to submit) ────────────────
+  // ─── Video Message Intake (public — for prospects to submit) ─────────────────
   videoIntake: router({
     submit: publicProcedure
       .input(z.object({
@@ -1479,6 +1595,61 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         leads: { total: leads.length },
         prospects: { total: prospects.length, byStatus: prospectsByStatus },
       };
+    }),
+  }),
+  // ─── Bookings (public intake form) ───────────────────────────────────────────────────────────────────────────────────
+  bookings: router({
+    create: publicProcedure
+      .input(z.object({
+        company: z.string().min(1),
+        contactName: z.string().min(1),
+        contactEmail: z.string().email(),
+        contactPhone: z.string().optional(),
+        website: z.string().optional(),
+        country: z.string().optional(),
+        robotName: z.string().optional(),
+        robotType: z.string().optional(),
+        robotCount: z.number().int().min(1).default(1),
+        robotDimensions: z.string().optional(),
+        robotWeight: z.string().optional(),
+        specialHandling: z.string().optional(),
+        showName: z.string().optional(),
+        showDate: z.string().optional(),
+        boothNumber: z.string().optional(),
+        services: z.array(z.string()).default([]),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        await dbConn.insert(bookingRequests).values({
+          company: input.company,
+          contactName: input.contactName,
+          contactEmail: input.contactEmail,
+          contactPhone: input.contactPhone,
+          website: input.website,
+          country: input.country,
+          robotName: input.robotName,
+          robotType: input.robotType,
+          robotCount: input.robotCount,
+          robotDimensions: input.robotDimensions,
+          robotWeight: input.robotWeight,
+          specialHandling: input.specialHandling,
+          showName: input.showName,
+          showDate: input.showDate,
+          boothNumber: input.boothNumber,
+          services: input.services,
+        });
+        await notifyOwner({
+          title: `📥 New Booking Request: ${input.company}`,
+          content: `${input.contactName} (${input.contactEmail}) from ${input.company} submitted a logistics intake.\n\nRobot: ${input.robotName ?? "TBD"} (${input.robotType ?? "unknown type"})\nShow: ${input.showName ?? "TBD"}\nServices: ${input.services.join(", ") || "none selected"}`,
+        });
+        return { success: true };
+      }),
+    // Admin: list all booking requests
+    list: adminProcedure.query(async () => {
+      const dbConn = await getDb();
+      if (!dbConn) return [];
+      return dbConn.select().from(bookingRequests).orderBy(desc(bookingRequests.createdAt));
     }),
   }),
 });
