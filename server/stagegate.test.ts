@@ -63,6 +63,7 @@ vi.mock("./db", () => ({
   updateProspect: vi.fn().mockResolvedValue(undefined),
   createProspect: vi.fn().mockResolvedValue({ id: 1 }),
   bulkInsertProspects: vi.fn().mockResolvedValue(undefined),
+  bulkUpdateProspectStatus: vi.fn().mockResolvedValue(3),
   createOutreachCampaign: vi.fn().mockResolvedValue({ id: 1 }),
   listOutreachCampaigns: vi.fn().mockResolvedValue([]),
   getAllUsers: vi.fn().mockResolvedValue([{ id: 2, name: "Bob", email: "bob@example.com", role: "user", createdAt: new Date(), lastSignedIn: new Date() }]),
@@ -610,5 +611,30 @@ describe("admin.setUserRole", () => {
   it("rejects unauthenticated requests", async () => {
     const caller = appRouter.createCaller(createPublicCtx());
     await expect(caller.admin.setUserRole({ userId: 2, role: "admin" })).rejects.toThrow();
+  });
+});
+
+// ─── Prospects.bulkUpdateStatus Tests ────────────────────────────────────────
+describe("prospects.bulkUpdateStatus", () => {
+  it("allows admin to bulk update prospect status to contacted", async () => {
+    const { bulkUpdateProspectStatus } = await import("./db");
+    const caller = appRouter.createCaller(createAdminCtx());
+    const result = await caller.prospects.bulkUpdateStatus({ ids: [1, 2, 3], status: "contacted" });
+    expect(result).toEqual({ updated: 3 });
+    expect(vi.mocked(bulkUpdateProspectStatus)).toHaveBeenCalledWith([1, 2, 3], "contacted");
+  });
+
+  it("rejects non-admin users", async () => {
+    const caller = appRouter.createCaller(createUserCtx("user"));
+    await expect(
+      caller.prospects.bulkUpdateStatus({ ids: [1, 2], status: "contacted" })
+    ).rejects.toThrow();
+  });
+
+  it("rejects unauthenticated requests", async () => {
+    const caller = appRouter.createCaller(createPublicCtx());
+    await expect(
+      caller.prospects.bulkUpdateStatus({ ids: [1], status: "contacted" })
+    ).rejects.toThrow();
   });
 });

@@ -1,4 +1,4 @@
-import { eq, desc, and, like, lte, isNotNull, notInArray } from "drizzle-orm";
+import { eq, desc, and, like, lte, isNotNull, notInArray, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -656,5 +656,14 @@ export async function getProspectsWithOverdueFollowUp(): Promise<Prospect[]> {
   ).orderBy(prospects.followUpDate);
 }
 
+export async function bulkUpdateProspectStatus(ids: number[], status: string): Promise<number> {
+  if (ids.length === 0) return 0;
+  const db = await getDb();
+  if (!db) return 0;
+  await db.update(prospects)
+    .set({ status: status as Prospect["status"], updatedAt: new Date() })
+    .where(inArray(prospects.id, ids));
+  return ids.length;
+}
 // Suppress unused import warnings
 export type { AgentRun, InsertAgentRun };

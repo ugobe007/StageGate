@@ -907,6 +907,16 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return { success: true };
       }),
 
+    // Bulk update status for multiple prospects
+    bulkUpdateStatus: adminProcedure
+      .input(z.object({
+        ids: z.array(z.number()).min(1),
+        status: z.enum(["new", "contacted", "responded", "scheduled", "converted", "not_interested"]),
+      }))
+      .mutation(async ({ input }) => {
+        const count = await db.bulkUpdateProspectStatus(input.ids, input.status);
+        return { updated: count };
+      }),
     // Bulk import prospects from JSON
     bulkImport: adminProcedure
       .input(z.object({

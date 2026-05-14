@@ -1,9 +1,10 @@
 import { useState, useRef } from "react";
+import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Navbar from "@/components/Navbar";
-import { ExternalLink, Mail, RefreshCw, ChevronDown, Check, X, Clock, Phone, AlertCircle, Square, CheckSquare, Zap, ArrowUpDown, ArrowUp, ArrowDown, Download, Upload, Calendar } from "lucide-react";
+import { ExternalLink, Mail, RefreshCw, ChevronDown, Check, X, Clock, Phone, AlertCircle, Square, CheckSquare, Zap, ArrowUpDown, ArrowUp, ArrowDown, Download, Upload, Calendar, ArrowRight } from "lucide-react";
 
 type ProspectStatus = "new" | "contacted" | "responded" | "scheduled" | "converted" | "not_interested";
 
@@ -75,6 +76,23 @@ export default function AdminProspects() {
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkSending, setBulkSending] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+
+  const bulkUpdateStatusMutation = trpc.prospects.bulkUpdateStatus.useMutation({
+    onSuccess: (data) => {
+      toast.success(`${data.updated} prospect${data.updated !== 1 ? 's' : ''} marked as Contacted`);
+      setSelectedIds(new Set());
+      refetch();
+    },
+    onError: (err) => toast.error(err.message),
+    onSettled: () => setBulkUpdating(false),
+  });
+
+  const handleBulkMarkContacted = () => {
+    if (selectedIds.size === 0 || bulkUpdating) return;
+    setBulkUpdating(true);
+    bulkUpdateStatusMutation.mutate({ ids: Array.from(selectedIds), status: "contacted" });
+  };
   const [bulkProgress, setBulkProgress] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [bulkResults, setBulkResults] = useState<{ id: number; success: boolean; company: string; error?: string }[]>([]);
 
@@ -615,6 +633,29 @@ export default function AdminProspects() {
               }}
             >
               <X size={10} /> Clear
+            </button>
+
+            {/* Mark as Contacted bulk action */}
+            <button
+              onClick={handleBulkMarkContacted}
+              disabled={bulkUpdating || selectedIds.size === 0}
+              style={{
+                display: "flex", alignItems: "center", gap: "0.4rem",
+                fontFamily: "var(--font-mono)", fontSize: "0.5625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
+                padding: "0.35rem 0.9rem",
+                background: bulkUpdating ? "rgba(99,102,241,0.20)" : "rgba(99,102,241,0.15)",
+                color: bulkUpdating ? "rgba(129,140,248,0.50)" : "#818cf8",
+                border: "1px solid rgba(99,102,241,0.35)",
+                cursor: bulkUpdating ? "wait" : "pointer",
+                borderRadius: "0.125rem",
+                transition: "all 0.15s",
+              }}
+            >
+              {bulkUpdating ? (
+                <><RefreshCw size={10} style={{ animation: "spin 1s linear infinite" }} /> Updating...</>
+              ) : (
+                <><ArrowRight size={10} /> Mark {selectedIds.size} Contacted</>
+              )}
             </button>
 
             <div style={{ flex: 1 }} />

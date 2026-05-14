@@ -480,3 +480,11 @@
 - [x] Kanban cards show: company, contact name, email, follow-up date (amber if overdue)
 - [x] Kanban quick-action buttons: → Contacted, ✓ Replied, ★ Convert (context-aware per column)
 - [x] 79 tests passing
+
+## v8.3 — Bulk Status Update
+- [x] Add prospects.bulkUpdateStatus tRPC mutation (adminProcedure, takes ids[] + status)
+- [x] Add bulkUpdateProspectStatus helper in db.ts
+- [x] Add "→ Mark Contacted" button to the bulk action toolbar in AdminProspects
+- [x] Button only appears when selected rows include at least one non-contacted prospect
+- [x] On success: clear selection, refetch, show count in toast
+- [x] Add vitest test for prospects.bulkUpdateStatus (admin allowed, user rejected)
