@@ -552,3 +552,17 @@
 - [x] Wire DbStatusBanner into AdminPartners
 - [x] Wire DbStatusBanner into AdminQuotes
 - [x] Wire DbStatusBanner into AdminDemos
+
+## v9.0 — Real Outreach Workflow (Draft → Review → Send via Resend)
+
+- [x] Add RESEND_API_KEY secret
+- [x] Create draft_emails table in Supabase (prospectId, subject, body, agentReasoning, status: pending/approved/sent/discarded, sentAt, createdAt)
+- [x] Add generateDrafts tRPC procedure: XBOT reads all prospects and writes personalized draft emails to draft_emails table
+- [x] Add sendDraftEmail tRPC procedure: sends single email via Resend, updates prospect status to contacted, marks draft as sent
+- [x] Add bulkSendDrafts tRPC procedure: sends multiple approved drafts via Resend in sequence
+- [x] Add approveDraft / discardDraft / editDraft tRPC procedures
+- [x] Redesign AdminProspects: add Drafts tab showing prospects with pending drafts
+- [x] Inline draft panel: show subject, body (editable), agent reasoning, Approve / Edit / Discard / Send actions
+- [x] Bulk send toolbar: select approved drafts → Send Selected → fires Resend for each
+- [x] SEND button on prospect row opens draft inline for review before sending
+- [x] Auto-update prospect status to Contacted after successful send

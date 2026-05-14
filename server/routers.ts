@@ -8,6 +8,7 @@ import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import * as db from "./db";
 import * as workflows from "./workflows";
+import * as emailHelpers from "./email";
 
 // Admin-only middleware
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -1199,6 +1200,146 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         }
       );
     }),
+    // ─── Outreach / Draft Email procedures ──────────────────────────────────
+
+    // Generate AI draft emails for all prospects that don't have a pending draft
+    generateDrafts: adminProcedure
+      .input(z.object({ prospectIds: z.array(z.number()).optional() }))
+      .mutation(async ({ input, ctx }) => {
+        return workflows.withAgentRun(
+          { agentName: "Draft Email Generator", triggeredBy: ctx.user?.name ?? "admin", inputSummary: input.prospectIds ? `${input.prospectIds.length} selected prospects` : "all prospects" },
+          async () => {
+            const allProspects = await db.listProspects();
+            const targets = input.prospectIds
+              ? allProspects.filter((p: { id: number }) => input.prospectIds!.includes(p.id))
+              : allProspects;
+
+            const upcomingShows = await workflows.getUpcomingShows();
+            const showNames = upcomingShows.map((s: { name: string }) => s.name).join(", ") || "upcoming trade shows";
+
+            let generated = 0;
+            for (const prospect of targets as Array<{ id: number; company: string; contactName: string | null; contactEmail: string | null; robotName: string | null; robotType: string | null; shows: string[] | null; notes: string | null }>) {
+              if (!prospect.contactEmail) continue;
+
+              // Check if a pending/approved draft already exists
+              const existing = await emailHelpers.getDraftsForProspect(prospect.id);
+              const hasPending = existing.some((d: { status: string }) => d.status === "pending" || d.status === "approved");
+              if (hasPending) continue;
+
+              const showContext = prospect.shows?.length ? `They have exhibited at: ${prospect.shows.join(", ")}.` : "";
+              const robotContext = prospect.robotName ? `Their robot is the ${prospect.robotName}${prospect.robotType ? ` (${prospect.robotType})` : ""}.` : "";
+
+              const llmRes = await invokeLLM({
+                messages: [
+                  {
+                    role: "system",
+                    content: `You are an outreach specialist for StageGate, the first warehouse, staging, and activation service built for robotics companies exhibiting at trade shows. Write concise, professional cold outreach emails. Be specific about the company's robot. Keep emails under 150 words. No fluff, no marketing speak. Sign off as "Bob Christopher, StageGate".`,
+                  },
+                  {
+                    role: "user",
+                    content: `Write a cold outreach email to ${prospect.contactName ?? "the team"} at ${prospect.company}. ${robotContext} ${showContext} We are reaching out because StageGate handles all trade show logistics for robotics companies — shipping, customs, warehousing, booth setup, and on-site support — at ${showNames}. Subject line and email body only. Format: SUBJECT: ...\n\nBODY: ...`,
+                  },
+                ],
+              });
+              const rawContent = llmRes.choices?.[0]?.message?.content;
+              const content: string = typeof rawContent === "string" ? rawContent : "";
+              const subjectMatch = content.match(/SUBJECT:\s*(.+)/i);
+              const bodyMatch = content.match(/BODY:\s*([\s\S]+)/i);
+
+              const subject = subjectMatch?.[1]?.trim() ?? `Trade Show Logistics for ${prospect.company}`;
+              const body = bodyMatch?.[1]?.trim() ?? content.trim();
+              const reasoning = `${prospect.company} matched because: ${robotContext} ${showContext} Outreach for ${showNames}.`.trim();
+
+              await emailHelpers.createDraft({ prospectId: prospect.id, subject, body, agentReasoning: reasoning });
+              generated++;
+            }
+
+            return { generated, total: targets.length };
+          }
+        );
+      }),
+
+    // Get all drafts with their prospect data
+    getDrafts: adminProcedure
+      .input(z.object({ statuses: z.array(z.string()).optional() }))
+      .query(async ({ input }) => {
+        return emailHelpers.getDraftsWithProspects(input.statuses ?? ["pending", "approved"]);
+      }),
+
+    // Approve a draft
+    approveDraft: adminProcedure
+      .input(z.object({ draftId: z.number() }))
+      .mutation(async ({ input }) => {
+        return emailHelpers.updateDraft(input.draftId, { status: "approved" });
+      }),
+
+    // Discard a draft
+    discardDraft: adminProcedure
+      .input(z.object({ draftId: z.number() }))
+      .mutation(async ({ input }) => {
+        return emailHelpers.updateDraft(input.draftId, { status: "discarded" });
+      }),
+
+    // Edit a draft's subject and/or body
+    editDraft: adminProcedure
+      .input(z.object({ draftId: z.number(), subject: z.string().optional(), body: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        const { draftId, ...data } = input;
+        return emailHelpers.updateDraft(draftId, data);
+      }),
+
+    // Send a single draft email via Resend
+    sendDraft: adminProcedure
+      .input(z.object({ draftId: z.number() }))
+      .mutation(async ({ input }) => {
+        const drafts = await emailHelpers.getDraftsWithProspects(["pending", "approved"]);
+        const entry = drafts.find((d: { draft: { id: number } }) => d.draft.id === input.draftId);
+        if (!entry) throw new TRPCError({ code: "NOT_FOUND", message: "Draft not found" });
+        if (!entry.prospect.contactEmail) throw new TRPCError({ code: "BAD_REQUEST", message: "Prospect has no email address" });
+
+        await emailHelpers.sendEmail({
+          to: entry.prospect.contactEmail,
+          subject: entry.draft.subject,
+          body: entry.draft.body,
+        });
+
+        await emailHelpers.markDraftSent(entry.draft.id);
+        await db.updateProspectStatus(entry.prospect.id, "contacted");
+
+        return { success: true, sentTo: entry.prospect.contactEmail };
+      }),
+
+    // Bulk send multiple approved drafts
+    bulkSendDrafts: adminProcedure
+      .input(z.object({ draftIds: z.array(z.number()) }))
+      .mutation(async ({ input }) => {
+        const drafts = await emailHelpers.getDraftsWithProspects(["pending", "approved"]);
+        const targets = drafts.filter((d: { draft: { id: number } }) => input.draftIds.includes(d.draft.id));
+
+        let sent = 0;
+        let failed = 0;
+        const errors: string[] = [];
+
+        for (const entry of targets) {
+          if (!entry.prospect.contactEmail) { failed++; continue; }
+          try {
+            await emailHelpers.sendEmail({
+              to: entry.prospect.contactEmail,
+              subject: entry.draft.subject,
+              body: entry.draft.body,
+            });
+            await emailHelpers.markDraftSent(entry.draft.id);
+            await db.updateProspectStatus(entry.prospect.id, "contacted");
+            sent++;
+          } catch (e: unknown) {
+            failed++;
+            errors.push(`${entry.prospect.company}: ${e instanceof Error ? e.message : String(e)}`);
+          }
+        }
+
+        return { sent, failed, errors };
+      }),
+
     getSiteStats: adminProcedure.query(async () => {
       const [users, orders, demos, quotes, leads, prospects] = await Promise.all([
         db.getAllUsers(),

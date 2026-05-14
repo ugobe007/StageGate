@@ -560,6 +560,12 @@ export async function updateProspect(id: number, data: Partial<InsertProspect>) 
   await db.update(prospects).set(data).where(eq(prospects.id, id));
 }
 
+export async function updateProspectStatus(id: number, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(prospects).set({ status, updatedAt: new Date() }).where(eq(prospects.id, id));
+}
+
 export async function bulkInsertProspects(data: InsertProspect[]) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");

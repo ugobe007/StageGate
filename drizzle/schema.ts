@@ -324,3 +324,18 @@ export const agentRuns = pgTable("agent_runs", {
 });
 export type AgentRun = typeof agentRuns.$inferSelect;
 export type InsertAgentRun = typeof agentRuns.$inferInsert;
+
+// ─── Draft Emails (Outreach Workflow) ────────────────────────────────────────
+export const draftEmails = pgTable("draft_emails", {
+  id: serial("id").primaryKey(),
+  prospectId: integer("prospectId").notNull().references(() => prospects.id, { onDelete: "cascade" }),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  agentReasoning: text("agentReasoning"),
+  status: text("status").notNull().default("pending"), // pending | approved | sent | discarded
+  sentAt: timestamp("sentAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).notNull().defaultNow(),
+});
+export type DraftEmail = typeof draftEmails.$inferSelect;
+export type NewDraftEmail = typeof draftEmails.$inferInsert;
