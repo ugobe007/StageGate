@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Bot, ClipboardList, Star, Package, FileText, Calendar, Telescope, Send } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Bot, ClipboardList, Star, Package, FileText, Calendar, Telescope, Send, Kanban } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -33,6 +33,7 @@ const menuItems = [
   { icon: Telescope, label: "Leads", path: "/admin/leads" },
   { icon: Star, label: "XBOT Prospects", path: "/admin/prospects" },
   { icon: Bot, label: "AI Agents", path: "/admin/agents" },
+  { icon: Kanban, label: "Pipeline", path: "/admin/pipeline" },
   { icon: Send, label: "Outreach", path: "/admin/outreach" },
   { icon: Calendar, label: "Shows", path: "/admin/shows" },
   { icon: Package, label: "Orders", path: "/admin/orders" },

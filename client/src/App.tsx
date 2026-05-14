@@ -26,6 +26,7 @@ import XbotWizard from "./pages/XbotWizard";
 import XbotProject from "./pages/XbotProject";
 import AdminProspects from "./pages/AdminProspects";
 import AdminOutreach from "./pages/AdminOutreach";
+import AdminPipeline from "./pages/AdminPipeline";
 import VideoIntake from "./pages/VideoIntake";
 import Schedule from "./pages/Schedule";
 import DbStatusBanner from "@/components/DbStatusBanner";
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/admin/prospects" component={AdminProspects} />
       <Route path="/admin/agents" component={AdminAgents} />
       <Route path="/admin/outreach" component={AdminOutreach} />
+      <Route path="/admin/pipeline" component={AdminPipeline} />
 
       {/* Video intake */}
       <Route path="/xbot/video" component={VideoIntake} />

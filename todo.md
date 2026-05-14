@@ -576,3 +576,13 @@
 - [x] Add admin.getDraftCount tRPC query (returns count of pending drafts)
 - [x] Add pending draft count badge to "Outreach" sidebar link in DashboardLayout
 - [x] Add Outreach quick-link card to AdminDashboard (pending count, last sent date, Go to Outreach button)
+
+## v9.3 — Operations Console Redesign
+
+- [x] Build AdminPipeline.tsx: 5-column kanban (Prospects→Contacted→Replied→Qualified→Jobs) wired to real Supabase data, grouped by event, clickable cards
+- [x] Add company side panel to AdminPipeline: event context, robot type, logistics need/risk, status, AI next step, Compose/Send/CreateJob actions
+- [ ] Build AdminCompose.tsx: Message Composer with recipients, AI context block, editable body with merge fields, Send/Preview per company
+- [ ] Redesign AdminProspects.tsx: grouped by trade show, group-level actions (Preview Message, Edit, Send to Group)
+- [x] Add Pipeline link to sidebar in DashboardLayout (Kanban icon, /admin/pipeline)
+- [ ] Add admin.getPipelineData tRPC query: prospects grouped by status and event
+- [ ] Add admin.getProspectContext tRPC query: single prospect with event, robot, contact details
