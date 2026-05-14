@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Navbar from "@/components/Navbar";
+import ProspectCRMCard from "@/components/ProspectCRMCard";
 import { ExternalLink, Mail, RefreshCw, ChevronDown, Check, X, Clock, Phone, AlertCircle, Square, CheckSquare, Zap, ArrowUpDown, ArrowUp, ArrowDown, Download, Upload, Calendar, ArrowRight } from "lucide-react";
 
 type ProspectStatus = "new" | "contacted" | "responded" | "scheduled" | "converted" | "not_interested";
@@ -57,6 +58,7 @@ const CONFIDENCE_BORDERS: Record<string, string> = {
 
 export default function AdminProspects() {
   const { user } = useAuth();
+  const utils = trpc.useUtils();
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [hideContacted, setHideContacted] = useState(false);
   const [sendingId, setSendingId] = useState<number | null>(null);
@@ -129,6 +131,30 @@ export default function AdminProspects() {
     { status: statusFilter || undefined },
     { enabled: !!user && user.role === "admin" }
   );
+
+  // Fetch shows for urgency calculation
+  const { data: showsData } = trpc.shows.list.useQuery(undefined, { enabled: !!user && user.role === "admin" });
+  const showDateMap = (showsData ?? []).reduce<Record<string, Date>>((acc, s) => {
+    if (s.startDate) acc[s.name.toLowerCase()] = new Date(s.startDate);
+    return acc;
+  }, {});
+
+  // Get urgency for a prospect: days until their soonest upcoming show
+  function getUrgency(shows: string[]): { days: number; label: string; color: string } | null {
+    const now = Date.now();
+    let minDays: number | null = null;
+    for (const show of shows) {
+      const date = showDateMap[show.toLowerCase()];
+      if (!date) continue;
+      const days = Math.ceil((date.getTime() - now) / 86_400_000);
+      if (days >= 0 && (minDays === null || days < minDays)) minDays = days;
+    }
+    if (minDays === null) return null;
+    if (minDays <= 30) return { days: minDays, label: `${minDays}d`, color: "#ef4444" };
+    if (minDays <= 60) return { days: minDays, label: `${minDays}d`, color: "#f59e0b" };
+    if (minDays <= 90) return { days: minDays, label: `${minDays}d`, color: "#60a5fa" };
+    return { days: minDays, label: `${minDays}d`, color: "rgba(255,255,255,0.30)" };
+  }
 
   const sendEmail = trpc.prospects.sendIntroEmail.useMutation({
     onSuccess: (_, vars) => {
@@ -1180,6 +1206,7 @@ export default function AdminProspects() {
               const isSent = sentIds.has(p.id);
               const isFailed = failedIds.has(p.id);
               const conf = String((p as Record<string, unknown>).emailConfidence ?? "");
+              const urgency = getUrgency(shows);
 
               return (
                 <div
@@ -1223,6 +1250,17 @@ export default function AdminProspects() {
                           {String(i + 1).padStart(2, "0")}
                         </span>
                         <span style={{ fontWeight: 700, fontSize: "0.9375rem", color: "#fff" }}>{p.company}</span>
+                        {urgency && (
+                          <span style={{
+                            fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.08em", textTransform: "uppercase",
+                            padding: "0.1rem 0.35rem", borderRadius: "0.125rem",
+                            border: `1px solid ${urgency.color}40`,
+                            color: urgency.color,
+                            fontWeight: 700,
+                          }} title={`${urgency.days} days until next show`}>
+                            {urgency.label}
+                          </span>
+                        )}
                         {p.website && (
                           <a href={p.website} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
                             style={{ color: "rgba(255,255,255,0.25)", lineHeight: 1 }}>
@@ -1405,171 +1443,13 @@ export default function AdminProspects() {
 
                   {/* Expanded detail */}
                   {isExpanded && (
-                    <div style={{ padding: "0 0 1.5rem 2rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-                          <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", margin: 0 }}>Contact Info</p>
-                          <button
-                            onClick={() => {
-                              if (editingContactId === p.id) {
-                                const fields = editContact[p.id] ?? {};
-                                if (Object.keys(fields).length > 0) {
-                                  const { emailConfidence, ...rest } = fields;
-                                  updateProspect.mutate({
-                                    id: p.id,
-                                    ...rest,
-                                    ...(emailConfidence ? { emailConfidence: emailConfidence as "verified" | "high" | "medium" | "low" } : {}),
-                                  });
-                                }
-                                setEditingContactId(null);
-                              } else {
-                                setEditingContactId(p.id);
-                                setEditContact(prev => ({
-                                  ...prev,
-                                  [p.id]: {
-                                    contactName: p.contactName ?? "",
-                                    contactTitle: p.contactTitle ?? "",
-                                    contactEmail: p.contactEmail ?? "",
-                                    contactLinkedIn: ((p as Record<string, unknown>).contactLinkedIn as string) ?? "",
-                                    emailConfidence: (((p as Record<string, unknown>).emailConfidence as string) ?? "low") as "verified" | "high" | "medium" | "low",
-                                  }
-                                }));
-                              }
-                            }}
-                            style={{
-                              fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em",
-                              textTransform: "uppercase", padding: "0.2rem 0.5rem",
-                              border: `1px solid ${editingContactId === p.id ? "rgba(0,255,135,0.40)" : "rgba(255,255,255,0.12)"}`,
-                              color: editingContactId === p.id ? "#00ff87" : "rgba(255,255,255,0.40)",
-                              background: "transparent", cursor: "pointer", borderRadius: "0.125rem",
-                            }}
-                          >
-                            {editingContactId === p.id ? (<><Check size={9} style={{ display: "inline", marginRight: 3 }} /><span>Save</span></>) : <span>Edit</span>}
-                          </button>
-                        </div>
-
-                        {editingContactId === p.id ? (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                            {([
-                              { key: "contactName", label: "Name", placeholder: "Full name" },
-                              { key: "contactTitle", label: "Title", placeholder: "VP of Operations" },
-                              { key: "contactEmail", label: "Email", placeholder: "name@company.com" },
-                              { key: "contactLinkedIn", label: "LinkedIn", placeholder: "https://linkedin.com/in/..." },
-                            ] as { key: keyof typeof editContact[number]; label: string; placeholder: string }[]).map(({ key, label, placeholder }) => (
-                              <div key={key} style={{ display: "grid", gridTemplateColumns: "70px 1fr", alignItems: "center", gap: "0.5rem" }}>
-                                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: "rgba(255,255,255,0.30)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{label}</span>
-                                <input
-                                  type="text"
-                                  value={editContact[p.id]?.[key] ?? ""}
-                                  onChange={e => setEditContact(prev => ({ ...prev, [p.id]: { ...prev[p.id], [key]: e.target.value } }))}
-                                  placeholder={placeholder}
-                                  style={{
-                                    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)",
-                                    borderRadius: "0.125rem", color: "rgba(255,255,255,0.80)", fontSize: "0.8125rem",
-                                    padding: "0.3rem 0.5rem", fontFamily: "var(--font-mono)", width: "100%",
-                                  }}
-                                />
-                              </div>
-                            ))}
-                            <div style={{ display: "grid", gridTemplateColumns: "70px 1fr", alignItems: "center", gap: "0.5rem" }}>
-                              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: "rgba(255,255,255,0.30)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Confidence</span>
-                              <select
-                                value={editContact[p.id]?.emailConfidence ?? "low"}
-                                onChange={e => setEditContact(prev => ({ ...prev, [p.id]: { ...prev[p.id], emailConfidence: e.target.value } }))}
-                                style={{
-                                  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)",
-                                  borderRadius: "0.125rem", color: "rgba(255,255,255,0.80)", fontSize: "0.8125rem",
-                                  padding: "0.3rem 0.5rem", fontFamily: "var(--font-mono)",
-                                }}
-                              >
-                                <option value="verified">Verified</option>
-                                <option value="high">High</option>
-                                <option value="medium">Medium</option>
-                                <option value="low">Low</option>
-                              </select>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-                            {p.contactName && (
-                              <span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.80)" }}>
-                                {p.contactName}
-                                {p.contactTitle && <span style={{ color: "rgba(255,255,255,0.35)", marginLeft: "0.5rem" }}>· {p.contactTitle}</span>}
-                              </span>
-                            )}
-                            {p.contactEmail && (
-                              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                <a href={`mailto:${p.contactEmail}`} style={{ fontSize: "0.8125rem", color: "#f59e0b", fontFamily: "var(--font-mono)" }}>{p.contactEmail}</a>
-                                {conf && (
-                                  <span style={{
-                                    fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.08em", textTransform: "uppercase",
-                                    padding: "0.1rem 0.35rem", borderRadius: "0.125rem",
-                                    border: `1px solid ${CONFIDENCE_BORDERS[conf] ?? "rgba(255,255,255,0.12)"}`,
-                                    color: CONFIDENCE_COLORS[conf] ?? "rgba(255,255,255,0.30)",
-                                  }}>
-                                    {conf}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            {!!(p as Record<string, unknown>).contactLinkedIn && (
-                              <a href={String((p as Record<string, unknown>).contactLinkedIn)} target="_blank" rel="noopener noreferrer"
-                                style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                                <ExternalLink size={10} /><span>LinkedIn</span>
-                              </a>
-                            )}
-                            {!p.contactName && !p.contactEmail && (
-                              <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.20)" }}>No contact info — click Edit to add</span>
-                            )}
-                          </div>
-                        )}
-
-                        {p.videoMessageUrl && (
-                          <div style={{ marginTop: "1rem" }}>
-                            <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(0,255,135,0.60)", marginBottom: "0.5rem" }}>Video Message Received</p>
-                            <a href={p.videoMessageUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "0.8125rem", color: "#00ff87", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                              <ExternalLink size={12} /> View Video
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: "0.75rem" }}>Notes</p>
-                        <textarea
-                          value={editNotes[p.id] ?? p.notes ?? ""}
-                          onChange={e => setEditNotes(prev => ({ ...prev, [p.id]: e.target.value }))}
-                          onBlur={() => {
-                            if (editNotes[p.id] !== undefined && editNotes[p.id] !== p.notes) {
-                              updateProspect.mutate({ id: p.id, notes: editNotes[p.id] });
-                            }
-                          }}
-                          placeholder="Add notes..."
-                          style={{
-                            width: "100%", minHeight: "80px", background: "rgba(255,255,255,0.03)",
-                            border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.125rem",
-                            color: "rgba(255,255,255,0.75)", fontSize: "0.8125rem", padding: "0.5rem 0.75rem",
-                            fontFamily: "var(--font-sans)", resize: "vertical", lineHeight: 1.6,
-                          }}
-                        />
-                        <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem", flexWrap: "wrap" }}>
-                          {(["new", "contacted", "responded", "scheduled", "converted", "not_interested"] as ProspectStatus[]).map(s => (
-                            <button
-                              key={s}
-                              onClick={() => updateProspect.mutate({ id: p.id, status: s })}
-                              style={{
-                                fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em", textTransform: "uppercase",
-                                padding: "0.25rem 0.55rem",
-                                border: `1px solid ${p.status === s ? STATUS_CONFIG[s].color : "rgba(255,255,255,0.10)"}`,
-                                color: p.status === s ? STATUS_CONFIG[s].color : "rgba(255,255,255,0.30)",
-                                background: "transparent", cursor: "pointer", borderRadius: "0.125rem",
-                              }}
-                            >
-                              {STATUS_CONFIG[s].label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                    <ProspectCRMCard
+                      prospect={p}
+                      onStatusChange={(id, status) => {
+                        // Optimistically update local state by invalidating
+                        void utils.prospects.list.invalidate();
+                      }}
+                    />
                   )}
                 </div>
               );

@@ -581,11 +581,11 @@
 
 - [x] Build AdminPipeline.tsx: 5-column kanban (Prospects→Contacted→Replied→Qualified→Jobs) wired to real Supabase data, grouped by event, clickable cards — redesigned with clean white panel, editable message textarea, 4 action buttons (Send Message, Create Job, Schedule Call, Mark Qualified)
 - [x] Add company side panel to AdminPipeline: event context, robot type, logistics need/risk, status, AI next step, Compose/Send/CreateJob actions
-- [ ] Build AdminCompose.tsx: Message Composer with recipients, AI context block, editable body with merge fields, Send/Preview per company
-- [ ] Redesign AdminProspects.tsx: grouped by trade show, group-level actions (Preview Message, Edit, Send to Group)
+- [x] Build AdminCompose.tsx: Message Composer with recipients, AI context block, editable body with merge fields, Send/Preview per company (done in v10.8)
+- [x] Redesign AdminProspects.tsx: grouped by trade show, group-level actions (done in v10.9 — By Show view)
 - [x] Add Pipeline link to sidebar in DashboardLayout (Kanban icon, /admin/pipeline)
-- [ ] Add admin.getPipelineData tRPC query: prospects grouped by status and event
-- [ ] Add admin.getProspectContext tRPC query: single prospect with event, robot, contact details
+- [x] Add admin.getPipelineData tRPC query: prospects grouped by status and event (done in v10.7)
+- [x] Add admin.getProspectContext tRPC query: single prospect with event, robot, contact details (done in v10.7)
 
 ## v9.4 — Pipeline Drag-and-Drop
 
@@ -660,3 +660,11 @@
 
 ### v10.9 — AdminProspects Redesign
 - [x] Redesign AdminProspects.tsx: add By Show grouped view (calendar icon tab), each show is a collapsible section with company rows, group-level bulk select + send button
+
+## v11 — AdminProspects CRM Rebuild
+
+- [x] Rebuild expanded row in AdminProspects as full CRM card: ProspectCRMCard component (4 tabs: Overview/Research/Email/Activity)
+- [x] Add prospect prioritization: urgency badge next to company name (red <30d, amber <60d, blue <90d, based on days until next show)
+- [x] Wire prospects.getResearch and prospects.getActivities into expanded row
+- [x] Wire prospects.regenerateDraft into expanded row draft email section
+- [x] Wire sendDraftWithWorkflow into expanded row send button (auto-advance + activity log + follow-up + owner notify)
