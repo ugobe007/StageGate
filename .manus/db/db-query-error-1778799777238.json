@@ -1,0 +1,15 @@
+{
+  "query": "\nCREATE TABLE IF NOT EXISTS email_tracking_events (\n  id SERIAL PRIMARY KEY,\n  \"prospectId\" INTEGER,\n  \"messageId\" TEXT NOT NULL,\n  \"eventType\" TEXT NOT NULL,\n  url TEXT,\n  \"occurredAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  raw JSONB,\n  \"createdAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\nCREATE INDEX IF NOT EXISTS idx_email_tracking_prospect ON email_tracking_events (\"prospectId\");\nCREATE INDEX IF NOT EXISTS idx_email_tracking_message ON email_tracking_events (\"messageId\");\nCREATE INDEX IF NOT EXISTS idx_email_tracking_event_type ON email_tracking_events (\"eventType\");\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute \nCREATE TABLE IF NOT EXISTS email_tracking_events (\n  id SERIAL PRIMARY KEY,\n  \"prospectId\" INTEGER,\n  \"messageId\" TEXT NOT NULL,\n  \"eventType\" TEXT NOT NULL,\n  url TEXT,\n  \"occurredAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  raw JSONB,\n  \"createdAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\nCREATE INDEX IF NOT EXISTS idx_email_tracking_prospect ON email_tracking_events (\"prospectId\");\nCREATE INDEX IF NOT EXISTS idx_email_tracking_message ON email_tracking_events (\"messageId\");\nCREATE INDEX IF NOT EXISTS idx_email_tracking_event_type ON email_tracking_events (\"eventType\");\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 2: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 3 column 15 near \"\"prospectId\" INTEGER,",
+    "  \"messageId\" TEXT NOT NULL,",
+    "  \"eventType\" TEXT NOT NULL,",
+    "  url TEXT,",
+    "  \"occurredAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),",
+    "  raw JSONB,",
+    "  \"createdAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW()",
+    ")\""
+  ]
+}

@@ -10,7 +10,7 @@ import * as db from "./db";
 import * as workflows from "./workflows";
 import * as emailHelpers from "./email";
 import { eq, desc, count } from "drizzle-orm";
-import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable } from "../drizzle/schema";
+import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders } from "../drizzle/schema";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 
@@ -1707,6 +1707,53 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         const rows = await dbConn.select().from(bookingRequests).where(eq(bookingRequests.id, input.id));
         if (!rows[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found" });
         return rows[0];
+      }),
+
+    // Admin: count new (unreviewed) bookings for sidebar badge
+    getNewCount: adminProcedure
+      .query(async () => {
+        const dbConn = await getDb();
+        if (!dbConn) return { count: 0 };
+        const rows = await dbConn.select({ cnt: count() }).from(bookingRequests)
+          .where(eq(bookingRequests.status, "new"));
+        return { count: Number(rows[0]?.cnt ?? 0) };
+      }),
+
+    // Admin: convert approved booking to a service order
+    convertToOrder: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        // Fetch the booking
+        const bookingRows = await dbConn.select().from(bookingRequests).where(eq(bookingRequests.id, input.id));
+        const booking = bookingRows[0];
+        if (!booking) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found" });
+        if (booking.status === "converted") throw new TRPCError({ code: "BAD_REQUEST", message: "Booking already converted" });
+        // Create a service order (userId=0 for unregistered intake, showId=0 as placeholder)
+        const inserted = await dbConn.insert(serviceOrders).values({
+          userId: 0,
+          showId: 0,
+          status: "pending",
+          notes: [
+            `Converted from booking #${booking.id}`,
+            `Company: ${booking.company}`,
+            `Robot: ${booking.robotName ?? "TBD"} (${booking.robotType ?? "unknown"})`,
+            `Show: ${booking.showName ?? "TBD"} — Booth: ${booking.boothNumber ?? "TBD"}`,
+            `Services: ${(booking.services as string[]).join(", ") || "none"}`,
+            `Contact: ${booking.contactName} <${booking.contactEmail}>${booking.contactPhone ? " " + booking.contactPhone : ""}`,
+          ].join("\n"),
+        }).returning();
+        const newOrder = inserted[0];
+        // Mark booking as converted
+        await dbConn.update(bookingRequests)
+          .set({ status: "converted", updatedAt: new Date() })
+          .where(eq(bookingRequests.id, input.id));
+        await notifyOwner({
+          title: `🎉 Booking #${booking.id} converted to Order #${newOrder.id}`,
+          content: `${booking.company} booking has been converted to a service order.\nOrder ID: ${newOrder.id}\nStatus: pending`,
+        });
+        return { success: true, orderId: newOrder.id };
       }),
 
     // Admin: update booking status and notes

@@ -679,3 +679,26 @@
 - [x] Add /admin/bookings route in App.tsx
 - [x] Add Bookings link to DashboardLayout sidebar
 - [x] Vitest tests covered by existing stagegate.test.ts (82 tests passing)
+
+## v13 — Bookings Badge, Order Conversion, Email Tracking
+
+### v13.1 — Booking Count Badge
+- [x] Add bookings.getNewCount admin tRPC query: returns count of bookings with status='new'
+- [x] Add booking count badge to DashboardLayout sidebar Bookings link (same amber pill pattern as Outreach)
+- [x] Refresh every 60s, stale after 30s
+
+### v13.2 — Convert Booking to Order
+- [x] Add bookings.convertToOrder admin tRPC mutation: creates service_orders row from booking data, updates booking status to 'converted', returns new orderId
+- [x] Wire "Convert to Order" button in AdminBookings detail panel to call convertToOrder mutation
+- [x] Show success toast with link to new order in AdminOrders
+- [x] Vitest: test convertToOrder creates order row, updates booking status, rejects non-admin
+
+### v13.3 — Resend Email Tracking Webhooks
+- [x] Add email_tracking_events table: id, prospectId, messageId, eventType (opened/clicked), url (for clicks), occurredAt, raw (JSON)
+- [x] Run migration SQL via webdev_execute_sql
+- [x] Add POST /api/webhooks/resend endpoint in server/_core/index.ts
+- [x] Validate Resend webhook signature (svix-style HMAC)
+- [x] On email.opened: log activity (type=email_opened) to prospect_activities, update email_tracking_events
+- [x] On email.clicked: log activity (type=email_clicked, metadata includes url) to prospect_activities
+- [x] Add RESEND_WEBHOOK_SECRET to secrets
+- [x] Vitest: test webhook signature validation, test activity logging for opened/clicked events

@@ -428,3 +428,17 @@ export const bookingRequests = pgTable("booking_requests", {
 });
 export type BookingRequest = typeof bookingRequests.$inferSelect;
 export type InsertBookingRequest = typeof bookingRequests.$inferInsert;
+
+// ─── Email Tracking Events (Resend webhook) ───────────────────────────────────
+export const emailTrackingEvents = pgTable("email_tracking_events", {
+  id: serial("id").primaryKey(),
+  prospectId: integer("prospectId"),
+  messageId: text("messageId").notNull(),
+  eventType: text("eventType").notNull(), // email.opened | email.clicked
+  url: text("url"),
+  occurredAt: timestamp("occurredAt", { withTimezone: true }).defaultNow().notNull(),
+  raw: jsonb("raw").$type<Record<string, unknown>>(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+});
+export type EmailTrackingEvent = typeof emailTrackingEvents.$inferSelect;
+export type InsertEmailTrackingEvent = typeof emailTrackingEvents.$inferInsert;

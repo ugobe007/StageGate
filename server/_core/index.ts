@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { followupDigestHandler, nightlyResearchHandler } from "../scheduledHandlers";
+import { resendWebhookHandler } from "../webhooks/resend";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -48,6 +49,9 @@ async function startServer() {
   // Scheduled handlers — must be before Vite/static fallthrough
   app.post("/api/scheduled/followup-digest", followupDigestHandler);
   app.post("/api/scheduled/nightly-research", nightlyResearchHandler);
+
+  // Resend email tracking webhook
+  app.post("/api/webhooks/resend", resendWebhookHandler);
 
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {

@@ -126,6 +126,11 @@ function DashboardLayoutContent({
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
+  const { data: bookingNewCount } = trpc.bookings.getNewCount.useQuery(undefined, {
+    enabled: user?.role === "admin",
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = menuItems.find(item => item.path === location);
@@ -213,6 +218,11 @@ function DashboardLayoutContent({
                       {item.path === "/admin/outreach" && (draftCount?.pending ?? 0) > 0 && (
                         <span className="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-full text-[10px] font-semibold bg-amber-500 text-black tabular-nums">
                           {draftCount!.pending}
+                        </span>
+                      )}
+                      {item.path === "/admin/bookings" && (bookingNewCount?.count ?? 0) > 0 && (
+                        <span className="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-full text-[10px] font-semibold bg-amber-500 text-black tabular-nums">
+                          {bookingNewCount!.count}
                         </span>
                       )}
                     </SidebarMenuButton>
