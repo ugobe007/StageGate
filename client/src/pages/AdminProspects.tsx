@@ -61,6 +61,7 @@ export default function AdminProspects() {
   const utils = trpc.useUtils();
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [hideContacted, setHideContacted] = useState(false);
+  const [hotFilter, setHotFilter] = useState(false);
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
   const [failedIds, setFailedIds] = useState<Set<number>>(new Set());
@@ -334,8 +335,12 @@ export default function AdminProspects() {
     );
   }
 
+  // Hot count: prospects with engagementScore >= 3 across all statuses
+  const hotCount = (data?.prospects ?? []).filter(p => Number((p as Record<string, unknown>).engagementScore ?? 0) >= 3).length;
+
   const prospects = (data?.prospects ?? []).filter(p => {
-    if (hideContacted && statusFilter === "" && p.status === "contacted") return false;
+    if (hotFilter && Number((p as Record<string, unknown>).engagementScore ?? 0) < 3) return false;
+    if (hideContacted && statusFilter === "" && !hotFilter && p.status === "contacted") return false;
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const matchCompany = p.company.toLowerCase().includes(q);
@@ -616,8 +621,43 @@ export default function AdminProspects() {
               </button>
             );
           })}
-          {/* Hide Contacted quick-toggle — only visible when All filter is active */}
-          {statusFilter === "" && (
+          {/* Hot filter pill — always visible, shows count of prospects with score ≥ 3 */}
+          <button
+            onClick={() => { setHotFilter(h => !h); setSelectedIds(new Set()); if (!hotFilter) setHideContacted(false); }}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.625rem",
+              letterSpacing: "0.10em",
+              textTransform: "uppercase",
+              padding: "0.3rem 0.75rem",
+              border: `1px solid ${hotFilter ? "rgba(245,158,11,0.60)" : "rgba(255,255,255,0.10)"}`,
+              background: hotFilter ? "rgba(245,158,11,0.12)" : "transparent",
+              color: hotFilter ? "#f59e0b" : "rgba(255,255,255,0.40)",
+              cursor: "pointer",
+              borderRadius: "0.125rem",
+              transition: "all 0.15s",
+              marginLeft: "0.5rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.35rem",
+            }}
+            title="Show only prospects with email engagement score ≥ 3"
+          >
+            🔥 Hot
+            {hotCount > 0 && (
+              <span style={{
+                fontSize: "0.5rem",
+                padding: "0.05rem 0.3rem",
+                borderRadius: "0.75rem",
+                background: hotFilter ? "rgba(245,158,11,0.25)" : "rgba(255,255,255,0.06)",
+                color: hotFilter ? "#f59e0b" : "rgba(255,255,255,0.30)",
+                fontVariantNumeric: "tabular-nums",
+              }}>{hotCount}</span>
+            )}
+          </button>
+
+          {/* Hide Contacted quick-toggle — only visible when All filter is active and hotFilter is off */}
+          {statusFilter === "" && !hotFilter && (
             <button
               onClick={() => { setHideContacted(h => !h); setSelectedIds(new Set()); }}
               style={{

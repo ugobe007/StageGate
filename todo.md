@@ -745,3 +745,12 @@
 - [x] Update orders.allOrders tRPC query to include bookingId in returned rows
 - [x] Add "From booking #N" amber badge to each row in AdminOrders that has a bookingId, linking to /admin/bookings
 - [x] Vitest: test allOrders returns bookingId field
+
+## v16 — Hot Filter on AdminProspects
+
+- [x] Add `hotFilter` boolean state to AdminProspects (default false)
+- [x] Add "🔥 Hot" quick-filter pill button next to status tabs — amber when active, muted when inactive
+- [x] When hotFilter is active, filter prospects list to only show those with engagementScore ≥ 3
+- [x] Show count of hot prospects in the pill label (e.g. "🔥 Hot (4)")
+- [x] Turning on hotFilter clears statusFilter (and vice versa) to avoid conflicting filters
+- [x] Vitest: test that listWithEngagement returns correct scores (already covered in v15; add a UI filter logic unit test)
