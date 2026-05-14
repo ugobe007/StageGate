@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -19,7 +19,7 @@ import { getLoginUrl } from "@/const";
 import Navbar from "@/components/Navbar";
 import { Link } from "wouter";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Send, X, GripVertical } from "lucide-react";
+import { Loader2, RefreshCw, Send, X, GripVertical, Plus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // ─── Pipeline stages ──────────────────────────────────────────────────────────
@@ -157,6 +157,83 @@ function DragOverlayCard({ prospect }: { prospect: Prospect }) {
   );
 }
 
+// ─── Inline Add Card Form ────────────────────────────────────────────────────
+
+function AddCardForm({
+  stageKey,
+  onCreated,
+  onCancel,
+}: {
+  stageKey: string;
+  onCreated: () => void;
+  onCancel: () => void;
+}) {
+  const [company, setCompany] = useState("");
+  const [event, setEvent] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const create = trpc.prospects.create.useMutation({
+    onSuccess: () => {
+      toast.success(`${company.trim()} added`);
+      onCreated();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  function handleSubmit() {
+    const name = company.trim();
+    if (!name) return;
+    create.mutate({
+      company: name,
+      shows: event.trim() ? [event.trim()] : undefined,
+      status: stageKey as "new" | "contacted" | "responded" | "scheduled" | "converted",
+    });
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") { e.preventDefault(); handleSubmit(); }
+    if (e.key === "Escape") onCancel();
+  }
+
+  return (
+    <div className="border border-neutral-900 rounded-lg p-2.5 bg-white space-y-1.5">
+      <input
+        ref={inputRef}
+        value={company}
+        onChange={e => setCompany(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Company name"
+        className="w-full text-sm border border-neutral-200 rounded px-2 py-1.5 focus:outline-none focus:border-neutral-900 placeholder:text-neutral-400"
+      />
+      <input
+        value={event}
+        onChange={e => setEvent(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Event (e.g. CES 2026)"
+        className="w-full text-xs border border-neutral-200 rounded px-2 py-1.5 focus:outline-none focus:border-neutral-900 placeholder:text-neutral-400"
+      />
+      <div className="flex gap-1.5 pt-0.5">
+        <button
+          onClick={handleSubmit}
+          disabled={!company.trim() || create.isPending}
+          className="flex-1 flex items-center justify-center gap-1 bg-neutral-900 text-white rounded py-1.5 text-xs hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {create.isPending ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+          Add
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-2.5 border border-neutral-200 rounded text-xs text-neutral-500 hover:border-neutral-900 hover:text-neutral-900"
+        >
+          <X size={11} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Droppable Column ─────────────────────────────────────────────────────────
 
 function DroppableColumn({
@@ -168,6 +245,7 @@ function DroppableColumn({
   selectedId,
   draggingId,
   onCardClick,
+  onCreated,
 }: {
   stageKey: string;
   label: string;
@@ -177,8 +255,10 @@ function DroppableColumn({
   selectedId: number | null;
   draggingId: number | null;
   onCardClick: (p: Prospect) => void;
+  onCreated: () => void;
 }) {
   const { setNodeRef } = useDroppable({ id: `col-${stageKey}` });
+  const [adding, setAdding] = useState(false);
 
   return (
     <div className="flex flex-col border-r border-neutral-200 last:border-r-0">
@@ -219,6 +299,23 @@ function DroppableColumn({
           <div className="h-10 border-2 border-dashed border-neutral-300 rounded-lg flex items-center justify-center text-xs text-neutral-400">
             Drop here
           </div>
+        )}
+
+        {/* Inline add form */}
+        {adding ? (
+          <AddCardForm
+            stageKey={stageKey}
+            onCreated={() => { setAdding(false); onCreated(); }}
+            onCancel={() => setAdding(false)}
+          />
+        ) : (
+          <button
+            onClick={() => setAdding(true)}
+            className="w-full flex items-center gap-1.5 text-xs text-neutral-400 hover:text-neutral-700 py-1.5 px-1 rounded hover:bg-neutral-50 transition-colors"
+          >
+            <Plus size={12} />
+            Add Company
+          </button>
         )}
       </div>
     </div>
@@ -574,6 +671,7 @@ export default function AdminPipeline() {
               selectedId={selectedProspect?.id ?? null}
               draggingId={activeDragProspect?.id ?? null}
               onCardClick={p => setSelectedProspect(p)}
+              onCreated={() => ctx.prospects.list.invalidate()}
             />
           ))}
         </div>

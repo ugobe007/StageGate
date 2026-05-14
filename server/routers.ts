@@ -872,6 +872,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         website: z.string().optional(),
         shows: z.array(z.string()).optional(),
         notes: z.string().optional(),
+        status: z.enum(["new", "contacted", "responded", "scheduled", "converted", "not_interested"]).optional(),
       }))
       .mutation(async ({ input }) => {
         await db.createProspect(input as Parameters<typeof db.createProspect>[0]);

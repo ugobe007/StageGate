@@ -591,3 +591,8 @@
 
 - [x] Install @dnd-kit/core and @dnd-kit/sortable
 - [x] Add drag-and-drop to AdminPipeline.tsx: cards draggable between columns, optimistic status update on drop, Supabase sync via bulkUpdateStatus
+
+## v9.5 — Pipeline Quick-Add Card
+
+- [x] Add prospects.create tRPC mutation (company name + status, optional shows)
+- [x] Add inline AddCard form at bottom of each Pipeline column: + Add Company button expands to input, Enter/click to create, Escape to cancel
