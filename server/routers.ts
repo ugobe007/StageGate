@@ -9,8 +9,8 @@ import { notifyOwner } from "./_core/notification";
 import * as db from "./db";
 import * as workflows from "./workflows";
 import * as emailHelpers from "./email";
-import { eq, desc, count } from "drizzle-orm";
-import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents } from "../drizzle/schema";
+import { eq, desc, count, sql } from "drizzle-orm";
+import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems } from "../drizzle/schema";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 
@@ -272,6 +272,58 @@ export const appRouter = router({
     allOrders: adminProcedure.query(async () => {
       return db.getAllOrders();
     }),
+
+    // Get all services (for line-item editor dropdown)
+    getAllServices: adminProcedure.query(async () => {
+      return db.getAllServices();
+    }),
+
+    // Add a line item to an order
+    addLineItem: adminProcedure
+      .input(z.object({
+        orderId: z.number(),
+        serviceId: z.number(),
+        quantity: z.number().int().min(1).default(1),
+        unitPrice: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const id = await db.createOrderItem({
+          orderId: input.orderId,
+          serviceId: input.serviceId,
+          quantity: input.quantity,
+          unitPrice: input.unitPrice,
+        });
+        return { id };
+      }),
+
+    // Remove a line item from an order
+    removeLineItem: adminProcedure
+      .input(z.object({ itemId: z.number(), orderId: z.number() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        await dbConn.delete(orderItems).where(eq(orderItems.id, input.itemId));
+        return { success: true };
+      }),
+
+    // Update a line item's quantity or unit price
+    updateLineItem: adminProcedure
+      .input(z.object({
+        itemId: z.number(),
+        quantity: z.number().int().min(1).optional(),
+        unitPrice: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const updates: Record<string, unknown> = {};
+        if (input.quantity !== undefined) updates.quantity = input.quantity;
+        if (input.unitPrice !== undefined) updates.unitPrice = input.unitPrice;
+        if (Object.keys(updates).length > 0) {
+          await dbConn.update(orderItems).set(updates).where(eq(orderItems.id, input.itemId));
+        }
+        return { success: true };
+      }),
 
     // Get a single order with booking reference for the detail page
     getDetail: adminProcedure
@@ -866,6 +918,39 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       .query(async ({ input }) => {
         const items = await db.listProspects(input.status);
         return { prospects: items };
+      }),
+
+    // List prospects with computed engagement score (opens×1 + clicks×2)
+    listWithEngagement: adminProcedure
+      .input(z.object({ status: z.string().optional() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return { prospects: [] };
+        // Subquery: count opens and clicks per prospect from email_tracking_events
+        const items = await db.listProspects(input.status);
+        if (items.length === 0) return { prospects: [] };
+        // Fetch engagement counts for all prospects in one query
+        const engagementRows = await dbConn
+          .select({
+            prospectId: emailTrackingEvents.prospectId,
+            opens: sql<number>`SUM(CASE WHEN ${emailTrackingEvents.eventType} = 'email.opened' THEN 1 ELSE 0 END)`.as('opens'),
+            clicks: sql<number>`SUM(CASE WHEN ${emailTrackingEvents.eventType} = 'email.clicked' THEN 1 ELSE 0 END)`.as('clicks'),
+          })
+          .from(emailTrackingEvents)
+          .groupBy(emailTrackingEvents.prospectId);
+        // Build a lookup map
+        const engMap = new Map<number, { opens: number; clicks: number }>();
+        for (const row of engagementRows) {
+          if (row.prospectId !== null) {
+            engMap.set(row.prospectId, { opens: Number(row.opens), clicks: Number(row.clicks) });
+          }
+        }
+        // Merge engagement score into each prospect
+        const withScore = items.map(p => {
+          const eng = engMap.get(p.id) ?? { opens: 0, clicks: 0 };
+          return { ...p, engagementScore: eng.opens * 1 + eng.clicks * 2, opens: eng.opens, clicks: eng.clicks };
+        });
+        return { prospects: withScore };
       }),
 
     // Get single prospect

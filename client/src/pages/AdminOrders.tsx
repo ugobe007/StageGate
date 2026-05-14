@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Package, ArrowLeft, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Package, ArrowLeft, Loader2, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -103,9 +103,21 @@ export default function AdminOrders() {
                     <div className="p-4 flex items-start gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="font-semibold text-foreground text-sm">Order #{order.id}</span>
+                          <Link href={`/admin/orders/${order.id}`} onClick={e => e.stopPropagation()} className="font-semibold text-foreground text-sm hover:text-primary transition-colors flex items-center gap-1">
+                            Order #{order.id} <ExternalLink size={10} className="opacity-40" />
+                          </Link>
                           <Badge className={`text-xs ${status.color}`}>{status.label}</Badge>
                           {show && <span className="text-xs text-muted-foreground">{show.name}</span>}
+                          {(order as any).bookingId && (
+                            <Link
+                              href="/admin/bookings"
+                              onClick={e => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+                              title={`Converted from booking #${(order as any).bookingId}`}
+                            >
+                              From booking #{(order as any).bookingId}
+                            </Link>
+                          )}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           Placed {new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}

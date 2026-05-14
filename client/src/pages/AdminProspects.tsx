@@ -127,7 +127,7 @@ export default function AdminProspects() {
     acc[p.status] = (acc[p.status] ?? 0) + 1;
     return acc;
   }, {});
-  const { data, isLoading, refetch } = trpc.prospects.list.useQuery(
+  const { data, isLoading, refetch } = trpc.prospects.listWithEngagement.useQuery(
     { status: statusFilter || undefined },
     { enabled: !!user && user.role === "admin" }
   );
@@ -198,7 +198,7 @@ export default function AdminProspects() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Sort state
-  type SortKey = "company" | "status" | "followUpDate" | "";
+  type SortKey = "company" | "status" | "followUpDate" | "engagementScore" | "";
   type SortDir = "asc" | "desc";
   const [sortKey, setSortKey] = useState<SortKey>("");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -355,6 +355,10 @@ export default function AdminProspects() {
       const aDate = (a as Record<string, unknown>).followUpDate ? new Date(String((a as Record<string, unknown>).followUpDate)).getTime() : Infinity;
       const bDate = (b as Record<string, unknown>).followUpDate ? new Date(String((b as Record<string, unknown>).followUpDate)).getTime() : Infinity;
       cmp = aDate - bDate;
+    } else if (sortKey === "engagementScore") {
+      const aScore = Number((a as Record<string, unknown>).engagementScore ?? 0);
+      const bScore = Number((b as Record<string, unknown>).engagementScore ?? 0);
+      cmp = aScore - bScore;
     }
     return sortDir === "asc" ? cmp : -cmp;
   });
@@ -1167,7 +1171,7 @@ export default function AdminProspects() {
             {/* Table header row with Select All */}
             <div style={{
               display: "grid",
-              gridTemplateColumns: "1.5rem 2fr 1.5fr 1fr 1fr 1fr auto",
+              gridTemplateColumns: "1.5rem 2fr 1.5fr 1fr 1fr 1fr 3.5rem auto",
               gap: "1.5rem",
               alignItems: "center",
               padding: "0.5rem 0",
@@ -1194,6 +1198,10 @@ export default function AdminProspects() {
               <button onClick={() => toggleSort("followUpDate")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: sortKey === "followUpDate" ? "rgba(255,255,255,0.60)" : "rgba(255,255,255,0.20)", padding: 0 }}>
                 Follow-up
                 {sortKey === "followUpDate" ? (sortDir === "asc" ? <ArrowUp size={9} /> : <ArrowDown size={9} />) : <ArrowUpDown size={9} style={{ opacity: 0.4 }} />}
+              </button>
+              <button onClick={() => toggleSort("engagementScore")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: sortKey === "engagementScore" ? "rgba(245,158,11,0.80)" : "rgba(255,255,255,0.20)", padding: 0 }}>
+                Score
+                {sortKey === "engagementScore" ? (sortDir === "asc" ? <ArrowUp size={9} /> : <ArrowDown size={9} />) : <ArrowUpDown size={9} style={{ opacity: 0.4 }} />}
               </button>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)" }}>Action</span>
             </div>
@@ -1227,7 +1235,7 @@ export default function AdminProspects() {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1.5rem 2fr 1.5fr 1fr 1fr 1fr auto",
+                      gridTemplateColumns: "1.5rem 2fr 1.5fr 1fr 1fr 1fr 3.5rem auto",
                       gap: "1.5rem",
                       alignItems: "center",
                       padding: "1rem 0",
@@ -1352,6 +1360,22 @@ export default function AdminProspects() {
                           <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.45rem", color: "rgba(255,255,255,0.15)", letterSpacing: "0.06em" }}>Set</span>
                         </button>
                       )}
+                    </div>
+
+                    {/* Engagement score */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                      {(() => {
+                        const score = Number((p as Record<string, unknown>).engagementScore ?? 0);
+                        const opens = Number((p as Record<string, unknown>).opens ?? 0);
+                        const clicks = Number((p as Record<string, unknown>).clicks ?? 0);
+                        if (score === 0) return <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: "rgba(255,255,255,0.15)" }}>—</span>;
+                        return (
+                          <span title={`${opens} open${opens !== 1 ? 's' : ''}, ${clicks} click${clicks !== 1 ? 's' : ''}`} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                            <span style={{ fontSize: "0.625rem" }}>🔥</span>
+                            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", fontWeight: 700, color: score >= 5 ? "#f59e0b" : score >= 2 ? "#fbbf24" : "rgba(251,191,36,0.60)" }}>{score}</span>
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     {/* Actions */}

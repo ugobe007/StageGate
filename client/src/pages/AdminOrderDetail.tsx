@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Package, Building2, Bot, Calendar, MapPin,
   Phone, Mail, Loader2, CheckCircle2, Clock, AlertCircle,
-  ExternalLink, RefreshCw,
+  ExternalLink, RefreshCw, Plus, Trash2, Pencil, Check, X,
 } from "lucide-react";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -35,10 +35,50 @@ export default function AdminOrderDetail() {
   const ctx = trpc.useUtils();
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
+  // Line-item editor state
+  const [addingItem, setAddingItem] = useState(false);
+  const [newServiceId, setNewServiceId] = useState<number | "">("");
+  const [newQty, setNewQty] = useState(1);
+  const [newUnitPrice, setNewUnitPrice] = useState("");
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editQty, setEditQty] = useState(1);
+  const [editUnitPrice, setEditUnitPrice] = useState("");
+
   const { data, isLoading, error } = trpc.orders.getDetail.useQuery(
     { id: orderId! },
     { enabled: !!orderId && !isNaN(orderId!) }
   );
+
+  // Fetch services catalog for the add-item dropdown
+  const { data: servicesData } = trpc.orders.getAllServices.useQuery(
+    undefined,
+    { enabled: !!orderId }
+  );
+  const services = servicesData ?? [];
+
+  const invalidateDetail = () => ctx.orders.getDetail.invalidate({ id: orderId! });
+
+  const addLineItem = trpc.orders.addLineItem.useMutation({
+    onSuccess: () => {
+      invalidateDetail();
+      setAddingItem(false);
+      setNewServiceId("");
+      setNewQty(1);
+      setNewUnitPrice("");
+      toast.success("Line item added");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const removeLineItem = trpc.orders.removeLineItem.useMutation({
+    onSuccess: () => { invalidateDetail(); toast.success("Line item removed"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const updateLineItem = trpc.orders.updateLineItem.useMutation({
+    onSuccess: () => { invalidateDetail(); setEditingItemId(null); toast.success("Line item updated"); },
+    onError: (e) => toast.error(e.message),
+  });
 
   const updateStatus = trpc.orders.updateStatus.useMutation({
     onMutate: () => setUpdatingStatus(true),
@@ -309,25 +349,151 @@ export default function AdminOrderDetail() {
               </div>
             )}
 
-            {/* ── Line Items (if any) ── */}
-            {data.items && data.items.length > 0 && (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-                <h2 className="text-[13px] font-semibold text-zinc-300 mb-3">Line Items</h2>
-                <div className="space-y-2">
-                  {data.items.map((item: { id: number; serviceId: number; quantity: number; unitPrice?: string | null }) => (
-                    <div key={item.id} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0">
-                      <div>
-                        <p className="text-[12px] text-zinc-300">Service #{item.serviceId}</p>
-                        <p className="text-[11px] text-zinc-600">Qty: {item.quantity}</p>
-                      </div>
-                      {item.unitPrice && (
-                        <p className="text-[13px] font-semibold text-zinc-200">${parseFloat(item.unitPrice).toFixed(2)}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
+            {/* ── Line Items Editor ── */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-[13px] font-semibold text-zinc-300">Line Items</h2>
+                {!addingItem && (
+                  <button
+                    onClick={() => setAddingItem(true)}
+                    className="flex items-center gap-1.5 text-[11px] text-amber-400 hover:text-amber-300 transition-colors"
+                  >
+                    <Plus size={12} /> Add Item
+                  </button>
+                )}
               </div>
-            )}
+
+              {/* Existing items */}
+              {data.items && data.items.length > 0 ? (
+                <div className="space-y-1 mb-4">
+                  {data.items.map((item: { id: number; serviceId: number; quantity: number; unitPrice?: string | null }) => {
+                    const svc = services.find(s => s.id === item.serviceId);
+                    const isEditing = editingItemId === item.id;
+                    const lineTotal = item.unitPrice
+                      ? parseFloat(item.unitPrice) * item.quantity
+                      : svc?.basePrice ? parseFloat(svc.basePrice) * item.quantity : null;
+                    return (
+                      <div key={item.id} className="flex items-center gap-3 py-2.5 px-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
+                        {isEditing ? (
+                          <>
+                            <div className="flex-1 flex items-center gap-2">
+                              <span className="text-[12px] text-zinc-300 flex-1">{svc?.name ?? `Service #${item.serviceId}`}</span>
+                              <input
+                                type="number" min={1} value={editQty}
+                                onChange={e => setEditQty(parseInt(e.target.value) || 1)}
+                                className="w-14 text-[12px] bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-zinc-200 outline-none"
+                              />
+                              <input
+                                type="text" placeholder="Unit price" value={editUnitPrice}
+                                onChange={e => setEditUnitPrice(e.target.value)}
+                                className="w-24 text-[12px] bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-zinc-200 outline-none"
+                              />
+                            </div>
+                            <button
+                              onClick={() => updateLineItem.mutate({ itemId: item.id, quantity: editQty, unitPrice: editUnitPrice || undefined })}
+                              className="text-emerald-400 hover:text-emerald-300 p-1"
+                              title="Save"
+                            >
+                              <Check size={13} />
+                            </button>
+                            <button onClick={() => setEditingItemId(null)} className="text-zinc-500 hover:text-zinc-300 p-1" title="Cancel">
+                              <X size={13} />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex-1">
+                              <p className="text-[12px] text-zinc-200">{svc?.name ?? `Service #${item.serviceId}`}</p>
+                              <p className="text-[11px] text-zinc-500">Qty {item.quantity}{item.unitPrice ? ` · $${parseFloat(item.unitPrice).toFixed(2)}/unit` : svc?.basePrice ? ` · $${parseFloat(svc.basePrice).toFixed(2)}/unit` : ""}</p>
+                            </div>
+                            {lineTotal !== null && (
+                              <p className="text-[13px] font-semibold text-zinc-200">${lineTotal.toFixed(2)}</p>
+                            )}
+                            <button
+                              onClick={() => { setEditingItemId(item.id); setEditQty(item.quantity); setEditUnitPrice(item.unitPrice ?? ""); }}
+                              className="text-zinc-500 hover:text-amber-400 p-1 transition-colors"
+                              title="Edit"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            <button
+                              onClick={() => { if (confirm("Remove this line item?")) removeLineItem.mutate({ itemId: item.id, orderId: orderId! }); }}
+                              className="text-zinc-500 hover:text-red-400 p-1 transition-colors"
+                              title="Remove"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {/* Total row */}
+                  {(() => {
+                    const total = (data.items as { id: number; serviceId: number; quantity: number; unitPrice?: string | null }[]).reduce((sum, item) => {
+                      const svc = services.find(s => s.id === item.serviceId);
+                      const price = item.unitPrice ? parseFloat(item.unitPrice) : svc?.basePrice ? parseFloat(svc.basePrice) : 0;
+                      return sum + price * item.quantity;
+                    }, 0);
+                    if (total === 0) return null;
+                    return (
+                      <div className="flex items-center justify-between pt-2 mt-1 border-t border-zinc-700">
+                        <span className="text-[11px] text-zinc-500 uppercase tracking-wider">Total</span>
+                        <span className="text-[14px] font-bold text-amber-400">${total.toFixed(2)}</span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <p className="text-[12px] text-zinc-600 mb-4">No line items yet. Add services to build the order.</p>
+              )}
+
+              {/* Add item form */}
+              {addingItem && (
+                <div className="flex items-center gap-2 pt-3 border-t border-zinc-800">
+                  <select
+                    value={newServiceId}
+                    onChange={e => {
+                      const id = parseInt(e.target.value);
+                      setNewServiceId(id || "");
+                      const svc = services.find(s => s.id === id);
+                      if (svc?.basePrice) setNewUnitPrice(svc.basePrice);
+                    }}
+                    className="flex-1 text-[12px] bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-zinc-200 outline-none"
+                  >
+                    <option value="">Select service…</option>
+                    {services.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}{s.basePrice ? ` — $${parseFloat(s.basePrice).toFixed(2)}` : ""}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number" min={1} value={newQty}
+                    onChange={e => setNewQty(parseInt(e.target.value) || 1)}
+                    placeholder="Qty"
+                    className="w-14 text-[12px] bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-zinc-200 outline-none"
+                  />
+                  <input
+                    type="text" value={newUnitPrice}
+                    onChange={e => setNewUnitPrice(e.target.value)}
+                    placeholder="Unit price"
+                    className="w-24 text-[12px] bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-zinc-200 outline-none"
+                  />
+                  <button
+                    onClick={() => {
+                      if (!newServiceId) return toast.error("Select a service");
+                      addLineItem.mutate({ orderId: orderId!, serviceId: newServiceId as number, quantity: newQty, unitPrice: newUnitPrice || undefined });
+                    }}
+                    disabled={addLineItem.isPending}
+                    className="flex items-center gap-1 text-[11px] bg-amber-500 hover:bg-amber-400 text-black font-semibold px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+                  >
+                    {addLineItem.isPending ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />} Add
+                  </button>
+                  <button onClick={() => setAddingItem(false)} className="text-zinc-500 hover:text-zinc-300 p-1">
+                    <X size={13} />
+                  </button>
+                </div>
+              )}
+            </div>
           </>
         ) : null}
       </div>

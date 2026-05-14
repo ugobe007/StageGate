@@ -724,3 +724,24 @@
 - [x] Register /admin/orders/:id route in App.tsx
 - [x] Wire "View Order #N" toast link in AdminBookings convertToOrder success handler to navigate to /admin/orders/:id
 - [x] Vitest: test orders.getDetail returns correct order, rejects non-admin
+
+## v15 — Engagement Score, Line-Item Editor, Booking-Origin Badge
+
+### v15.1 — Engagement Score on AdminProspects
+- [x] Add prospects.listWithEngagement tRPC query: joins prospects with email_tracking_events, computes engagementScore = opens×1 + clicks×2, returns sorted list
+- [x] Add "Score" column to AdminProspects table with amber flame icon for score > 0
+- [x] Make Score column sortable (click header to sort desc/asc)
+- [x] Vitest: test listWithEngagement computes correct scores
+
+### v15.2 — Inline Line-Item Editor on AdminOrderDetail
+- [x] Add orders.addLineItem tRPC mutation: inserts order_items row (serviceId, quantity, unitPrice)
+- [x] Add orders.removeLineItem tRPC mutation: deletes order_items row by id
+- [x] Add orders.updateLineItem tRPC mutation: updates quantity and/or unitPrice for an order_items row
+- [x] Add orders.getAllServices tRPC query (or reuse existing): returns services list for the add-item dropdown
+- [x] Build inline editor in AdminOrderDetail: add-item row with service selector + qty + price, edit/delete per existing item, recalculate displayed total
+- [x] Vitest: test addLineItem, removeLineItem, updateLineItem mutations
+
+### v15.3 — Booking-Origin Badge on AdminOrders
+- [x] Update orders.allOrders tRPC query to include bookingId in returned rows
+- [x] Add "From booking #N" amber badge to each row in AdminOrders that has a bookingId, linking to /admin/bookings
+- [x] Vitest: test allOrders returns bookingId field
