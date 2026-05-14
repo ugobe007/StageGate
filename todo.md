@@ -603,3 +603,7 @@
 - [x] Redesign PipelineDetailPanel: business card header (company, robot, contact), AI brief section, draft message with edit+send, clear action buttons (Send Draft, Advance Stage, Create Job)
 - [x] Redesign kanban cards: cleaner, show robot type badge, event pill, country
 - [x] Make the board layout feel like Linear/Stripe: tighter typography, clear visual hierarchy, no wasted space
+
+## v9.7 — Send Confirmation UX
+
+- [x] Add send confirmation: button animates to checkmark on success, rich toast shows company name + "Draft queued", button resets after 2s

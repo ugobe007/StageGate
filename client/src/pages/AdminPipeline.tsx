@@ -332,6 +332,7 @@ function CRMPanel({
 
   const [draftMessage, setDraftMessage] = useState<string>("");
   const [draftEdited, setDraftEdited] = useState(false);
+  const [sendSuccess, setSendSuccess] = useState(false);
 
   // Populate draft from AI brief once loaded
   useEffect(() => {
@@ -352,7 +353,16 @@ function CRMPanel({
   });
 
   const generateDraft = trpc.admin.generateDrafts.useMutation({
-    onSuccess: () => toast.success("Draft queued in Outreach"),
+    onSuccess: () => {
+      setSendSuccess(true);
+      toast.success(`Draft queued for ${prospect.company}`, {
+        description: "Review and send from the Outreach queue.",
+        action: { label: "View Outreach", onClick: () => window.location.href = "/admin/outreach" },
+        duration: 5000,
+      });
+      // Reset button after 2s
+      setTimeout(() => setSendSuccess(false), 2000);
+    },
     onError: (e) => toast.error(e.message),
   });
 
@@ -546,11 +556,21 @@ function CRMPanel({
         {/* Primary: Send Draft */}
         <button
           onClick={handleSendDraft}
-          disabled={generateDraft.isPending || briefLoading}
-          className="w-full flex items-center justify-center gap-2 bg-neutral-900 text-white rounded-lg py-2.5 text-[13px] font-medium hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          disabled={generateDraft.isPending || briefLoading || sendSuccess}
+          className={`w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-[13px] font-medium transition-all duration-300 disabled:cursor-not-allowed ${
+            sendSuccess
+              ? "bg-emerald-600 text-white scale-[0.98]"
+              : "bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-40"
+          }`}
         >
-          {generateDraft.isPending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-          Send Draft to Outreach Queue
+          {generateDraft.isPending ? (
+            <Loader2 size={13} className="animate-spin" />
+          ) : sendSuccess ? (
+            <Check size={13} className="animate-[scale-in_0.2s_ease-out]" />
+          ) : (
+            <Send size={13} />
+          )}
+          {sendSuccess ? "Queued!" : "Send Draft to Outreach Queue"}
         </button>
 
         {/* Secondary row */}
