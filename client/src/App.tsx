@@ -27,6 +27,7 @@ import XbotProject from "./pages/XbotProject";
 import AdminProspects from "./pages/AdminProspects";
 import VideoIntake from "./pages/VideoIntake";
 import Schedule from "./pages/Schedule";
+import DbStatusBanner from "@/components/DbStatusBanner";
 
 function Router() {
   return (
@@ -77,6 +78,7 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
+          <DbStatusBanner />
           <Toaster />
           <Router />
         </TooltipProvider>

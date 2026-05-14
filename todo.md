@@ -540,3 +540,15 @@
 - [x] Add admin.runMigration tRPC mutation (server-side MySQL→Supabase sync)
 - [x] Add DB health status card to AdminDashboard (trpc.admin.dbHealth.useQuery)
 - [x] Add "Re-run Migration" button to AdminDashboard wired to admin.runMigration
+
+## v8.9 — Global Supabase Status Alert Banner
+
+- [x] Create DbStatusBanner component (polls trpc.admin.dbHealth every 30s, shows red banner when disconnected)
+- [x] Wire DbStatusBanner into AdminDashboard
+- [x] Wire DbStatusBanner into AdminProspects
+- [x] Wire DbStatusBanner into AdminLeads
+- [x] Wire DbStatusBanner into AdminShows
+- [x] Wire DbStatusBanner into AdminOrders
+- [x] Wire DbStatusBanner into AdminPartners
+- [x] Wire DbStatusBanner into AdminQuotes
+- [x] Wire DbStatusBanner into AdminDemos
