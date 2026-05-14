@@ -10,7 +10,7 @@ import * as db from "./db";
 import * as workflows from "./workflows";
 import * as emailHelpers from "./email";
 import { eq, desc, count } from "drizzle-orm";
-import { draftEmails, prospectResearch, prospectActivities, bookingRequests } from "../drizzle/schema";
+import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable } from "../drizzle/schema";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 
@@ -1569,6 +1569,42 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         lastSentAt: lastSentRows[0]?.sentAt ?? null,
       };
     }),
+
+    getPipelineData: adminProcedure
+      .input(z.object({ showFilter: z.string().optional() }))
+      .query(async ({ input }) => {
+        const pgDb = await getDb();
+        if (!pgDb) return { columns: [], total: 0 };
+        const allProspects = await pgDb.select().from(prospectsTable).orderBy(desc(prospectsTable.createdAt));
+        const filtered = input.showFilter
+          ? allProspects.filter((p: { shows: string[] | null }) =>
+              Array.isArray(p.shows) && p.shows.includes(input.showFilter!)
+            )
+          : allProspects;
+        const STAGES = ["new", "contacted", "responded", "scheduled", "converted"] as const;
+        const columns = STAGES.map(status => ({
+          status,
+          items: filtered.filter((p: { status: string }) => p.status === status),
+          count: filtered.filter((p: { status: string }) => p.status === status).length,
+        }));
+        return { columns, total: filtered.length };
+      }),
+
+    getProspectContext: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const pgDb = await getDb();
+        if (!pgDb) throw new TRPCError({ code: "NOT_FOUND", message: "DB unavailable" });
+        const [prospect] = await pgDb.select().from(prospectsTable).where(eq(prospectsTable.id, input.id));
+        if (!prospect) throw new TRPCError({ code: "NOT_FOUND", message: "Prospect not found" });
+        const [research] = await pgDb.select().from(prospectResearch)
+          .where(eq(prospectResearch.prospectId, input.id));
+        const activities = await pgDb.select().from(prospectActivities)
+          .where(eq(prospectActivities.prospectId, input.id))
+          .orderBy(desc(prospectActivities.createdAt))
+          .limit(20);
+        return { prospect, research: research ?? null, activities };
+      }),
 
     getSiteStats: adminProcedure.query(async () => {
       const [users, orders, demos, quotes, leads, prospects] = await Promise.all([

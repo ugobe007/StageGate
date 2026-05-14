@@ -166,8 +166,8 @@ export default function AdminProspects() {
     onSuccess: () => refetch(),
   });
 
-  // View mode: table or kanban
-  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
+  // View mode: table, kanban, or byshow
+  const [viewMode, setViewMode] = useState<"table" | "kanban" | "byshow">("table");
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -438,9 +438,16 @@ export default function AdminProspects() {
                 <button
                   onClick={() => setViewMode("kanban")}
                   title="Kanban view"
-                  style={{ padding: "0.3rem 0.55rem", background: viewMode === "kanban" ? "rgba(255,255,255,0.10)" : "transparent", border: "none", cursor: "pointer", color: viewMode === "kanban" ? "#fff" : "rgba(255,255,255,0.35)" }}
+                  style={{ padding: "0.3rem 0.55rem", background: viewMode === "kanban" ? "rgba(255,255,255,0.10)" : "transparent", border: "none", cursor: "pointer", color: viewMode === "kanban" ? "#fff" : "rgba(255,255,255,0.35)", borderRight: "1px solid rgba(255,255,255,0.08)" }}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>
+                </button>
+                <button
+                  onClick={() => setViewMode("byshow")}
+                  title="By Show view"
+                  style={{ padding: "0.3rem 0.55rem", background: viewMode === "byshow" ? "rgba(255,255,255,0.10)" : "transparent", border: "none", cursor: "pointer", color: viewMode === "byshow" ? "#00ff87" : "rgba(255,255,255,0.35)" }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
                 </button>
               </div>
               <button onClick={() => refetch()} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.40)", padding: "0.25rem" }}>
@@ -924,8 +931,204 @@ export default function AdminProspects() {
           </div>
         )}
 
+        {/* By Show View */}
+        {!isLoading && viewMode === "byshow" && (() => {
+          // Group prospects by show name
+          const showGroups: Record<string, typeof sortedProspects> = {};
+          sortedProspects.forEach(p => {
+            const shows: string[] = Array.isArray(p.shows) ? (p.shows as string[]) : [];
+            if (shows.length === 0) {
+              showGroups["No Show Assigned"] = showGroups["No Show Assigned"] ?? [];
+              showGroups["No Show Assigned"].push(p);
+            } else {
+              shows.forEach(show => {
+                showGroups[show] = showGroups[show] ?? [];
+                showGroups[show].push(p);
+              });
+            }
+          });
+          const sortedShows = Object.entries(showGroups).sort(([a], [b]) => {
+            if (a === "No Show Assigned") return 1;
+            if (b === "No Show Assigned") return -1;
+            return a.localeCompare(b);
+          });
+          return (
+            <div style={{ display: "flex", flexDirection: "column", gap: "2rem", paddingBottom: "3rem" }}>
+              {sortedShows.map(([showName, showProspects]) => {
+                const contacted = showProspects.filter(p => p.status !== "new" && p.status !== "not_interested").length;
+                const converted = showProspects.filter(p => p.status === "converted").length;
+                const uncontacted = showProspects.filter(p => p.status === "new").length;
+                const showIds = showProspects.map(p => p.id);
+                const allShowSelected = showIds.length > 0 && showIds.every(id => selectedIds.has(id));
+                return (
+                  <div key={showName}>
+                    {/* Show group header */}
+                    <div style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "0.75rem 1rem",
+                      background: "rgba(0,255,135,0.04)",
+                      border: "1px solid rgba(0,255,135,0.15)",
+                      borderRadius: "0.25rem 0.25rem 0 0",
+                      borderBottom: "none",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                        <button
+                          onClick={() => {
+                            const next = new Set(Array.from(selectedIds));
+                            if (allShowSelected) showIds.forEach(id => next.delete(id));
+                            else showIds.forEach(id => next.add(id));
+                            setSelectedIds(next);
+                          }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: allShowSelected ? "#f59e0b" : "rgba(255,255,255,0.25)", padding: 0, display: "flex", alignItems: "center" }}
+                        >
+                          {allShowSelected ? <CheckSquare size={13} /> : <Square size={13} />}
+                        </button>
+                        <div>
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", fontWeight: 700, color: "#00ff87", letterSpacing: "-0.01em" }}>
+                            {showName}
+                          </span>
+                          <div style={{ display: "flex", gap: "1rem", marginTop: "0.2rem" }}>
+                            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(255,255,255,0.40)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                              {showProspects.length} companies
+                            </span>
+                            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "#f59e0b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                              {contacted} contacted
+                            </span>
+                            {uncontacted > 0 && (
+                              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(255,255,255,0.30)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                                {uncontacted} new
+                              </span>
+                            )}
+                            {converted > 0 && (
+                              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "#a78bfa", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                                {converted} converted
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {/* Group-level bulk send button */}
+                      {uncontacted > 0 && (
+                        <button
+                          onClick={() => {
+                            const newIds = showProspects.filter(p => p.status === "new" && p.contactEmail).map(p => p.id);
+                            if (newIds.length === 0) { toast.info("No new prospects with emails in this show"); return; }
+                            setSelectedIds(new Set(newIds));
+                            toast.info(`${newIds.length} new prospects selected — click Send in the toolbar`);
+                          }}
+                          style={{
+                            display: "flex", alignItems: "center", gap: "0.35rem",
+                            fontFamily: "var(--font-mono)", fontSize: "0.5625rem", fontWeight: 700,
+                            letterSpacing: "0.08em", textTransform: "uppercase",
+                            padding: "0.35rem 0.75rem",
+                            background: "rgba(0,255,135,0.10)",
+                            color: "#00ff87",
+                            border: "1px solid rgba(0,255,135,0.30)",
+                            cursor: "pointer", borderRadius: "0.125rem",
+                          }}
+                        >
+                          <Zap size={10} /> Select {uncontacted} New
+                        </button>
+                      )}
+                    </div>
+                    {/* Prospect rows for this show */}
+                    <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0 0 0.25rem 0.25rem", overflow: "hidden" }}>
+                      {showProspects.map((p, idx) => {
+                        const statusCfg = STATUS_CONFIG[p.status as ProspectStatus] ?? STATUS_CONFIG.new;
+                        const conf = String((p as Record<string, unknown>).emailConfidence ?? "");
+                        const confColor = CONFIDENCE_COLORS[conf] ?? "rgba(255,255,255,0.25)";
+                        return (
+                          <div key={p.id} style={{
+                            display: "grid",
+                            gridTemplateColumns: "1.5rem 2fr 1.5fr 1fr 1fr auto",
+                            gap: "1rem",
+                            alignItems: "center",
+                            padding: "0.65rem 1rem",
+                            borderBottom: idx < showProspects.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                            background: selectedIds.has(p.id) ? "rgba(245,158,11,0.04)" : "transparent",
+                            transition: "background 0.1s",
+                          }}>
+                            {/* Checkbox */}
+                            <button
+                              onClick={() => toggleRow(p.id)}
+                              style={{ background: "none", border: "none", cursor: "pointer", color: selectedIds.has(p.id) ? "#f59e0b" : "rgba(255,255,255,0.20)", padding: 0, display: "flex", alignItems: "center" }}
+                            >
+                              {selectedIds.has(p.id) ? <CheckSquare size={12} /> : <Square size={12} />}
+                            </button>
+                            {/* Company + contact */}
+                            <div>
+                              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", fontWeight: 700, color: "#fff" }}>{p.company}</span>
+                              {p.contactName && (
+                                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: "rgba(255,255,255,0.50)", marginTop: "0.1rem" }}>
+                                  {p.contactName}{p.contactTitle ? ` · ${p.contactTitle}` : ""}
+                                </div>
+                              )}
+                            </div>
+                            {/* Email */}
+                            <div>
+                              {p.contactEmail ? (
+                                <a href={`mailto:${p.contactEmail}`} style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: confColor, textDecoration: "none" }}>
+                                  {p.contactEmail}
+                                </a>
+                              ) : (
+                                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(255,255,255,0.20)" }}>no email</span>
+                              )}
+                            </div>
+                            {/* Robot */}
+                            <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: "rgba(255,255,255,0.55)" }}>
+                              {(p as Record<string, unknown>).robotName ? String((p as Record<string, unknown>).robotName) : "—"}
+                            </div>
+                            {/* Status */}
+                            <div>
+                              <span style={{
+                                fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.08em", textTransform: "uppercase",
+                                padding: "0.15rem 0.45rem", borderRadius: "0.125rem",
+                                border: `1px solid ${statusCfg.color}40`,
+                                color: statusCfg.color,
+                                background: `${statusCfg.color}10`,
+                              }}>
+                                {statusCfg.label}
+                              </span>
+                            </div>
+                            {/* Quick actions */}
+                            <div style={{ display: "flex", gap: "0.35rem" }}>
+                              {p.status === "new" && p.contactEmail && (
+                                <button
+                                  onClick={() => { setSendingId(p.id); sendEmail.mutate({ prospectId: p.id }); }}
+                                  disabled={sendingId === p.id || sentIds.has(p.id)}
+                                  style={{
+                                    fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.06em", textTransform: "uppercase",
+                                    padding: "0.2rem 0.55rem",
+                                    border: sentIds.has(p.id) ? "1px solid rgba(0,255,135,0.40)" : "1px solid rgba(245,158,11,0.40)",
+                                    color: sentIds.has(p.id) ? "#00ff87" : "#f59e0b",
+                                    background: "transparent", cursor: sendingId === p.id ? "wait" : "pointer", borderRadius: "0.125rem",
+                                  }}
+                                >
+                                  {sentIds.has(p.id) ? "✓ Sent" : sendingId === p.id ? "..." : "Send"}
+                                </button>
+                              )}
+                              {p.status !== "new" && p.status !== "converted" && p.status !== "not_interested" && (
+                                <button
+                                  onClick={() => markReplied.mutate({ id: p.id })}
+                                  style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.2rem 0.55rem", border: "1px solid rgba(0,255,135,0.30)", color: "#00ff87", background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
+                                >
+                                  ✓ Replied
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+
         {/* Table */}
-        {viewMode === "kanban" ? null : isLoading ? (
+        {viewMode === "kanban" || viewMode === "byshow" ? null : isLoading ? (
           <div style={{ textAlign: "center", padding: "4rem 0", color: "rgba(255,255,255,0.30)", fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}>
             Loading prospects...
           </div>

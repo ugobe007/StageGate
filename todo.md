@@ -650,3 +650,13 @@
 - [x] Update index.css: muted-foreground raised to 0.65, secondary-foreground to 0.72, border brighter, body font-weight 400
 - [x] Update sidebar nav text to font-medium, user name font-semibold, email text-zinc-400
 - [x] AdminPipeline: full dark-theme native CRM panel, all text white/zinc-200/zinc-300 (no muted greys)
+
+### v10.7 — tRPC Queries (supersede old deferred items)
+- [x] Add admin.getPipelineData tRPC query: prospects grouped by status and event
+- [x] Add admin.getProspectContext tRPC query: single prospect with event, robot, contact details
+
+### v10.8 — AdminCompose
+- [x] Build AdminCompose.tsx: Message Composer with recipients list, AI context block per company, editable body with merge fields, Send/Preview per company
+
+### v10.9 — AdminProspects Redesign
+- [x] Redesign AdminProspects.tsx: add By Show grouped view (calendar icon tab), each show is a collapsible section with company rows, group-level bulk select + send button
