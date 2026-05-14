@@ -607,3 +607,8 @@
 ## v9.7 — Send Confirmation UX
 
 - [x] Add send confirmation: button animates to checkmark on success, rich toast shows company name + "Draft queued", button resets after 2s
+
+## v9.8 — Regenerate Draft
+
+- [x] Add prospects.regenerateDraft tRPC mutation: takes prospect id + optional tone hint, returns a fresh AI-written draft message
+- [x] Add Regenerate button next to Draft Message header in CRMPanel: shows spinner while generating, replaces textarea content on success, marks draft as edited

@@ -912,6 +912,41 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return { brief, prospect };
       }),
 
+    // Regenerate just the draft message with optional tone
+    regenerateDraft: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        tone: z.enum(["professional", "friendly", "concise", "bold"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const prospect = await db.getProspectById(input.id);
+        if (!prospect) throw new TRPCError({ code: "NOT_FOUND" });
+
+        const shows = (prospect.shows as string[] | null) ?? [];
+        const showList = shows.length ? shows.join(", ") : "upcoming trade shows";
+        const robot = [prospect.robotName, prospect.robotType].filter(Boolean).join(" — ") || "robot";
+        const toneInstruction = input.tone
+          ? `Tone: ${input.tone}. `
+          : "Tone: professional but warm. ";
+
+        const result = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are a B2B sales writer for StageGate — a robotics activation company that handles robot receiving, unpacking, testing, staging, and delivery at trade shows. Write short, punchy outreach emails. No fluff. ${toneInstruction}Output plain text only, no subject line, no JSON wrapper.`,
+            },
+            {
+              role: "user",
+              content: `Write a fresh outreach email for this prospect:\n\nCompany: ${prospect.company}\nRobot: ${robot}\nShows: ${showList}\n${prospect.contactName ? `Contact: ${prospect.contactName}` : ""}\n\nRequirements:\n- 4-6 sentences\n- Reference their specific robot and show\n- Mention one concrete StageGate service (receiving, staging, or delivery)\n- End with a soft CTA to schedule a StageGate intake call\n- Sign off as the StageGate team\n- No subject line`,
+            },
+          ],
+        });
+
+        const draft = result.choices?.[0]?.message?.content ?? "";
+        const text = typeof draft === "string" ? draft.trim() : JSON.stringify(draft);
+        return { draft: text };
+      }),
+
     // Create a prospect
     create: adminProcedure
       .input(z.object({

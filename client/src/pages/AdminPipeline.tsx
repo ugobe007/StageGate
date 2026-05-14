@@ -333,6 +333,8 @@ function CRMPanel({
   const [draftMessage, setDraftMessage] = useState<string>("");
   const [draftEdited, setDraftEdited] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
+  const [tone, setTone] = useState<"professional" | "friendly" | "concise" | "bold">("professional");
+  const [regenerating, setRegenerating] = useState(false);
 
   // Populate draft from AI brief once loaded
   useEffect(() => {
@@ -350,6 +352,20 @@ function CRMPanel({
   const updateStatus = trpc.prospects.bulkUpdateStatus.useMutation({
     onSuccess: () => { ctx.prospects.list.invalidate(); toast.success("Stage updated"); },
     onError: (e) => toast.error(e.message),
+  });
+
+  const regenerateDraft = trpc.prospects.regenerateDraft.useMutation({
+    onMutate: () => setRegenerating(true),
+    onSuccess: (data) => {
+      setDraftMessage(data.draft);
+      setDraftEdited(true);
+      setRegenerating(false);
+      toast.success("Draft rewritten");
+    },
+    onError: (e) => {
+      setRegenerating(false);
+      toast.error(e.message);
+    },
   });
 
   const generateDraft = trpc.admin.generateDrafts.useMutation({
@@ -519,18 +535,48 @@ function CRMPanel({
             <div className="flex items-center gap-2">
               <Send size={12} className="text-neutral-400" />
               <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Draft Message</span>
+              {draftEdited && (
+                <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Edited</span>
+              )}
             </div>
-            {draftEdited && (
-              <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Edited</span>
-            )}
+            <div className="flex items-center gap-1.5">
+              <select
+                value={tone}
+                onChange={e => setTone(e.target.value as typeof tone)}
+                className="text-[10px] border border-neutral-200 rounded px-1.5 py-1 bg-white text-neutral-600 focus:outline-none focus:border-neutral-400"
+                disabled={regenerating}
+              >
+                <option value="professional">Professional</option>
+                <option value="friendly">Friendly</option>
+                <option value="concise">Concise</option>
+                <option value="bold">Bold</option>
+              </select>
+              <button
+                onClick={() => regenerateDraft.mutate({ id: prospect.id, tone })}
+                disabled={regenerating || briefLoading}
+                className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-900 border border-neutral-200 hover:border-neutral-900 rounded px-2 py-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {regenerating
+                  ? <Loader2 size={10} className="animate-spin" />
+                  : <RefreshCw size={10} />}
+                Regenerate
+              </button>
+            </div>
           </div>
 
-          {briefLoading ? (
+          {(briefLoading || regenerating) ? (
             <div className="space-y-2">
               <div className="h-3 bg-neutral-100 rounded animate-pulse w-full" />
               <div className="h-3 bg-neutral-100 rounded animate-pulse w-5/6" />
               <div className="h-3 bg-neutral-100 rounded animate-pulse w-4/6" />
               <div className="h-3 bg-neutral-100 rounded animate-pulse w-full" />
+              <div className="h-3 bg-neutral-100 rounded animate-pulse w-3/4" />
+              {regenerating && (
+                <p className="text-[11px] text-neutral-400 pt-1 flex items-center gap-1">
+                  <Sparkles size={10} className="text-amber-400" />
+                  Rewriting draft…
+                </p>
+              )}
             </div>
           ) : (
             <textarea
