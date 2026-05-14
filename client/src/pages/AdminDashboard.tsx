@@ -6,21 +6,38 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   Building2, Calendar, Package, Users, TrendingUp, ArrowRight,
   Loader2, AlertCircle, Zap, FileText, Play,
-  ShieldCheck, BarChart3, UserCheck, Shield, ShieldOff
+  ShieldCheck, BarChart3, UserCheck, Shield, ShieldOff,
+  Database, RefreshCw, CheckCircle2, XCircle
 } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const [togglingRoleId, setTogglingRoleId] = useState<number | null>(null);
+  const [migrating, setMigrating] = useState(false);
 
   const { data: allOrders } = trpc.orders.allOrders.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: shows } = trpc.shows.list.useQuery();
   const { data: allLeads } = trpc.leads.all.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: allProfiles } = trpc.company.getAllProfiles.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: siteStats } = trpc.admin.getSiteStats.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
+  const { data: dbHealth, refetch: refetchDbHealth } = trpc.admin.dbHealth.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin", refetchInterval: 30000 });
+  const runMigration = trpc.admin.runMigration.useMutation({
+    onMutate: () => setMigrating(true),
+    onSuccess: (data) => {
+      setMigrating(false);
+      refetchDbHealth();
+      const rows = Object.entries(data.result.migrated).map(([k, v]) => `${k}: ${v}`).join(', ');
+      toast.success('Migration complete', { description: rows });
+    },
+    onError: (err) => {
+      setMigrating(false);
+      toast.error('Migration failed', { description: err.message });
+    },
+  });
   const { data: allUsers, refetch: refetchUsers } = trpc.admin.getUsers.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const setUserRole = trpc.admin.setUserRole.useMutation({
     onSuccess: () => { setTogglingRoleId(null); refetchUsers(); },
@@ -319,6 +336,44 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {/* DB Health + Migration */}
+          {dbHealth && (
+            <div className="mt-6 p-6 rounded-xl border border-border bg-card">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
+                  <Database size={16} className="text-primary" />
+                  Supabase Database
+                  <Badge className={dbHealth.connected ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs" : "bg-destructive/20 text-destructive border-destructive/30 text-xs"}>
+                    {dbHealth.connected ? (
+                      <><CheckCircle2 size={10} className="mr-1" />Connected</>
+                    ) : (
+                      <><XCircle size={10} className="mr-1" />Disconnected</>
+                    )}
+                  </Badge>
+                </h2>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={migrating}
+                  onClick={() => runMigration.mutate()}
+                  className="border-border text-xs gap-1.5"
+                >
+                  {migrating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                  {migrating ? 'Syncing…' : 'Re-run Migration'}
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3">
+                {Object.entries(dbHealth.tables).map(([table, count]) => (
+                  <div key={table} className="p-3 rounded-lg bg-secondary/30 border border-border/50 text-center">
+                    <div className="text-xl font-display font-bold text-foreground">{count}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5 truncate" title={table}>{table.replace(/_/g, ' ')}</div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">Last checked: {new Date(dbHealth.checkedAt).toLocaleTimeString()} · Auto-refreshes every 30s</p>
             </div>
           )}
 

@@ -530,3 +530,13 @@
 - [x] Verify XBOT procedures use Supabase-backed db (createAgentRun, completeAgentRun, createXbotProject, upsertXbotBrief)
 - [x] Add admin tRPC procedure: dbHealth (returns Supabase connection status + row counts per table)
 - [x] Expose dbHealth in AdminDashboard as a live status card
+
+## v8.8 — DB Health Card, withAgentRun Refactor, runMigration Button
+
+- [x] Refactor Lead Discovery agent procedure to use withAgentRun wrapper
+- [x] Refactor Lead Email Generator agent procedure to use withAgentRun wrapper
+- [x] Refactor XBOT Outreach agent procedure to use withAgentRun wrapper
+- [x] Refactor XBOT Bulk Outreach agent procedure to use withAgentRun wrapper
+- [x] Add admin.runMigration tRPC mutation (server-side MySQL→Supabase sync)
+- [x] Add DB health status card to AdminDashboard (trpc.admin.dbHealth.useQuery)
+- [x] Add "Re-run Migration" button to AdminDashboard wired to admin.runMigration

@@ -329,8 +329,9 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        const runId = await db.createAgentRun({ agentName: "Lead Discovery", triggeredBy: ctx.user?.name ?? "admin", inputSummary: `Show ID: ${input.showId}, ${input.exhibitorListText.slice(0, 80)}...`, status: "running" });
-        try {
+        const { result } = await workflows.withAgentRun(
+          { agentName: "Lead Discovery", triggeredBy: ctx.user?.name ?? "admin", inputSummary: `Show ID: ${input.showId}, ${input.exhibitorListText.slice(0, 80)}...` },
+          async () => {
         const response = await invokeLLM({
           messages: [
             {
@@ -386,23 +387,21 @@ export const appRouter = router({
           });
           created.push(id);
         }
-          await db.completeAgentRun(runId, "success", { outputSummary: `Discovered ${created.length} robotics leads` });
           return { count: created.length, leadIds: created };
-        } catch (err) {
-          const errMsg = err instanceof Error ? err.message : String(err);
-          await db.completeAgentRun(runId, "error", { errorMessage: errMsg });
-          await notifyOwner({ title: "⚠️ Agent Error: Lead Discovery", content: `Lead discovery agent failed.\n\nError: ${errMsg}` }).catch(() => {});
-          throw err;
-        }
+          }
+        );
+        return result;
       }),
+
     // AI: Generate personalized outreach email for a lead
     generateEmail: adminProcedure
       .input(z.object({ leadId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         const lead = await db.getLeadById(input.leadId);
         if (!lead) throw new TRPCError({ code: "NOT_FOUND" });
-        const runId = await db.createAgentRun({ agentName: "Lead Email Generator", triggeredBy: ctx.user?.name ?? "admin", inputSummary: `Lead: ${lead.companyName}`, status: "running" });
-        try {
+        const { result: emailResult } = await workflows.withAgentRun(
+          { agentName: "Lead Email Generator", triggeredBy: ctx.user?.name ?? "admin", inputSummary: `Lead: ${lead.companyName}` },
+          async () => {
         const show = await db.getTradeShowById(lead.showId);
         const response = await invokeLLM({
           messages: [
@@ -431,15 +430,12 @@ Subject line and body only.`,
 
         const emailDraft = (response.choices[0]?.message?.content as string) || "";
         await db.updateLead(input.leadId, { emailDraft });
-        await db.completeAgentRun(runId, "success", { outputSummary: `Email draft generated for ${lead.companyName}` });
         return { emailDraft };
-        } catch (err) {
-          const errMsg = err instanceof Error ? err.message : String(err);
-          await db.completeAgentRun(runId, "error", { errorMessage: errMsg });
-          await notifyOwner({ title: "⚠️ Agent Error: Email Drafting", content: `Email drafting agent failed.\n\nError: ${errMsg}` }).catch(() => {});
-          throw err;
-        }
+          }
+        );
+        return emailResult;
       }),
+
     markEmailed: adminProcedure
       .input(z.object({ leadId: z.number() }))
       .mutation(async ({ input }) => {
@@ -947,8 +943,9 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       .mutation(async ({ input, ctx }) => {
         const prospect = await db.getProspectById(input.prospectId);
         if (!prospect) throw new TRPCError({ code: "NOT_FOUND" });
-        const runId = await db.createAgentRun({ agentName: "XBOT Outreach", triggeredBy: ctx.user?.name ?? "admin", inputSummary: `Prospect: ${prospect.company}`, status: "running" });
-
+        const { result: outreachResult } = await workflows.withAgentRun(
+          { agentName: "XBOT Outreach", triggeredBy: ctx.user?.name ?? "admin", inputSummary: `Prospect: ${prospect.company}` },
+          async () => {
         // Generate personalized email via LLM
         const llmRes = await invokeLLM({
           messages: [
@@ -985,13 +982,18 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           content: `Email sent to ${prospect.company} (${prospect.robotName ?? "robot"}).\n\nSubject: ${emailSubject}\n\n${emailBody}`,
         });
 
-         await db.completeAgentRun(runId, "success", { outputSummary: `Email sent to ${prospect.company}` });
-         return { success: true, emailSubject, emailBody };
+        return { success: true, emailSubject, emailBody };
+          }
+        );
+        return outreachResult;
       }),
+
     bulkSendEmails: adminProcedure
       .input(z.object({ prospectIds: z.array(z.number()).min(1).max(50) }))
       .mutation(async ({ input, ctx }) => {
-        const runId = await db.createAgentRun({ agentName: "XBOT Bulk Outreach", triggeredBy: ctx.user?.name ?? "admin", inputSummary: `${input.prospectIds.length} prospects`, status: "running" });
+        const { result: bulkResult } = await workflows.withAgentRun(
+          { agentName: "XBOT Bulk Outreach", triggeredBy: ctx.user?.name ?? "admin", inputSummary: `${input.prospectIds.length} prospects` },
+          async () => {
         const results: { id: number; success: boolean; company: string; error?: string }[] = [];
         for (const prospectId of input.prospectIds) {
           try {
@@ -1028,9 +1030,12 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           title: `XBOT Bulk Outreach: ${sent} emails sent`,
           content: `Bulk send complete.\n\nSent: ${sent}\nFailed: ${failed}\n\nDetails:\n${results.map(r => `${r.company}: ${r.success ? "✓ sent" : `✗ ${r.error}`}`).join("\n")}`,
         });
-        await db.completeAgentRun(runId, failed === results.length ? "error" : "success", { outputSummary: `Sent: ${sent}, Failed: ${failed}` });
         return { sent, failed, results };
+          }
+        );
+        return bulkResult;
       }),
+
   }),
   // ─── Video Message Intake (public — for prospects to submit) ────────────────
   videoIntake: router({
@@ -1099,6 +1104,100 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     }),
     pipelineStats: adminProcedure.query(async () => {
       return workflows.getPipelineStats();
+    }),
+    runMigration: adminProcedure.mutation(async ({ ctx }) => {
+      return workflows.withAgentRun(
+        { agentName: "MySQL→Supabase Migration", triggeredBy: ctx.user?.name ?? "admin", inputSummary: "Full sync: prospects, trade_shows, services, logistics_partners, xbot_projects, users" },
+        async () => {
+          const mysql = await import("mysql2/promise");
+          const pg = await import("pg");
+          const MYSQL_URL = process.env.DATABASE_URL!;
+          const PG_URL = process.env.SUPABASE_DATABASE_URL!;
+          if (!PG_URL) throw new Error("SUPABASE_DATABASE_URL not set");
+
+          const myConn = await (mysql as any).default.createConnection({ uri: MYSQL_URL, ssl: { rejectUnauthorized: false } });
+          const pool = new (pg as any).default.Pool({ connectionString: PG_URL, ssl: { rejectUnauthorized: false } });
+          const client = await pool.connect();
+          const migrated: Record<string, number> = {};
+
+          const jdump = (v: unknown) => {
+            if (v === null || v === undefined) return null;
+            if (typeof v === "string") { try { JSON.parse(v); return v; } catch { return JSON.stringify(v); } }
+            return JSON.stringify(v);
+          };
+          const ts = (v: unknown) => (v instanceof Date ? v : v ? new Date(v as string) : null);
+          const now = () => new Date();
+
+          try {
+            await client.query("BEGIN");
+
+            // users
+            const [users] = await myConn.execute("SELECT * FROM users");
+            for (const r of users as Record<string, unknown>[]) {
+              await client.query(`INSERT INTO users (id,"openId",name,email,"loginMethod",role,"createdAt","updatedAt","lastSignedIn") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT ("openId") DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,role=EXCLUDED.role,"lastSignedIn"=EXCLUDED."lastSignedIn","updatedAt"=EXCLUDED."updatedAt"`,
+                [r.id,r.openId,r.name,r.email,r.loginMethod,r.role||'user',ts(r.createdAt)||now(),ts(r.updatedAt)||now(),ts(r.lastSignedIn)||now()]);
+            }
+            await client.query(`SELECT setval(pg_get_serial_sequence('users','id'),MAX(id)) FROM users`);
+            migrated.users = (users as unknown[]).length;
+
+            // trade_shows
+            const [shows] = await myConn.execute("SELECT * FROM trade_shows");
+            for (const r of shows as Record<string, unknown>[]) {
+              await client.query(`INSERT INTO trade_shows (id,name,location,venue,city,"startDate","endDate",website,"exhibitorListUrl",status,description,"roboticsRelevance","estimatedExhibitors","roboticsExhibitors","createdAt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name,status=EXCLUDED.status`,
+                [r.id,r.name,r.location,r.venue,r.city,ts(r.startDate),ts(r.endDate),r.website,r.exhibitorListUrl,r.status||'upcoming',r.description,r.roboticsRelevance||3,r.estimatedExhibitors,r.roboticsExhibitors,ts(r.createdAt)||now()]);
+            }
+            await client.query(`SELECT setval(pg_get_serial_sequence('trade_shows','id'),MAX(id)) FROM trade_shows`);
+            migrated.trade_shows = (shows as unknown[]).length;
+
+            // services
+            const [services] = await myConn.execute("SELECT * FROM services");
+            for (const r of services as Record<string, unknown>[]) {
+              await client.query(`INSERT INTO services (id,slug,name,brand,category,description,"basePrice","priceUnit","pricingTiers",phase,"isActive","sortOrder") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name,"isActive"=EXCLUDED."isActive"`,
+                [r.id,r.slug,r.name,r.brand||'stagegate',r.category||'',r.description,r.basePrice,r.priceUnit,r.pricingTiers,r.phase||'phase1',Boolean(r.isActive),r.sortOrder||0]);
+            }
+            await client.query(`SELECT setval(pg_get_serial_sequence('services','id'),MAX(id)) FROM services`);
+            migrated.services = (services as unknown[]).length;
+
+            // logistics_partners
+            const [partners] = await myConn.execute("SELECT * FROM logistics_partners");
+            for (const r of partners as Record<string, unknown>[]) {
+              await client.query(`INSERT INTO logistics_partners (id,name,"serviceType","contactName","contactEmail","contactPhone",website,city,notes,"isActive","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name`,
+                [r.id,r.name,r.serviceType||'',r.contactName,r.contactEmail,r.contactPhone,r.website,r.city,r.notes,Boolean(r.isActive),ts(r.createdAt)||now(),ts(r.updatedAt)||now()]);
+            }
+            await client.query(`SELECT setval(pg_get_serial_sequence('logistics_partners','id'),MAX(id)) FROM logistics_partners`);
+            migrated.logistics_partners = (partners as unknown[]).length;
+
+            // prospects
+            const [prospects] = await myConn.execute("SELECT * FROM prospects");
+            for (const r of prospects as Record<string, unknown>[]) {
+              await client.query(`INSERT INTO prospects (id,company,"robotName","robotType","hqCountry","attendsLasVegas","contactName","contactEmail","contactTitle","contactDept",website,shows,notes,status,"videoMessageUrl","scheduledCallAt","contactLinkedIn","emailConfidence","repliedAt","followUpDate","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) ON CONFLICT (id) DO UPDATE SET status=EXCLUDED.status,"updatedAt"=EXCLUDED."updatedAt"`,
+                [r.id,r.company,r.robotName,r.robotType,r.hqCountry,r.attendsLasVegas||'unknown',r.contactName,r.contactEmail,r.contactTitle,r.contactDept,r.website,jdump(r.shows)||'[]',r.notes,r.status||'new',r.videoMessageUrl,ts(r.scheduledCallAt),r.contactLinkedIn,r.emailConfidence||'low',ts(r.repliedAt),ts(r.followUpDate),ts(r.createdAt)||now(),ts(r.updatedAt)||now()]);
+            }
+            await client.query(`SELECT setval(pg_get_serial_sequence('prospects','id'),MAX(id)) FROM prospects`);
+            migrated.prospects = (prospects as unknown[]).length;
+
+            // xbot_projects
+            const [xbots] = await myConn.execute("SELECT * FROM xbot_projects");
+            for (const r of xbots as Record<string, unknown>[]) {
+              await client.query(`INSERT INTO xbot_projects (id,"sessionToken","userId","robotMake","robotModel","robotDimensions","robotWeight","powerRequirements","specialHandling","originCountry","originCity","shippingMethod","flightVesselNumber",eta,"portOfEntry","hsCode","ataCarnet","customsBroker","customsBrokerName","showId","boothNumber","setupDate","teardownDate","selectedServices","groundTransportProvider",contacts,"currentStep",status,"createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24::jsonb,$25,$26::jsonb,$27,$28,$29,$30) ON CONFLICT (id) DO UPDATE SET status=EXCLUDED.status,"updatedAt"=EXCLUDED."updatedAt"`,
+                [r.id,r.sessionToken,r.userId,r.robotMake,r.robotModel,r.robotDimensions,r.robotWeight,r.powerRequirements,r.specialHandling,r.originCountry,r.originCity,r.shippingMethod,r.flightVesselNumber,ts(r.eta),r.portOfEntry,r.hsCode,Boolean(r.ataCarnet),r.customsBroker||'tbd',r.customsBrokerName,r.showId,r.boothNumber,ts(r.setupDate),ts(r.teardownDate),jdump(r.selectedServices),r.groundTransportProvider,jdump(r.contacts),r.currentStep||1,r.status||'draft',ts(r.createdAt)||now(),ts(r.updatedAt)||now()]);
+            }
+            await client.query(`SELECT setval(pg_get_serial_sequence('xbot_projects','id'),MAX(id)) FROM xbot_projects`);
+            migrated.xbot_projects = (xbots as unknown[]).length;
+
+            await client.query("COMMIT");
+            await notifyOwner({ title: "✅ Migration Complete", content: `MySQL→Supabase sync finished.\n\n${Object.entries(migrated).map(([k,v]) => `${k}: ${v} rows`).join('\n')}` }).catch(() => {});
+            return { success: true, migrated };
+          } catch (err) {
+            await client.query("ROLLBACK");
+            throw err;
+          } finally {
+            client.release();
+            await pool.end();
+            await myConn.end();
+          }
+        }
+      );
     }),
     getSiteStats: adminProcedure.query(async () => {
       const [users, orders, demos, quotes, leads, prospects] = await Promise.all([
