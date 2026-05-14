@@ -9,6 +9,9 @@ import { notifyOwner } from "./_core/notification";
 import * as db from "./db";
 import * as workflows from "./workflows";
 import * as emailHelpers from "./email";
+import { eq, desc, count } from "drizzle-orm";
+import { draftEmails } from "../drizzle/schema";
+import { getDb } from "./db";
 
 // Admin-only middleware
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -1339,6 +1342,26 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
 
         return { sent, failed, errors };
       }),
+
+    getDraftCount: adminProcedure.query(async () => {
+      const pgDb = await getDb();
+      if (!pgDb) return { pending: 0, approved: 0, sent: 0, lastSentAt: null };
+      const [pendingRows, approvedRows, sentRows, lastSentRows] = await Promise.all([
+        pgDb.select({ n: count() }).from(draftEmails).where(eq(draftEmails.status, "pending")),
+        pgDb.select({ n: count() }).from(draftEmails).where(eq(draftEmails.status, "approved")),
+        pgDb.select({ n: count() }).from(draftEmails).where(eq(draftEmails.status, "sent")),
+        pgDb.select({ sentAt: draftEmails.sentAt }).from(draftEmails)
+          .where(eq(draftEmails.status, "sent"))
+          .orderBy(desc(draftEmails.sentAt))
+          .limit(1),
+      ]);
+      return {
+        pending: Number(pendingRows[0]?.n ?? 0),
+        approved: Number(approvedRows[0]?.n ?? 0),
+        sent: Number(sentRows[0]?.n ?? 0),
+        lastSentAt: lastSentRows[0]?.sentAt ?? null,
+      };
+    }),
 
     getSiteStats: adminProcedure.query(async () => {
       const [users, orders, demos, quotes, leads, prospects] = await Promise.all([

@@ -570,3 +570,9 @@
 ## v9.1 — Outreach Sidebar Nav Link
 
 - [x] Add "Outreach" link to Admin sidebar in DashboardLayout (icon: Send, path: /admin/outreach)
+
+## v9.2 — Outreach Badge + Dashboard Card
+
+- [x] Add admin.getDraftCount tRPC query (returns count of pending drafts)
+- [x] Add pending draft count badge to "Outreach" sidebar link in DashboardLayout
+- [x] Add Outreach quick-link card to AdminDashboard (pending count, last sent date, Go to Outreach button)

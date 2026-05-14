@@ -11,7 +11,7 @@ import {
   Building2, Calendar, Package, Users, TrendingUp, ArrowRight,
   Loader2, AlertCircle, Zap, FileText, Play,
   ShieldCheck, BarChart3, UserCheck, Shield, ShieldOff,
-  Database, RefreshCw, CheckCircle2, XCircle
+  Database, RefreshCw, CheckCircle2, XCircle, Send
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -38,6 +38,7 @@ export default function AdminDashboard() {
       toast.error('Migration failed', { description: err.message });
     },
   });
+  const { data: draftCount } = trpc.admin.getDraftCount.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin", refetchInterval: 60_000 });
   const { data: allUsers, refetch: refetchUsers } = trpc.admin.getUsers.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const setUserRole = trpc.admin.setUserRole.useMutation({
     onSuccess: () => { setTogglingRoleId(null); refetchUsers(); },
@@ -374,6 +375,53 @@ export default function AdminDashboard() {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground mt-3">Last checked: {new Date(dbHealth.checkedAt).toLocaleTimeString()} · Auto-refreshes every 30s</p>
+            </div>
+          )}
+
+          {/* Outreach Card */}
+          {draftCount !== undefined && (
+            <div className="mt-6 p-5 rounded-xl border border-amber-500/30 bg-amber-500/5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Send size={20} className="text-amber-400 shrink-0" />
+                  <div>
+                    <div className="font-semibold text-sm text-foreground">Outreach Queue</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {draftCount.pending > 0
+                        ? `${draftCount.pending} draft${draftCount.pending !== 1 ? 's' : ''} pending review`
+                        : draftCount.approved > 0
+                        ? `${draftCount.approved} draft${draftCount.approved !== 1 ? 's' : ''} approved and ready to send`
+                        : `${draftCount.sent} email${draftCount.sent !== 1 ? 's' : ''} sent`}
+                    </div>
+                    {draftCount.lastSentAt && (
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Last sent: {new Date(draftCount.lastSentAt).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex gap-3 text-center">
+                    <div>
+                      <div className="text-lg font-bold text-amber-400">{draftCount.pending}</div>
+                      <div className="text-[10px] text-muted-foreground">Pending</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-emerald-400">{draftCount.approved}</div>
+                      <div className="text-[10px] text-muted-foreground">Approved</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-blue-400">{draftCount.sent}</div>
+                      <div className="text-[10px] text-muted-foreground">Sent</div>
+                    </div>
+                  </div>
+                  <Link href="/admin/outreach">
+                    <Button size="sm" variant="outline" className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10">
+                      Go to Outreach <ArrowRight size={12} className="ml-1" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             </div>
           )}
 
