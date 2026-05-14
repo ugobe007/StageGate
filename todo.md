@@ -586,3 +586,8 @@
 - [x] Add Pipeline link to sidebar in DashboardLayout (Kanban icon, /admin/pipeline)
 - [ ] Add admin.getPipelineData tRPC query: prospects grouped by status and event
 - [ ] Add admin.getProspectContext tRPC query: single prospect with event, robot, contact details
+
+## v9.4 — Pipeline Drag-and-Drop
+
+- [x] Install @dnd-kit/core and @dnd-kit/sortable
+- [x] Add drag-and-drop to AdminPipeline.tsx: cards draggable between columns, optimistic status update on drop, Supabase sync via bulkUpdateStatus
