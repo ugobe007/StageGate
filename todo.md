@@ -1111,3 +1111,29 @@
 ### v30 Tests
 - [x] Write server/v30.test.ts: robotCategory schema, previewEmail handler, /tour page, hardware-aware breakpoints (67 tests)
 - [x] All 610 tests passing (v30)
+
+## v31 — Tour CTA, Pending Drafts Queue, Nightly Cron
+
+### v31.1 — Book a Showroom Tour CTA
+- [x] Add "Book a Tour" amber nav link to Navbar.tsx (desktop + mobile)
+- [x] Add "Book a Showroom Tour" amber CTA button to Home.tsx hero section
+- [x] Link both to /tour
+
+### v31.2 — Admin Pending Drafts Review Queue
+- [x] Add Pipeline / Pending Drafts top-level tab bar to AdminSalesAgent.tsx
+- [x] Build PendingDraftsTab component: query trpc.admin.getDrafts (status=pending)
+- [x] Show draft list: prospect name, company, subject, created date, Frank's Reasoning
+- [x] Per-draft actions: Approve & Send (trpc.admin.sendDraft), Edit inline, Discard (trpc.admin.discardDraft)
+- [x] Badge count on Pending Drafts tab using trpc.admin.getDraftCount
+- [x] Fixed TypeScript errors: draft procedures are in trpc.admin.*, not trpc.salesAgent.*
+
+### v31.3 — Nightly Outreach Cron Registration
+- [x] Verified sales-agent-outreach cron already active: 9am UTC daily (task_uid: FvCbJpt65VF8XY22ex8okQ)
+- [x] Verified sales-agent-discover cron already active: 2am UTC daily (task_uid: RaPBmLTLBTNBx7jrDHtafd)
+- [x] Verified sales-agent-ingest cron already active: 3am UTC daily (task_uid: V6nM9RdbAx5mhCFAv8q6WG)
+- [x] 78 prospects in discovery state with nextFollowUpAt=NOW() ready for tomorrow's 9am run
+- [x] Dev server restarted to clear stale module cache
+
+### v31 Tests
+- [x] Write server/v31.test.ts: tour CTA, pending drafts tab, cron handlers, admin procedures (38 tests)
+- [x] All 648 tests passing (v31)

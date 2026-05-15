@@ -176,6 +176,29 @@ export default function Navbar() {
                     Sign In
                   </button>
                 </a>
+                <Link href="/tour">
+                  <button
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.35rem",
+                      padding: "0.375rem 0.9rem",
+                      fontSize: "0.8125rem",
+                      fontWeight: 600,
+                      letterSpacing: "0.02em",
+                      color: "#000",
+                      background: "#f59e0b",
+                      border: "1px solid #f59e0b",
+                      borderRadius: "0.25rem",
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#d97706"; (e.currentTarget as HTMLElement).style.borderColor = "#d97706"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#f59e0b"; (e.currentTarget as HTMLElement).style.borderColor = "#f59e0b"; }}
+                  >
+                    Book a Tour
+                  </button>
+                </Link>
                 <Link href="/register">
                   <button className="btn-nav-primary">
                     Register Free
@@ -259,6 +282,26 @@ export default function Navbar() {
                       Sign in
                     </span>
                   </a>
+                  <Link href="/tour">
+                    <button
+                      onClick={() => setMobileOpen(false)}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        padding: "0.75rem",
+                        fontSize: "0.9375rem",
+                        fontWeight: 600,
+                        color: "#000",
+                        background: "#f59e0b",
+                        border: "none",
+                        borderRadius: "0.375rem",
+                        cursor: "pointer",
+                        textAlign: "center",
+                      }}
+                    >
+                      Book a Showroom Tour
+                    </button>
+                  </Link>
                   <button
                     onClick={() => { setQuoteOpen(true); setMobileOpen(false); }}
                     className="btn-nav"

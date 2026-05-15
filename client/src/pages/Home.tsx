@@ -363,6 +363,27 @@ export default function Home() {
             <Link href="/xbot/new">
               <button className="btn-primary">Start Logistics Intake <ArrowRight size={14} /></button>
             </Link>
+            <Link href="/tour">
+              <button
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  padding: "0.5rem 1.25rem",
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.02em",
+                  color: "#000",
+                  background: "#f59e0b",
+                  border: "1px solid #f59e0b",
+                  borderRadius: "0.25rem",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                Book a Showroom Tour <ArrowRight size={12} />
+              </button>
+            </Link>
             <Link href="/xbot" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.75)", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>
               Learn About XBOT <ArrowRight size={12} />
             </Link>
@@ -426,8 +447,13 @@ export default function Home() {
             <Link href="/register">
               <button className="btn-primary" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem" }}>Register Free <ArrowRight size={15} /></button>
             </Link>
+            <Link href="/tour">
+              <button style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", fontSize: "0.9375rem", padding: "0.875rem 2rem", fontWeight: 700, color: "#000", background: "#f59e0b", border: "1px solid #f59e0b", borderRadius: "0.25rem", cursor: "pointer", transition: "all 0.15s" }}>
+                Book a Showroom Tour <ArrowRight size={15} />
+              </button>
+            </Link>
             <a href="https://calendar.google.com/calendar/embed?src=bc58ef12c74e2216111ee28feb95e5edf6381e54aa8699acdab87cd370177797%40group.calendar.google.com&ctz=America%2FLos_Angeles" target="_blank" rel="noopener noreferrer">
-              <button className="btn-primary" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem", background: "transparent", border: "1px solid #f59e0b", color: "#f59e0b" }}>
+              <button className="btn-primary" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem", background: "transparent", border: "1px solid rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.65)" }}>
                 Schedule a Call <ArrowUpRight size={15} />
               </button>
             </a>
