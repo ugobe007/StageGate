@@ -76,27 +76,96 @@ export default function Home() {
   return (
     <div style={{ background: "#080808", color: "#ececec", minHeight: "100vh" }}>
 
-      {/* ── ANNOUNCEMENT BAR ─────────────────────────────────────────────────── */}
-      <div style={{
-        borderBottom: "1px solid rgba(0,255,135,0.12)",
-        background: "rgba(8,8,8,0.90)",
+      {/* ── TOP NAV ──────────────────────────────────────────────────────────── */}
+      <nav style={{
+        borderBottom: "1px solid rgba(0,255,135,0.10)",
+        background: "rgba(8,8,8,0.92)",
         backdropFilter: "blur(12px)",
         position: "sticky",
         top: 0,
         zIndex: 50,
       }}>
-        <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.55rem 2rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <span className="badge-emerald">New</span>
-            <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.75)" }}>
-              Now accepting bookings for CES 2027 and NAB 2026 in Las Vegas
-            </span>
-          </div>
-          <Link href="/shows" style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", color: "#00ff87", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-            View shows <ArrowRight size={12} />
+        <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 2rem" }}>
+          {/* Logo */}
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "1rem", color: "#00ff87", letterSpacing: "0.04em" }}>STAGEGATE</span>
           </Link>
+
+          {/* Nav links */}
+          <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
+            <Link href="/shows" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Shows</Link>
+            <Link href="/services" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Services</Link>
+            <Link href="/xbot" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>XBOT</Link>
+            <a href="#how-it-works" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>How It Works</a>
+          </div>
+
+          {/* Auth CTA */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            {isAuthenticated ? (
+              <Link href="/dashboard">
+                <button style={{
+                  background: "#00ff87",
+                  color: "#080808",
+                  border: "none",
+                  borderRadius: "6px",
+                  padding: "0.45rem 1.1rem",
+                  fontSize: "0.8125rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  letterSpacing: "0.01em",
+                }}>Dashboard <ArrowRight size={13} /></button>
+              </Link>
+            ) : (
+              <>
+                <a href={getLoginUrl()} style={{
+                  fontSize: "0.8125rem",
+                  color: "rgba(255,255,255,0.80)",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  padding: "0.45rem 0.9rem",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  borderRadius: "6px",
+                  transition: "border-color 0.15s, color 0.15s",
+                }}>Sign In</a>
+                <Link href="/register">
+                  <button style={{
+                    background: "#ff9500",
+                    color: "#080808",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "0.45rem 1.1rem",
+                    fontSize: "0.8125rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    letterSpacing: "0.01em",
+                  }}>Get Started <ArrowRight size={13} /></button>
+                </Link>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+
+        {/* Announcement strip */}
+        <div style={{ borderTop: "1px solid rgba(0,255,135,0.07)", background: "rgba(0,255,135,0.03)" }}>
+          <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.35rem 2rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <span className="badge-emerald">New</span>
+              <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.55)" }}>
+                Now accepting bookings for CES 2027 and NAB 2026 in Las Vegas
+              </span>
+            </div>
+            <Link href="/shows" style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.6875rem", color: "#00ff87", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", textDecoration: "none" }}>
+              View shows <ArrowRight size={11} />
+            </Link>
+          </div>
+        </div>
+      </nav>
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <section style={{ position: "relative", minHeight: "100svh", display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
