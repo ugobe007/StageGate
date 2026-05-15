@@ -1,0 +1,25 @@
+{
+  "query": "SELECT column_name FROM information_schema.columns WHERE table_name = 'prospects' AND ordinal_position > 20 ORDER BY ordinal_position;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SELECT column_name FROM information_schema.columns WHERE table_name = 'prospects' AND ordinal_position > 20 ORDER BY ordinal_position;",
+  "rows": [
+    {
+      "column_name": "repliedAt"
+    },
+    {
+      "column_name": "followUpDate"
+    },
+    {
+      "column_name": "robotCategory"
+    },
+    {
+      "column_name": "vendorType"
+    },
+    {
+      "column_name": "outreachAngle"
+    }
+  ],
+  "messages": [],
+  "stdout": "column_name\nrepliedAt\nfollowUpDate\nrobotCategory\nvendorType\noutreachAngle\n",
+  "stderr": "",
+  "execution_time_ms": 269
+}

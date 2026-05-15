@@ -39,6 +39,59 @@ export type RobotType =
 
 export type RobotCategory = "light" | "heavy_industrial" | "mixed";
 
+// Vendor/partner classification for non-robot-OEM prospects
+export type VendorType =
+  | "robot_oem"       // Robot manufacturer — primary customer
+  | "exhibit_house"   // Booth builder / exhibit contractor (Freeman, GES, etc.)
+  | "freight"         // Freight / logistics / drayage
+  | "av_electrical"   // AV, power, networking, event tech
+  | "venue"           // Convention center / event venue
+  | "agency"          // Creative / experiential marketing agency
+  | "other";
+
+export type OutreachAngle = "customer" | "partner";
+
+// Known trade show ecosystem vendors — these bypass the robot signal check
+// because we want to pitch them the "robotics technical operations layer" angle
+export const KNOWN_ECOSYSTEM_VENDORS: Record<string, { vendorType: VendorType; outreachAngle: OutreachAngle; notes: string }> = {
+  // Tier 1 — Exhibit Houses / General Contractors
+  "freeman": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Largest U.S. trade show contractor; GC at CES and many Las Vegas shows. Booth fabrication, logistics, electrical, labor, rigging." },
+  "ges": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "GES Global Experience Specialists — major exhibit operations and event contractor for large conventions." },
+  "ges global experience specialists": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Major exhibit operations and event contractor for large conventions." },
+  "george p. johnson": { vendorType: "agency", outreachAngle: "partner", notes: "GPJ — enterprise experiential design and large custom activations. Subcontracts physical builds." },
+  "gpj": { vendorType: "agency", outreachAngle: "partner", notes: "George P. Johnson — enterprise experiential design and large custom activations." },
+  "mc2 experience": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Custom exhibit environments and experiential marketing." },
+  "momentum worldwide": { vendorType: "agency", outreachAngle: "partner", notes: "Interactive brand activations and event experiences." },
+  // Tier 2 — Mid-Sized Exhibit Houses
+  "absolute exhibits": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Mid-sized exhibit house; faster adoption of new services than Freeman/GES." },
+  "blueprint exhibits": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Custom exhibit builds and installation/dismantle support." },
+  "pure exhibits": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Turnkey booth rentals and modular systems." },
+  "exhibit pros": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Turnkey booth rentals, AV rentals, installation, project management." },
+  "nimlok": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Modular and custom exhibit systems. Las Vegas presence." },
+  "rcs custom exhibits": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Custom exhibit builds and logistics." },
+  "the trade group": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Large custom trade show exhibits and experiential booths." },
+  "exhibit experience": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Booth fabrication, installation, LED walls, modular systems, union labor coordination." },
+  "exhibit people": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Custom rental booths, engineering, design, fabrication." },
+  "booth exhibits": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Custom exhibit builds, logistics, installation/dismantle support." },
+  "exponents": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Exhibit design and fabrication." },
+  "castle exhibits": { vendorType: "exhibit_house", outreachAngle: "partner", notes: "Custom exhibit builds and event services." },
+  // AV / Electrical / Event Technology
+  "encore": { vendorType: "av_electrical", outreachAngle: "partner", notes: "PSAV Encore — AV, power, networking, event technology. Controls electrical at many Las Vegas venues." },
+  "psav encore": { vendorType: "av_electrical", outreachAngle: "partner", notes: "AV, power, networking, event technology at Las Vegas venues." },
+  "prg": { vendorType: "av_electrical", outreachAngle: "partner", notes: "PRG — staging, AV systems, technical integration for large events." },
+  "avi-spl": { vendorType: "av_electrical", outreachAngle: "partner", notes: "Enterprise AV and technical systems integration." },
+  // Freight / Logistics
+  "dhl express": { vendorType: "freight", outreachAngle: "partner", notes: "International freight — robots frequently damaged in transit. White glove robotics handling opportunity." },
+  "fedex custom critical": { vendorType: "freight", outreachAngle: "partner", notes: "High-value freight — ideal for robot shipments requiring powered storage and battery-safe transport." },
+  "ups supply chain solutions": { vendorType: "freight", outreachAngle: "partner", notes: "Supply chain logistics — customs support and unpack/activation services." },
+  "db schenker": { vendorType: "freight", outreachAngle: "partner", notes: "Global freight and logistics — strong in trade show drayage and international robot shipments." },
+  // Las Vegas Venues
+  "las vegas convention center": { vendorType: "venue", outreachAngle: "partner", notes: "Primary CES venue. Approved vendor status here is critical for StageGate." },
+  "venetian expo": { vendorType: "venue", outreachAngle: "partner", notes: "The Venetian Expo — major Las Vegas convention venue." },
+  "mandalay bay convention center": { vendorType: "venue", outreachAngle: "partner", notes: "Major Las Vegas convention venue." },
+  "caesars forum": { vendorType: "venue", outreachAngle: "partner", notes: "Caesars Forum convention center — major Las Vegas event venue." },
+};
+
 export interface RawProspect {
   company: string;
   website?: string;
@@ -51,6 +104,9 @@ export interface RawProspect {
   notes?: string;
   emailConfidence?: string;
   contactTitle_?: string;
+  vendorType?: VendorType;
+  outreachAngle?: OutreachAngle;
+  isEcosystemVendor?: boolean; // Set to true to bypass robot signal check
 }
 
 export interface ScoredProspect extends RawProspect {
@@ -58,6 +114,8 @@ export interface ScoredProspect extends RawProspect {
   isRealCompany: boolean;
   companyConfidence: number;       // 0.0–1.0
   companyReason: string;           // why accepted or rejected
+  vendorType: VendorType;
+  outreachAngle: OutreachAngle;
   robotType: RobotType;
   robotCategory: RobotCategory;
   robotName: string;
@@ -145,6 +203,10 @@ const ROBOT_ONTOLOGY: Record<RobotType, string[]> = {
     "logistics robot", "bear robotics", "keenon", "aethon", "savioke",
     "servi robot", "pudu robotics", "richtech robotics", "ottonomy", "starship technologies",
     "kiwibot", "nuro", "serve robotics", "amazon scout", "wheeled robot",
+    // Expanded OEM list from strategic docs
+    "mir", "mobile industrial robots", "locus robotics", "otto motors",
+    "6 river systems", "fetch robotics", "vecna robotics", "seegrid",
+    "geek+", "hai robotics", "quicktron", "mushroom", "mujin",
   ],
   industrial_arm: [
     "industrial arm", "robotic arm", "articulated arm", "6-axis", "6 axis",
@@ -175,6 +237,9 @@ const ROBOT_ONTOLOGY: Record<RobotType, string[]> = {
     "cleaning robot", "disinfection robot", "uvc robot", "floor cleaning",
     "autonomous cleaning", "lawnmower robot", "pool robot", "window cleaning",
     "social robot", "reception robot", "concierge robot",
+    // Expanded service robot OEMs
+    "keenon robotics", "pudu", "bear robotics", "richtech",
+    "aethon", "savioke", "relay robot",
   ],
   surgical_robot: [
     "surgical robot", "medical robot", "da vinci", "intuitive surgical",
@@ -476,7 +541,21 @@ export async function filterAndClassify(
       continue;
     }
 
-    // Tier 2: Robot signal check
+    // Tier 2: Robot signal check — skip for known ecosystem vendors (exhibit houses, freight, AV, venues)
+    const companyKey = prospect.company.toLowerCase().trim();
+    const ecosystemMatch = KNOWN_ECOSYSTEM_VENDORS[companyKey];
+    if (ecosystemMatch) {
+      // Known partner — bypass robot signal, inject vendor metadata
+      tier2Passed.push({
+        ...prospect,
+        vendorType: prospect.vendorType ?? ecosystemMatch.vendorType,
+        outreachAngle: prospect.outreachAngle ?? ecosystemMatch.outreachAngle,
+        notes: prospect.notes ?? ecosystemMatch.notes,
+        isEcosystemVendor: true,
+      });
+      continue;
+    }
+
     if (!hasRobotSignal(prospect.company, prospect.robotName, prospect.notes, prospect.website)) {
       stats.noRobotSignal++;
       rejected.push({
@@ -512,6 +591,8 @@ export async function filterAndClassify(
         contactEmail: prospect.contactEmail ?? "",
         contactTitle: prospect.contactTitle ?? "",
         emailConfidence: (prospect.emailConfidence as "high" | "medium" | "low") ?? "low",
+        vendorType: prospect.vendorType ?? "robot_oem",
+        outreachAngle: prospect.outreachAngle ?? "customer",
       });
     }
     stats.accepted = accepted.length;
@@ -550,6 +631,8 @@ export async function filterAndClassify(
           contactEmail: prospect.contactEmail ?? "",
           contactTitle: prospect.contactTitle ?? "",
           emailConfidence: (prospect.emailConfidence as "high" | "medium" | "low") ?? "low",
+          vendorType: prospect.vendorType ?? "robot_oem",
+          outreachAngle: prospect.outreachAngle ?? "customer",
         });
         continue;
       }
@@ -596,6 +679,8 @@ export async function filterAndClassify(
         contactEmail: llm.contactEmail || prospect.contactEmail || "",
         contactTitle: llm.contactTitle || prospect.contactTitle || "",
         emailConfidence: llm.emailConfidence,
+        vendorType: prospect.vendorType ?? "robot_oem",
+        outreachAngle: prospect.outreachAngle ?? "customer",
       });
     }
   }

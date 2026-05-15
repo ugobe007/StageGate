@@ -62,6 +62,7 @@ export default function AdminProspects() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [hideContacted, setHideContacted] = useState(false);
   const [hotFilter, setHotFilter] = useState(false);
+  const [vendorTypeFilter, setVendorTypeFilter] = useState<string>("");
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
   const [failedIds, setFailedIds] = useState<Set<number>>(new Set());
@@ -338,9 +339,24 @@ export default function AdminProspects() {
   // Hot count: prospects with engagementScore >= 3 across all statuses
   const hotCount = (data?.prospects ?? []).filter(p => Number((p as Record<string, unknown>).engagementScore ?? 0) >= 3).length;
 
+  // Vendor type filter config
+  const VENDOR_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
+    robot_oem:    { label: "Robot OEM",     color: "#00ff87" },
+    exhibit_house:{ label: "Exhibit House", color: "#60a5fa" },
+    freight:      { label: "Freight",       color: "#f59e0b" },
+    av_electrical:{ label: "AV / Elec",    color: "#a78bfa" },
+    venue:        { label: "Venue",         color: "#fb923c" },
+    agency:       { label: "Agency",        color: "#f472b6" },
+    other:        { label: "Other",         color: "rgba(255,255,255,0.40)" },
+  };
+
   const prospects = (data?.prospects ?? []).filter(p => {
     if (hotFilter && Number((p as Record<string, unknown>).engagementScore ?? 0) < 3) return false;
     if (hideContacted && statusFilter === "" && !hotFilter && p.status === "contacted") return false;
+    if (vendorTypeFilter) {
+      const pVendorType = String((p as Record<string, unknown>).vendorType ?? "robot_oem");
+      if (pVendorType !== vendorTypeFilter) return false;
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const matchCompany = p.company.toLowerCase().includes(q);
@@ -655,6 +671,41 @@ export default function AdminProspects() {
               }}>{hotCount}</span>
             )}
           </button>
+
+          {/* Vendor Type filter pills */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginLeft: "0.75rem", paddingLeft: "0.75rem", borderLeft: "1px solid rgba(255,255,255,0.08)" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)", marginRight: "0.1rem" }}>Type:</span>
+            {Object.entries(VENDOR_TYPE_CONFIG).map(([key, cfg]) => {
+              const count = (allData?.prospects ?? []).filter(p => String((p as Record<string, unknown>).vendorType ?? "robot_oem") === key).length;
+              if (count === 0) return null;
+              const isActive = vendorTypeFilter === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => { setVendorTypeFilter(isActive ? "" : key); setSelectedIds(new Set()); }}
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.5625rem",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    padding: "0.2rem 0.55rem",
+                    border: `1px solid ${isActive ? cfg.color : "rgba(255,255,255,0.10)"}`,
+                    background: isActive ? `${cfg.color}18` : "transparent",
+                    color: isActive ? cfg.color : "rgba(255,255,255,0.35)",
+                    cursor: "pointer",
+                    borderRadius: "0.125rem",
+                    transition: "all 0.15s",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                  }}
+                >
+                  {cfg.label}
+                  <span style={{ fontSize: "0.45rem", padding: "0.05rem 0.25rem", borderRadius: "0.75rem", background: isActive ? `${cfg.color}25` : "rgba(255,255,255,0.06)", color: isActive ? cfg.color : "rgba(255,255,255,0.25)", fontVariantNumeric: "tabular-nums" }}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
 
           {/* Hide Contacted quick-toggle — only visible when All filter is active and hotFilter is off */}
           {statusFilter === "" && !hotFilter && (
@@ -1332,6 +1383,26 @@ export default function AdminProspects() {
                           {p.robotType && <span style={{ color: "rgba(255,255,255,0.25)", marginLeft: "0.5rem" }}>· {ROBOT_TYPE_LABELS[p.robotType] ?? p.robotType}</span>}
                         </p>
                       )}
+                      {/* Vendor type badge for ecosystem partners */}
+                      {(() => {
+                        const vt = String((p as Record<string, unknown>).vendorType ?? "robot_oem");
+                        if (vt === "robot_oem") return null;
+                        const vtCfg = VENDOR_TYPE_CONFIG[vt];
+                        if (!vtCfg) return null;
+                        return (
+                          <span style={{
+                            display: "inline-flex", alignItems: "center",
+                            fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.10em", textTransform: "uppercase",
+                            padding: "0.1rem 0.35rem", borderRadius: "0.125rem",
+                            border: `1px solid ${vtCfg.color}40`,
+                            color: vtCfg.color,
+                            background: `${vtCfg.color}10`,
+                            marginTop: "0.2rem",
+                          }}>
+                            ◆ {vtCfg.label} · Partner
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     {/* Shows */}

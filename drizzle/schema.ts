@@ -287,6 +287,9 @@ export const prospects = pgTable("prospects", {
   robotCategory: varchar("robotCategory", { length: 30 }).default("light"), // light | heavy_industrial | mixed
   repliedAt: timestamp("repliedAt", { withTimezone: true }),
   followUpDate: timestamp("followUpDate", { withTimezone: true }),
+  // Prospect classification: robot_oem (customer) vs ecosystem partner (exhibit_house, freight, av_electrical, venue, agency)
+  vendorType: varchar("vendorType", { length: 50 }).default("robot_oem"), // robot_oem | exhibit_house | freight | av_electrical | venue | agency | other
+  outreachAngle: varchar("outreachAngle", { length: 50 }).default("customer"), // customer | partner
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });

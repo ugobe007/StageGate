@@ -1,0 +1,85 @@
+{
+  "query": "SELECT column_name FROM information_schema.columns WHERE table_name = 'prospects' ORDER BY ordinal_position;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SELECT column_name FROM information_schema.columns WHERE table_name = 'prospects' ORDER BY ordinal_position;",
+  "rows": [
+    {
+      "column_name": "id"
+    },
+    {
+      "column_name": "company"
+    },
+    {
+      "column_name": "robotName"
+    },
+    {
+      "column_name": "robotType"
+    },
+    {
+      "column_name": "hqCountry"
+    },
+    {
+      "column_name": "attendsLasVegas"
+    },
+    {
+      "column_name": "contactName"
+    },
+    {
+      "column_name": "contactEmail"
+    },
+    {
+      "column_name": "contactTitle"
+    },
+    {
+      "column_name": "contactDept"
+    },
+    {
+      "column_name": "website"
+    },
+    {
+      "column_name": "shows"
+    },
+    {
+      "column_name": "notes"
+    },
+    {
+      "column_name": "status"
+    },
+    {
+      "column_name": "videoMessageUrl"
+    },
+    {
+      "column_name": "scheduledCallAt"
+    },
+    {
+      "column_name": "createdAt"
+    },
+    {
+      "column_name": "updatedAt"
+    },
+    {
+      "column_name": "contactLinkedIn"
+    },
+    {
+      "column_name": "emailConfidence"
+    },
+    {
+      "column_name": "repliedAt"
+    },
+    {
+      "column_name": "followUpDate"
+    },
+    {
+      "column_name": "robotCategory"
+    },
+    {
+      "column_name": "vendorType"
+    },
+    {
+      "column_name": "outreachAngle"
+    }
+  ],
+  "messages": [],
+  "stdout": "column_name\nid\ncompany\nrobotName\nrobotType\nhqCountry\nattendsLasVegas\ncontactName\ncontactEmail\ncontactTitle\ncontactDept\nwebsite\nshows\nnotes\nstatus\nvideoMessageUrl\nscheduledCallAt\ncreatedAt\nupdatedAt\ncontactLinkedIn\nemailConfidence\nrepliedAt\nfollowUpDate\nrobotCategory\nvendorType\noutreachAngle\n",
+  "stderr": "",
+  "execution_time_ms": 682
+}

@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE prospects \n  ADD COLUMN IF NOT EXISTS \"vendorType\" varchar(50) DEFAULT 'robot_oem',\n  ADD COLUMN IF NOT EXISTS \"outreachAngle\" varchar(50) DEFAULT 'customer';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute \nALTER TABLE prospects \n  ADD COLUMN IF NOT EXISTS \"vendorType\" varchar(50) DEFAULT 'robot_oem',\n  ADD COLUMN IF NOT EXISTS \"outreachAngle\" varchar(50) DEFAULT 'customer';\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 2: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 2 column 40 near \"\"vendorType\" varchar(50) DEFAULT 'robot_oem',",
+    "  ADD COLUMN IF NOT EXISTS \"outreachAngle\" varchar(50) DEFAULT 'customer'\""
+  ]
+}

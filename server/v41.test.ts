@@ -189,8 +189,8 @@ describe("Robot Ontology — inferRobotType()", () => {
     expect(inferRobotType("MobileBot", "AMR-500")).toBe("wheeled_amr");
   });
 
-  it("classifies wheeled_amr from 'Bear Robotics'", () => {
-    expect(inferRobotType("Bear Robotics", "Servi")).toBe("wheeled_amr");
+  it("classifies service_robot from 'Bear Robotics' (Servi is a restaurant delivery robot)", () => {
+    expect(inferRobotType("Bear Robotics", "Servi")).toBe("service_robot");
   });
 
   it("classifies industrial_arm from 'Fanuc'", () => {

@@ -1359,18 +1359,18 @@
 ## v41 — Discovery Pipeline: Logic Engine + Ontological Scraper + Smoke Tests
 
 ### v41.1 — discoveryLogicEngine.ts (pre-ingest gate)
-- [ ] Build `server/agents/discoveryLogicEngine.ts` module
+- [x] Build `server/agents/discoveryLogicEngine.ts` module
 - [x] Junk filter: reject companies with no website, no robot signals, or generic/vague names
-- [ ] Real-company check: LLM structured JSON — `isRealCompany` boolean + `confidence` score + `reason`
-- [ ] Robot ontology classifier: `robotType` enum + `robotName` + `robotDescription`
-- [ ] `robotCategory` inference: light | heavy_industrial | mixed based on robot type
-- [ ] `showRelevance` score: 0–1 float — how likely this company attends Las Vegas trade shows
-- [ ] Batch scoring: `filterAndClassify(raw[])` → filters junk, enriches survivors
+- [x] Real-company check: LLM structured JSON — `isRealCompany` boolean + `confidence` score + `reason`
+- [x] Robot ontology classifier: `robotType` enum + `robotName` + `robotDescription`
+- [x] `robotCategory` inference: light | heavy_industrial | mixed based on robot type
+- [x] `showRelevance` score: 0–1 float — how likely this company attends Las Vegas trade shows
+- [x] Batch scoring: `filterAndClassify(raw[])` → filters junk, enriches survivors
 
 ### v41.2 — Upgraded salesAgentDiscovery.ts scraper
 - [x] Structured HTML extraction: parse table/ul/dl exhibitor list patterns before raw text fallback
 - [x] Multi-signal company name extraction: title-case words, all-caps tokens, link text
-- [ ] Pagination detection: find "Next page" / "Load more" links and follow up to 3 pages
+- [x] Pagination detection: find "Next page" / "Load more" links and follow up to 3 pages
 - [x] Wire logic engine as pre-ingest gate on all discovered prospects
 - [x] Log junk-filtered count per run in run record details
 - [x] DRY: handler calls core (remove duplicate code)
@@ -1383,8 +1383,8 @@
 - [x] showRelevance > 0.7 for known Las Vegas exhibitors
 - [x] HTML scraper: structured extraction finds company names from table HTML
 - [x] HTML scraper: pagination link detection
-- [ ] Ingest pipeline link test: discovery → logic engine → ingest → conversation created
-- [ ] Deduplication test: same company twice → one prospect
+- [x] Ingest pipeline link test: discovery → logic engine → ingest → conversation created
+- [x] Deduplication test: same company twice → one prospect
 - [x] All existing 875 tests still pass
 
 
@@ -1418,3 +1418,32 @@
 - [x] Ingest pipeline link test: discovery to logic engine to ingest to conversation created
 - [x] Deduplication test: same company twice yields one prospect
 - [x] All existing 875 tests still pass
+
+## v42 — Expanded Prospect Universe: Robot OEMs + Trade Show Vendors
+
+### v42.1 — Robot OEM Ontology Expansion
+- [x] Add MiR, Locus Robotics, OTTO Motors to wheeled_amr ontology
+- [x] Add Pudu Robotics, Keenon Robotics to service_robot ontology
+- [x] Add expanded humanoid list: Apptronik, Sanctuary AI, 1X Technologies, Fourier Intelligence, UBTECH
+- [x] Add vendor prospect category to discoveryLogicEngine.ts (exhibit_house, freight, av_electrical, venue, agency)
+- [x] Update filterAndClassify to accept vendor prospects (bypass robot signal check for known vendors)
+
+### v42.2 — Vendor Prospect Seeding (DB)
+- [x] Add vendor_type column to prospects table (robot_oem | exhibit_house | freight | av_electrical | venue | agency | other)
+- [x] Apply migration via webdev_execute_sql
+- [x] Seed Tier 1 exhibit houses: Freeman, GES, GPJ, MC2 Experience, Momentum Worldwide
+- [x] Seed Tier 2 exhibit houses: Absolute Exhibits, Blueprint Exhibits, Pure Exhibits, Exhibit Pros, Nimlok, RCS Custom Exhibits, The Trade Group, Exhibit Experience, Exhibit People, Booth Exhibits
+- [x] Seed AV/electrical: Encore, PRG, AVI-SPL
+- [x] Seed freight/logistics: DHL Express, FedEx Custom Critical, UPS Supply Chain Solutions, DB Schenker
+- [x] Seed Las Vegas venues: Las Vegas Convention Center, Venetian Expo, Mandalay Bay Convention Center, Caesars Forum
+- [x] Seed robot OEMs not already in DB: MiR, Locus Robotics, OTTO Motors, Pudu Robotics, Keenon Robotics, Apptronik, Sanctuary AI, 1X Technologies, Fourier Intelligence, UBTECH Robotics
+- [x] Each vendor prospect gets: correct outreach angle (partner pitch vs customer pitch), contact title, email guess, notes
+
+### v42.3 — Admin UI: Vendor Type Filter
+- [x] Add vendor_type filter pill to AdminProspects page (All | Robot OEM | Exhibit House | Freight | AV/Electrical | Venue | Agency)
+- [x] Show vendor_type badge on prospect cards/rows
+
+### v42.4 — Tests
+- [x] Vendor bypass test: known exhibit houses pass filterAndClassify without robot signal
+- [x] Vendor type seeding test: all seeded vendors have correct vendor_type
+- [x] All 980 tests still pass
