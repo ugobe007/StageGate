@@ -99,55 +99,44 @@ export default function Home() {
             <a href="#how-it-works" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>How It Works</a>
           </div>
 
-          {/* Auth CTA */}
+          {/* Auth CTA — always visible */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            {isAuthenticated ? (
-              <Link href="/dashboard">
-                <button style={{
-                  background: "#00ff87",
-                  color: "#080808",
-                  border: "none",
-                  borderRadius: "6px",
-                  padding: "0.45rem 1.1rem",
-                  fontSize: "0.8125rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.35rem",
-                  letterSpacing: "0.01em",
-                }}>Dashboard <ArrowRight size={13} /></button>
-              </Link>
-            ) : (
-              <>
-                <a href={getLoginUrl()} style={{
-                  fontSize: "0.8125rem",
-                  color: "rgba(255,255,255,0.80)",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                  padding: "0.45rem 0.9rem",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  borderRadius: "6px",
-                  transition: "border-color 0.15s, color 0.15s",
-                }}>Sign In</a>
-                <Link href="/register">
-                  <button style={{
-                    background: "#ff9500",
-                    color: "#080808",
-                    border: "none",
-                    borderRadius: "6px",
-                    padding: "0.45rem 1.1rem",
-                    fontSize: "0.8125rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.35rem",
-                    letterSpacing: "0.01em",
-                  }}>Get Started <ArrowRight size={13} /></button>
-                </Link>
-              </>
+            {isAuthenticated && (
+              <Link href="/admin" style={{
+                fontSize: "0.8125rem",
+                color: "#00ff87",
+                fontWeight: 600,
+                textDecoration: "none",
+                padding: "0.45rem 0.9rem",
+                border: "1px solid rgba(0,255,135,0.30)",
+                borderRadius: "6px",
+              }}>Dashboard</Link>
             )}
+            <a href={getLoginUrl()} style={{
+              fontSize: "0.8125rem",
+              color: "rgba(255,255,255,0.85)",
+              fontWeight: 600,
+              textDecoration: "none",
+              padding: "0.45rem 0.9rem",
+              border: "1px solid rgba(255,255,255,0.18)",
+              borderRadius: "6px",
+            }}>Sign In</a>
+            <Link href="/register">
+              <button style={{
+                background: "#ff9500",
+                color: "#080808",
+                border: "none",
+                borderRadius: "6px",
+                padding: "0.45rem 1.1rem",
+                fontSize: "0.8125rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                letterSpacing: "0.01em",
+              }}>Get Started <ArrowRight size={13} /></button>
+            </Link>
           </div>
         </div>
 
