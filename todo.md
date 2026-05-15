@@ -1191,3 +1191,26 @@
 ### v33 Tests
 - [x] Write server/v33.test.ts: verifyAllUnverified, importProspects, triggerDiscovery, UI buttons (42 tests)
 - [x] All 730 tests passing (v33)
+
+## v34 — Real-Time Verify All Progress Bar
+
+### v34.1 — Server-side progress tracking
+- [x] Add in-memory batchVerifyProgress map (batchId → { total, current, verified, notFound, currentCompany, status, startedAt })
+- [x] Modify verifyAllUnverified to return a batchId immediately (fire-and-forget the actual work)
+- [x] Run Apollo verification loop in background, updating the in-memory map after each prospect
+- [x] Add salesAgent.getVerifyProgress query: takes batchId, returns current progress snapshot
+- [x] Mark batch as 'complete' or 'error' when loop finishes
+
+### v34.2 — Frontend real-time progress UI
+- [x] Replace fire-and-forget mutation with a two-phase flow: trigger → get batchId → poll progress
+- [x] Show progress modal immediately on trigger (not after completion)
+- [x] Progress modal: animated progress bar (current/total %), current company name being verified
+- [x] Live counters: Checked / Verified / Not Found updating in real-time
+- [x] Status line: "Verifying X of Y — currently checking: CompanyName"
+- [x] Poll getVerifyProgress every 1.5s while status is 'running'
+- [x] On complete: show final summary with confetti-free success state and Close button
+- [x] On error: show error message with partial results
+
+### v34 Tests
+- [x] Write server/v34.test.ts: batchId returned immediately, progress map structure, getVerifyProgress query
+- [x] All 766 tests passing

@@ -3,7 +3,7 @@
  *
  * Frank's Mission Control — Pipeline board + Pending Drafts review queue
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,9 @@ import {
   Zap, Send, RefreshCw, Eye, Users,
   TrendingUp, Calendar, Star, Cpu, Factory,
   CheckCircle, XCircle, Edit3, Inbox,
-  ShieldCheck, Upload, FileText
+  ShieldCheck, Upload, FileText, Loader2
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 const STAGES = [
   { id: "discovery",      label: "Discovered",     color: "bg-zinc-700 text-zinc-300" },
@@ -436,9 +437,11 @@ export default function AdminSalesAgent() {
   const [verifyingId, setVerifyingId] = useState<number | null>(null);
   const [verifyResult, setVerifyResult] = useState<{ found: boolean; email: string | null; confidence: string; name: string | null; title: string | null; linkedIn: string | null; suggestions: string[]; orgFound: boolean } | null>(null);
   const [verifyModalOpen, setVerifyModalOpen] = useState(false);
-  // Bulk verify state
+  // Bulk verify state — v34 real-time progress
   const [bulkVerifyResult, setBulkVerifyResult] = useState<{ total: number; verified: number; notFound: number; message: string } | null>(null);
   const [bulkVerifyModalOpen, setBulkVerifyModalOpen] = useState(false);
+  const [verifyBatchId, setVerifyBatchId] = useState<string | null>(null);
+  const [verifyProgressOpen, setVerifyProgressOpen] = useState(false);
   // CSV import state
   const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
@@ -478,12 +481,42 @@ export default function AdminSalesAgent() {
 
   const verifyAllUnverified = trpc.salesAgent.verifyAllUnverified.useMutation({
     onSuccess: (data) => {
-      setBulkVerifyResult(data);
-      setBulkVerifyModalOpen(true);
-      refetchConvs();
+      // v34: fire-and-forget — server returns batchId immediately
+      setVerifyBatchId(data.batchId);
+      setVerifyProgressOpen(true);
     },
     onError: (err) => toast.error(`Bulk verify failed: ${err.message}`),
   });
+
+  // v34: poll getVerifyProgress while a batch is running
+  const { data: verifyProgress } = trpc.salesAgent.getVerifyProgress.useQuery(
+    { batchId: verifyBatchId ?? "" },
+    {
+      enabled: !!verifyBatchId && verifyProgressOpen,
+      refetchInterval: verifyBatchId && verifyProgressOpen ? 1500 : false,
+    }
+  );
+
+  // When batch completes, stop polling and refresh the conversation list
+  useEffect(() => {
+    if (verifyProgress?.status === "complete" || verifyProgress?.status === "error") {
+      refetchConvs();
+    }
+  }, [verifyProgress?.status]);
+
+  function handleCloseProgressModal() {
+    setVerifyProgressOpen(false);
+    setVerifyBatchId(null);
+    if (verifyProgress?.status === "complete") {
+      setBulkVerifyResult({
+        total: verifyProgress.total,
+        verified: verifyProgress.verified,
+        notFound: verifyProgress.notFound,
+        message: `Verified ${verifyProgress.verified} of ${verifyProgress.total} prospects. ${verifyProgress.notFound} not found in Apollo.`,
+      });
+      setBulkVerifyModalOpen(true);
+    }
+  }
   const importProspects = trpc.salesAgent.importProspects.useMutation({
     onSuccess: (data) => {
       setCsvImportResult(data);
@@ -632,12 +665,14 @@ export default function AdminSalesAgent() {
                       variant="outline"
                       className="border-blue-700 text-blue-400 hover:bg-blue-950 gap-1.5"
                       onClick={() => verifyAllUnverified.mutate()}
-                      disabled={verifyAllUnverified.isPending}
+                      disabled={verifyAllUnverified.isPending || verifyProgressOpen}
                       title="Run Apollo verification on all low-confidence emails"
                     >
                       {verifyAllUnverified.isPending
-                        ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Verifying…</>
-                        : <><ShieldCheck className="w-3.5 h-3.5" /> Verify All</>}
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Starting…</>
+                        : verifyProgressOpen
+                          ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Running…</>
+                          : <><ShieldCheck className="w-3.5 h-3.5" /> Verify All</>}
                     </Button>
                     <Button
                       size="sm"
@@ -1005,6 +1040,86 @@ export default function AdminSalesAgent() {
               >Close</Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* v34: Real-Time Verify All Progress Modal */}
+      <Dialog open={verifyProgressOpen} onOpenChange={(v) => { if (!v) handleCloseProgressModal(); }}>
+        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              {verifyProgress?.status === "complete" ? (
+                <><ShieldCheck className="w-4 h-4 text-emerald-400" /> Verification Complete</>
+              ) : verifyProgress?.status === "error" ? (
+                <><ShieldCheck className="w-4 h-4 text-red-400" /> Verification Error</>
+              ) : (
+                <><Loader2 className="w-4 h-4 text-blue-400 animate-spin" /> Verifying Prospects…</>
+              )}
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500">
+              Running Apollo verification on all low-confidence emails.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5 py-1">
+            {/* Progress bar */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs text-zinc-400">
+                <span>
+                  {verifyProgress?.status === "complete" ? "Done" : verifyProgress?.status === "error" ? "Stopped" : "Running"}
+                </span>
+                <span>{verifyProgress?.current ?? 0} / {verifyProgress?.total ?? 0}</span>
+              </div>
+              <Progress
+                value={verifyProgress?.total ? Math.round(((verifyProgress.current) / verifyProgress.total) * 100) : 0}
+                className="h-2 bg-zinc-800 [&>div]:bg-blue-500"
+              />
+            </div>
+
+            {/* Current company being verified */}
+            {verifyProgress?.status === "running" && verifyProgress.currentCompany && (
+              <div className="bg-zinc-800/60 rounded-lg px-3 py-2">
+                <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-0.5">Currently checking</p>
+                <p className="text-sm text-zinc-200 font-medium truncate">{verifyProgress.currentCompany}</p>
+              </div>
+            )}
+
+            {/* Live counters */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-zinc-800 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-white">{verifyProgress?.current ?? 0}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">Checked</p>
+              </div>
+              <div className="bg-emerald-950/30 border border-emerald-800/50 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-emerald-400">{verifyProgress?.verified ?? 0}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">Verified</p>
+              </div>
+              <div className="bg-zinc-800 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-zinc-400">{verifyProgress?.notFound ?? 0}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">Not Found</p>
+              </div>
+            </div>
+
+            {/* Error summary */}
+            {verifyProgress?.errors && verifyProgress.errors.length > 0 && (
+              <div className="bg-red-950/30 border border-red-800/30 rounded-lg p-2.5">
+                <p className="text-xs text-red-400 font-medium mb-1">Errors ({verifyProgress.errors.length})</p>
+                {verifyProgress.errors.map((e, i) => (
+                  <p key={i} className="text-xs text-red-300/70 truncate">{e}</p>
+                ))}
+              </div>
+            )}
+
+            {/* Close button — only when done */}
+            {(verifyProgress?.status === "complete" || verifyProgress?.status === "error") && (
+              <Button
+                size="sm"
+                className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                onClick={handleCloseProgressModal}
+              >
+                {verifyProgress.status === "complete" ? "View Summary" : "Close"}
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 

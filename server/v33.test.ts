@@ -31,7 +31,8 @@ describe("salesAgent.verifyAllUnverified procedure", () => {
 
   it("calls verifyProspectEmail logic for each prospect", () => {
     const idx = routersContent.indexOf("verifyAllUnverified:");
-    const snippet = routersContent.slice(idx, idx + 3000);
+    // v34: loop is inside a fire-and-forget IIFE, so use a larger window
+    const snippet = routersContent.slice(idx, idx + 8000);
     // Should iterate over prospects and call Apollo
     expect(snippet).toMatch(/for.*of|forEach|map|Promise\.all/);
   });

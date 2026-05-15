@@ -22,6 +22,19 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+// ─── Batch Verify Progress Tracking ────────────────────────────────────────
+type BatchVerifyState = {
+  total: number;
+  current: number;
+  verified: number;
+  notFound: number;
+  currentCompany: string;
+  status: 'running' | 'complete' | 'error';
+  startedAt: Date;
+  errors: string[];
+};
+const batchVerifyProgress = new Map<string, BatchVerifyState>();
+
 export const appRouter = router({
   system: systemRouter,
 
@@ -2667,84 +2680,121 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           .where(eq(prospectsTable.emailConfidence, "low"))
           .limit(100); // cap at 100 per run to avoid rate limits
 
-        let verified = 0;
-        let notFound = 0;
-        const errors: string[] = [];
-
-        for (const prospect of unverified) {
-          try {
-            // Rate limit: 1 request per 300ms to stay within Apollo free tier
-            await new Promise(r => setTimeout(r, 300));
-
-            // Step 1: Find org
-            let orgId: string | null = null;
-            try {
-              const orgBody: Record<string, unknown> = { q_organization_name: prospect.company, page: 1, per_page: 1 };
-              if (prospect.website) orgBody.q_organization_website_url = prospect.website;
-              const orgRes = await fetch("https://api.apollo.io/v1/mixed_companies/search", {
-                method: "POST",
-                headers: { "x-api-key": apolloKey, "Content-Type": "application/json" },
-                body: JSON.stringify(orgBody),
-              });
-              const orgData = await orgRes.json() as { organizations?: Array<{ id: string }> };
-              orgId = orgData.organizations?.[0]?.id ?? null;
-            } catch { /* ignore */ }
-
-            // Step 2: Find people
-            let bestEmail: string | null = null;
-            let bestConfidence: "high" | "medium" | "low" = "low";
-            let bestName: string | null = null;
-            let bestTitle: string | null = null;
-            let bestLinkedIn: string | null = null;
-
-            if (orgId) {
-              try {
-                const peopleRes = await fetch("https://api.apollo.io/v1/mixed_people/search", {
-                  method: "POST",
-                  headers: { "x-api-key": apolloKey, "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    organization_ids: [orgId],
-                    person_titles: ["CEO", "CTO", "COO", "VP", "Director", "Head of", "Chief", "President", "Founder", "Co-Founder", "Business Development", "Sales"],
-                    page: 1, per_page: 3,
-                  }),
-                });
-                const peopleData = await peopleRes.json() as { people?: Array<{ id: string; name: string; title?: string; email?: string; email_status?: string; linkedin_url?: string }> };
-                const people = peopleData.people ?? [];
-                const best = people.find(p => p.email_status === "verified" && p.email) ?? people.find(p => p.email) ?? people[0];
-                if (best) {
-                  bestEmail = best.email ?? null;
-                  bestConfidence = best.email_status === "verified" ? "high" : best.email ? "medium" : "low";
-                  bestName = best.name ?? null;
-                  bestTitle = best.title ?? null;
-                  bestLinkedIn = best.linkedin_url ?? null;
-                }
-              } catch { /* ignore */ }
-            }
-
-            if (bestEmail && bestEmail !== prospect.contactEmail) {
-              await dbConn.update(prospectsTable).set({
-                contactEmail: bestEmail,
-                emailConfidence: bestConfidence,
-                contactName: bestName ?? prospect.contactName,
-                contactTitle: bestTitle ?? prospect.contactTitle,
-                contactLinkedIn: bestLinkedIn ?? prospect.contactLinkedIn,
-                updatedAt: new Date(),
-              }).where(eq(prospectsTable.id, prospect.id));
-              verified++;
-            } else {
-              notFound++;
-            }
-          } catch (err) {
-            errors.push(`${prospect.company}: ${String(err)}`);
-          }
-        }
-
-        return {
+        // Generate a unique batchId and initialize progress state
+        const batchId = `batch_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        batchVerifyProgress.set(batchId, {
           total: unverified.length,
-          verified,
-          notFound,
-          errors: errors.slice(0, 5),
-          message: `Verified ${verified} of ${unverified.length} prospects. ${notFound} not found in Apollo.`,
+          current: 0,
+          verified: 0,
+          notFound: 0,
+          currentCompany: "",
+          status: "running",
+          startedAt: new Date(),
+          errors: [],
+        });
+
+        // Fire-and-forget: run the Apollo loop in the background
+        (async () => {
+          const state = batchVerifyProgress.get(batchId)!;
+          try {
+            for (let i = 0; i < unverified.length; i++) {
+              const prospect = unverified[i];
+              state.current = i + 1;
+              state.currentCompany = prospect.company;
+
+              try {
+                // Rate limit: 1 request per 300ms to stay within Apollo free tier
+                await new Promise(r => setTimeout(r, 300));
+
+                // Step 1: Find org
+                let orgId: string | null = null;
+                try {
+                  const orgBody: Record<string, unknown> = { q_organization_name: prospect.company, page: 1, per_page: 1 };
+                  if (prospect.website) orgBody.q_organization_website_url = prospect.website;
+                  const orgRes = await fetch("https://api.apollo.io/v1/mixed_companies/search", {
+                    method: "POST",
+                    headers: { "x-api-key": apolloKey, "Content-Type": "application/json" },
+                    body: JSON.stringify(orgBody),
+                  });
+                  const orgData = await orgRes.json() as { organizations?: Array<{ id: string }> };
+                  orgId = orgData.organizations?.[0]?.id ?? null;
+                } catch { /* ignore */ }
+
+                // Step 2: Find people
+                let bestEmail: string | null = null;
+                let bestConfidence: "high" | "medium" | "low" = "low";
+                let bestName: string | null = null;
+                let bestTitle: string | null = null;
+                let bestLinkedIn: string | null = null;
+
+                if (orgId) {
+                  try {
+                    const peopleRes = await fetch("https://api.apollo.io/v1/mixed_people/search", {
+                      method: "POST",
+                      headers: { "x-api-key": apolloKey, "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        organization_ids: [orgId],
+                        person_titles: ["CEO", "CTO", "COO", "VP", "Director", "Head of", "Chief", "President", "Founder", "Co-Founder", "Business Development", "Sales"],
+                        page: 1, per_page: 3,
+                      }),
+                    });
+                    const peopleData = await peopleRes.json() as { people?: Array<{ id: string; name: string; title?: string; email?: string; email_status?: string; linkedin_url?: string }> };
+                    const people = peopleData.people ?? [];
+                    const best = people.find(p => p.email_status === "verified" && p.email) ?? people.find(p => p.email) ?? people[0];
+                    if (best) {
+                      bestEmail = best.email ?? null;
+                      bestConfidence = best.email_status === "verified" ? "high" : best.email ? "medium" : "low";
+                      bestName = best.name ?? null;
+                      bestTitle = best.title ?? null;
+                      bestLinkedIn = best.linkedin_url ?? null;
+                    }
+                  } catch { /* ignore */ }
+                }
+
+                if (bestEmail && bestEmail !== prospect.contactEmail) {
+                  await dbConn.update(prospectsTable).set({
+                    contactEmail: bestEmail,
+                    emailConfidence: bestConfidence,
+                    contactName: bestName ?? prospect.contactName,
+                    contactTitle: bestTitle ?? prospect.contactTitle,
+                    contactLinkedIn: bestLinkedIn ?? prospect.contactLinkedIn,
+                    updatedAt: new Date(),
+                  }).where(eq(prospectsTable.id, prospect.id));
+                  state.verified++;
+                } else {
+                  state.notFound++;
+                }
+              } catch (err) {
+                state.errors.push(`${prospect.company}: ${String(err)}`);
+              }
+            }
+            state.status = "complete";
+            state.currentCompany = "";
+          } catch (err) {
+            state.status = "error";
+            state.errors.push(`Fatal: ${String(err)}`);
+          }
+          // Clean up map after 10 minutes to avoid memory leak
+          setTimeout(() => batchVerifyProgress.delete(batchId), 10 * 60 * 1000);
+        })();
+
+        return { batchId, total: unverified.length };
+      }),
+
+    getVerifyProgress: adminProcedure
+      .input(z.object({ batchId: z.string() }))
+      .query(({ input }) => {
+        const state = batchVerifyProgress.get(input.batchId);
+        if (!state) return null;
+        return {
+          total: state.total,
+          current: state.current,
+          verified: state.verified,
+          notFound: state.notFound,
+          currentCompany: state.currentCompany,
+          status: state.status,
+          startedAt: state.startedAt,
+          errors: state.errors.slice(0, 5),
         };
       }),
 
