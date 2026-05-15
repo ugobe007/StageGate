@@ -44,9 +44,8 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      // Role-based redirect: admin → /admin, regular users → /dashboard
-      const redirectTo = user?.role === "admin" ? "/admin" : "/dashboard";
-      res.redirect(302, redirectTo);
+      // Redirect to the client-side auth router which handles role-based routing
+      res.redirect(302, "/auth-redirect");
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed" });

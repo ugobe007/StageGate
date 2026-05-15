@@ -41,6 +41,8 @@ import TourBooking from "./pages/TourBooking";
 import DbStatusBanner from "@/components/DbStatusBanner";
 import About from "./pages/About";
 import Onboarding from "./pages/Onboarding";
+import AuthRedirect from "./pages/AuthRedirect";
+import AdminServiceRequests from "./pages/AdminServiceRequests";
 
 function Router() {
   return (
@@ -60,6 +62,9 @@ function Router() {
       <Route path="/xbot" component={XbotLanding} />
       <Route path="/xbot/new" component={XbotWizard} />
       <Route path="/xbot/project/:id" component={XbotProject} />
+
+      {/* Auth routing */}
+      <Route path="/auth-redirect" component={AuthRedirect} />
 
       {/* Client */}
       <Route path="/dashboard" component={ClientDashboard} />
@@ -85,6 +90,7 @@ function Router() {
       <Route path="/admin/scheduling" component={AdminScheduling} />
       <Route path="/admin/vendors" component={AdminVendors} />
       <Route path="/admin/logistics" component={AdminLogistics} />
+      <Route path="/admin/service-requests" component={AdminServiceRequests} />
 
       {/* Video intake */}
       <Route path="/xbot/video" component={VideoIntake} />

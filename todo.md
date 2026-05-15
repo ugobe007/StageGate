@@ -1479,14 +1479,14 @@
 
 ## v49 — Post-Login Routing, Onboarding, Service Requests
 - [x] Add service_requests table to schema (userId, type, showId, robotType, details, status, createdAt)
-- [ ] Add robots JSON column to company_profiles (name, type, weight, dimensions, powerReq)
-- [ ] Add showsAttending JSON column to company_profiles
-- [ ] Add company.submitServiceRequest tRPC procedure
-- [ ] Add company.getMyServiceRequests tRPC procedure
-- [ ] Add admin.getServiceRequests tRPC procedure
-- [ ] Fix OAuth callback to redirect to /auth-redirect instead of /
-- [ ] Build /auth-redirect page: admin → /admin, user with profile → /dashboard, user without profile → /onboarding
-- [ ] Build /onboarding multi-step wizard (company info → robot details → shows → services needed)
-- [ ] Rebuild ClientDashboard: profile summary, robots, upcoming shows, service requests, submit new request
-- [ ] Add service request section to AdminDashboard sidebar
-- [ ] Update nav Sign In to pass returnPath so user lands back where they were
+- [x] Add robots JSON column to company_profiles (name, type, weight, dimensions, powerReq)
+- [x] Add showsAttending JSON column to company_profiles
+- [x] Add company.submitServiceRequest tRPC procedure
+- [x] Add company.getMyServiceRequests tRPC procedure
+- [x] Add admin.getServiceRequests tRPC procedure
+- [x] Fix OAuth callback to redirect to /auth-redirect instead of /
+- [x] Build /auth-redirect page: admin → /admin, user with profile → /dashboard, user without profile → /onboarding
+- [x] Build /onboarding multi-step wizard (company info → robot details → shows → services needed)
+- [x] Rebuild ClientDashboard: profile summary, robots, upcoming shows, service requests, submit new request
+- [x] Add service request section to AdminDashboard sidebar
+- [x] Update nav Sign In to pass returnPath so user lands back where they were
