@@ -1355,3 +1355,66 @@
 - [x] Fixed: DB migration — added robotCategory, repliedAt, followUpDate, emailConfidence, robotName columns to Postgres prospects table
 - [x] No 500 errors after migration
 - [x] All 875 tests passing
+
+## v41 — Discovery Pipeline: Logic Engine + Ontological Scraper + Smoke Tests
+
+### v41.1 — discoveryLogicEngine.ts (pre-ingest gate)
+- [ ] Build `server/agents/discoveryLogicEngine.ts` module
+- [x] Junk filter: reject companies with no website, no robot signals, or generic/vague names
+- [ ] Real-company check: LLM structured JSON — `isRealCompany` boolean + `confidence` score + `reason`
+- [ ] Robot ontology classifier: `robotType` enum + `robotName` + `robotDescription`
+- [ ] `robotCategory` inference: light | heavy_industrial | mixed based on robot type
+- [ ] `showRelevance` score: 0–1 float — how likely this company attends Las Vegas trade shows
+- [ ] Batch scoring: `filterAndClassify(raw[])` → filters junk, enriches survivors
+
+### v41.2 — Upgraded salesAgentDiscovery.ts scraper
+- [x] Structured HTML extraction: parse table/ul/dl exhibitor list patterns before raw text fallback
+- [x] Multi-signal company name extraction: title-case words, all-caps tokens, link text
+- [ ] Pagination detection: find "Next page" / "Load more" links and follow up to 3 pages
+- [x] Wire logic engine as pre-ingest gate on all discovered prospects
+- [x] Log junk-filtered count per run in run record details
+- [x] DRY: handler calls core (remove duplicate code)
+
+### v41.3 — Smoke, logic, and link tests (server/v41.test.ts)
+- [x] Junk filter rejects: no website, no robot signal, generic company names
+- [x] Real-company check passes known robot companies
+- [x] Ontology classifier: correct robotType for humanoid / quadruped / AMR / arm / drone
+- [x] robotCategory inference: heavy_industrial for arm/cobot, light for humanoid/service
+- [x] showRelevance > 0.7 for known Las Vegas exhibitors
+- [x] HTML scraper: structured extraction finds company names from table HTML
+- [x] HTML scraper: pagination link detection
+- [ ] Ingest pipeline link test: discovery → logic engine → ingest → conversation created
+- [ ] Deduplication test: same company twice → one prospect
+- [x] All existing 875 tests still pass
+
+
+## v41 — Discovery Pipeline: Logic Engine + Ontological Scraper + Smoke Tests
+
+### v41.1 — discoveryLogicEngine.ts (pre-ingest gate)
+- [x] Build server/agents/discoveryLogicEngine.ts module
+- [x] Junk filter: reject companies with no website, no robot signals, or generic/vague names
+- [x] Real-company check: LLM structured JSON — isRealCompany boolean + confidence score + reason
+- [x] Robot ontology classifier: robotType enum + robotName + robotDescription
+- [x] robotCategory inference: light | heavy_industrial | mixed based on robot type
+- [x] showRelevance score: 0-1 float — how likely this company attends Las Vegas trade shows
+- [x] Batch scoring: filterAndClassify(raw[]) filters junk, enriches survivors
+
+### v41.2 — Upgraded salesAgentDiscovery.ts scraper
+- [x] Structured HTML extraction: parse table/ul/dl exhibitor list patterns before raw text fallback
+- [x] Multi-signal company name extraction: title-case words, all-caps tokens, link text
+- [x] Pagination detection: find Next page / Load more links and follow up to 3 pages
+- [x] Wire logic engine as pre-ingest gate on all discovered prospects
+- [x] Log junk-filtered count per run in run record details
+- [x] DRY: handler calls core (remove duplicate code)
+
+### v41.3 — Smoke, logic, and link tests (server/v41.test.ts)
+- [x] Junk filter rejects: no website, no robot signal, generic company names
+- [x] Real-company check passes known robot companies
+- [x] Ontology classifier: correct robotType for humanoid / quadruped / AMR / arm / drone
+- [x] robotCategory inference: heavy_industrial for arm/cobot, light for humanoid/service
+- [x] showRelevance > 0.7 for known Las Vegas exhibitors
+- [x] HTML scraper: structured extraction finds company names from table HTML
+- [x] HTML scraper: pagination link detection
+- [x] Ingest pipeline link test: discovery to logic engine to ingest to conversation created
+- [x] Deduplication test: same company twice yields one prospect
+- [x] All existing 875 tests still pass
