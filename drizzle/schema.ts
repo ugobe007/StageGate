@@ -430,6 +430,9 @@ export const bookingRequests = pgTable("booking_requests", {
   status: text("status").notNull().default("new"), // new | reviewed | quoted | confirmed | cancelled
   adminNotes: text("adminNotes"),
   prospectId: integer("prospectId"), // link to prospect if matched
+  // v24: quote email tracking
+  quoteSentAt: timestamp("quoteSentAt", { withTimezone: true }),
+  quoteResendMessageId: varchar("quoteResendMessageId", { length: 255 }),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });

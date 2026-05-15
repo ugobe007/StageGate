@@ -922,3 +922,27 @@
 ### v23 Tests
 - [x] Write server/v23.test.ts: 29 new tests
 - [x] All 303 tests passing
+
+## v24 — Send Quote Email Button
+
+### v24.1 — bookings.sendQuoteEmail Server Procedure
+- [x] Add bookings.sendQuoteEmail adminProcedure (input: id)
+- [x] Reuse generateQuoteHtml logic to build HTML content
+- [x] Send email via Resend to booking.contactEmail with HTML quote as body
+- [x] Subject: "Your StageGate Quote — [quoteNumber] — [company]"
+- [x] On success: update booking status to "quoted" and set quoteSentAt timestamp
+- [x] Return { success, quoteNumber, sentTo }
+- [x] Add quoteSentAt + quoteResendMessageId columns to booking_requests (migration applied)
+- [x] Add htmlBody optional param to sendEmail helper
+
+### v24.2 — AdminBookings Send Quote Button
+- [x] Add "Send Quote" button next to "Preview" (renamed from Generate Quote) in BookingDetailPanel
+- [x] Button shows loading spinner while mutation is pending
+- [x] On success: show toast "Quote SG-XXXXX sent to [email]" and refresh booking
+- [x] On error: show toast with error message
+- [x] Button label changes to "Resend Quote" if booking.status === "quoted"
+- [x] Green border dims slightly when already quoted (visual feedback)
+
+### v24 Tests
+- [x] Write server/v24.test.ts: 30 new tests
+- [x] All 333 tests passing

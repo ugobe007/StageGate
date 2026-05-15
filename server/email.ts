@@ -16,10 +16,13 @@ export async function sendEmail({
   to,
   subject,
   body,
+  htmlBody,
 }: {
   to: string;
   subject: string;
   body: string;
+  /** Optional: provide a full HTML document to send instead of auto-converting body */
+  htmlBody?: string;
 }): Promise<{ id: string }> {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -32,7 +35,7 @@ export async function sendEmail({
       to: [to],
       subject,
       text: body,
-      html: body
+      html: htmlBody ?? body
         .split("\n\n")
         .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
         .join(""),

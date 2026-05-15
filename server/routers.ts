@@ -2044,6 +2044,166 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
 
         return { html, quoteNumber };
       }),
+
+    // v24: Send quote email to prospect and update booking status to "quoted"
+    sendQuoteEmail: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        const rows = await dbConn.select().from(bookingRequests).where(eq(bookingRequests.id, input.id));
+        const b = rows[0];
+        if (!b) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found" });
+        if (!b.contactEmail) throw new TRPCError({ code: "BAD_REQUEST", message: "Booking has no contact email" });
+
+        // Fetch bay name if warehouseBayId is set
+        let bayName = "";
+        if (b.warehouseBayId) {
+          const [bay] = await dbConn.select().from(warehouseBays).where(eq(warehouseBays.id, b.warehouseBayId));
+          bayName = bay?.name ?? `Bay #${b.warehouseBayId}`;
+        }
+
+        const services = Array.isArray(b.services) ? b.services as string[] : [];
+        const quoteDate = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        const quoteNumber = `SG-${String(b.id).padStart(5, "0")}`;
+
+        // Build line items
+        const lineItems: { description: string; amount: string }[] = [
+          ...services.map(s => ({ description: s, amount: "TBD" })),
+        ];
+        if (b.warehouseEstimate && bayName) {
+          lineItems.push({
+            description: `Warehouse Storage — ${bayName}${b.robotSqft ? ` (${b.robotSqft} sqft)` : ""}${b.storageDays ? ` × ${b.storageDays} days` : ""}`,
+            amount: `$${b.warehouseEstimate}`,
+          });
+        }
+
+        const lineItemRows = lineItems.map((li, i) => `
+          <tr style="border-bottom:1px solid #f0f0f0">
+            <td style="padding:10px 0;color:#111;font-size:14px">${i + 1}. ${li.description}</td>
+            <td style="padding:10px 0;text-align:right;font-size:14px;font-weight:600;color:${li.amount === "TBD" ? "#888" : "#111"}">${li.amount}</td>
+          </tr>`).join("");
+
+        const warehouseSection = b.warehouseEstimate ? `
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-top:20px">
+            <p style="margin:0;font-size:13px;color:#92400e;font-weight:600">⌂ Warehouse Storage Estimate</p>
+            <p style="margin:4px 0 0;font-size:13px;color:#78350f">
+              ${bayName}${b.robotSqft ? ` &bull; ${b.robotSqft} sqft` : ""}${b.storageDays ? ` &bull; ${b.storageDays} days` : ""}
+              &bull; <strong>$${b.warehouseEstimate}</strong>
+            </p>
+            <p style="margin:4px 0 0;font-size:11px;color:#a16207">Estimate based on best available bay at time of booking. Final pricing confirmed on contract.</p>
+          </div>` : "";
+
+        const htmlBody = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Quote ${quoteNumber} — StageGate</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f9f9f9; margin:0; padding:40px 20px; color:#111; }
+    .card { background:#fff; max-width:720px; margin:0 auto; border-radius:12px; box-shadow:0 2px 16px rgba(0,0,0,0.08); padding:48px; }
+    .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:36px; }
+    .logo { font-size:22px; font-weight:800; letter-spacing:-0.5px; color:#111; }
+    .logo span { color:#f59e0b; }
+    .meta { text-align:right; font-size:13px; color:#666; }
+    .meta strong { display:block; font-size:18px; color:#111; font-weight:700; margin-bottom:4px; }
+    .section-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#999; margin-bottom:8px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:32px; }
+    .field { font-size:13px; }
+    .field .label { color:#888; margin-bottom:2px; }
+    .field .value { color:#111; font-weight:500; }
+    table { width:100%; border-collapse:collapse; }
+    .total-row td { padding:12px 0; font-size:15px; font-weight:700; border-top:2px solid #111; }
+    .footer { margin-top:40px; padding-top:24px; border-top:1px solid #eee; font-size:12px; color:#999; text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div>
+        <div class="logo">Stage<span>Gate</span></div>
+        <div style="font-size:12px;color:#888;margin-top:4px">Robotics Activation Infrastructure &bull; Las Vegas, NV</div>
+      </div>
+      <div class="meta">
+        <strong>QUOTE ${quoteNumber}</strong>
+        <div>Date: ${quoteDate}</div>
+        <div>Valid for 30 days</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="section-title">Bill To</div>
+        <div class="field"><div class="value" style="font-size:15px;font-weight:700">${b.company}</div></div>
+        <div class="field" style="margin-top:6px"><div class="value">${b.contactName}</div></div>
+        <div class="field"><div class="value" style="color:#666">${b.contactEmail}</div></div>
+        ${b.contactPhone ? `<div class="field"><div class="value" style="color:#666">${b.contactPhone}</div></div>` : ""}
+      </div>
+      <div>
+        <div class="section-title">Event Details</div>
+        <div class="field"><div class="label">Show</div><div class="value">${b.showName ?? "TBD"}</div></div>
+        <div class="field" style="margin-top:6px"><div class="label">Show Date</div><div class="value">${b.showDate ?? "TBD"}</div></div>
+        <div class="field" style="margin-top:6px"><div class="label">Booth</div><div class="value">${b.boothNumber ?? "TBD"}</div></div>
+        <div class="field" style="margin-top:6px"><div class="label">Robot</div><div class="value">${b.robotName ?? b.robotType ?? "TBD"}</div></div>
+      </div>
+    </div>
+
+    <div class="section-title">Services &amp; Pricing</div>
+    <table>
+      <tbody>
+        ${lineItemRows || "<tr><td style='padding:10px 0;color:#888;font-size:14px'>No services selected</td></tr>"}
+      </tbody>
+      ${b.warehouseEstimate ? `<tfoot><tr class="total-row"><td>Warehouse Storage Subtotal</td><td style="text-align:right">$${b.warehouseEstimate}</td></tr></tfoot>` : ""}
+    </table>
+
+    ${warehouseSection}
+
+    <div class="footer">
+      StageGate &bull; onstage.bot &bull; info@onstage.bot<br>
+      This quote is an estimate only. Final pricing is confirmed upon contract execution.
+    </div>
+  </div>
+</body>
+</html>`;
+
+        // Plain-text fallback
+        const textBody = [
+          `Quote ${quoteNumber} — StageGate`,
+          `Date: ${quoteDate} | Valid for 30 days`,
+          ``,
+          `Bill To: ${b.company} — ${b.contactName} <${b.contactEmail}>`,
+          `Show: ${b.showName ?? "TBD"} on ${b.showDate ?? "TBD"}`,
+          ``,
+          `Services:`,
+          ...services.map((s, i) => `  ${i + 1}. ${s} — TBD`),
+          ...(b.warehouseEstimate ? [`  Warehouse Storage (${bayName}) — $${b.warehouseEstimate}`] : []),
+          ``,
+          `Questions? Reply to this email or visit onstage.bot`,
+        ].join("\n");
+
+        // Send via Resend
+        const sendResult = await emailHelpers.sendEmail({
+          to: b.contactEmail,
+          subject: `Your StageGate Quote ${quoteNumber} — ${b.company}`,
+          body: textBody,
+          htmlBody,
+        });
+
+        // Update booking status to "quoted" and record timestamp
+        await dbConn
+          .update(bookingRequests)
+          .set({
+            status: "quoted",
+            quoteSentAt: new Date(),
+            quoteResendMessageId: sendResult.id,
+            updatedAt: new Date(),
+          })
+          .where(eq(bookingRequests.id, input.id));
+
+        return { success: true, quoteNumber, sentTo: b.contactEmail, resendId: sendResult.id };
+      }),
   }),
   // ─── Scheduling ────────────────────────────────────────────────────────────
   scheduling: router({

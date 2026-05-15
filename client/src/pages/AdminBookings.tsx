@@ -7,7 +7,7 @@ import {
   ClipboardList, ChevronDown, ChevronUp, ExternalLink,
   Mail, Phone, Globe, Bot, Calendar, Package,
   CheckCircle, XCircle, Clock, Eye, FileText, AlertCircle,
-  RefreshCw, StickyNote,
+  RefreshCw, StickyNote, Send,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -117,6 +117,14 @@ function BookingDetailPanel({
       setQuoteLoading(false);
     }
   };
+
+  const sendQuote = trpc.bookings.sendQuoteEmail.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Quote ${data.quoteNumber} sent to ${data.sentTo}`, { duration: 5000 });
+      onConverted?.(-1); // trigger parent refresh without navigating
+    },
+    onError: (e) => toast.error(e.message ?? "Failed to send quote"),
+  });
 
   const convertToOrder = trpc.bookings.convertToOrder.useMutation({
     onSuccess: (data) => {
@@ -284,11 +292,13 @@ function BookingDetailPanel({
           </section>
         </div>
 
-        {/* v23: Generate Quote button */}
+        {/* v23/v24: Generate Quote + Send Quote buttons */}
         <div style={{ padding: "0.75rem 1.5rem", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: "0.5rem" }}>
+          {/* Generate Quote — opens printable HTML in new tab */}
           <button
             onClick={handleGenerateQuote}
             disabled={quoteLoading}
+            title="Open printable quote in new tab"
             style={{
               flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
               padding: "0.5rem 0.75rem", borderRadius: "0.375rem",
@@ -298,7 +308,30 @@ function BookingDetailPanel({
               opacity: quoteLoading ? 0.7 : 1,
             }}
           >
-            {quoteLoading ? <><RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> Generating…</> : <><FileText size={13} /> Generate Quote</>}
+            {quoteLoading ? <><RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> Generating…</> : <><FileText size={13} /> Preview</>}
+          </button>
+
+          {/* Send Quote — emails HTML quote to prospect via Resend */}
+          <button
+            onClick={() => sendQuote.mutate({ id: booking.id })}
+            disabled={sendQuote.isPending}
+            title={`Email quote to ${booking.contactEmail}`}
+            style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
+              padding: "0.5rem 0.75rem", borderRadius: "0.375rem",
+              background: booking.status === "quoted"
+                ? "rgba(16,185,129,0.10)" : "rgba(16,185,129,0.15)",
+              border: `1px solid ${booking.status === "quoted" ? "rgba(16,185,129,0.30)" : "rgba(16,185,129,0.50)"}`,
+              color: "#10b981", fontSize: "0.8125rem", fontWeight: 600,
+              cursor: sendQuote.isPending ? "not-allowed" : "pointer",
+              opacity: sendQuote.isPending ? 0.7 : 1,
+            }}
+          >
+            {sendQuote.isPending
+              ? <><RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> Sending…</>
+              : booking.status === "quoted"
+                ? <><Send size={13} /> Resend Quote</>
+                : <><Send size={13} /> Send Quote</>}
           </button>
         </div>
 
