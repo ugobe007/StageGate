@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Navbar from "@/components/Navbar";
+import EditProfileSheet from "@/components/EditProfileSheet";
 import {
   Package, Calendar, CheckCircle, Clock, AlertCircle, XCircle,
   ArrowRight, Loader2, User, Building2, Globe, Phone, Mail,
@@ -42,6 +43,7 @@ export default function ClientDashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
   const [showRequestForm, setShowRequestForm] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [requestType, setRequestType] = useState("");
   const [showName, setShowName] = useState("");
   const [showDate, setShowDate] = useState("");
@@ -132,11 +134,14 @@ export default function ClientDashboard() {
               </h1>
               <p className="text-muted-foreground">{profile.companyName} · StageGate Client Portal</p>
             </div>
-            <Link href="/onboarding">
-              <Button variant="outline" size="sm" className="gap-2 text-xs">
-                <User size={12} /> Edit Profile
-              </Button>
-            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-xs"
+              onClick={() => setEditProfileOpen(true)}
+            >
+              <User size={12} /> Edit Profile
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -388,6 +393,12 @@ export default function ClientDashboard() {
           </div>
         </div>
       </div>
+      {/* Edit Profile Sheet */}
+      <EditProfileSheet
+        open={editProfileOpen}
+        onClose={() => setEditProfileOpen(false)}
+        profile={profile}
+      />
     </div>
   );
 }

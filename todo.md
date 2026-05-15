@@ -1490,3 +1490,10 @@
 - [x] Rebuild ClientDashboard: profile summary, robots, upcoming shows, service requests, submit new request
 - [x] Add service request section to AdminDashboard sidebar
 - [x] Update nav Sign In to pass returnPath so user lands back where they were
+
+## v50 — Edit Profile Feature
+
+- [x] Build EditProfileSheet component (slide-out sheet with tabs: Company, Robots, Shows, Services)
+- [x] Wire Edit Profile button into ClientDashboard profile card
+- [x] Ensure upsertProfile tRPC procedure covers robots, showsAttending, servicesNeeded fields
+- [x] Optimistic update on save so dashboard reflects changes immediately
