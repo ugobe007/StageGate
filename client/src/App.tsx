@@ -39,6 +39,7 @@ import VideoIntake from "./pages/VideoIntake";
 import Schedule from "./pages/Schedule";
 import TourBooking from "./pages/TourBooking";
 import DbStatusBanner from "@/components/DbStatusBanner";
+import About from "./pages/About";
 
 function Router() {
   return (
@@ -50,6 +51,7 @@ function Router() {
       <Route path="/stagepro" component={StageProPage} />
       <Route path="/register" component={Register} />
       <Route path="/get-started" component={GetStarted} />
+      <Route path="/about" component={About} />
       <Route path="/shows" component={ShowsCalendar} />
       <Route path="/shows/:id" component={ShowDetail} />
 

@@ -1469,3 +1469,10 @@
 - [x] Add tRPC procedure: prospects.triggerPartnerEnrichment (batch research for vendorType != robot_oem)
 - [x] Admin UI button: Enrich Partners on AdminProspects filter bar
 - [x] Write v43 tests: partner template selection, show URL config, enrichment trigger
+
+## v48 — Nav, Contact Us, About Us
+- [x] Remove Dashboard button from top nav bar in Home.tsx
+- [x] Add Contact Us section at bottom of Home page (email, form link, or mailto CTA)
+- [x] Build /about page with StageGate backstory and LV Robotics connection
+- [x] Add About Us link to Home page nav bar
+- [x] Wire /about route in App.tsx

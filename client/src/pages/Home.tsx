@@ -96,22 +96,12 @@ export default function Home() {
             <Link href="/shows" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Shows</Link>
             <Link href="/services" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Services</Link>
             <Link href="/xbot" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>XBOT</Link>
-            <a href="#how-it-works" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>How It Works</a>
+            <Link href="/about" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>About</Link>
+            <a href="#contact" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Contact</a>
           </div>
 
           {/* Auth CTA — always visible */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            {isAuthenticated && (
-              <Link href="/admin" style={{
-                fontSize: "0.8125rem",
-                color: "#00ff87",
-                fontWeight: 600,
-                textDecoration: "none",
-                padding: "0.45rem 0.9rem",
-                border: "1px solid rgba(0,255,135,0.30)",
-                borderRadius: "6px",
-              }}>Dashboard</Link>
-            )}
             <a href={getLoginUrl()} style={{
               fontSize: "0.8125rem",
               color: "rgba(255,255,255,0.85)",
@@ -524,6 +514,53 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── CONTACT US ───────────────────────────────────────────────────────── */}
+      <section id="contact" style={{ padding: "8rem 0", borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,149,0,0.03)" }}>
+        <div className="container">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6rem", alignItems: "center" }}>
+            <div>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,149,0,0.70)", marginBottom: "1.5rem" }}>
+                Get in touch
+              </p>
+              <h2 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.04em", marginBottom: "1.5rem" }}>
+                Let's talk about<br />
+                <span style={{ color: "#ff9500" }}>your robot.</span>
+              </h2>
+              <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.65)", maxWidth: "44ch", lineHeight: 1.7, marginBottom: "2.5rem" }}>
+                Whether you're planning your first Las Vegas show or managing a fleet across multiple events, we'd love to hear from you. Reach out and we'll get back to you within one business day.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <a href="mailto:hello@onstage.bot" style={{ display: "inline-flex", alignItems: "center", gap: "0.75rem", fontSize: "1.125rem", fontWeight: 700, color: "#ff9500", textDecoration: "none" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)" }}>Email</span>
+                  hello@onstage.bot
+                </a>
+                <a href="https://calendar.google.com/calendar/embed?src=bc58ef12c74e2216111ee28feb95e5edf6381e54aa8699acdab87cd370177797%40group.calendar.google.com&ctz=America%2FLos_Angeles" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "0.75rem", fontSize: "1.125rem", fontWeight: 700, color: "rgba(255,255,255,0.70)", textDecoration: "none" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)" }}>Schedule</span>
+                  Book a 30-min call <ArrowUpRight size={16} />
+                </a>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              {[
+                { label: "For Robot Companies", desc: "Warehousing, staging, activation, and on-floor support for your Las Vegas show.", href: "/register" },
+                { label: "For Exhibit Houses & Partners", desc: "We're the robotics technical operations layer that plugs into your existing workflow.", href: "/register" },
+                { label: "For Press & Media", desc: "Media inquiries, photography access, and story pitches — reach us directly.", href: "mailto:press@onstage.bot" },
+              ].map((item, i) => (
+                <a key={i} href={item.href} style={{ display: "block", padding: "1.5rem", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "8px", textDecoration: "none", transition: "border-color 0.15s, background 0.15s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,149,0,0.30)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,149,0,0.04)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                >
+                  <div style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#fff", marginBottom: "0.4rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    {item.label} <ArrowUpRight size={14} style={{ color: "rgba(255,149,0,0.60)" }} />
+                  </div>
+                  <div style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.45)", lineHeight: 1.6 }}>{item.desc}</div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── FOOTER ───────────────────────────────────────────────────────────── */}
       <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "3rem 0" }}>
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1.5rem" }}>
@@ -537,12 +574,14 @@ export default function Home() {
           </div>
           <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
             {[
-              { label: "Services", href: "/services" },
-              { label: "Shows", href: "/shows" },
-              { label: "XBOT", href: "/xbot" },
-              { label: "StageHand™", href: "/stagehand" },
-              { label: "StagePro™", href: "/stagepro" },
-              { label: "Register", href: "/register" },
+            { label: "Services", href: "/services" },
+            { label: "Shows", href: "/shows" },
+            { label: "XBOT", href: "/xbot" },
+            { label: "About", href: "/about" },
+            { label: "StageHand™", href: "/stagehand" },
+            { label: "StagePro™", href: "/stagepro" },
+            { label: "Register", href: "/register" },
+            { label: "Contact", href: "#contact" },
             ].map(link => (
               <Link key={link.href} href={link.href}
                 style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.28)", transition: "color 0.15s" }}
