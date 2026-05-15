@@ -754,3 +754,73 @@
 - [x] Show count of hot prospects in the pill label (e.g. "🔥 Hot (4)")
 - [x] Turning on hotFilter clears statusFilter (and vice versa) to avoid conflicting filters
 - [x] Vitest: test that listWithEngagement returns correct scores (already covered in v15; add a UI filter logic unit test)
+
+## Autonomous Agent Platform
+
+### P1 — Email Infrastructure
+- [x] Provide exact Resend inbound MX + TXT records for onstage.bot (GoDaddy)
+- [x] Add Resend domain onstage.bot for sending (SPF, DKIM, DMARC records)
+- [x] Create POST /api/webhooks/resend-inbound endpoint to receive inbound emails
+- [x] Parse inbound email: extract sender, subject, body, thread references (In-Reply-To / References headers)
+- [x] Store inbound emails in email_threads table (threadId, prospectId, direction, subject, body, fromAddress, toAddress, receivedAt)
+- [x] Create Tommy admin account (placeholder with email tom@starsupportinc.com, role=admin)
+- [x] Add RESEND_INBOUND_SECRET to secrets for webhook validation
+- [x] Verify hello@onstage.bot sending identity in Resend and update outreach send-from address
+
+### P2 — Sales Agent: Nightly Discovery
+- [ ] Read periodic-updates.md and set up heartbeat scheduler for nightly discovery job
+- [ ] Build discovery agent: search web for robot companies attending trade shows, press releases, industry sites
+- [ ] Discover new shows/events not yet in DB and add them
+- [ ] Deduplicate against existing prospects (by company name + domain)
+- [ ] Auto-create new prospect records with status=new
+- [ ] Build per-company strategy: AI generates outreach angle based on company profile, robot type, show context
+- [ ] Queue first outreach email draft (do not send yet — queue for review or auto-send after 1hr delay)
+- [ ] Auto-send first outreach from hello@onstage.bot via Resend, store resendMessageId
+
+### P3 — Conversational Reply Engine
+- [ ] On inbound email webhook: match to prospect by sender email address
+- [ ] Load full thread history (all prior emails in thread) as context
+- [ ] AI generates natural conversational reply (no scripts, no templates — contextual)
+- [ ] Reply sent from hello@onstage.bot, BCC to admin (Bob) and Tommy
+- [ ] Log reply to email_threads table
+- [ ] Update prospect activity timeline with email_replied event
+- [ ] Track conversation state: discovery → interested → questions → ready_to_schedule
+
+### P4 — Scheduling Page
+- [ ] Build /schedule page on onstage.bot: robot team availability calendar
+- [ ] Admin panel: Bob and Tommy set available time slots per week
+- [ ] Prospect picks slot → booking created in DB → calendar invite sent to Bob, Tommy, and prospect
+- [ ] AI detects scheduling intent in conversation and sends /schedule link at right moment
+- [ ] Confirmation email sent to prospect from hello@onstage.bot
+
+### P5 — Meeting Notes + Handoff
+- [ ] Post-call: admin enters meeting notes in prospect record
+- [ ] AI summarizes notes, extracts next steps, updates prospect status to committed
+- [ ] Logistics Agent triggered: creates logistics_workflow record linked to prospect + order
+
+### P6 — Logistics Agent Foundation
+- [ ] Build vendor scraper: search for freight forwarders, AV companies, rigging companies, warehouse operators in Las Vegas
+- [ ] Populate vendors table with scraped data (name, type, contact, website, notes)
+- [ ] Build workflow builder: for each committed order, generate logistics_workflow with ordered checkpoints
+- [ ] Checkpoint types: shipping_out, customs, receiving, warehousing, staging, activation, booth_delivery, show_floor, return_pickup
+
+### P7 — Checkpoint Engine
+- [ ] Shipping tracker: poll carrier APIs or ask robot company for tracking number, monitor status
+- [ ] Receiving checklist: customs cleared?, at airport?, in transit?, forklift needed?, warehouse space available?, staff assigned?
+- [ ] Warehouse space matcher: calculate space needed from robot dimensions, match to available bays, price accordingly
+- [ ] Staging + activation protocol: unpacking checklist, power-on test, calibration check, functionality test
+- [ ] Daily checkpoint poller: if checkpoint due date passed and not confirmed, send nudge to responsible party
+- [ ] Checkpoint status UI in AdminOrderDetail
+
+### P8 — Problem Escalation
+- [ ] Robot issue detection: during staging, log problem type, severity, description
+- [ ] Escalation to robot company: AI drafts problem report email with photos/notes
+- [ ] Options presented: video call support or send tech on-site
+- [ ] Resolution tracking: log resolution steps, confirm robot is operational before booth delivery
+
+### P9 — Show Floor + Return
+- [ ] Booth delivery tracking: confirm robot arrived at booth, get confirmation from robot company
+- [ ] Show-floor check-ins: AI sends daily check-in email to robot company during show
+- [ ] Post-show: AI prompts robot company to confirm pickup readiness
+- [ ] Return logistics workflow: same checkpoint engine as inbound
+- [ ] Full lifecycle marked complete in order record

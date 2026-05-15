@@ -10,7 +10,7 @@ import * as db from "./db";
 import * as workflows from "./workflows";
 import * as emailHelpers from "./email";
 import { eq, desc, count, sql } from "drizzle-orm";
-import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems } from "../drizzle/schema";
+import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems, schedulingSlots, salesAgentConversations, salesAgentRuns, vendors, emailThreads } from "../drizzle/schema";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 
@@ -1890,6 +1890,214 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
             updatedAt: new Date(),
           })
           .where(eq(bookingRequests.id, input.id));
+        return { success: true };
+      }),
+  }),
+  // ─── Scheduling ────────────────────────────────────────────────────────────
+  scheduling: router({
+    // Public: get available slots for a date range
+    getAvailableSlots: publicProcedure
+      .input(z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+      }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        const { gte, lte, and: drizzleAnd, eq: drizzleEq } = await import("drizzle-orm");
+        return dbConn
+          .select()
+          .from(schedulingSlots)
+          .where(
+            drizzleAnd(
+              gte(schedulingSlots.slotStart, input.startDate),
+              lte(schedulingSlots.slotStart, input.endDate),
+              drizzleEq(schedulingSlots.isBooked, false)
+            )
+          )
+          .orderBy(schedulingSlots.slotStart);
+      }),
+
+    // Public: book a slot
+    bookSlot: publicProcedure
+      .input(z.object({
+        slotId: z.number(),
+        prospectId: z.number().optional(),
+        bookedByName: z.string().min(1),
+        bookedByEmail: z.string().email(),
+        company: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const { eq: drizzleEq } = await import("drizzle-orm");
+        const slots = await dbConn
+          .select()
+          .from(schedulingSlots)
+          .where(drizzleEq(schedulingSlots.id, input.slotId))
+          .limit(1);
+        if (!slots[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Slot not found" });
+        if (slots[0].isBooked) throw new TRPCError({ code: "CONFLICT", message: "Slot already booked" });
+        await dbConn
+          .update(schedulingSlots)
+          .set({
+            isBooked: true,
+            bookedByProspectId: input.prospectId ?? null,
+            bookedByName: input.bookedByName,
+            bookedByEmail: input.bookedByEmail,
+            updatedAt: new Date(),
+          })
+          .where(drizzleEq(schedulingSlots.id, input.slotId));
+        // Notify robot team
+        await notifyOwner({
+          title: `📅 New call booked — ${input.bookedByName} (${input.company ?? "unknown company"})`,
+          content: `${input.bookedByName} from ${input.company ?? "unknown"} booked a call for ${slots[0].slotStart.toLocaleString()}.\nContact: ${input.bookedByEmail}`,
+        });
+        return { success: true, slot: slots[0] };
+      }),
+
+    // Admin: add availability slots
+    addSlots: adminProcedure
+      .input(z.object({
+        slots: z.array(z.object({
+          hostName: z.string(),
+          hostEmail: z.string().email(),
+          slotStart: z.date(),
+          slotEnd: z.date(),
+        })),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        await dbConn.insert(schedulingSlots).values(input.slots);
+        return { success: true, count: input.slots.length };
+      }),
+
+    // Admin: get all slots
+    getAllSlots: adminProcedure
+      .query(async () => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        return dbConn
+          .select()
+          .from(schedulingSlots)
+          .orderBy(schedulingSlots.slotStart);
+      }),
+
+    // Admin: update meeting notes on a booked slot
+    updateMeetingNotes: adminProcedure
+      .input(z.object({
+        slotId: z.number(),
+        meetingNotes: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const { eq: drizzleEq } = await import("drizzle-orm");
+        await dbConn
+          .update(schedulingSlots)
+          .set({ meetingNotes: input.meetingNotes, updatedAt: new Date() })
+          .where(drizzleEq(schedulingSlots.id, input.slotId));
+        return { success: true };
+      }),
+  }),
+
+  // ─── Sales Agent ───────────────────────────────────────────────────────────
+  salesAgent: router({
+    // Admin: get recent agent runs
+    getRuns: adminProcedure
+      .query(async () => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        const { desc: drizzleDesc } = await import("drizzle-orm");
+        return dbConn
+          .select()
+          .from(salesAgentRuns)
+          .orderBy(drizzleDesc(salesAgentRuns.startedAt))
+          .limit(50);
+      }),
+
+    // Admin: get conversations
+    getConversations: adminProcedure
+      .query(async () => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        const { desc: drizzleDesc } = await import("drizzle-orm");
+        return dbConn
+          .select({
+            conv: salesAgentConversations,
+            prospect: prospectsTable,
+          })
+          .from(salesAgentConversations)
+          .innerJoin(prospectsTable, eq(salesAgentConversations.prospectId, prospectsTable.id))
+          .orderBy(drizzleDesc(salesAgentConversations.lastActivityAt))
+          .limit(100);
+      }),
+
+    // Admin: get email thread for a prospect
+    getEmailThread: adminProcedure
+      .input(z.object({ prospectId: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        const { desc: drizzleDesc } = await import("drizzle-orm");
+        return dbConn
+          .select()
+          .from(emailThreads)
+          .where(eq(emailThreads.prospectId, input.prospectId))
+          .orderBy(drizzleDesc(emailThreads.receivedAt))
+          .limit(50);
+      }),
+  }),
+
+  // ─── Vendors ───────────────────────────────────────────────────────────────
+  vendors: router({
+    getAll: adminProcedure
+      .query(async () => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        return dbConn.select().from(vendors).orderBy(vendors.name);
+      }),
+
+    create: adminProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        type: z.enum(["freight", "customs_broker", "av", "rigging", "warehouse", "transport", "tech_support", "other"]),
+        website: z.string().optional(),
+        contactName: z.string().optional(),
+        contactEmail: z.string().email().optional(),
+        contactPhone: z.string().optional(),
+        address: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        country: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const [v] = await dbConn.insert(vendors).values(input).returning();
+        return v;
+      }),
+
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        type: z.string().optional(),
+        website: z.string().optional(),
+        contactName: z.string().optional(),
+        contactEmail: z.string().optional(),
+        contactPhone: z.string().optional(),
+        notes: z.string().optional(),
+        rating: z.number().min(1).max(5).optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const { id, ...rest } = input;
+        await dbConn.update(vendors).set({ ...rest, updatedAt: new Date() }).where(eq(vendors.id, id));
         return { success: true };
       }),
   }),

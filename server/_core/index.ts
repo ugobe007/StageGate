@@ -10,6 +10,12 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { followupDigestHandler, nightlyResearchHandler } from "../scheduledHandlers";
 import { resendWebhookHandler } from "../webhooks/resend";
+import { resendInboundHandler } from "../webhooks/resend-inbound";
+import {
+  salesAgentIngestHandler,
+  salesAgentOutreachHandler,
+  salesAgentFollowupHandler,
+} from "../agents/salesAgent";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -50,8 +56,16 @@ async function startServer() {
   app.post("/api/scheduled/followup-digest", followupDigestHandler);
   app.post("/api/scheduled/nightly-research", nightlyResearchHandler);
 
-  // Resend email tracking webhook
+  // Sales Agent handlers
+  app.post("/api/scheduled/sales-agent-ingest", salesAgentIngestHandler);
+  app.post("/api/scheduled/sales-agent-outreach", salesAgentOutreachHandler);
+  app.post("/api/scheduled/sales-agent-followup", salesAgentFollowupHandler);
+
+  // Resend email tracking webhook (outbound events: opened, clicked)
   app.post("/api/webhooks/resend", resendWebhookHandler);
+
+  // Resend inbound email webhook (replies from prospects)
+  app.post("/api/webhooks/resend-inbound", resendInboundHandler);
 
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
