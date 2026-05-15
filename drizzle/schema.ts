@@ -433,6 +433,8 @@ export const bookingRequests = pgTable("booking_requests", {
   // v24: quote email tracking
   quoteSentAt: timestamp("quoteSentAt", { withTimezone: true }),
   quoteResendMessageId: varchar("quoteResendMessageId", { length: 255 }),
+  // v25: follow-up tracking
+  quoteFollowUpSentAt: timestamp("quoteFollowUpSentAt", { withTimezone: true }),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -626,3 +628,11 @@ export const warehouseBayEvents = pgTable("warehouse_bay_events", {
 });
 export type WarehouseBayEvent = typeof warehouseBayEvents.$inferSelect;
 export type InsertWarehouseBayEvent = typeof warehouseBayEvents.$inferInsert;
+
+// ─── System Config (project-level key/value store for heartbeat task UIDs etc.) ─
+export const systemConfig = pgTable("system_config", {
+  key: varchar("key", { length: 128 }).primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+});
+export type SystemConfig = typeof systemConfig.$inferSelect;

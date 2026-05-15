@@ -19,6 +19,7 @@ import {
 import { salesAgentDiscoveryHandler } from "../agents/salesAgentDiscovery";
 import { vendorScraperHandler } from "../agents/vendorScraper";
 import { runCheckpointPoller } from "../agents/checkpointPoller";
+import { quoteFollowupHandler } from "../scheduled/quoteFollowup";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -65,6 +66,9 @@ async function startServer() {
   app.post("/api/scheduled/sales-agent-outreach", salesAgentOutreachHandler);
   app.post("/api/scheduled/sales-agent-followup", salesAgentFollowupHandler);
   app.post("/api/scheduled/vendor-scraper", vendorScraperHandler);
+
+  // Quote follow-up nudge — daily 09:00 UTC
+  app.post("/api/scheduled/quote-followup", quoteFollowupHandler);
 
   // Logistics checkpoint poller — daily
   app.post("/api/scheduled/logistics-checkpoint-poll", async (req, res) => {

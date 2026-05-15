@@ -946,3 +946,29 @@
 ### v24 Tests
 - [x] Write server/v24.test.ts: 30 new tests
 - [x] All 333 tests passing
+
+## v25 — Quote Follow-Up Heartbeat
+
+### v25.1 — Schema & Migration
+- [x] Add quoteFollowUpSentAt TIMESTAMPTZ column to booking_requests (migration applied)
+- [x] Add system_config table: key/value store for project-level heartbeat task UIDs
+- [x] Add systemConfig schema to drizzle/schema.ts
+
+### v25.2 — Express Handler (/api/scheduled/quote-followup)
+- [x] Implement POST /api/scheduled/quote-followup handler in server/scheduled/quoteFollowup.ts
+- [x] Authenticate via sdk.authenticateRequest, verify user.isCron === true
+- [x] Query booking_requests WHERE status = 'quoted' AND quoteSentAt < NOW() - 5 days AND quoteFollowUpSentAt IS NULL
+- [x] For each: send follow-up email via Resend with rich HTML + plain text fallback
+- [x] Update quoteFollowUpSentAt = NOW() on each sent booking
+- [x] Return { ok: true, processed: N, skipped: M, total: N }
+- [x] Mount handler in server/_core/index.ts before Vite fallthrough
+
+### v25.3 — Admin tRPC Procedures (system router)
+- [x] system.createQuoteFollowUpJob: adminProcedure — creates daily 09:00 UTC cron, persists taskUid to system_config (idempotent)
+- [x] system.getQuoteFollowUpJobStatus: adminProcedure — returns job info from heartbeat SDK
+- [x] system.pauseQuoteFollowUpJob: adminProcedure — calls updateHeartbeatJob with enable=false
+- [x] system.resumeQuoteFollowUpJob: adminProcedure — calls updateHeartbeatJob with enable=true
+
+### v25.4 — Tests
+- [x] Write server/v25.test.ts: 38 new tests (5-day filter, idempotency, email content, auth guard, job management)
+- [x] All 371 tests passing
