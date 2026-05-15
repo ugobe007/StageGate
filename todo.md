@@ -874,3 +874,24 @@
 - [x] On warehouse_return checkpoint completion: set warehouseBays.isAvailable = true
 - [x] logistics.assignBay procedure: assign/reassign bay to any workflow
 - [x] Vitest: test bay flip on warehouse_in and warehouse_return (244 tests total)
+
+## v22 — AdminLogistics Bay Column, Warehouse Occupancy Board, Live Estimate Preview
+
+### v22.1 — AdminLogistics Assigned Bay Column
+- [x] Add "Assigned Bay" column to AdminLogistics workflow table
+- [x] Inline bay selector dropdown per workflow row (calls logistics.assignBay on change)
+- [x] Show bay name + availability status badge in the column
+- [x] Fetch warehouse.listBays in AdminLogistics for the dropdown options
+
+### v22.2 — AdminVendors Warehouse Occupancy Board
+- [x] Fetch active logistics_workflows with warehouseBayId in AdminVendors
+- [x] Build occupancy board: each bay card shows robot company + show name if occupied
+- [x] Available bays show green "Available" badge; occupied show amber "Occupied" + workflow info
+- [x] Add "Release Bay" button on occupied bays (calls logistics.assignBay with null)
+
+### v22.3 — GetStarted Live Estimate Preview
+- [x] Add warehouse.matchSpace query in GetStarted (debounced, triggered on sqft/days change)
+- [x] Show "Space Estimate" preview card below the sqft/days fields while user is on step 2
+- [x] Card shows: matched bay name, sqft, rate, total estimate, or "No bay available" message
+- [x] Card updates live as user changes sqft or days values
+- [x] Vitest: 30 new tests (274 total passing)

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   Truck, CheckCircle2, Clock, AlertTriangle, AlertCircle,
   Loader2, ChevronDown, ChevronRight, ExternalLink, Zap,
-  Package, Calendar, BarChart3, RefreshCw,
+  Package, Calendar, BarChart3, RefreshCw, Warehouse,
 } from "lucide-react";
 
 const CHECKPOINT_STATUS_COLORS: Record<string, string> = {
@@ -30,15 +30,33 @@ export default function AdminLogistics() {
   const { user, loading: authLoading } = useAuth();
   const [expandedWorkflow, setExpandedWorkflow] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "overdue">("active");
+  const [assigningBay, setAssigningBay] = useState<number | null>(null); // workflowId being updated
+
+  const utils = trpc.useUtils();
 
   const { data: workflowsData, isLoading, refetch } = trpc.logistics.getAllWorkflows.useQuery(undefined, {
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
 
+  // Fetch all bays for the dropdown
+  const { data: baysData = [] } = trpc.warehouse.listBays.useQuery(undefined, {
+    staleTime: 60_000,
+  });
+
   const updateCheckpoint = trpc.logistics.updateCheckpoint.useMutation({
     onSuccess: () => { refetch(); toast.success("Checkpoint updated"); },
     onError: (e) => toast.error(e.message),
+  });
+
+  const assignBay = trpc.logistics.assignBay.useMutation({
+    onSuccess: () => {
+      refetch();
+      utils.warehouse.listBays.invalidate();
+      setAssigningBay(null);
+      toast.success("Bay assignment updated");
+    },
+    onError: (e) => { toast.error(e.message); setAssigningBay(null); },
   });
 
   if (authLoading) {
@@ -65,7 +83,6 @@ export default function AdminLogistics() {
   const now = new Date();
   const workflows = workflowsData ?? [];
 
-  // Compute overdue flag per workflow
   const enriched = workflows.map(w => {
     const overdueCount = w.checkpoints.filter(cp =>
       ["pending", "in_progress"].includes(cp.status) && cp.dueAt && new Date(cp.dueAt) < now
@@ -84,6 +101,9 @@ export default function AdminLogistics() {
   const totalActive = enriched.filter(w => w.workflow.status === "active").length;
   const totalOverdue = enriched.filter(w => w.overdueCount > 0).length;
   const totalEscalated = enriched.reduce((sum, w) => sum + w.escalatedCount, 0);
+
+  // Build a bay map for quick lookup
+  const bayMap = new Map(baysData.map(b => [b.id, b]));
 
   return (
     <DashboardLayout>
@@ -154,6 +174,8 @@ export default function AdminLogistics() {
               const progress = w.checkpoints.length > 0
                 ? Math.round((w.completedCount / w.checkpoints.length) * 100)
                 : 0;
+              const assignedBay = w.workflow.warehouseBayId ? bayMap.get(w.workflow.warehouseBayId) : null;
+              const isAssigning = assigningBay === w.workflow.id;
 
               return (
                 <div key={w.workflow.id} className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
@@ -184,7 +206,7 @@ export default function AdminLogistics() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 mt-1 text-[11px] text-zinc-500">
+                      <div className="flex items-center gap-3 mt-1 text-[11px] text-zinc-500 flex-wrap">
                         {w.workflow.showName && <span className="flex items-center gap-1"><Calendar size={10} /> {w.workflow.showName}</span>}
                         <span className="flex items-center gap-1"><CheckCircle2 size={10} /> {w.completedCount}/{w.checkpoints.length} checkpoints</span>
                         {w.workflow.orderId && (
@@ -193,6 +215,21 @@ export default function AdminLogistics() {
                               <ExternalLink size={10} /> Order #{w.workflow.orderId}
                             </span>
                           </Link>
+                        )}
+                        {/* ── Assigned Bay badge ── */}
+                        {assignedBay ? (
+                          <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[10px] font-medium ${
+                            assignedBay.isAvailable
+                              ? "bg-emerald-900/40 text-emerald-300 border-emerald-700/40"
+                              : "bg-amber-900/40 text-amber-300 border-amber-700/40"
+                          }`}>
+                            <Warehouse size={9} />
+                            {assignedBay.name} · {assignedBay.isAvailable ? "Available" : "Occupied"}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-zinc-600 text-[10px]">
+                            <Warehouse size={9} /> No bay assigned
+                          </span>
                         )}
                       </div>
                     </div>
@@ -212,51 +249,83 @@ export default function AdminLogistics() {
                     {isExpanded ? <ChevronDown size={14} className="text-zinc-500 shrink-0" /> : <ChevronRight size={14} className="text-zinc-500 shrink-0" />}
                   </button>
 
-                  {/* Expanded checkpoints */}
+                  {/* Expanded checkpoints + bay assignment */}
                   {isExpanded && (
-                    <div className="border-t border-zinc-800 p-4 space-y-2">
-                      {w.checkpoints.map(cp => {
-                        const isOverdue = ["pending", "in_progress"].includes(cp.status) && cp.dueAt && new Date(cp.dueAt) < now;
-                        return (
-                          <div
-                            key={cp.id}
-                            className={`flex items-start gap-3 p-3 rounded-lg border ${isOverdue ? "bg-amber-950/20 border-amber-800/30" : "bg-zinc-800/30 border-zinc-700/40"}`}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[12px] font-medium text-zinc-200">{cp.title}</span>
-                                <span className={`text-[10px] border px-1.5 py-0.5 rounded-full font-medium ${CHECKPOINT_STATUS_COLORS[cp.status] ?? ""}`}>
-                                  {cp.status.replace("_", " ")}
-                                </span>
-                                {isOverdue && (
-                                  <span className="text-[10px] text-amber-400 flex items-center gap-0.5">
-                                    <Clock size={9} /> overdue
+                    <div className="border-t border-zinc-800 p-4 space-y-4">
+                      {/* ── Bay Assignment Row ── */}
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/40 border border-zinc-700/40">
+                        <Warehouse size={14} className="text-amber-400 shrink-0" />
+                        <span className="text-[12px] font-medium text-zinc-300">Assigned Bay</span>
+                        <div className="flex-1" />
+                        <select
+                          value={w.workflow.warehouseBayId ?? ""}
+                          disabled={isAssigning || assignBay.isPending}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setAssigningBay(w.workflow.id);
+                            assignBay.mutate({
+                              workflowId: w.workflow.id,
+                              warehouseBayId: val === "" ? null : Number(val),
+                            });
+                          }}
+                          onClick={e => e.stopPropagation()}
+                          className="text-[11px] bg-zinc-900 border border-zinc-700 text-zinc-200 rounded px-2 py-1 focus:outline-none focus:border-amber-500 disabled:opacity-50 cursor-pointer"
+                        >
+                          <option value="">— None —</option>
+                          {baysData.map(bay => (
+                            <option key={bay.id} value={bay.id}>
+                              {bay.name} ({bay.sqft} sqft){bay.isAvailable ? " ✓" : " ✗ occupied"}
+                            </option>
+                          ))}
+                        </select>
+                        {isAssigning && <Loader2 size={12} className="animate-spin text-zinc-500" />}
+                      </div>
+
+                      {/* Checkpoints */}
+                      <div className="space-y-2">
+                        {w.checkpoints.map(cp => {
+                          const isOverdue = ["pending", "in_progress"].includes(cp.status) && cp.dueAt && new Date(cp.dueAt) < now;
+                          return (
+                            <div
+                              key={cp.id}
+                              className={`flex items-start gap-3 p-3 rounded-lg border ${isOverdue ? "bg-amber-950/20 border-amber-800/30" : "bg-zinc-800/30 border-zinc-700/40"}`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-[12px] font-medium text-zinc-200">{cp.title}</span>
+                                  <span className={`text-[10px] border px-1.5 py-0.5 rounded-full font-medium ${CHECKPOINT_STATUS_COLORS[cp.status] ?? ""}`}>
+                                    {cp.status.replace("_", " ")}
                                   </span>
+                                  {isOverdue && (
+                                    <span className="text-[10px] text-amber-400 flex items-center gap-0.5">
+                                      <Clock size={9} /> overdue
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 mt-0.5 text-[10px] text-zinc-500">
+                                  {cp.dueAt && <span>Due: {new Date(cp.dueAt).toLocaleDateString()}</span>}
+                                  {cp.responsibleParty && <span>Responsible: {cp.responsibleParty.replace("_", " ")}</span>}
+                                  {cp.trackingNumber && <span>Tracking: {cp.trackingNumber}</span>}
+                                </div>
+                                {cp.problemDescription && (
+                                  <p className="text-[11px] text-red-400 mt-1 flex items-center gap-1">
+                                    <AlertTriangle size={10} /> {cp.problemDescription}
+                                  </p>
                                 )}
                               </div>
-                              <div className="flex items-center gap-3 mt-0.5 text-[10px] text-zinc-500">
-                                {cp.dueAt && <span>Due: {new Date(cp.dueAt).toLocaleDateString()}</span>}
-                                {cp.responsibleParty && <span>Responsible: {cp.responsibleParty.replace("_", " ")}</span>}
-                                {cp.trackingNumber && <span>Tracking: {cp.trackingNumber}</span>}
-                              </div>
-                              {cp.problemDescription && (
-                                <p className="text-[11px] text-red-400 mt-1 flex items-center gap-1">
-                                  <AlertTriangle size={10} /> {cp.problemDescription}
-                                </p>
+                              {cp.status !== "completed" && (
+                                <button
+                                  onClick={() => updateCheckpoint.mutate({ checkpointId: cp.id, status: "completed" })}
+                                  disabled={updateCheckpoint.isPending}
+                                  className="shrink-0 flex items-center gap-1 text-[10px] bg-emerald-800/60 hover:bg-emerald-700/60 text-emerald-300 border border-emerald-700/40 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                                >
+                                  <CheckCircle2 size={10} /> Done
+                                </button>
                               )}
                             </div>
-                            {cp.status !== "completed" && (
-                              <button
-                                onClick={() => updateCheckpoint.mutate({ checkpointId: cp.id, status: "completed" })}
-                                disabled={updateCheckpoint.isPending}
-                                className="shrink-0 flex items-center gap-1 text-[10px] bg-emerald-800/60 hover:bg-emerald-700/60 text-emerald-300 border border-emerald-700/40 px-2 py-1 rounded transition-colors disabled:opacity-50"
-                              >
-                                <CheckCircle2 size={10} /> Done
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>

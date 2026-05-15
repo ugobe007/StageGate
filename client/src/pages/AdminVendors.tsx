@@ -32,7 +32,7 @@ import {
 import {
   Plus, Globe, Phone, Mail, Star, Truck, Zap, Wrench, Package,
   Building2, MapPin, Search, Warehouse, Pencil, Trash2, Calculator,
-  CheckCircle2, XCircle,
+  CheckCircle2, XCircle, Bot, RefreshCw,
 } from "lucide-react";
 
 const VENDOR_TYPES = [
@@ -71,7 +71,38 @@ const EMPTY_BAY_FORM = {
 
 function WarehouseTab() {
   const utils = trpc.useUtils();
-  const { data: bays = [], isLoading } = trpc.warehouse.listBays.useQuery();
+  const { data: bays = [], isLoading, refetch: refetchBays } = trpc.warehouse.listBays.useQuery();
+
+  // Fetch active workflows to build occupancy board
+  const { data: workflowsData = [], refetch: refetchWorkflows } = trpc.logistics.getAllWorkflows.useQuery();
+
+  function refreshAll() {
+    refetchBays();
+    refetchWorkflows();
+  }
+
+  // Build map: bayId → workflow info
+  const occupancyMap = useMemo(() => {
+    const map = new Map<number, { robotCompany: string; showName: string | null | undefined; workflowId: number }>();
+    workflowsData.forEach(({ workflow }) => {
+      if (workflow.warehouseBayId && workflow.status === "active") {
+        map.set(workflow.warehouseBayId, {
+          robotCompany: workflow.robotCompany ?? "Unknown",
+          showName: workflow.showName,
+          workflowId: workflow.id,
+        });
+      }
+    });
+    return map;
+  }, [workflowsData]);
+
+  const releaseBayMutation = trpc.logistics.assignBay.useMutation({
+    onSuccess: () => {
+      refreshAll();
+      toast.success("Bay released");
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
   const upsertMutation = trpc.warehouse.upsertBay.useMutation({
     onSuccess: () => {
@@ -136,9 +167,92 @@ function WarehouseTab() {
 
   const totalCapacity = bays.reduce((s, b) => s + b.sqft, 0);
   const availableCapacity = bays.filter(b => b.isAvailable).reduce((s, b) => s + b.sqft, 0);
+  const occupiedCount = bays.filter(b => !b.isAvailable).length;
 
   return (
     <div className="space-y-6">
+      {/* ── Live Occupancy Board ── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Bot className="h-4 w-4 text-amber-500" />
+              Live Occupancy Board
+            </CardTitle>
+            <button
+              onClick={refreshAll}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <RefreshCw className="h-3 w-3" /> Refresh
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {occupiedCount} of {bays.length} bays occupied · {bays.filter(b => b.isAvailable).length} available
+          </p>
+        </CardHeader>
+        <CardContent>
+          {bays.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">No bays configured yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {bays.map(bay => {
+                const occupant = occupancyMap.get(bay.id);
+                const isOccupied = !!occupant || !bay.isAvailable;
+                return (
+                  <div
+                    key={bay.id}
+                    className={`rounded-xl border p-4 space-y-2 transition-colors ${
+                      isOccupied
+                        ? "border-amber-500/40 bg-amber-500/5"
+                        : "border-emerald-500/30 bg-emerald-500/5"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-sm">{bay.name}</span>
+                      <Badge
+                        variant="outline"
+                        className={isOccupied
+                          ? "text-amber-500 border-amber-500/40 text-xs"
+                          : "text-emerald-500 border-emerald-500/40 text-xs"}
+                      >
+                        {isOccupied ? "Occupied" : "Available"}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{bay.sqft.toLocaleString()} sqft · ${parseFloat(bay.pricePerSqftPerDay).toFixed(2)}/sqft/day</p>
+                    {occupant ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-amber-400">
+                          <Bot className="h-3 w-3" />
+                          {occupant.robotCompany}
+                        </div>
+                        {occupant.showName && (
+                          <p className="text-xs text-muted-foreground">Show: {occupant.showName}</p>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (confirm(`Release bay "${bay.name}" from ${occupant.robotCompany}?`)) {
+                              releaseBayMutation.mutate({ workflowId: occupant.workflowId, warehouseBayId: null });
+                            }
+                          }}
+                          disabled={releaseBayMutation.isPending}
+                          className="mt-1 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                        >
+                          Release Bay
+                        </button>
+                      </div>
+                    ) : isOccupied ? (
+                      <p className="text-xs text-muted-foreground italic">Marked occupied (no active workflow)</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">Ready for robot check-in</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Stats bar */}
       <div className="grid grid-cols-3 gap-4">
         <Card>

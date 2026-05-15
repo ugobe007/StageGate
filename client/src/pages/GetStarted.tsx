@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ export default function GetStarted() {
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [warehouseEstimate, setWarehouseEstimate] = useState<string | null>(null);
+
   const [form, setForm] = useState({
     company: "", contactName: "", contactEmail: "", contactPhone: "",
     website: "", country: "",
@@ -34,6 +35,31 @@ export default function GetStarted() {
     showName: "", showDate: "", boothNumber: "",
     services: [] as string[],
   });
+
+  // Debounced sqft/days for live estimate preview
+  const [debouncedSqft, setDebouncedSqft] = useState<number | null>(null);
+  const [debouncedDays, setDebouncedDays] = useState<number | null>(null);
+
+  useEffect(() => {
+    const sqft = Number(form.robotSqft);
+    const days = Number(form.storageDays);
+    if (!sqft || !days || sqft < 1 || days < 1) {
+      setDebouncedSqft(null);
+      setDebouncedDays(null);
+      return;
+    }
+    const t = setTimeout(() => {
+      setDebouncedSqft(sqft);
+      setDebouncedDays(days);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [form.robotSqft, form.storageDays]);
+
+  const estimateEnabled = debouncedSqft !== null && debouncedDays !== null;
+  const { data: liveEstimate, isFetching: estimateFetching } = trpc.warehouse.matchSpace.useQuery(
+    { robotSqft: debouncedSqft ?? 1, days: debouncedDays ?? 1 },
+    { enabled: estimateEnabled, staleTime: 30_000 }
+  );
 
   const submitMutation = trpc.bookings.create.useMutation({
     onSuccess: (data) => {
@@ -316,6 +342,39 @@ export default function GetStarted() {
                 />
                 <p className="text-xs text-neutral-400 mt-1">Days in warehouse before/after show</p>
               </div>
+            </div>
+
+            {/* Live Warehouse Estimate Preview */}
+            {(estimateEnabled || estimateFetching) && (
+              <div className={`rounded-xl border p-4 transition-all ${
+                estimateFetching
+                  ? "border-neutral-200 bg-neutral-50"
+                  : liveEstimate?.match
+                  ? "border-amber-200 bg-amber-50"
+                  : "border-red-100 bg-red-50"
+              }`}>
+                <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
+                  estimateFetching ? "text-neutral-500" : liveEstimate?.match ? "text-amber-700" : "text-red-600"
+                }`}>
+                  {estimateFetching ? "Matching warehouse bay…" : liveEstimate?.match ? "Warehouse Space Estimate" : "No Bay Available"}
+                </p>
+                {!estimateFetching && liveEstimate && (
+                  liveEstimate.match ? (
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-amber-900">
+                        ${String(liveEstimate.estimatedTotal)} estimated
+                      </p>
+                      <p className="text-xs text-amber-700">{liveEstimate.message}</p>
+                      <p className="text-xs text-amber-600 mt-1">Bay pre-matched: <strong>{liveEstimate.match.name}</strong> ({liveEstimate.match.sqft} sqft available). Final pricing confirmed at quote stage.</p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-red-600">{liveEstimate.message}</p>
+                  )
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <Label className="text-neutral-900 font-semibold mb-1.5 block text-sm">Special Handling Notes</Label>
                 <Textarea
