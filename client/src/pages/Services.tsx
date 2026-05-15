@@ -7,24 +7,23 @@ import {
 } from "lucide-react";
 
 /* ── Palette ─────────────────────────────────────────────────────────── */
-const BG     = "oklch(0.11 0.012 262)";
-const CARD   = "oklch(0.14 0.014 262)";
-const BORDER = "oklch(0.22 0.016 262)";
-const INDIGO = "oklch(0.72 0.20 262)";
-const CYAN   = "oklch(0.75 0.18 200)";
-const TEXT_HI  = "oklch(0.93 0.005 240)";
-const TEXT_MID = "oklch(0.70 0.008 240)";
-const TEXT_DIM = "oklch(0.50 0.010 240)";
+const BG      = "#080808";
+const CARD    = "#111111";
+const BORDER  = "#222222";
+const GREEN   = "#3ecf8e";
+const TEXT_HI  = "#f1f5f9";
+const TEXT_MID = "#94a3b8";
+const TEXT_DIM = "#64748b";
 
-const SVC_CONFIG: Record<string, { icon: React.ElementType; color: string }> = {
-  "inbound-logistics":       { icon: Package,       color: INDIGO },
-  "warehousing-storage":     { icon: Warehouse,     color: "oklch(0.65 0.20 295)" },
-  "staging-activation":      { icon: Zap,           color: CYAN },
-  "live-technical-support":  { icon: Wrench,        color: "oklch(0.70 0.17 55)" },
-  "stagehand-247":           { icon: Clock,         color: "oklch(0.70 0.17 55)" },
-  "stagepro-training":       { icon: GraduationCap, color: "oklch(0.65 0.20 295)" },
-  "showroom-demo":           { icon: Monitor,       color: INDIGO },
-  "robot-sales-marketing":   { icon: TrendingUp,    color: "oklch(0.62 0.20 20)" },
+const SVC_CONFIG: Record<string, { icon: React.ElementType; accent: string }> = {
+  "inbound-logistics":       { icon: Package,       accent: "#3b82f6" },
+  "warehousing-storage":     { icon: Warehouse,     accent: "#8b5cf6" },
+  "staging-activation":      { icon: Zap,           accent: GREEN },
+  "live-technical-support":  { icon: Wrench,        accent: "#f59e0b" },
+  "stagehand-247":           { icon: Clock,         accent: "#f59e0b" },
+  "stagepro-training":       { icon: GraduationCap, accent: "#8b5cf6" },
+  "showroom-demo":           { icon: Monitor,       accent: "#3b82f6" },
+  "robot-sales-marketing":   { icon: TrendingUp,    accent: "#ef4444" },
 };
 
 const FEATURES: Record<string, string[]> = {
@@ -39,68 +38,99 @@ const FEATURES: Record<string, string[]> = {
 };
 
 function ServiceCard({ svc, phase }: { svc: any; phase: "phase1" | "phase2" }) {
-  const cfg = SVC_CONFIG[svc.slug] || { icon: Package, color: INDIGO };
+  const cfg = SVC_CONFIG[svc.slug] || { icon: Package, accent: GREEN };
   const Icon = cfg.icon;
   const features = FEATURES[svc.slug] || [];
   const tiers: any[] = svc.pricingTiers ? JSON.parse(svc.pricingTiers) : [];
   const isPhase2 = phase === "phase2";
-  const statusColor = isPhase2 ? TEXT_DIM : "oklch(0.62 0.18 145)";
-  const statusLabel = isPhase2 ? "Coming 2026" : "Available Now";
 
   return (
     <div
-      className="rounded-xl border p-6 flex flex-col gap-4 transition-colors"
-      style={{ background: CARD, borderColor: BORDER, opacity: isPhase2 ? 0.75 : 1 }}
-      onMouseEnter={e => { if (!isPhase2) (e.currentTarget as HTMLElement).style.borderColor = "oklch(0.38 0.020 262)"; }}
+      style={{
+        background: CARD,
+        border: `1px solid ${BORDER}`,
+        borderRadius: "0.75rem",
+        padding: "1.5rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "1rem",
+        opacity: isPhase2 ? 0.65 : 1,
+        transition: "border-color 0.15s",
+      }}
+      onMouseEnter={e => { if (!isPhase2) (e.currentTarget as HTMLElement).style.borderColor = "#333333"; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = BORDER; }}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div
-          className="w-10 h-10 rounded flex items-center justify-center"
-          style={{ border: `1px solid ${cfg.color}44`, background: `${cfg.color}0d` }}
-        >
-          <Icon size={18} style={{ color: cfg.color }} />
+      {/* Header row */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem" }}>
+        <div style={{
+          width: "36px", height: "36px", borderRadius: "0.375rem", flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: `${cfg.accent}18`, border: `1px solid ${cfg.accent}30`,
+        }}>
+          <Icon size={16} style={{ color: cfg.accent }} />
         </div>
-        <span
-          className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
-          style={{ color: statusColor, borderColor: `${statusColor}44`, background: `${statusColor}0d` }}
-        >
-          {statusLabel}
+        <span style={{
+          fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.04em",
+          color: isPhase2 ? TEXT_DIM : GREEN,
+          fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+        }}>
+          {isPhase2 ? "2026" : "LIVE"}
         </span>
       </div>
 
+      {/* Name + description */}
       <div>
-        <h3 className="font-semibold text-base mb-2" style={{ color: TEXT_HI }}>{svc.name}</h3>
-        <p className="text-sm leading-relaxed" style={{ color: TEXT_DIM }}>{svc.description}</p>
+        <h3 style={{
+          fontSize: "0.9375rem",
+          fontWeight: 600,
+          color: TEXT_HI,
+          marginBottom: "0.375rem",
+          letterSpacing: "-0.01em",
+          lineHeight: 1.3,
+        }}>
+          {svc.name}
+        </h3>
+        <p style={{
+          fontSize: "0.8125rem",
+          lineHeight: 1.6,
+          color: TEXT_MID,
+          margin: 0,
+        }}>
+          {svc.description}
+        </p>
       </div>
 
-      {/* Features */}
+      {/* Feature list */}
       {features.length > 0 && (
-        <ul className="space-y-1.5 flex-1">
+        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.375rem", flex: 1 }}>
           {features.map((f) => (
-            <li key={f} className="flex items-start gap-2 text-xs" style={{ color: TEXT_MID }}>
-              <CheckCircle2 size={12} className="mt-0.5 flex-shrink-0" style={{ color: cfg.color }} />
-              {f}
+            <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
+              <CheckCircle2 size={11} style={{ color: cfg.accent, flexShrink: 0, marginTop: "0.2rem" }} />
+              <span style={{ fontSize: "0.8125rem", color: TEXT_MID, lineHeight: 1.5 }}>{f}</span>
             </li>
           ))}
         </ul>
       )}
 
-      {/* Pricing */}
+      {/* Pricing tiers */}
       {tiers.length > 0 && (
-        <div className="border-t pt-4" style={{ borderColor: BORDER }}>
-          <p className="font-mono text-[10px] uppercase tracking-widest mb-3" style={{ color: TEXT_DIM }}>
+        <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: "0.875rem" }}>
+          <p style={{
+            fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.08em",
+            textTransform: "uppercase", color: TEXT_DIM,
+            marginBottom: "0.625rem",
+            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+          }}>
             Pricing
           </p>
-          <div className="flex flex-wrap gap-4">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
             {tiers.map((tier: any) => (
               <div key={tier.label}>
-                <div className="font-mono text-sm font-semibold" style={{ color: cfg.color }}>
+                <div style={{ fontSize: "0.9375rem", fontWeight: 700, color: cfg.accent, fontFamily: "'JetBrains Mono', monospace" }}>
                   {tier.price ? `$${Number(tier.price).toLocaleString()}` : "Custom"}
                 </div>
-                <div className="text-[11px]" style={{ color: TEXT_DIM }}>{tier.label}</div>
-                {tier.unit && <div className="text-[10px]" style={{ color: TEXT_DIM }}>{tier.unit}</div>}
+                <div style={{ fontSize: "0.75rem", color: TEXT_DIM, marginTop: "0.125rem" }}>{tier.label}</div>
+                {tier.unit && <div style={{ fontSize: "0.6875rem", color: TEXT_DIM }}>{tier.unit}</div>}
               </div>
             ))}
           </div>
@@ -117,63 +147,77 @@ export default function Services() {
   const phase2 = (services || []).filter(s => s.phase === "phase2");
 
   return (
-    <div className="min-h-screen" style={{ background: BG, color: TEXT_HI }}>
+    <div style={{ minHeight: "100vh", background: BG, color: TEXT_HI, fontFamily: "'Inter', 'Space Grotesk', ui-sans-serif, system-ui, sans-serif" }}>
       <Navbar />
 
       {/* ── Page header ── */}
-      <div className="pt-28 pb-16 border-b" style={{ borderColor: BORDER, background: CARD }}>
-        <div className="container text-center">
-          <p className="section-label mx-auto justify-center mb-3">Complete Service Catalog</p>
-          <h1
-            className="text-5xl lg:text-6xl font-bold mb-4"
-            style={{ color: TEXT_HI, letterSpacing: "-0.035em" }}
-          >
+      <div style={{ paddingTop: "7rem", paddingBottom: "3.5rem", borderBottom: `1px solid ${BORDER}`, background: "#0a0a0a" }}>
+        <div className="container" style={{ textAlign: "center" }}>
+          <p style={{
+            fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.12em",
+            textTransform: "uppercase", color: GREEN,
+            fontFamily: "'JetBrains Mono', monospace",
+            marginBottom: "0.875rem",
+          }}>
+            Complete Service Catalog
+          </p>
+          <h1 style={{
+            fontSize: "clamp(2.25rem, 5vw, 3.5rem)",
+            fontWeight: 800,
+            letterSpacing: "-0.04em",
+            lineHeight: 1.05,
+            color: "#ffffff",
+            marginBottom: "1rem",
+          }}>
             Eight Services.{" "}
-            <span
-              style={{
-                background: `linear-gradient(90deg, ${INDIGO} 0%, ${CYAN} 100%)`,
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              One Platform.
-            </span>
+            <span style={{ color: GREEN }}>One Platform.</span>
           </h1>
-          <p className="text-base max-w-2xl mx-auto" style={{ color: TEXT_MID }}>
+          <p style={{
+            fontSize: "1rem",
+            lineHeight: 1.65,
+            color: TEXT_MID,
+            maxWidth: "38rem",
+            margin: "0 auto",
+          }}>
             From the moment your robot ships to the moment it's back in storage,
             StageGate covers every step of the trade show lifecycle.
           </p>
         </div>
       </div>
 
-      <div className="container py-16">
+      <div className="container" style={{ paddingTop: "3.5rem", paddingBottom: "4rem" }}>
 
         {/* ── Phase 1 ── */}
-        <div className="mb-16">
-          <div className="flex items-center gap-4 mb-8">
-            <div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono tracking-widest uppercase"
-              style={{
-                color: "oklch(0.62 0.18 145)",
-                borderColor: "oklch(0.62 0.18 145 / 0.30)",
-                background: "oklch(0.62 0.18 145 / 0.06)",
-              }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "oklch(0.62 0.18 145)" }} />
+        <div style={{ marginBottom: "3.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.75rem" }}>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: "0.5rem",
+              padding: "0.25rem 0.75rem",
+              borderRadius: "9999px",
+              border: `1px solid ${GREEN}40`,
+              background: `${GREEN}0d`,
+              fontSize: "0.6875rem",
+              fontWeight: 500,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: GREEN,
+              fontFamily: "'JetBrains Mono', monospace",
+              whiteSpace: "nowrap",
+            }}>
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: GREEN, animation: "pulse 2s infinite" }} />
               Phase 1 — Available Now
             </div>
-            <div className="flex-1 h-px" style={{ background: BORDER }} />
+            <div style={{ flex: 1, height: "1px", background: BORDER }} />
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
               {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-80 rounded-xl animate-pulse" style={{ background: CARD, border: `1px solid ${BORDER}` }} />
+                <div key={i} style={{ height: "20rem", borderRadius: "0.75rem", background: CARD, border: `1px solid ${BORDER}`, animation: "pulse 1.5s infinite" }} />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
               {phase1.map(svc => <ServiceCard key={svc.id} svc={svc} phase="phase1" />)}
             </div>
           )}
@@ -181,35 +225,60 @@ export default function Services() {
 
         {/* ── Phase 2 ── */}
         {phase2.length > 0 && (
-          <div className="mb-16">
-            <div className="flex items-center gap-4 mb-8">
-              <div
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono tracking-widest uppercase"
-                style={{ color: TEXT_DIM, borderColor: BORDER, background: "transparent" }}
-              >
+          <div style={{ marginBottom: "3.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.75rem" }}>
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: "0.5rem",
+                padding: "0.25rem 0.75rem",
+                borderRadius: "9999px",
+                border: `1px solid ${BORDER}`,
+                fontSize: "0.6875rem",
+                fontWeight: 500,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: TEXT_DIM,
+                fontFamily: "'JetBrains Mono', monospace",
+                whiteSpace: "nowrap",
+              }}>
                 Phase 2 — Launching 2026
               </div>
-              <div className="flex-1 h-px" style={{ background: BORDER }} />
+              <div style={{ flex: 1, height: "1px", background: BORDER }} />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
               {phase2.map(svc => <ServiceCard key={svc.id} svc={svc} phase="phase2" />)}
             </div>
           </div>
         )}
 
         {/* ── CTA ── */}
-        <div
-          className="p-10 rounded-xl border text-center"
-          style={{ borderColor: "oklch(0.72 0.20 262 / 0.20)", background: CARD }}
-        >
-          <p className="section-label mx-auto justify-center mb-4">Get Started</p>
-          <h2 className="text-3xl font-bold mb-3" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
+        <div style={{
+          padding: "2.5rem",
+          borderRadius: "0.75rem",
+          border: `1px solid #3ecf8e30`,
+          background: "#0d1a14",
+          textAlign: "center",
+        }}>
+          <p style={{
+            fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.12em",
+            textTransform: "uppercase", color: GREEN,
+            fontFamily: "'JetBrains Mono', monospace",
+            marginBottom: "0.75rem",
+          }}>
+            Get Started
+          </p>
+          <h2 style={{
+            fontSize: "clamp(1.5rem, 3vw, 2rem)",
+            fontWeight: 700,
+            letterSpacing: "-0.03em",
+            color: "#ffffff",
+            marginBottom: "0.625rem",
+          }}>
             Ready to Book Services?
           </h2>
-          <p className="mb-6 text-sm" style={{ color: TEXT_DIM }}>
+          <p style={{ fontSize: "0.875rem", color: TEXT_MID, marginBottom: "1.5rem" }}>
             Register your company for free, then select your show and services.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", justifyContent: "center" }}>
             <Link href="/register">
               <button className="btn-primary">
                 Register free <ArrowRight size={14} />

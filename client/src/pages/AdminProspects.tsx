@@ -23,12 +23,12 @@ function formatRelativeTime(date: Date): string {
 }
 
 const STATUS_CONFIG: Record<ProspectStatus, { label: string; color: string; icon: React.ReactNode }> = {
-  new:            { label: "New",           color: "rgba(255,255,255,0.35)", icon: <AlertCircle size={11} /> },
-  contacted:      { label: "Contacted",     color: "#f59e0b",                icon: <Mail size={11} /> },
-  responded:      { label: "Responded",     color: "#00ff87",                icon: <Check size={11} /> },
-  scheduled:      { label: "Scheduled",     color: "#60a5fa",                icon: <Phone size={11} /> },
-  converted:      { label: "Converted",     color: "#a78bfa",                icon: <Check size={11} /> },
-  not_interested: { label: "Not Interested",color: "rgba(255,255,255,0.20)", icon: <X size={11} /> },
+  new:            { label: "New",           color: "#3b82f6",  icon: <AlertCircle size={11} /> },
+  contacted:      { label: "Contacted",     color: "#f59e0b",  icon: <Mail size={11} /> },
+  responded:      { label: "Responded",     color: "#3ecf8e",  icon: <Check size={11} /> },
+  scheduled:      { label: "Scheduled",     color: "#8b5cf6",  icon: <Phone size={11} /> },
+  converted:      { label: "Converted",     color: "#3ecf8e",  icon: <Check size={11} /> },
+  not_interested: { label: "Not Interested",color: "#94a3b8",  icon: <X size={11} /> },
 };
 
 const ROBOT_TYPE_LABELS: Record<string, string> = {
@@ -42,17 +42,17 @@ const ROBOT_TYPE_LABELS: Record<string, string> = {
 };
 
 const CONFIDENCE_COLORS: Record<string, string> = {
-  verified: "#00ff87",
-  high: "rgba(0,255,135,0.70)",
+  verified: "#3ecf8e",
+  high: "rgba(62,207,142,0.80)",
   medium: "#f59e0b",
-  low: "rgba(255,255,255,0.30)",
+  low: "#94a3b8",
 };
 
 const CONFIDENCE_BORDERS: Record<string, string> = {
-  verified: "rgba(0,255,135,0.40)",
-  high: "rgba(0,255,135,0.25)",
-  medium: "rgba(245,158,11,0.35)",
-  low: "rgba(255,255,255,0.12)",
+  verified: "rgba(62,207,142,0.35)",
+  high: "rgba(62,207,142,0.20)",
+  medium: "rgba(245,158,11,0.30)",
+  low: "#e2e8f0",
 };
 
 export default function AdminProspects() {
@@ -325,10 +325,10 @@ export default function AdminProspects() {
 
   if (!user) {
     return (
-      <div style={{ minHeight: "100vh", background: 'transparent' }}>
+      <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", gap: "1.5rem" }}>
-          <p style={{ color: "rgba(255,255,255,0.55)", fontFamily: "var(--font-mono)", fontSize: "0.875rem" }}>Admin access required</p>
-          <a href={getLoginUrl()} className="btn-primary">Sign In</a>
+          <p style={{ color: "#475569", fontSize: "0.875rem" }}>Admin access required</p>
+          <a href={getLoginUrl()} style={{ padding: "0.5rem 1rem", background: "#3ecf8e", color: "#0f172a", fontWeight: 600, borderRadius: "0.375rem", textDecoration: "none", fontSize: "0.875rem" }}>Sign In</a>
         </div>
       </div>
     );
@@ -336,9 +336,9 @@ export default function AdminProspects() {
 
   if (user.role !== "admin") {
     return (
-      <div style={{ minHeight: "100vh", background: 'transparent' }}>
+      <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
-          <p style={{ color: "rgba(255,255,255,0.55)", fontFamily: "var(--font-mono)", fontSize: "0.875rem" }}>Forbidden — admin only</p>
+          <p style={{ color: "#475569", fontSize: "0.875rem" }}>Forbidden — admin only</p>
         </div>
       </div>
     );
@@ -431,19 +431,19 @@ export default function AdminProspects() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: 'transparent' }}>
-      <div className="container" style={{ paddingTop: "6rem", paddingBottom: "6rem" }}>
+    <div style={{ minHeight: "100vh", background: "#f8fafc", color: "#0f172a", fontFamily: "'Inter','Space Grotesk',ui-sans-serif,system-ui,sans-serif" }}>
+      <div className="container" style={{ paddingTop: "2rem", paddingBottom: "4rem" }}>
         {/* Header */}
-        <div style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "2rem", marginBottom: "2rem" }}>
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", marginBottom: "0.5rem" }}>
+        <div style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "1.25rem", marginBottom: "1.5rem" }}>
+          <p style={{ fontSize: "0.6875rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "0.375rem", fontWeight: 500 }}>
             XBOT / OUTREACH
           </p>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-            <h1 style={{ fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 800, letterSpacing: "-0.04em", color: "#fff", margin: 0 }}>
+            <h1 style={{ fontSize: "1.125rem", fontWeight: 700, letterSpacing: "-0.01em", color: "#0f172a", margin: 0 }}>
               Prospect Database
             </h1>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "#00ff87" }}>
+              <span style={{ fontSize: "0.8125rem", color: "#475569" }}>
                 {prospects.length}{hideContacted && statusFilter === "" ? ` of ${(allData?.prospects ?? []).length}` : ""} prospects{hideContacted && statusFilter === "" ? " (contacted hidden)" : ""}
               </span>
               <button
@@ -451,15 +451,15 @@ export default function AdminProspects() {
                 title="Download CSV"
                 style={{
                   display: "flex", alignItems: "center", gap: "0.3rem",
-                  fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em", textTransform: "uppercase",
-                  padding: "0.3rem 0.65rem",
-                  border: '1px solid #e2e8f0',
-                  color: "rgba(255,255,255,0.50)",
-                  background: "transparent", cursor: "pointer", borderRadius: "0.125rem",
-                  transition: "all 0.15s",
+                  fontSize: "0.8125rem", fontWeight: 500,
+                  padding: "0.375rem 0.75rem",
+                  border: "1px solid #e2e8f0",
+                  color: "#475569",
+                  background: "#ffffff", cursor: "pointer", borderRadius: "0.375rem",
+                  transition: "all 0.1s",
                 }}
               >
-                <Download size={11} /> CSV
+                <Download size={12} /> CSV
               </button>
               {/* Hidden file input for CSV import */}
               <input
@@ -474,42 +474,42 @@ export default function AdminProspects() {
                 title="Import prospects from CSV"
                 style={{
                   display: "flex", alignItems: "center", gap: "0.3rem",
-                  fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em", textTransform: "uppercase",
-                  padding: "0.3rem 0.65rem",
-                  border: "1px solid rgba(245,158,11,0.30)",
-                  color: "rgba(245,158,11,0.70)",
-                  background: "transparent", cursor: "pointer", borderRadius: "0.125rem",
-                  transition: "all 0.15s",
+                  fontSize: "0.8125rem", fontWeight: 500,
+                  padding: "0.375rem 0.75rem",
+                  border: "1px solid #e2e8f0",
+                  color: "#475569",
+                  background: "#ffffff", cursor: "pointer", borderRadius: "0.375rem",
+                  transition: "all 0.1s",
                 }}
               >
-                <Upload size={11} /> Import
+                <Upload size={12} /> Import
               </button>
               {/* View toggle */}
-              <div style={{ display: "flex", border: '1px solid #e2e8f0', borderRadius: "0.125rem", overflow: "hidden" }}>
+              <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: "0.375rem", overflow: "hidden" }}>
                 <button
                   onClick={() => setViewMode("table")}
                   title="Table view"
-                  style={{ padding: "0.3rem 0.55rem", background: viewMode === "table" ? "rgba(255,255,255,0.10)" : "transparent", border: "none", cursor: "pointer", color: viewMode === "table" ? "#fff" : "rgba(255,255,255,0.35)", borderRight: "1px solid rgba(255,255,255,0.08)" }}
+                  style={{ padding: "0.375rem 0.5rem", background: viewMode === "table" ? "#f1f5f9" : "#ffffff", border: "none", cursor: "pointer", color: viewMode === "table" ? "#0f172a" : "#94a3b8", borderRight: "1px solid #e2e8f0" }}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
                 </button>
                 <button
                   onClick={() => setViewMode("kanban")}
                   title="Kanban view"
-                  style={{ padding: "0.3rem 0.55rem", background: viewMode === "kanban" ? "rgba(255,255,255,0.10)" : "transparent", border: "none", cursor: "pointer", color: viewMode === "kanban" ? "#fff" : "rgba(255,255,255,0.35)", borderRight: "1px solid rgba(255,255,255,0.08)" }}
+                  style={{ padding: "0.375rem 0.5rem", background: viewMode === "kanban" ? "#f1f5f9" : "#ffffff", border: "none", cursor: "pointer", color: viewMode === "kanban" ? "#0f172a" : "#94a3b8", borderRight: "1px solid #e2e8f0" }}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>
                 </button>
                 <button
                   onClick={() => setViewMode("byshow")}
                   title="By Show view"
-                  style={{ padding: "0.3rem 0.55rem", background: viewMode === "byshow" ? "rgba(255,255,255,0.10)" : "transparent", border: "none", cursor: "pointer", color: viewMode === "byshow" ? "#00ff87" : "rgba(255,255,255,0.35)" }}
+                  style={{ padding: "0.375rem 0.5rem", background: viewMode === "byshow" ? "#f1f5f9" : "#ffffff", border: "none", cursor: "pointer", color: viewMode === "byshow" ? "#3ecf8e" : "#94a3b8" }}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
                 </button>
               </div>
-              <button onClick={() => refetch()} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.40)", padding: "0.25rem" }}>
-                <RefreshCw size={14} />
+              <button onClick={() => refetch()} style={{ background: "#ffffff", border: "1px solid #e2e8f0", cursor: "pointer", color: "#94a3b8", padding: "0.375rem", borderRadius: "0.375rem", display: "flex", alignItems: "center" }}>
+                <RefreshCw size={13} />
               </button>
             </div>
           </div>
@@ -525,36 +525,37 @@ export default function AdminProspects() {
           const responseRate = contacted > 0 ? Math.round((responded / contacted) * 100) : 0;
           const conversionRate = responded > 0 ? Math.round((converted / responded) * 100) : 0;
           const stats = [
-            { label: "Total", value: total, color: "rgba(255,255,255,0.55)" },
+            { label: "Total", value: total, color: "#0f172a" },
             { label: "Contacted", value: contacted, color: "#f59e0b" },
-            { label: "Responded", value: responded, color: "#00ff87" },
-            { label: "Converted", value: converted, color: "#818cf8" },
-            { label: "Response Rate", value: `${responseRate}%`, color: responded > 0 ? "#00ff87" : "rgba(255,255,255,0.30)" },
-            { label: "Conv. Rate", value: `${conversionRate}%`, color: converted > 0 ? "#818cf8" : "rgba(255,255,255,0.30)" },
+            { label: "Responded", value: responded, color: "#3ecf8e" },
+            { label: "Converted", value: converted, color: "#8b5cf6" },
+            { label: "Response Rate", value: `${responseRate}%`, color: responded > 0 ? "#3ecf8e" : "#94a3b8" },
+            { label: "Conv. Rate", value: `${conversionRate}%`, color: converted > 0 ? "#8b5cf6" : "#94a3b8" },
           ];
           return (
             <div style={{
               display: "flex",
               alignItems: "stretch",
               gap: 0,
-              marginBottom: "1.75rem",
-              border: '1px solid #e2e8f0',
-              borderRadius: "0.25rem",
+              marginBottom: "1.5rem",
+              border: "1px solid #e2e8f0",
+              borderRadius: "0.5rem",
               overflow: "hidden",
+              background: "#ffffff",
             }}>
               {stats.map((s, i) => (
                 <div key={s.label} style={{
                   flex: 1,
-                  padding: "0.75rem 1rem",
-                  borderRight: i < stats.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                  padding: "0.875rem 1rem",
+                  borderRight: i < stats.length - 1 ? "1px solid #e2e8f0" : "none",
                   display: "flex",
                   flexDirection: "column",
                   gap: "0.25rem",
                 }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)" }}>
+                  <span style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", color: "#94a3b8" }}>
                     {s.label}
                   </span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "1.125rem", fontWeight: 700, color: s.color, letterSpacing: "-0.02em", lineHeight: 1 }}>
+                  <span style={{ fontSize: "1.25rem", fontWeight: 700, color: s.color, lineHeight: 1 }}>
                     {s.value}
                   </span>
                 </div>
@@ -573,13 +574,12 @@ export default function AdminProspects() {
             onKeyDown={e => { if (e.key === "Escape") setSearchQuery(""); }}
             style={{
               width: "100%",
-              fontFamily: "var(--font-mono)",
-              fontSize: "0.75rem",
-              background: '#f8fafc',
-              border: `1px solid ${searchQuery ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.10)"}`,
-              color: "#fff",
-              padding: "0.55rem 2.25rem 0.55rem 0.85rem",
-              borderRadius: "0.25rem",
+              fontSize: "0.8125rem",
+              background: "#ffffff",
+              border: `1px solid ${searchQuery ? "#3ecf8e" : "#e2e8f0"}`,
+              color: "#0f172a",
+              padding: "0.4375rem 2.25rem 0.4375rem 0.75rem",
+              borderRadius: "0.375rem",
               outline: "none",
               transition: "border-color 0.15s",
               boxSizing: "border-box" as const,
@@ -591,91 +591,77 @@ export default function AdminProspects() {
               style={{
                 position: "absolute", right: "0.6rem", top: "50%", transform: "translateY(-50%)",
                 background: "none", border: "none", cursor: "pointer",
-                color: "rgba(255,255,255,0.40)", padding: 0, lineHeight: 1,
+                color: "#94a3b8", padding: 0, lineHeight: 1,
               }}
             >
               <X size={13} />
             </button>
           ) : (
-            <span style={{ position: "absolute", right: "0.7rem", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.20)", pointerEvents: "none", lineHeight: 1 }}>
+            <span style={{ position: "absolute", right: "0.7rem", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none", lineHeight: 1 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             </span>
           )}
         </div>
 
-        {/* Status filter tabs */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "2rem" }}>
+        {/* Status filter tabs — Supabase underline style */}
+        <div style={{ display: "flex", alignItems: "center", gap: 0, borderBottom: "1px solid #e2e8f0", marginBottom: "1.25rem", overflowX: "auto" }}>
           {["", "new", "contacted", "responded", "scheduled", "converted", "not_interested"].map(s => {
             const count = s === "" ? (allData?.prospects ?? []).length : (statusCounts[s] ?? 0);
             const isActive = statusFilter === s;
-            const accentColor = s === "contacted" ? "#f59e0b" : s === "responded" ? "#00ff87" : s === "scheduled" ? "#818cf8" : "rgba(255,255,255,0.40)";
+            const cfg = STATUS_CONFIG[s as ProspectStatus];
+            const accentColor = s === "" ? "#0f172a" : (cfg?.color ?? "#475569");
             return (
               <button
                 key={s}
                 onClick={() => { setStatusFilter(s); setSelectedIds(new Set()); if (s !== "") setHideContacted(false); }}
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "0.625rem",
-                  letterSpacing: "0.10em",
-                  textTransform: "uppercase",
-                  padding: "0.3rem 0.75rem",
-                  border: `1px solid ${isActive ? (s === "" ? "rgba(255,255,255,0.40)" : accentColor) : "rgba(255,255,255,0.10)"}`,
-                  background: isActive ? (s === "" ? "rgba(255,255,255,0.06)" : `${accentColor}18`) : "transparent",
-                  color: isActive ? (s === "" ? "#fff" : accentColor) : "rgba(255,255,255,0.40)",
+                  fontSize: "0.8125rem",
+                  fontWeight: isActive ? 500 : 400,
+                  padding: "0.5rem 0.875rem",
+                  border: "none",
+                  borderBottom: isActive ? `2px solid ${accentColor}` : "2px solid transparent",
+                  background: "transparent",
+                  color: isActive ? accentColor : "#475569",
                   cursor: "pointer",
-                  borderRadius: "0.125rem",
-                  transition: "all 0.15s",
+                  whiteSpace: "nowrap" as const,
+                  transition: "color 0.1s, border-color 0.1s",
+                  marginBottom: "-1px",
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.35rem",
+                  gap: "0.375rem",
                 }}
               >
                 {s === "" ? "All" : STATUS_CONFIG[s as ProspectStatus]?.label ?? s}
                 {count > 0 && (
-                  <span style={{
-                    fontSize: "0.5rem",
-                    padding: "0.05rem 0.3rem",
-                    borderRadius: "0.75rem",
-                    background: isActive ? (s === "" ? "rgba(255,255,255,0.12)" : `${accentColor}30`) : "rgba(255,255,255,0.06)",
-                    color: isActive ? (s === "" ? "rgba(255,255,255,0.80)" : accentColor) : "rgba(255,255,255,0.30)",
-                    fontVariantNumeric: "tabular-nums",
-                  }}>{count}</span>
+                  <span style={{ fontSize: "0.6875rem", color: isActive ? accentColor : "#94a3b8", fontVariantNumeric: "tabular-nums" }}>{count}</span>
                 )}
               </button>
             );
           })}
-          {/* Hot filter pill — always visible, shows count of prospects with score ≥ 3 */}
+          {/* Hot filter — inline tab style */}
           <button
             onClick={() => { setHotFilter(h => !h); setSelectedIds(new Set()); if (!hotFilter) setHideContacted(false); }}
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "0.625rem",
-              letterSpacing: "0.10em",
-              textTransform: "uppercase",
-              padding: "0.3rem 0.75rem",
-              border: `1px solid ${hotFilter ? "rgba(245,158,11,0.60)" : "rgba(255,255,255,0.10)"}`,
-              background: hotFilter ? "rgba(245,158,11,0.12)" : "transparent",
-              color: hotFilter ? "#f59e0b" : "rgba(255,255,255,0.40)",
+              fontSize: "0.8125rem",
+              fontWeight: hotFilter ? 500 : 400,
+              padding: "0.5rem 0.875rem",
+              border: "none",
+              borderBottom: hotFilter ? "2px solid #f59e0b" : "2px solid transparent",
+              background: "transparent",
+              color: hotFilter ? "#f59e0b" : "#475569",
               cursor: "pointer",
-              borderRadius: "0.125rem",
-              transition: "all 0.15s",
-              marginLeft: "0.5rem",
+              whiteSpace: "nowrap" as const,
+              transition: "color 0.1s, border-color 0.1s",
+              marginBottom: "-1px",
               display: "flex",
               alignItems: "center",
-              gap: "0.35rem",
+              gap: "0.375rem",
             }}
             title="Show only prospects with email engagement score ≥ 3"
           >
             🔥 Hot
             {hotCount > 0 && (
-              <span style={{
-                fontSize: "0.5rem",
-                padding: "0.05rem 0.3rem",
-                borderRadius: "0.75rem",
-                background: hotFilter ? "rgba(245,158,11,0.25)" : "rgba(255,255,255,0.06)",
-                color: hotFilter ? "#f59e0b" : "rgba(255,255,255,0.30)",
-                fontVariantNumeric: "tabular-nums",
-              }}>{hotCount}</span>
+              <span style={{ fontSize: "0.6875rem", color: hotFilter ? "#f59e0b" : "#94a3b8", fontVariantNumeric: "tabular-nums" }}>{hotCount}</span>
             )}
           </button>
 
@@ -684,29 +670,28 @@ export default function AdminProspects() {
             onClick={() => { setEnrichingPartners(true); triggerPartnerEnrichment.mutate(); }}
             disabled={enrichingPartners}
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "0.5625rem",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              padding: "0.3rem 0.75rem",
-              border: `1px solid ${enrichingPartners ? "rgba(245,158,11,0.30)" : "rgba(245,158,11,0.50)"}`,
-              background: enrichingPartners ? "rgba(245,158,11,0.08)" : "transparent",
-              color: enrichingPartners ? "rgba(245,158,11,0.50)" : "#f59e0b",
+              fontSize: "0.8125rem",
+              fontWeight: 500,
+              padding: "0.375rem 0.75rem",
+              border: "1px solid #e2e8f0",
+              background: "#ffffff",
+              color: enrichingPartners ? "#94a3b8" : "#475569",
               cursor: enrichingPartners ? "not-allowed" : "pointer",
-              borderRadius: "0.125rem",
-              transition: "all 0.15s",
+              borderRadius: "0.375rem",
+              transition: "all 0.1s",
               display: "flex",
               alignItems: "center",
               gap: "0.35rem",
+              marginLeft: "auto",
             }}
           >
-            <RefreshCw size={10} style={{ animation: enrichingPartners ? "spin 1s linear infinite" : "none" }} />
+            <RefreshCw size={12} style={{ animation: enrichingPartners ? "spin 1s linear infinite" : "none" }} />
             {enrichingPartners ? "Enriching..." : "Enrich Partners"}
           </button>
 
           {/* Vendor Type filter pills */}
-          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginLeft: "0.75rem", paddingLeft: "0.75rem", borderLeft: "1px solid rgba(255,255,255,0.08)" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)", marginRight: "0.1rem" }}>Type:</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginLeft: "0.5rem", paddingLeft: "0.75rem", borderLeft: "1px solid #e2e8f0" }}>
+            <span style={{ fontSize: "0.6875rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginRight: "0.1rem" }}>Type:</span>
             {Object.entries(VENDOR_TYPE_CONFIG).map(([key, cfg]) => {
               const count = (allData?.prospects ?? []).filter(p => String((p as Record<string, unknown>).vendorType ?? "robot_oem") === key).length;
               if (count === 0) return null;
@@ -716,46 +701,41 @@ export default function AdminProspects() {
                   key={key}
                   onClick={() => { setVendorTypeFilter(isActive ? "" : key); setSelectedIds(new Set()); }}
                   style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "0.5625rem",
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    padding: "0.2rem 0.55rem",
-                    border: `1px solid ${isActive ? cfg.color : "rgba(255,255,255,0.10)"}`,
-                    background: isActive ? `${cfg.color}18` : "transparent",
-                    color: isActive ? cfg.color : "rgba(255,255,255,0.35)",
+                    fontSize: "0.75rem",
+                    fontWeight: isActive ? 500 : 400,
+                    padding: "0.25rem 0.625rem",
+                    border: `1px solid ${isActive ? cfg.color : "#e2e8f0"}`,
+                    background: isActive ? `${cfg.color}15` : "#ffffff",
+                    color: isActive ? cfg.color : "#475569",
                     cursor: "pointer",
-                    borderRadius: "0.125rem",
-                    transition: "all 0.15s",
+                    borderRadius: "0.25rem",
+                    transition: "all 0.1s",
                     display: "flex",
                     alignItems: "center",
                     gap: "0.3rem",
                   }}
                 >
                   {cfg.label}
-                  <span style={{ fontSize: "0.45rem", padding: "0.05rem 0.25rem", borderRadius: "0.75rem", background: isActive ? `${cfg.color}25` : "rgba(255,255,255,0.06)", color: isActive ? cfg.color : "rgba(255,255,255,0.25)", fontVariantNumeric: "tabular-nums" }}>{count}</span>
+                  <span style={{ fontSize: "0.6875rem", color: isActive ? cfg.color : "#94a3b8", fontVariantNumeric: "tabular-nums" }}>{count}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Hide Contacted quick-toggle — only visible when All filter is active and hotFilter is off */}
+          {/* Hide Contacted quick-toggle */}
           {statusFilter === "" && !hotFilter && (
             <button
               onClick={() => { setHideContacted(h => !h); setSelectedIds(new Set()); }}
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "0.625rem",
-                letterSpacing: "0.10em",
-                textTransform: "uppercase",
-                padding: "0.3rem 0.75rem",
-                border: `1px solid ${hideContacted ? "rgba(239,68,68,0.50)" : "rgba(255,255,255,0.10)"}`,
-                background: hideContacted ? "rgba(239,68,68,0.10)" : "transparent",
-                color: hideContacted ? "#f87171" : "rgba(255,255,255,0.40)",
+                fontSize: "0.75rem",
+                fontWeight: 500,
+                padding: "0.25rem 0.625rem",
+                border: `1px solid ${hideContacted ? "rgba(239,68,68,0.40)" : "#e2e8f0"}`,
+                background: hideContacted ? "rgba(239,68,68,0.06)" : "#ffffff",
+                color: hideContacted ? "#ef4444" : "#475569",
                 cursor: "pointer",
-                borderRadius: "0.125rem",
-                transition: "all 0.15s",
-                marginLeft: "0.5rem",
+                borderRadius: "0.25rem",
+                transition: "all 0.1s",
                 display: "flex",
                 alignItems: "center",
                 gap: "0.35rem",
@@ -770,20 +750,20 @@ export default function AdminProspects() {
         {someSelected && (
           <div style={{
             position: "sticky",
-            top: "4rem",
+            top: "0.5rem",
             zIndex: 40,
             display: "flex",
             alignItems: "center",
-            gap: "1rem",
+            gap: "0.75rem",
             flexWrap: "wrap",
-            padding: "0.75rem 1.25rem",
-            background: "rgba(8,8,8,0.95)",
-            border: "1px solid rgba(245,158,11,0.30)",
-            borderRadius: "0.25rem",
-            marginBottom: "1.5rem",
-            backdropFilter: "blur(8px)",
+            padding: "0.625rem 1rem",
+            background: "#ffffff",
+            border: "1px solid #e2e8f0",
+            borderRadius: "0.5rem",
+            marginBottom: "1rem",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
           }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "#f59e0b" }}>
+            <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#0f172a" }}>
               {selectedIds.size} selected
             </span>
 
@@ -805,14 +785,14 @@ export default function AdminProspects() {
               onClick={() => setSelectedIds(new Set())}
               style={{
                 display: "flex", alignItems: "center", gap: "0.3rem",
-                fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em", textTransform: "uppercase",
-                padding: "0.3rem 0.65rem",
-                border: '1px solid #e2e8f0',
-                color: "rgba(255,255,255,0.40)",
-                background: "transparent", cursor: "pointer", borderRadius: "0.125rem",
+                fontSize: "0.8125rem", fontWeight: 500,
+                padding: "0.25rem 0.625rem",
+                border: "1px solid #e2e8f0",
+                color: "#475569",
+                background: "#ffffff", cursor: "pointer", borderRadius: "0.25rem",
               }}
             >
-              <X size={10} /> Clear
+              <X size={12} /> Clear
             </button>
 
             {/* Bulk move-to-status: two-part control — status picker + confirm */}
@@ -823,61 +803,57 @@ export default function AdminProspects() {
                 disabled={bulkUpdating}
                 style={{
                   display: "flex", alignItems: "center", gap: "0.35rem",
-                  fontFamily: "var(--font-mono)", fontSize: "0.5625rem", fontWeight: 700,
-                  letterSpacing: "0.08em", textTransform: "uppercase",
-                  padding: "0.35rem 0.65rem",
-                  background: "rgba(99,102,241,0.10)",
+                  fontSize: "0.8125rem", fontWeight: 500,
+                  padding: "0.375rem 0.75rem",
+                  background: "#f1f5f9",
                   color: STATUS_CONFIG[bulkStatusTarget].color,
-                  border: "1px solid rgba(99,102,241,0.35)",
+                  border: "1px solid #e2e8f0",
                   borderRight: "none",
                   cursor: bulkUpdating ? "not-allowed" : "pointer",
-                  borderRadius: "0.125rem 0 0 0.125rem",
-                  transition: "all 0.15s",
+                  borderRadius: "0.375rem 0 0 0.375rem",
+                  transition: "all 0.1s",
                   minWidth: "7rem",
                 }}
               >
                 {STATUS_CONFIG[bulkStatusTarget].icon}
                 {STATUS_CONFIG[bulkStatusTarget].label}
-                <ChevronDown size={9} style={{ marginLeft: "auto", opacity: 0.6 }} />
+                <ChevronDown size={12} style={{ marginLeft: "auto", opacity: 0.6 }} />
               </button>
 
               {/* Confirm button — or inline confirmation guard for destructive statuses */}
               {pendingConfirm ? (
-                <div style={{ display: "flex", alignItems: "center", gap: "0.35rem",
-                  padding: "0.35rem 0.65rem",
-                  background: "rgba(239,68,68,0.08)",
-                  border: "1px solid rgba(239,68,68,0.35)",
-                  borderRadius: "0 0.125rem 0.125rem 0",
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem",
+                  padding: "0.375rem 0.75rem",
+                  background: "rgba(239,68,68,0.06)",
+                  border: "1px solid rgba(239,68,68,0.30)",
+                  borderRadius: "0 0.375rem 0.375rem 0",
                 }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(239,68,68,0.85)",
-                    letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                  <span style={{ fontSize: "0.8125rem", color: "#ef4444", whiteSpace: "nowrap" }}>
                     Move {selectedIds.size} to {STATUS_CONFIG[bulkStatusTarget].label}?
                   </span>
                   <button
                     onClick={handleBulkUpdateStatus}
                     style={{ display: "flex", alignItems: "center", gap: "0.25rem",
-                      fontFamily: "var(--font-mono)", fontSize: "0.5rem", fontWeight: 700,
-                      letterSpacing: "0.08em", textTransform: "uppercase",
-                      padding: "0.2rem 0.5rem",
-                      background: "rgba(239,68,68,0.15)", color: "#f87171",
-                      border: "1px solid rgba(239,68,68,0.40)",
-                      cursor: "pointer", borderRadius: "0.125rem",
+                      fontSize: "0.8125rem", fontWeight: 600,
+                      padding: "0.25rem 0.625rem",
+                      background: "#ef4444", color: "#ffffff",
+                      border: "none",
+                      cursor: "pointer", borderRadius: "0.25rem",
                     }}
                   >
-                    <Check size={9} /> Confirm
+                    <Check size={12} /> Confirm
                   </button>
                   <button
                     onClick={() => setPendingConfirm(false)}
                     style={{ display: "flex", alignItems: "center", gap: "0.25rem",
-                      fontFamily: "var(--font-mono)", fontSize: "0.5rem", fontWeight: 700,
-                      letterSpacing: "0.08em", textTransform: "uppercase",
-                      padding: "0.2rem 0.5rem",
-                      background: "transparent", color: "rgba(255,255,255,0.35)",
-                      border: '1px solid #e2e8f0',
-                      cursor: "pointer", borderRadius: "0.125rem",
+                      fontSize: "0.8125rem",
+                      padding: "0.25rem 0.5rem",
+                      background: "transparent", color: "#475569",
+                      border: "1px solid #e2e8f0",
+                      cursor: "pointer", borderRadius: "0.25rem",
                     }}
                   >
-                    <X size={9} /> Cancel
+                    <X size={12} /> Cancel
                   </button>
                 </div>
               ) : (
@@ -886,21 +862,20 @@ export default function AdminProspects() {
                   disabled={bulkUpdating || selectedIds.size === 0}
                   style={{
                     display: "flex", alignItems: "center", gap: "0.4rem",
-                    fontFamily: "var(--font-mono)", fontSize: "0.5625rem", fontWeight: 700,
-                    letterSpacing: "0.08em", textTransform: "uppercase",
-                    padding: "0.35rem 0.75rem",
-                    background: bulkUpdating ? "rgba(99,102,241,0.20)" : "rgba(99,102,241,0.18)",
-                    color: bulkUpdating ? "rgba(129,140,248,0.50)" : "#818cf8",
-                    border: "1px solid rgba(99,102,241,0.35)",
+                    fontSize: "0.8125rem", fontWeight: 600,
+                    padding: "0.375rem 0.75rem",
+                    background: bulkUpdating ? "#f1f5f9" : "#8b5cf6",
+                    color: bulkUpdating ? "#94a3b8" : "#ffffff",
+                    border: "1px solid transparent",
                     cursor: bulkUpdating ? "wait" : "pointer",
-                    borderRadius: "0 0.125rem 0.125rem 0",
-                    transition: "all 0.15s",
+                    borderRadius: "0 0.375rem 0.375rem 0",
+                    transition: "all 0.1s",
                   }}
                 >
                   {bulkUpdating ? (
-                    <><RefreshCw size={10} style={{ animation: "spin 1s linear infinite" }} /> Updating...</>
+                    <><RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> Updating...</>
                   ) : (
-                    <><ArrowRight size={10} /> Move {selectedIds.size}</>
+                    <><ArrowRight size={12} /> Move {selectedIds.size}</>
                   )}
                 </button>
               )}
@@ -910,9 +885,9 @@ export default function AdminProspects() {
                 <div
                   style={{
                     position: "absolute", top: "calc(100% + 4px)", left: 0,
-                    background: 'transparent', border: "1px solid rgba(99,102,241,0.35)",
-                    borderRadius: "0.25rem", zIndex: 100, minWidth: "10rem",
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+                    background: "#ffffff", border: "1px solid #e2e8f0",
+                    borderRadius: "0.375rem", zIndex: 100, minWidth: "10rem",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
                     overflow: "hidden",
                   }}
                 >
@@ -922,18 +897,17 @@ export default function AdminProspects() {
                       onClick={() => { setBulkStatusTarget(key); setBulkStatusOpen(false); }}
                       style={{
                         display: "flex", alignItems: "center", gap: "0.5rem",
-                        width: "100%", padding: "0.45rem 0.75rem",
-                        fontFamily: "var(--font-mono)", fontSize: "0.5625rem",
-                        letterSpacing: "0.08em", textTransform: "uppercase",
+                        width: "100%", padding: "0.5rem 0.75rem",
+                        fontSize: "0.8125rem", fontWeight: 500,
                         color: cfg.color,
-                        background: bulkStatusTarget === key ? "rgba(255,255,255,0.06)" : "transparent",
+                        background: bulkStatusTarget === key ? "#f1f5f9" : "transparent",
                         border: "none", cursor: "pointer", textAlign: "left",
                         borderLeft: bulkStatusTarget === key ? `2px solid ${cfg.color}` : "2px solid transparent",
                         transition: "background 0.1s",
                       }}
                     >
                       {cfg.icon} {cfg.label}
-                      {bulkStatusTarget === key && <Check size={9} style={{ marginLeft: "auto" }} />}
+                      {bulkStatusTarget === key && <Check size={12} style={{ marginLeft: "auto" }} />}
                     </button>
                   ))}
                 </div>
@@ -944,9 +918,9 @@ export default function AdminProspects() {
 
             {/* Bulk progress indicator */}
             {bulkProgress && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: bulkProgress.failed > 0 ? "#f59e0b" : "#00ff87" }}>
+              <span style={{ fontSize: "0.8125rem", color: bulkProgress.failed > 0 ? "#f59e0b" : "#3ecf8e" }}>
                 {bulkSending ? (
-                  <><RefreshCw size={10} style={{ display: "inline", marginRight: 4, animation: "spin 1s linear infinite" }} />Sending...</>
+                  <><RefreshCw size={12} style={{ display: "inline", marginRight: 4, animation: "spin 1s linear infinite" }} />Sending...</>
                 ) : (
                   <>{bulkProgress.sent} sent · {bulkProgress.failed} failed</>
                 )}
@@ -958,21 +932,22 @@ export default function AdminProspects() {
               disabled={bulkSending || selectedIds.size === 0}
               style={{
                 display: "flex", alignItems: "center", gap: "0.4rem",
-                fontFamily: "var(--font-mono)", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase",
-                padding: "0.45rem 1.1rem",
-                background: bulkSending ? "rgba(245,158,11,0.30)" : "#f59e0b",
-                color: bulkSending ? "#f59e0b" : "#000",
+                fontSize: "0.8125rem", fontWeight: 600,
+                padding: "0.375rem 1rem",
+                background: bulkSending ? "rgba(62,207,142,0.15)" : "#3ecf8e",
+                color: bulkSending ? "#3ecf8e" : "#0f172a",
                 border: "none",
                 cursor: bulkSending ? "wait" : "pointer",
-                borderRadius: "0.125rem",
-                transition: "all 0.15s",
+                borderRadius: "0.375rem",
+                transition: "all 0.1s",
                 opacity: bulkSending ? 0.7 : 1,
+                marginLeft: "auto",
               }}
             >
               {bulkSending ? (
-                <><RefreshCw size={11} style={{ animation: "spin 1s linear infinite" }} /> Sending {selectedIds.size}...</>
+                <><RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> Sending {selectedIds.size}...</>
               ) : (
-                <><Zap size={11} /> Send Email to {selectedIds.size} Contact{selectedIds.size !== 1 ? "s" : ""}</>
+                <><Zap size={12} /> Send Email to {selectedIds.size} Contact{selectedIds.size !== 1 ? "s" : ""}</>
               )}
             </button>
           </div>
@@ -981,27 +956,27 @@ export default function AdminProspects() {
         {/* Bulk result summary */}
         {!bulkSending && bulkResults.length > 0 && (
           <div style={{
-            padding: "1rem 1.25rem",
-            border: "1px solid rgba(0,255,135,0.15)",
-            borderRadius: "0.25rem",
-            marginBottom: "1.5rem",
-            background: "rgba(0,255,135,0.03)",
+            padding: "0.875rem 1rem",
+            border: "1px solid #e2e8f0",
+            borderRadius: "0.5rem",
+            marginBottom: "1rem",
+            background: "#ffffff",
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#00ff87", margin: 0 }}>
-                Bulk Send Complete — {bulkResults.filter(r => r.success).length} sent · {bulkResults.filter(r => !r.success).length} failed
+              <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#0f172a", margin: 0 }}>
+                Bulk Send Complete — <span style={{ color: "#3ecf8e" }}>{bulkResults.filter(r => r.success).length} sent</span> · <span style={{ color: "#ef4444" }}>{bulkResults.filter(r => !r.success).length} failed</span>
               </p>
-              <button onClick={() => setBulkResults([])} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.30)", padding: 0 }}>
-                <X size={12} />
+              <button onClick={() => setBulkResults([])} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 0 }}>
+                <X size={13} />
               </button>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
               {bulkResults.map(r => (
                 <span key={r.id} style={{
-                  fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.06em",
-                  padding: "0.15rem 0.4rem", borderRadius: "0.125rem",
-                  border: `1px solid ${r.success ? "rgba(0,255,135,0.25)" : "rgba(239,68,68,0.30)"}`,
-                  color: r.success ? "#00ff87" : "#f87171",
+                  fontSize: "0.75rem",
+                  padding: "0.2rem 0.5rem", borderRadius: "0.25rem",
+                  border: `1px solid ${r.success ? "rgba(62,207,142,0.30)" : "rgba(239,68,68,0.30)"}`,
+                  color: r.success ? "#3ecf8e" : "#ef4444",
                 }}
                 title={r.error}>
                   {r.success ? "✓" : "✗"} {r.company}
@@ -1282,51 +1257,51 @@ export default function AdminProspects() {
 
         {/* Table */}
         {viewMode === "kanban" || viewMode === "byshow" ? null : isLoading ? (
-          <div style={{ textAlign: "center", padding: "4rem 0", color: "rgba(255,255,255,0.30)", fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}>
+          <div style={{ textAlign: "center", padding: "4rem 0", color: "#94a3b8", fontSize: "0.875rem" }}>
             Loading prospects...
           </div>
         ) : prospects.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "4rem 0", color: "rgba(255,255,255,0.30)", fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}>
+          <div style={{ textAlign: "center", padding: "4rem 0", color: "#94a3b8", fontSize: "0.875rem" }}>
             No prospects found.
           </div>
         ) : (
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", overflow: "hidden", background: "#ffffff" }}>
             {/* Table header row with Select All */}
             <div style={{
               display: "grid",
               gridTemplateColumns: "1.5rem 2fr 1.5fr 1fr 1fr 1fr 3.5rem auto",
               gap: "1.5rem",
               alignItems: "center",
-              padding: "0.5rem 0",
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
-              marginBottom: "0.25rem",
+              padding: "0.625rem 1rem",
+              borderBottom: "1px solid #e2e8f0",
+              background: "#f8fafc",
             }}>
               <button
                 onClick={toggleAll}
-                style={{ background: "none", border: "none", cursor: "pointer", color: allSelected ? "#f59e0b" : "rgba(255,255,255,0.25)", padding: 0, display: "flex", alignItems: "center" }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: allSelected ? "#3ecf8e" : "#94a3b8", padding: 0, display: "flex", alignItems: "center" }}
                 title={allSelected ? "Deselect all" : "Select all"}
               >
                 {allSelected ? <CheckSquare size={14} /> : <Square size={14} />}
               </button>
-              <button onClick={() => toggleSort("company")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: sortKey === "company" ? "rgba(255,255,255,0.60)" : "rgba(255,255,255,0.20)", padding: 0 }}>
+              <button onClick={() => toggleSort("company")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: sortKey === "company" ? "#0f172a" : "#64748b", padding: 0 }}>
                 Company / Robot
-                {sortKey === "company" ? (sortDir === "asc" ? <ArrowUp size={9} /> : <ArrowDown size={9} />) : <ArrowUpDown size={9} style={{ opacity: 0.4 }} />}
+                {sortKey === "company" ? (sortDir === "asc" ? <ArrowUp size={10} /> : <ArrowDown size={10} />) : <ArrowUpDown size={10} style={{ opacity: 0.4 }} />}
               </button>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)" }}>Shows</span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)" }}>LV</span>
-              <button onClick={() => toggleSort("status")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: sortKey === "status" ? "rgba(255,255,255,0.60)" : "rgba(255,255,255,0.20)", padding: 0 }}>
+              <span style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "#64748b" }}>Shows</span>
+              <span style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "#64748b" }}>LV</span>
+              <button onClick={() => toggleSort("status")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: sortKey === "status" ? "#0f172a" : "#64748b", padding: 0 }}>
                 Status
-                {sortKey === "status" ? (sortDir === "asc" ? <ArrowUp size={9} /> : <ArrowDown size={9} />) : <ArrowUpDown size={9} style={{ opacity: 0.4 }} />}
+                {sortKey === "status" ? (sortDir === "asc" ? <ArrowUp size={10} /> : <ArrowDown size={10} />) : <ArrowUpDown size={10} style={{ opacity: 0.4 }} />}
               </button>
-              <button onClick={() => toggleSort("followUpDate")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: sortKey === "followUpDate" ? "rgba(255,255,255,0.60)" : "rgba(255,255,255,0.20)", padding: 0 }}>
+              <button onClick={() => toggleSort("followUpDate")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: sortKey === "followUpDate" ? "#0f172a" : "#64748b", padding: 0 }}>
                 Follow-up
-                {sortKey === "followUpDate" ? (sortDir === "asc" ? <ArrowUp size={9} /> : <ArrowDown size={9} />) : <ArrowUpDown size={9} style={{ opacity: 0.4 }} />}
+                {sortKey === "followUpDate" ? (sortDir === "asc" ? <ArrowUp size={10} /> : <ArrowDown size={10} />) : <ArrowUpDown size={10} style={{ opacity: 0.4 }} />}
               </button>
-              <button onClick={() => toggleSort("engagementScore")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: sortKey === "engagementScore" ? "rgba(245,158,11,0.80)" : "rgba(255,255,255,0.20)", padding: 0 }}>
+              <button onClick={() => toggleSort("engagementScore")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: sortKey === "engagementScore" ? "#f59e0b" : "#64748b", padding: 0 }}>
                 Score
-                {sortKey === "engagementScore" ? (sortDir === "asc" ? <ArrowUp size={9} /> : <ArrowDown size={9} />) : <ArrowUpDown size={9} style={{ opacity: 0.4 }} />}
+                {sortKey === "engagementScore" ? (sortDir === "asc" ? <ArrowUp size={10} /> : <ArrowDown size={10} />) : <ArrowUpDown size={10} style={{ opacity: 0.4 }} />}
               </button>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)" }}>Action</span>
+              <span style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "#64748b" }}>Action</span>
             </div>
 
             {sortedProspects.map((p, i) => {
@@ -1343,15 +1318,15 @@ export default function AdminProspects() {
                 <div
                   key={p.id}
                   style={{
-                    borderBottom: "1px solid rgba(255,255,255,0.06)",
+                    borderBottom: "1px solid #e2e8f0",
                     background: isSent && bulkResults.some(r => r.id === p.id && r.success)
-                      ? "rgba(0,255,135,0.03)"
+                      ? "rgba(62,207,142,0.04)"
                       : isFailed && bulkResults.some(r => r.id === p.id && !r.success)
-                      ? "rgba(239,68,68,0.03)"
+                      ? "rgba(239,68,68,0.04)"
                       : isSelected
-                      ? "rgba(245,158,11,0.03)"
+                      ? "rgba(62,207,142,0.05)"
                       : "transparent",
-                    transition: "background 0.2s",
+                    transition: "background 0.15s",
                   }}
                 >
                   {/* Main row */}
@@ -1361,7 +1336,7 @@ export default function AdminProspects() {
                       gridTemplateColumns: "1.5rem 2fr 1.5fr 1fr 1fr 1fr 3.5rem auto",
                       gap: "1.5rem",
                       alignItems: "center",
-                      padding: "1rem 0",
+                      padding: "0.75rem 1rem",
                       cursor: "pointer",
                     }}
                     onClick={() => setExpandedId(isExpanded ? null : p.id)}
@@ -1369,56 +1344,51 @@ export default function AdminProspects() {
                     {/* Checkbox */}
                     <div onClick={e => { e.stopPropagation(); toggleRow(p.id); }} style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
                       {isSelected
-                        ? <CheckSquare size={14} style={{ color: "#f59e0b" }} />
-                        : <Square size={14} style={{ color: "rgba(255,255,255,0.20)" }} />
+                        ? <CheckSquare size={14} style={{ color: "#3ecf8e" }} />
+                        : <Square size={14} style={{ color: "#cbd5e1" }} />
                       }
                     </div>
 
                     {/* Company + robot */}
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: "rgba(255,255,255,0.20)", minWidth: "1.5rem" }}>
+                        <span style={{ fontSize: "0.6875rem", color: "#94a3b8", minWidth: "1.5rem" }}>
                           {String(i + 1).padStart(2, "0")}
                         </span>
-                        <span style={{ fontWeight: 700, fontSize: "0.9375rem", color: "#fff" }}>{p.company}</span>
+                        <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a" }}>{p.company}</span>
                         {Boolean((p as { hasClientProfile?: boolean }).hasClientProfile) && (
-                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "#3ecf8e", fontWeight: 700 }} title="Company has signed up as a StageGate client">● CLIENT</span>
+                          <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#3ecf8e" }} title="Company has signed up as a StageGate client">✓ Client</span>
                         )}
                         {urgency && (
                           <span style={{
-                            fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.08em", textTransform: "uppercase",
-                            padding: "0.1rem 0.35rem", borderRadius: "0.125rem",
-                            border: `1px solid ${urgency.color}40`,
+                            fontSize: "0.6875rem", fontWeight: 600,
                             color: urgency.color,
-                            fontWeight: 700,
                           }} title={`${urgency.days} days until next show`}>
                             {urgency.label}
                           </span>
                         )}
                         {p.website && (
                           <a href={p.website} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                            style={{ color: "rgba(255,255,255,0.25)", lineHeight: 1 }}>
+                            style={{ color: "#94a3b8", lineHeight: 1 }}>
                             <ExternalLink size={11} />
                           </a>
                         )}
                         {p.contactEmail && conf && (
                           <span style={{
-                            fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.08em", textTransform: "uppercase",
-                            padding: "0.1rem 0.3rem", borderRadius: "0.125rem",
-                            border: `1px solid ${CONFIDENCE_BORDERS[conf] ?? "rgba(255,255,255,0.12)"}`,
-                            color: CONFIDENCE_COLORS[conf] ?? "rgba(255,255,255,0.30)",
+                            fontSize: "0.6875rem", fontWeight: 500,
+                            color: CONFIDENCE_COLORS[conf] ?? "#94a3b8",
                           }}>
                             {conf}
                           </span>
                         )}
                       </div>
                       {p.robotName && (
-                        <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.50)", margin: "0.2rem 0 0 2rem" }}>
+                        <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.15rem 0 0 2rem" }}>
                           {p.robotName}
-                          {p.robotType && <span style={{ color: "rgba(255,255,255,0.25)", marginLeft: "0.5rem" }}>· {ROBOT_TYPE_LABELS[p.robotType] ?? p.robotType}</span>}
+                          {p.robotType && <span style={{ color: "#94a3b8", marginLeft: "0.5rem" }}>· {ROBOT_TYPE_LABELS[p.robotType] ?? p.robotType}</span>}
                         </p>
                       )}
-                      {/* Vendor type badge for ecosystem partners */}
+                      {/* Vendor type for ecosystem partners */}
                       {(() => {
                         const vt = String((p as Record<string, unknown>).vendorType ?? "robot_oem");
                         if (vt === "robot_oem") return null;
@@ -1427,14 +1397,11 @@ export default function AdminProspects() {
                         return (
                           <span style={{
                             display: "inline-flex", alignItems: "center",
-                            fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.10em", textTransform: "uppercase",
-                            padding: "0.1rem 0.35rem", borderRadius: "0.125rem",
-                            border: `1px solid ${vtCfg.color}40`,
+                            fontSize: "0.6875rem", fontWeight: 500,
                             color: vtCfg.color,
-                            background: `${vtCfg.color}10`,
-                            marginTop: "0.2rem",
+                            marginTop: "0.15rem",
                           }}>
-                            ◆ {vtCfg.label} · Partner
+                            ◆ {vtCfg.label} Partner
                           </span>
                         );
                       })()}
@@ -1449,18 +1416,18 @@ export default function AdminProspects() {
                     </div>
 
                     {/* LV status */}
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: p.attendsLasVegas === "yes" ? "#00ff87" : "rgba(255,255,255,0.25)" }}>
+                    <div style={{ fontSize: "0.8125rem", color: p.attendsLasVegas === "yes" ? "#3ecf8e" : "#94a3b8" }}>
                       {p.attendsLasVegas === "yes" ? "LV ✓" : p.attendsLasVegas === "no" ? "LV ✗" : "LV ?"}
                     </div>
 
                     {/* Status */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: cfg.color, fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: cfg.color, fontSize: "0.8125rem", fontWeight: 500 }}>
                         {cfg.icon}
                         {cfg.label}
                       </div>
                       {p.status === "responded" && (p as Record<string, unknown>).repliedAt != null && (
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", color: "rgba(0,255,135,0.45)", letterSpacing: "0.04em" }}>
+                        <span style={{ fontSize: "0.75rem", color: "#3ecf8e" }}>
                           {formatRelativeTime(new Date(String((p as Record<string, unknown>).repliedAt)))}
                         </span>
                       )}
@@ -1491,8 +1458,8 @@ export default function AdminProspects() {
                           title="Edit follow-up date"
                           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
                         >
-                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: new Date(String((p as Record<string, unknown>).followUpDate)) < new Date() ? "#f87171" : "#f59e0b", letterSpacing: "0.04em" }}>
-                            <Calendar size={9} style={{ display: "inline", marginRight: "0.25rem", verticalAlign: "middle" }} />
+                          <span style={{ fontSize: "0.8125rem", color: new Date(String((p as Record<string, unknown>).followUpDate)) < new Date() ? "#ef4444" : "#f59e0b", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                            <Calendar size={12} />
                             {new Date(String((p as Record<string, unknown>).followUpDate)).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                           </span>
                         </button>
@@ -1502,8 +1469,8 @@ export default function AdminProspects() {
                           title="Set follow-up date"
                           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: "0.2rem" }}
                         >
-                          <Calendar size={9} style={{ color: "rgba(255,255,255,0.15)" }} />
-                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.45rem", color: "rgba(255,255,255,0.15)", letterSpacing: "0.06em" }}>Set</span>
+                          <Calendar size={12} style={{ color: "#cbd5e1" }} />
+                          <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Set</span>
                         </button>
                       )}
                     </div>
@@ -1514,11 +1481,11 @@ export default function AdminProspects() {
                         const score = Number((p as Record<string, unknown>).engagementScore ?? 0);
                         const opens = Number((p as Record<string, unknown>).opens ?? 0);
                         const clicks = Number((p as Record<string, unknown>).clicks ?? 0);
-                        if (score === 0) return <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", color: "rgba(255,255,255,0.15)" }}>—</span>;
+                        if (score === 0) return <span style={{ fontSize: "0.8125rem", color: "#94a3b8" }}>—</span>;
                         return (
                           <span title={`${opens} open${opens !== 1 ? 's' : ''}, ${clicks} click${clicks !== 1 ? 's' : ''}`} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                            <span style={{ fontSize: "0.625rem" }}>🔥</span>
-                            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", fontWeight: 700, color: score >= 5 ? "#f59e0b" : score >= 2 ? "#fbbf24" : "rgba(251,191,36,0.60)" }}>{score}</span>
+                            <span style={{ fontSize: "0.75rem" }}>🔥</span>
+                            <span style={{ fontSize: "0.875rem", fontWeight: 600, color: score >= 5 ? "#f59e0b" : score >= 2 ? "#fbbf24" : "#94a3b8" }}>{score}</span>
                           </span>
                         );
                       })()}
@@ -1535,26 +1502,26 @@ export default function AdminProspects() {
                         disabled={sendingId === p.id || isSent || p.status === "contacted"}
                         style={{
                           display: "flex", alignItems: "center", gap: "0.3rem",
-                          fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em", textTransform: "uppercase",
-                          padding: "0.3rem 0.65rem",
-                          border: `1px solid ${isSent || p.status === "contacted" ? "rgba(0,255,135,0.30)" : isFailed ? "rgba(239,68,68,0.40)" : "rgba(245,158,11,0.40)"}`,
-                          color: isSent || p.status === "contacted" ? "#00ff87" : isFailed ? "#f87171" : "#f59e0b",
-                          background: "transparent", cursor: sendingId === p.id ? "wait" : "pointer",
-                          borderRadius: "0.125rem", opacity: sendingId === p.id ? 0.6 : 1,
-                          transition: "all 0.15s",
+                          fontSize: "0.8125rem", fontWeight: 500,
+                          padding: "0.25rem 0.625rem",
+                          border: `1px solid ${isSent || p.status === "contacted" ? "rgba(62,207,142,0.40)" : isFailed ? "rgba(239,68,68,0.40)" : "#e2e8f0"}`,
+                          color: isSent || p.status === "contacted" ? "#3ecf8e" : isFailed ? "#ef4444" : "#475569",
+                          background: "#ffffff", cursor: sendingId === p.id ? "wait" : "pointer",
+                          borderRadius: "0.25rem", opacity: sendingId === p.id ? 0.6 : 1,
+                          transition: "all 0.1s",
                         }}
                       >
                         {sendingId === p.id ? (
-                          <RefreshCw size={10} style={{ animation: "spin 1s linear infinite" }} />
+                          <RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} />
                         ) : isSent || p.status === "contacted" ? (
-                          <><Check size={10} /> Sent</>
+                          <><Check size={12} /> Sent</>
                         ) : isFailed ? (
-                          <><X size={10} /> Failed</>
+                          <><X size={12} /> Failed</>
                         ) : (
-                          <><Mail size={10} /> Send</>
+                          <><Mail size={12} /> Send</>
                         )}
                       </button>
-                      {/* Mark as Replied — only shown when status is new or contacted */}
+                      {/* Mark as Replied */}
                       {(p.status === "new" || p.status === "contacted") && (
                         <button
                           onClick={() => markReplied.mutate({ id: p.id })}
@@ -1562,24 +1529,24 @@ export default function AdminProspects() {
                           title="Mark as Replied"
                           style={{
                             display: "flex", alignItems: "center", gap: "0.3rem",
-                            fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em", textTransform: "uppercase",
-                            padding: "0.3rem 0.65rem",
-                            border: "1px solid rgba(0,255,135,0.35)",
-                            color: "#00ff87",
-                            background: "transparent",
+                            fontSize: "0.8125rem", fontWeight: 500,
+                            padding: "0.25rem 0.625rem",
+                            border: "1px solid rgba(62,207,142,0.40)",
+                            color: "#3ecf8e",
+                            background: "#ffffff",
                             cursor: replyingId === p.id ? "wait" : "pointer",
-                            borderRadius: "0.125rem",
+                            borderRadius: "0.25rem",
                             opacity: replyingId === p.id ? 0.5 : 1,
-                            transition: "all 0.15s",
+                            transition: "all 0.1s",
                           }}
                         >
                           {replyingId === p.id
-                            ? <RefreshCw size={10} style={{ animation: "spin 1s linear infinite" }} />
-                            : <><Check size={10} /> Replied</>
+                            ? <RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} />
+                            : <><Check size={12} /> Replied</>
                           }
                         </button>
                       )}
-                      {/* Inline reply notes prompt — appears after Mark as Replied */}
+                      {/* Inline reply notes prompt */}
                       {replyNotes[p.id] !== undefined && (
                         <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }} onClick={e => e.stopPropagation()}>
                           <input
@@ -1593,21 +1560,21 @@ export default function AdminProspects() {
                               if (e.key === "Escape") dismissReplyNote(p.id);
                             }}
                             style={{
-                              fontFamily: "var(--font-mono)", fontSize: "0.5625rem",
-                              background: "rgba(0,255,135,0.06)", border: "1px solid rgba(0,255,135,0.30)",
-                              color: "#fff", padding: "0.3rem 0.5rem", borderRadius: "0.125rem",
+                              fontSize: "0.8125rem",
+                              background: "#f8fafc", border: "1px solid #e2e8f0",
+                              color: "#0f172a", padding: "0.3rem 0.5rem", borderRadius: "0.25rem",
                               outline: "none", width: "14rem",
                             }}
                           />
-                          <button onClick={() => saveReplyNote(p.id)} title="Save note" style={{ background: "none", border: "none", cursor: "pointer", color: "#00ff87", padding: "0.2rem", lineHeight: 1 }}>
-                            <Check size={11} />
+                          <button onClick={() => saveReplyNote(p.id)} title="Save note" style={{ background: "none", border: "none", cursor: "pointer", color: "#3ecf8e", padding: "0.2rem", lineHeight: 1 }}>
+                            <Check size={13} />
                           </button>
-                          <button onClick={() => dismissReplyNote(p.id)} title="Dismiss" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.30)", padding: "0.2rem", lineHeight: 1 }}>
-                            <X size={11} />
+                          <button onClick={() => dismissReplyNote(p.id)} title="Dismiss" style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: "0.2rem", lineHeight: 1 }}>
+                            <X size={13} />
                           </button>
                         </div>
                       )}
-                      <ChevronDown size={14} style={{ color: "rgba(255,255,255,0.25)", transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+                      <ChevronDown size={14} style={{ color: "#94a3b8", transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
                     </div>
                   </div>
 

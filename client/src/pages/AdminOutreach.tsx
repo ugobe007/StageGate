@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import DbStatusBanner from "@/components/DbStatusBanner";
+import { ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 
 type DraftStatus = "pending" | "approved" | "sent" | "discarded";
 
@@ -13,10 +12,10 @@ type DraftStatus = "pending" | "approved" | "sent" | "discarded";
 type DraftEntry = any;
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  approved: "bg-green-500/20 text-green-400 border-green-500/30",
-  sent: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  discarded: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+  pending: "#f59e0b",
+  approved: "#3ecf8e",
+  sent: "#3b82f6",
+  discarded: "#94a3b8",
 };
 
 export default function AdminOutreach() {
@@ -122,294 +121,291 @@ export default function AdminOutreach() {
     }
   };
 
-  const tabCounts = {
-    pending: activeTab === "pending" ? drafts.length : "?",
-    approved: activeTab === "approved" ? drafts.length : "?",
-    sent: activeTab === "sent" ? drafts.length : "?",
-  };
-
   return (
     <>
       <DbStatusBanner />
-      <div className="min-h-screen bg-background text-foreground">
-        <div className="max-w-5xl mx-auto px-6 py-8">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-8">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">XBOT / OUTREACH</p>
-              <h1 className="text-3xl font-bold tracking-tight">Email Drafts</h1>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Review AI-generated outreach emails before sending via Resend from outreach@onstage.bot
-              </p>
-            </div>
-            <Button
-              onClick={handleGenerate}
-              disabled={generating || generateMutation.isPending}
-              className="bg-amber-500 hover:bg-amber-600 text-black font-semibold"
-            >
-              {generating || generateMutation.isPending ? (
-                <span className="flex items-center gap-2">
-                  <span className="animate-spin h-3 w-3 border border-black border-t-transparent rounded-full" />
-                  Generating…
-                </span>
-              ) : (
-                "⚡ Generate Drafts"
-              )}
-            </Button>
+      <div style={{ padding: "2rem", maxWidth: "56rem", margin: "0 auto", color: "#0f172a" }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "2rem" }}>
+          <div>
+            <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: "0 0 0.25rem" }}>XBOT / OUTREACH</p>
+            <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>Email Drafts</h1>
+            <p style={{ fontSize: "0.875rem", color: "#64748b", margin: "0.25rem 0 0" }}>
+              Review AI-generated outreach emails before sending via Resend from outreach@onstage.bot
+            </p>
           </div>
-
-          {/* Tabs */}
-          <div className="flex gap-1 mb-6 border-b border-border">
-            {(["pending", "approved", "sent"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => { setActiveTab(tab); setSelectedIds(new Set()); setExpandedId(null); setEditingId(null); }}
-                className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
-                  activeTab === tab
-                    ? "border-amber-500 text-amber-400"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tab}
-                {activeTab === tab && (
-                  <span className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded">{drafts.length}</span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Bulk toolbar */}
-          {activeTab !== "sent" && drafts.length > 0 && (
-            <div className="flex items-center gap-3 mb-4 p-3 bg-muted/30 rounded-lg border border-border">
-              <input
-                type="checkbox"
-                checked={selectedIds.size === drafts.length && drafts.length > 0}
-                onChange={toggleSelectAll}
-                className="h-4 w-4 accent-amber-500"
-              />
-              <span className="text-sm text-muted-foreground">
-                {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
-              </span>
-              {selectedIds.size > 0 && (
-                <>
-                  {activeTab === "pending" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        selectedIds.forEach((id) => approveMutation.mutate({ draftId: id }));
-                        setSelectedIds(new Set());
-                      }}
-                      className="text-green-400 border-green-500/30 hover:bg-green-500/10"
-                    >
-                      ✓ Approve {selectedIds.size}
-                    </Button>
-                  )}
-                  {confirmBulkSend ? (
-                    <div className="flex items-center gap-2 ml-auto">
-                      <span className="text-sm text-red-400">Send {selectedIds.size} emails?</span>
-                      <Button
-                        size="sm"
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                        onClick={() => bulkSendMutation.mutate({ draftIds: Array.from(selectedIds) })}
-                        disabled={bulkSendMutation.isPending}
-                      >
-                        {bulkSendMutation.isPending ? "Sending…" : "Confirm Send"}
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setConfirmBulkSend(false)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      size="sm"
-                      className="ml-auto bg-amber-500 hover:bg-amber-600 text-black font-semibold"
-                      onClick={() => setConfirmBulkSend(true)}
-                    >
-                      ✉ Send {selectedIds.size} Now
-                    </Button>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Draft list */}
-          {isLoading ? (
-            <div className="text-center py-16 text-muted-foreground">Loading drafts…</div>
-          ) : drafts.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
-              {activeTab === "pending" ? (
-                <div>
-                  <p className="text-lg mb-2">No pending drafts</p>
-                  <p className="text-sm">Click "⚡ Generate Drafts" to have XBOT write personalized emails for all 78 prospects.</p>
-                </div>
-              ) : activeTab === "approved" ? (
-                <p>No approved drafts. Approve drafts from the Pending tab first.</p>
-              ) : (
-                <p>No emails sent yet.</p>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {(drafts as DraftEntry[]).map((entry) => {
-                const isExpanded = expandedId === entry.draft.id;
-                const isEditing = editingId === entry.draft.id;
-
-                return (
-                  <div
-                    key={entry.draft.id}
-                    className={`border rounded-lg transition-all ${
-                      isExpanded ? "border-amber-500/40 bg-muted/20" : "border-border hover:border-border/80"
-                    }`}
-                  >
-                    {/* Row header */}
-                    <div className="flex items-center gap-3 p-4">
-                      {activeTab !== "sent" && (
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(entry.draft.id)}
-                          onChange={() => toggleSelect(entry.draft.id)}
-                          className="h-4 w-4 accent-amber-500 flex-shrink-0"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      )}
-                      <div
-                        className="flex-1 min-w-0 cursor-pointer"
-                        onClick={() => setExpandedId(isExpanded ? null : entry.draft.id)}
-                      >
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-sm">{entry.prospect.company}</span>
-                          {entry.prospect.contactName && (
-                            <span className="text-xs text-muted-foreground">→ {entry.prospect.contactName}</span>
-                          )}
-                          {entry.prospect.contactEmail && (
-                            <span className="text-xs text-muted-foreground font-mono">{entry.prospect.contactEmail}</span>
-                          )}
-                          <span className={`text-xs px-2 py-0.5 rounded border ${STATUS_COLORS[entry.draft.status] ?? ""}`}>
-                            {entry.draft.status}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                          <span className="text-foreground/70">Subject:</span> {entry.draft.subject}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {activeTab === "pending" && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-green-400 border-green-500/30 hover:bg-green-500/10 h-7 text-xs"
-                              onClick={(e) => { e.stopPropagation(); approveMutation.mutate({ draftId: entry.draft.id }); }}
-                            >
-                              ✓ Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-muted-foreground h-7 text-xs"
-                              onClick={(e) => { e.stopPropagation(); discardMutation.mutate({ draftId: entry.draft.id }); }}
-                            >
-                              Discard
-                            </Button>
-                          </>
-                        )}
-                        {(activeTab === "pending" || activeTab === "approved") && (
-                          <Button
-                            size="sm"
-                            className="bg-amber-500 hover:bg-amber-600 text-black font-semibold h-7 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              sendMutation.mutate({ draftId: entry.draft.id });
-                            }}
-                            disabled={sendMutation.isPending}
-                          >
-                            ✉ Send
-                          </Button>
-                        )}
-                        <button
-                          onClick={() => setExpandedId(isExpanded ? null : entry.draft.id)}
-                          className="text-muted-foreground hover:text-foreground ml-1"
-                        >
-                          {isExpanded ? "▲" : "▼"}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Expanded panel */}
-                    {isExpanded && (
-                      <div className="border-t border-border px-4 pb-4 pt-3 space-y-3">
-                        {/* Agent reasoning */}
-                        {entry.draft.agentReasoning && (
-                          <div className="text-xs text-muted-foreground bg-muted/30 rounded px-3 py-2 border border-border">
-                            <span className="text-amber-400 font-medium">Agent reasoning: </span>
-                            {entry.draft.agentReasoning}
-                          </div>
-                        )}
-
-                        {isEditing ? (
-                          <div className="space-y-2">
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">Subject</label>
-                              <Input
-                                value={editSubject}
-                                onChange={(e) => setEditSubject(e.target.value)}
-                                className="text-sm"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">Body</label>
-                              <Textarea
-                                value={editBody}
-                                onChange={(e) => setEditBody(e.target.value)}
-                                rows={10}
-                                className="text-sm font-mono"
-                              />
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                className="bg-amber-500 hover:bg-amber-600 text-black"
-                                onClick={() => handleSaveEdit(entry.draft.id)}
-                                disabled={editMutation.isPending}
-                              >
-                                {editMutation.isPending ? "Saving…" : "Save Changes"}
-                              </Button>
-                              <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <div className="text-xs text-muted-foreground">
-                              <span className="font-medium text-foreground/70">Subject: </span>
-                              {entry.draft.subject}
-                            </div>
-                            <pre className="text-sm whitespace-pre-wrap font-sans bg-muted/20 rounded p-3 border border-border leading-relaxed">
-                              {entry.draft.body}
-                            </pre>
-                            {activeTab !== "sent" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs"
-                                onClick={() => handleEdit(entry)}
-                              >
-                                ✏ Edit Draft
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <button
+            onClick={handleGenerate}
+            disabled={generating || generateMutation.isPending}
+            style={{
+              display: "flex", alignItems: "center", gap: "0.375rem",
+              fontSize: "0.875rem", fontWeight: 600,
+              padding: "0.5rem 1rem",
+              border: "none",
+              background: "#f59e0b", color: "#000",
+              borderRadius: "0.375rem", cursor: "pointer",
+              opacity: generating || generateMutation.isPending ? 0.7 : 1,
+            }}
+          >
+            {generating || generateMutation.isPending ? (
+              <><RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} /> Generating…</>
+            ) : (
+              "⚡ Generate Drafts"
+            )}
+          </button>
         </div>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", marginBottom: "1.5rem" }}>
+          {(["pending", "approved", "sent"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => { setActiveTab(tab); setSelectedIds(new Set()); setExpandedId(null); setEditingId(null); }}
+              style={{
+                padding: "0.625rem 1rem",
+                fontSize: "0.875rem", fontWeight: 500,
+                background: "none", border: "none",
+                borderBottom: `2px solid ${activeTab === tab ? "#f59e0b" : "transparent"}`,
+                color: activeTab === tab ? "#0f172a" : "#64748b",
+                cursor: "pointer",
+                textTransform: "capitalize",
+                marginBottom: "-1px",
+              }}
+            >
+              {tab}
+              {activeTab === tab && (
+                <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", background: "#f1f5f9", color: "#64748b", padding: "0.125rem 0.375rem", borderRadius: "0.25rem" }}>
+                  {drafts.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Bulk toolbar */}
+        {activeTab !== "sent" && drafts.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", padding: "0.625rem 0.875rem", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "0.375rem" }}>
+            <input
+              type="checkbox"
+              checked={selectedIds.size === drafts.length && drafts.length > 0}
+              onChange={toggleSelectAll}
+              style={{ width: "1rem", height: "1rem", accentColor: "#f59e0b" }}
+            />
+            <span style={{ fontSize: "0.875rem", color: "#64748b" }}>
+              {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
+            </span>
+            {selectedIds.size > 0 && (
+              <>
+                {activeTab === "pending" && (
+                  <button
+                    onClick={() => {
+                      selectedIds.forEach((id) => approveMutation.mutate({ draftId: id }));
+                      setSelectedIds(new Set());
+                    }}
+                    style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(62,207,142,0.4)", color: "#3ecf8e", background: "#ffffff", borderRadius: "0.25rem", cursor: "pointer" }}
+                  >
+                    ✓ Approve {selectedIds.size}
+                  </button>
+                )}
+                {confirmBulkSend ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginLeft: "auto" }}>
+                    <span style={{ fontSize: "0.875rem", color: "#ef4444" }}>Send {selectedIds.size} emails?</span>
+                    <button
+                      onClick={() => bulkSendMutation.mutate({ draftIds: Array.from(selectedIds) })}
+                      disabled={bulkSendMutation.isPending}
+                      style={{ fontSize: "0.875rem", fontWeight: 600, padding: "0.25rem 0.75rem", border: "none", background: "#ef4444", color: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                    >
+                      {bulkSendMutation.isPending ? "Sending…" : "Confirm Send"}
+                    </button>
+                    <button onClick={() => setConfirmBulkSend(false)} style={{ fontSize: "0.875rem", padding: "0.25rem 0.75rem", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", borderRadius: "0.25rem", cursor: "pointer" }}>
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmBulkSend(true)}
+                    style={{ marginLeft: "auto", fontSize: "0.875rem", fontWeight: 600, padding: "0.25rem 0.875rem", border: "none", background: "#f59e0b", color: "#000", borderRadius: "0.25rem", cursor: "pointer" }}
+                  >
+                    ✉ Send {selectedIds.size} Now
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Draft list */}
+        {isLoading ? (
+          <div style={{ textAlign: "center", padding: "4rem 0", color: "#94a3b8", fontSize: "0.875rem" }}>Loading drafts…</div>
+        ) : drafts.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "4rem 0", color: "#94a3b8", fontSize: "0.875rem" }}>
+            {activeTab === "pending" ? (
+              <div>
+                <p style={{ fontSize: "1rem", color: "#475569", marginBottom: "0.5rem" }}>No pending drafts</p>
+                <p>Click "⚡ Generate Drafts" to have XBOT write personalized emails for all prospects.</p>
+              </div>
+            ) : activeTab === "approved" ? (
+              <p>No approved drafts. Approve drafts from the Pending tab first.</p>
+            ) : (
+              <p>No emails sent yet.</p>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {(drafts as DraftEntry[]).map((entry) => {
+              const isExpanded = expandedId === entry.draft.id;
+              const isEditing = editingId === entry.draft.id;
+              const statusColor = STATUS_COLORS[entry.draft.status as DraftStatus] ?? "#94a3b8";
+
+              return (
+                <div
+                  key={entry.draft.id}
+                  style={{
+                    border: `1px solid ${isExpanded ? "#f59e0b" : "#e2e8f0"}`,
+                    borderRadius: "0.5rem",
+                    background: "#ffffff",
+                    overflow: "hidden",
+                    transition: "border-color 0.1s",
+                  }}
+                >
+                  {/* Row header */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.875rem 1rem" }}>
+                    {activeTab !== "sent" && (
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(entry.draft.id)}
+                        onChange={() => toggleSelect(entry.draft.id)}
+                        style={{ width: "1rem", height: "1rem", accentColor: "#f59e0b", flexShrink: 0 }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
+                    <div
+                      style={{ flex: 1, minWidth: 0, cursor: "pointer" }}
+                      onClick={() => setExpandedId(isExpanded ? null : entry.draft.id)}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a" }}>{entry.prospect.company}</span>
+                        {entry.prospect.contactName && (
+                          <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>→ {entry.prospect.contactName}</span>
+                        )}
+                        {entry.prospect.contactEmail && (
+                          <span style={{ fontSize: "0.8125rem", color: "#94a3b8" }}>{entry.prospect.contactEmail}</span>
+                        )}
+                        <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: statusColor }}>
+                          {entry.draft.status}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.125rem 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <span style={{ color: "#475569", fontWeight: 500 }}>Subject:</span> {entry.draft.subject}
+                      </p>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
+                      {activeTab === "pending" && (
+                        <>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); approveMutation.mutate({ draftId: entry.draft.id }); }}
+                            style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: "#3ecf8e", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                          >
+                            ✓ Approve
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); discardMutation.mutate({ draftId: entry.draft.id }); }}
+                            style={{ fontSize: "0.8125rem", padding: "0.25rem 0.625rem", border: "1px solid #e2e8f0", color: "#94a3b8", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                          >
+                            Discard
+                          </button>
+                        </>
+                      )}
+                      {(activeTab === "pending" || activeTab === "approved") && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            sendMutation.mutate({ draftId: entry.draft.id });
+                          }}
+                          disabled={sendMutation.isPending}
+                          style={{ fontSize: "0.875rem", fontWeight: 600, padding: "0.25rem 0.75rem", border: "none", background: "#f59e0b", color: "#000", borderRadius: "0.25rem", cursor: "pointer" }}
+                        >
+                          ✉ Send
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setExpandedId(isExpanded ? null : entry.draft.id)}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: "0.25rem", display: "flex", alignItems: "center" }}
+                      >
+                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Expanded panel */}
+                  {isExpanded && (
+                    <div style={{ borderTop: "1px solid #e2e8f0", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                      {/* Agent reasoning */}
+                      {entry.draft.agentReasoning && (
+                        <div style={{ fontSize: "0.8125rem", color: "#64748b", background: "#f8fafc", borderRadius: "0.375rem", padding: "0.625rem 0.875rem", border: "1px solid #e2e8f0" }}>
+                          <span style={{ color: "#f59e0b", fontWeight: 600 }}>Agent reasoning: </span>
+                          {entry.draft.agentReasoning}
+                        </div>
+                      )}
+
+                      {isEditing ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                          <div>
+                            <label style={{ fontSize: "0.75rem", color: "#64748b", display: "block", marginBottom: "0.25rem" }}>Subject</label>
+                            <Input
+                              value={editSubject}
+                              onChange={(e) => setEditSubject(e.target.value)}
+                              style={{ fontSize: "0.875rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: "0.75rem", color: "#64748b", display: "block", marginBottom: "0.25rem" }}>Body</label>
+                            <Textarea
+                              value={editBody}
+                              onChange={(e) => setEditBody(e.target.value)}
+                              rows={10}
+                              style={{ fontSize: "0.875rem", fontFamily: "monospace" }}
+                            />
+                          </div>
+                          <div style={{ display: "flex", gap: "0.5rem" }}>
+                            <button
+                              onClick={() => handleSaveEdit(entry.draft.id)}
+                              disabled={editMutation.isPending}
+                              style={{ fontSize: "0.875rem", fontWeight: 600, padding: "0.375rem 0.875rem", border: "none", background: "#f59e0b", color: "#000", borderRadius: "0.25rem", cursor: "pointer" }}
+                            >
+                              {editMutation.isPending ? "Saving…" : "Save Changes"}
+                            </button>
+                            <button onClick={() => setEditingId(null)} style={{ fontSize: "0.875rem", padding: "0.375rem 0.875rem", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", borderRadius: "0.25rem", cursor: "pointer" }}>
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                          <div style={{ fontSize: "0.8125rem", color: "#64748b" }}>
+                            <span style={{ fontWeight: 500, color: "#475569" }}>Subject: </span>
+                            {entry.draft.subject}
+                          </div>
+                          <pre style={{ fontSize: "0.875rem", whiteSpace: "pre-wrap", fontFamily: "inherit", background: "#f8fafc", borderRadius: "0.375rem", padding: "0.875rem", border: "1px solid #e2e8f0", lineHeight: 1.6, color: "#0f172a", margin: 0 }}>
+                            {entry.draft.body}
+                          </pre>
+                          {activeTab !== "sent" && (
+                            <button
+                              onClick={() => handleEdit(entry)}
+                              style={{ alignSelf: "flex-start", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", borderRadius: "0.25rem", cursor: "pointer" }}
+                            >
+                              ✏ Edit Draft
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </>
   );

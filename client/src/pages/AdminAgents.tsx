@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { RefreshCw } from "lucide-react";
 
 // ─── Agent metadata registry ──────────────────────────────────────────────────
 const AGENT_REGISTRY: Record<string, { label: string; description: string; icon: string; category: string }> = {
@@ -36,7 +37,6 @@ const AGENT_REGISTRY: Record<string, { label: string; description: string; icon:
   },
 };
 
-// All known agents (shown even if no runs yet)
 const ALL_AGENTS = Object.keys(AGENT_REGISTRY);
 
 function formatRelative(date: Date | null | undefined): string {
@@ -52,19 +52,18 @@ function formatRelative(date: Date | null | undefined): string {
   return `${days}d ago`;
 }
 
-function StatusBadge({ status }: { status: "running" | "success" | "error" | "idle" }) {
-  const styles: Record<string, string> = {
-    running: "bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse",
-    success: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40",
-    error: "bg-red-500/20 text-red-400 border border-red-500/40",
-    idle: "bg-zinc-700/40 text-zinc-500 border border-zinc-700",
-  };
+const STATUS_STYLES: Record<string, { color: string; dot: string }> = {
+  running: { color: "#f59e0b", dot: "#f59e0b" },
+  success: { color: "#3ecf8e", dot: "#3ecf8e" },
+  error: { color: "#ef4444", dot: "#ef4444" },
+  idle: { color: "#94a3b8", dot: "#cbd5e1" },
+};
+
+function StatusText({ status }: { status: "running" | "success" | "error" | "idle" }) {
+  const s = STATUS_STYLES[status] ?? STATUS_STYLES.idle;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono uppercase tracking-wider ${styles[status]}`}>
-      {status === "running" && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />}
-      {status === "success" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />}
-      {status === "error" && <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />}
-      {status === "idle" && <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 inline-block" />}
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, color: s.color }}>
+      <span style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: s.dot, display: "inline-block", animation: status === "running" ? "pulse 1.5s ease-in-out infinite" : "none" }} />
       {status}
     </span>
   );
@@ -76,7 +75,6 @@ export default function AdminAgents() {
   const { data: agentStats, refetch: refetchStats } = trpc.admin.getAgentStats.useQuery(undefined, { refetchInterval: 10000 });
   const { data: agentRuns, refetch: refetchRuns } = trpc.admin.getAgentRuns.useQuery({ limit: 50 }, { refetchInterval: 10000 });
 
-  // Build a map from agentName → stats
   const statsMap = new Map((agentStats ?? []).map((s) => [s.agentName, s]));
 
   const handleRefresh = () => {
@@ -89,24 +87,42 @@ export default function AdminAgents() {
     ? (agentRuns ?? []).filter((r) => r.agentName === selectedAgent)
     : (agentRuns ?? []);
 
+  const totalRuns = (agentRuns ?? []).length;
+  const successRuns = (agentRuns ?? []).filter((r) => r.status === "success").length;
+  const overallRate = totalRuns > 0 ? Math.round((successRuns / totalRuns) * 100) : null;
+
   return (
-    <div className="min-h-screen bg-black text-white p-6 space-y-8">
+    <div style={{ padding: "2rem", maxWidth: "72rem", margin: "0 auto", color: "#0f172a" }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "2rem" }}>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">AI Agents &amp; Workflows</h1>
-          <p className="text-zinc-500 text-sm mt-0.5">Monitor all active AI agents, view run history, and track workflow performance.</p>
+          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>AI Agents &amp; Workflows</h1>
+          <p style={{ fontSize: "0.875rem", color: "#64748b", margin: "0.25rem 0 0" }}>Monitor active AI agents, view run history, and track workflow performance.</p>
         </div>
         <button
           onClick={handleRefresh}
-          className="px-3 py-1.5 text-xs font-mono border border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200 rounded transition-colors"
+          style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.875rem", border: "1px solid #e2e8f0", background: "#ffffff", color: "#475569", borderRadius: "0.375rem", cursor: "pointer" }}
         >
-          ↻ Refresh
+          <RefreshCw size={13} /> Refresh
         </button>
       </div>
 
+      {/* Summary bar */}
+      <div style={{ display: "flex", alignItems: "stretch", border: "1px solid #e2e8f0", borderRadius: "0.5rem", overflow: "hidden", background: "#ffffff", marginBottom: "1.5rem" }}>
+        {[
+          { label: "Total Runs", value: totalRuns, color: "#0f172a" },
+          { label: "Success Rate", value: overallRate !== null ? `${overallRate}%` : "—", color: overallRate !== null ? "#3ecf8e" : "#94a3b8" },
+          { label: "Active Agents", value: ALL_AGENTS.length, color: "#0f172a" },
+        ].map((s, i, arr) => (
+          <div key={s.label} style={{ flex: 1, padding: "0.875rem 1.25rem", borderRight: i < arr.length - 1 ? "1px solid #e2e8f0" : "none" }}>
+            <div style={{ fontSize: "0.6875rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.25rem" }}>{s.label}</div>
+            <div style={{ fontSize: "1.5rem", fontWeight: 700, color: s.color }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
       {/* Agent Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
         {ALL_AGENTS.map((agentName) => {
           const meta = AGENT_REGISTRY[agentName];
           const stats = statsMap.get(agentName);
@@ -119,40 +135,38 @@ export default function AdminAgents() {
             <button
               key={agentName}
               onClick={() => setSelectedAgent(isSelected ? null : agentName)}
-              className={`text-left p-4 rounded-lg border transition-all ${
-                isSelected
-                  ? "border-emerald-500/60 bg-emerald-950/20"
-                  : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-600"
-              }`}
+              style={{
+                textAlign: "left",
+                padding: "1rem",
+                borderRadius: "0.5rem",
+                border: `1px solid ${isSelected ? "#3ecf8e" : "#e2e8f0"}`,
+                background: isSelected ? "rgba(62,207,142,0.04)" : "#ffffff",
+                cursor: "pointer",
+                transition: "border-color 0.1s, background 0.1s",
+              }}
             >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{meta.icon}</span>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={{ fontSize: "1.25rem" }}>{meta.icon}</span>
                   <div>
-                    <div className="font-semibold text-sm text-white">{meta.label}</div>
-                    <div className="text-xs text-zinc-500 font-mono">{meta.category}</div>
+                    <div style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#0f172a" }}>{meta.label}</div>
+                    <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{meta.category}</div>
                   </div>
                 </div>
-                <StatusBadge status={stats ? (stats.errorRuns > 0 && stats.successRuns === 0 ? "error" : "idle") : "idle"} />
+                <StatusText status={stats ? (stats.errorRuns > 0 && stats.successRuns === 0 ? "error" : "idle") : "idle"} />
               </div>
-              <p className="text-xs text-zinc-500 mb-3 leading-relaxed">{meta.description}</p>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="bg-zinc-800/60 rounded p-1.5">
-                  <div className="text-base font-bold font-mono text-white">{stats?.totalRuns ?? 0}</div>
-                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Runs</div>
-                </div>
-                <div className="bg-zinc-800/60 rounded p-1.5">
-                  <div className={`text-base font-bold font-mono ${successRate !== null ? (successRate >= 80 ? "text-emerald-400" : successRate >= 50 ? "text-amber-400" : "text-red-400") : "text-zinc-600"}`}>
-                    {successRate !== null ? `${successRate}%` : "—"}
+              <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0 0 0.75rem", lineHeight: 1.5 }}>{meta.description}</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                {[
+                  { label: "Runs", value: String(stats?.totalRuns ?? 0), color: "#0f172a" },
+                  { label: "Success", value: successRate !== null ? `${successRate}%` : "—", color: successRate !== null ? (successRate >= 80 ? "#3ecf8e" : successRate >= 50 ? "#f59e0b" : "#ef4444") : "#94a3b8" },
+                  { label: "Last Run", value: formatRelative(stats?.lastRunAt), color: "#64748b" },
+                ].map((stat) => (
+                  <div key={stat.label} style={{ background: "#f8fafc", borderRadius: "0.25rem", padding: "0.5rem", textAlign: "center" }}>
+                    <div style={{ fontSize: "1rem", fontWeight: 700, color: stat.color }}>{stat.value}</div>
+                    <div style={{ fontSize: "0.625rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", marginTop: "0.125rem" }}>{stat.label}</div>
                   </div>
-                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Success</div>
-                </div>
-                <div className="bg-zinc-800/60 rounded p-1.5">
-                  <div className="text-[11px] font-mono text-zinc-400 leading-tight pt-0.5">
-                    {formatRelative(stats?.lastRunAt)}
-                  </div>
-                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Last Run</div>
-                </div>
+                ))}
               </div>
             </button>
           );
@@ -160,36 +174,32 @@ export default function AdminAgents() {
       </div>
 
       {/* Run History Table */}
-      <div className="border border-zinc-800 rounded-lg overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-900/60">
-          <div className="flex items-center gap-3">
-            <h2 className="text-sm font-semibold text-zinc-200">Run History</h2>
+      <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", overflow: "hidden", background: "#ffffff" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#0f172a", margin: 0 }}>Run History</h2>
             {selectedAgent && (
-              <span className="text-xs font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded">
+              <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: "#3ecf8e" }}>
                 {selectedAgent}
-                <button onClick={() => setSelectedAgent(null)} className="ml-1.5 text-zinc-500 hover:text-zinc-300">×</button>
+                <button onClick={() => setSelectedAgent(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", marginLeft: "0.375rem", fontSize: "1rem", lineHeight: 1 }}>×</button>
               </span>
             )}
           </div>
-          <span className="text-xs text-zinc-600 font-mono">{filteredRuns.length} runs</span>
+          <span style={{ fontSize: "0.8125rem", color: "#94a3b8" }}>{filteredRuns.length} runs</span>
         </div>
 
         {filteredRuns.length === 0 ? (
-          <div className="px-4 py-12 text-center text-zinc-600 text-sm">
+          <div style={{ padding: "3rem 1rem", textAlign: "center", color: "#94a3b8", fontSize: "0.875rem" }}>
             No runs recorded yet. Trigger an AI agent to see activity here.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8125rem" }}>
               <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900/40">
-                  <th className="text-left px-4 py-2 text-zinc-500 font-mono uppercase tracking-wider">Agent</th>
-                  <th className="text-left px-4 py-2 text-zinc-500 font-mono uppercase tracking-wider">Status</th>
-                  <th className="text-left px-4 py-2 text-zinc-500 font-mono uppercase tracking-wider">Triggered By</th>
-                  <th className="text-left px-4 py-2 text-zinc-500 font-mono uppercase tracking-wider">Input</th>
-                  <th className="text-left px-4 py-2 text-zinc-500 font-mono uppercase tracking-wider">Output / Error</th>
-                  <th className="text-left px-4 py-2 text-zinc-500 font-mono uppercase tracking-wider">Started</th>
-                  <th className="text-left px-4 py-2 text-zinc-500 font-mono uppercase tracking-wider">Duration</th>
+                <tr style={{ borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+                  {["Agent", "Status", "Triggered By", "Input", "Output / Error", "Started", "Duration"].map(h => (
+                    <th key={h} style={{ textAlign: "left", padding: "0.5rem 1rem", fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b" }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -199,28 +209,27 @@ export default function AdminAgents() {
                     ? new Date(run.completedAt).getTime() - new Date(run.startedAt).getTime()
                     : null;
                   return (
-                    <tr key={run.id} className="border-b border-zinc-800/60 hover:bg-zinc-900/40 transition-colors">
-                      <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-1.5">
+                    <tr key={run.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "0.625rem 1rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
                           <span>{meta?.icon ?? "🔧"}</span>
-                          <span className="text-zinc-300 font-medium">{run.agentName}</span>
+                          <span style={{ fontWeight: 500, color: "#0f172a" }}>{run.agentName}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-2.5">
-                        <StatusBadge status={run.status as "running" | "success" | "error"} />
+                      <td style={{ padding: "0.625rem 1rem" }}>
+                        <StatusText status={run.status as "running" | "success" | "error"} />
                       </td>
-                      <td className="px-4 py-2.5 text-zinc-500 font-mono">{run.triggeredBy ?? "—"}</td>
-                      <td className="px-4 py-2.5 text-zinc-500 max-w-[180px] truncate" title={run.inputSummary ?? ""}>
-                        {run.inputSummary ?? "—"}
+                      <td style={{ padding: "0.625rem 1rem", color: "#64748b" }}>{run.triggeredBy ?? "—"}</td>
+                      <td style={{ padding: "0.625rem 1rem", color: "#64748b", maxWidth: "180px" }}>
+                        <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={run.inputSummary ?? ""}>{run.inputSummary ?? "—"}</span>
                       </td>
-                      <td className={`px-4 py-2.5 max-w-[200px] truncate font-mono ${run.status === "error" ? "text-red-400" : "text-emerald-400/80"}`}
-                        title={run.status === "error" ? (run.errorMessage ?? "") : (run.outputSummary ?? "")}>
-                        {run.status === "error" ? (run.errorMessage ?? "Error") : (run.outputSummary ?? "—")}
+                      <td style={{ padding: "0.625rem 1rem", maxWidth: "200px", color: run.status === "error" ? "#ef4444" : "#3ecf8e" }}>
+                        <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={run.status === "error" ? (run.errorMessage ?? "") : (run.outputSummary ?? "")}>
+                          {run.status === "error" ? (run.errorMessage ?? "Error") : (run.outputSummary ?? "—")}
+                        </span>
                       </td>
-                      <td className="px-4 py-2.5 text-zinc-500 font-mono whitespace-nowrap">
-                        {formatRelative(run.startedAt)}
-                      </td>
-                      <td className="px-4 py-2.5 text-zinc-500 font-mono">
+                      <td style={{ padding: "0.625rem 1rem", color: "#64748b", whiteSpace: "nowrap" }}>{formatRelative(run.startedAt)}</td>
+                      <td style={{ padding: "0.625rem 1rem", color: "#64748b" }}>
                         {durationMs !== null ? `${(durationMs / 1000).toFixed(1)}s` : run.status === "running" ? "…" : "—"}
                       </td>
                     </tr>
@@ -230,26 +239,6 @@ export default function AdminAgents() {
             </table>
           </div>
         )}
-      </div>
-
-      {/* Workflow Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="border border-zinc-800 rounded-lg p-4 bg-zinc-900/30">
-          <div className="text-xs text-zinc-500 uppercase tracking-wider font-mono mb-1">Total Runs</div>
-          <div className="text-3xl font-bold font-mono text-white">{(agentRuns ?? []).length}</div>
-        </div>
-        <div className="border border-zinc-800 rounded-lg p-4 bg-zinc-900/30">
-          <div className="text-xs text-zinc-500 uppercase tracking-wider font-mono mb-1">Success Rate</div>
-          <div className="text-3xl font-bold font-mono text-emerald-400">
-            {(agentRuns ?? []).length > 0
-              ? `${Math.round(((agentRuns ?? []).filter((r) => r.status === "success").length / (agentRuns ?? []).length) * 100)}%`
-              : "—"}
-          </div>
-        </div>
-        <div className="border border-zinc-800 rounded-lg p-4 bg-zinc-900/30">
-          <div className="text-xs text-zinc-500 uppercase tracking-wider font-mono mb-1">Active Agents</div>
-          <div className="text-3xl font-bold font-mono text-white">{ALL_AGENTS.length}</div>
-        </div>
       </div>
     </div>
   );

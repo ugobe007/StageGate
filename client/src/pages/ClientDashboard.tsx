@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -12,24 +10,23 @@ import EditProfileSheet from "@/components/EditProfileSheet";
 import {
   Package, Calendar, CheckCircle, Clock, AlertCircle, XCircle,
   ArrowRight, Loader2, User, Building2, Globe, Phone, Mail,
-  Bot, Zap, Truck, Wrench, Plus, ChevronDown, ChevronUp,
-  Star, FileText, Send
+  Bot, Zap, FileText, Send, Plus, ChevronDown, ChevronUp, Star,
 } from "lucide-react";
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = {
-  new:         { label: "New",         color: "bg-blue-500/20 text-blue-400 border-blue-500/30",       icon: Clock },
-  reviewing:   { label: "Reviewing",   color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", icon: AlertCircle },
-  quoted:      { label: "Quoted",      color: "bg-purple-500/20 text-purple-400 border-purple-500/30", icon: FileText },
-  approved:    { label: "Approved",    color: "bg-primary/20 text-primary border-primary/30",           icon: CheckCircle },
-  in_progress: { label: "In Progress", color: "bg-orange-500/20 text-orange-400 border-orange-500/30", icon: Zap },
-  completed:   { label: "Completed",   color: "bg-green-500/20 text-green-400 border-green-500/30",    icon: CheckCircle },
-  cancelled:   { label: "Cancelled",   color: "bg-destructive/20 text-destructive border-destructive/30", icon: XCircle },
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ size?: number }> }> = {
+  new:         { label: "New",         color: "#3b82f6", icon: Clock },
+  reviewing:   { label: "Reviewing",   color: "#f59e0b", icon: AlertCircle },
+  quoted:      { label: "Quoted",      color: "#8b5cf6", icon: FileText },
+  approved:    { label: "Approved",    color: "#3ecf8e", icon: CheckCircle },
+  in_progress: { label: "In Progress", color: "#f97316", icon: Zap },
+  completed:   { label: "Completed",   color: "#3ecf8e", icon: CheckCircle },
+  cancelled:   { label: "Cancelled",   color: "#ef4444", icon: XCircle },
 };
 
 const REQUEST_TYPES = [
   "Robot Receiving", "Unpacking & Inspection", "Staging & Setup",
   "Show Floor Activation", "Booth Delivery", "Warehousing",
-  "Customs & Freight", "Technical Support", "General Inquiry"
+  "Customs & Freight", "Technical Support", "General Inquiry",
 ];
 
 const URGENCY_OPTIONS = [
@@ -67,6 +64,7 @@ export default function ClientDashboard() {
       setRobotName(""); setDetails(""); setUrgency("normal"); setAttachment(null);
     },
   });
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -88,24 +86,22 @@ export default function ClientDashboard() {
 
   if (loading || profileLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary" size={32} />
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
+        <Loader2 size={28} style={{ color: "#3ecf8e", animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div style={{ minHeight: "100vh", background: "#fff" }}>
         <Navbar />
-        <div className="pt-32 pb-16 container max-w-lg mx-auto text-center">
-          <div className="p-12 rounded-2xl border border-primary/30 bg-primary/5">
-            <h1 className="text-3xl font-display font-bold mb-4">Sign In Required</h1>
-            <p className="text-muted-foreground mb-8">Please sign in to access your dashboard.</p>
-            <a href={getLoginUrl()}>
-              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold w-full gap-2">
-                Sign In <ArrowRight size={16} />
-              </Button>
+        <div style={{ paddingTop: "8rem", paddingBottom: "4rem", maxWidth: "28rem", margin: "0 auto", padding: "8rem 1rem 4rem", textAlign: "center" }}>
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.75rem", padding: "3rem 2rem" }}>
+            <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.75rem" }}>Sign In Required</h1>
+            <p style={{ color: "#64748b", marginBottom: "2rem" }}>Please sign in to access your dashboard.</p>
+            <a href={getLoginUrl()} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#3ecf8e", color: "#fff", fontWeight: 700, fontSize: "1rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+              Sign In <ArrowRight size={16} />
             </a>
           </div>
         </div>
@@ -115,19 +111,19 @@ export default function ClientDashboard() {
 
   if (!profile || !profile.onboardingComplete) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div style={{ minHeight: "100vh", background: "#fff" }}>
         <Navbar />
-        <div className="pt-32 pb-16 container max-w-lg mx-auto text-center">
-          <div className="p-12 rounded-2xl border border-primary/30 bg-primary/5">
-            <Bot size={48} className="text-primary mx-auto mb-4" />
-            <h1 className="text-3xl font-display font-bold mb-4">Set Up Your Profile</h1>
-            <p className="text-muted-foreground mb-8">
+        <div style={{ paddingTop: "8rem", paddingBottom: "4rem", maxWidth: "28rem", margin: "0 auto", padding: "8rem 1rem 4rem", textAlign: "center" }}>
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.75rem", padding: "3rem 2rem" }}>
+            <Bot size={40} style={{ color: "#3ecf8e", margin: "0 auto 1rem" }} />
+            <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.75rem" }}>Set Up Your Profile</h1>
+            <p style={{ color: "#64748b", marginBottom: "2rem" }}>
               Complete your company profile so StageGate can prepare the right logistics for your robots.
             </p>
             <Link href="/onboarding">
-              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold w-full gap-2">
+              <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#3ecf8e", color: "#fff", fontWeight: 700, fontSize: "1rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                 Start Setup <ArrowRight size={16} />
-              </Button>
+              </a>
             </Link>
           </div>
         </div>
@@ -138,63 +134,66 @@ export default function ClientDashboard() {
   const robots = profile.robots ? JSON.parse(profile.robots) as Array<{ name: string; type: string; weight: string; dimensions: string; powerReq: string; notes: string }> : [];
   const showsAttending = profile.showsAttending ? JSON.parse(profile.showsAttending) as Array<{ showName: string; boothNumber: string; year: string }> : [];
   const servicesNeeded = profile.servicesNeeded ? JSON.parse(profile.servicesNeeded) as string[] : [];
-  const upcomingShows = (shows || []).filter(s => s.status === "upcoming");
+
+  const inputStyle = {
+    width: "100%", height: "2.25rem", borderRadius: "0.375rem",
+    border: "1px solid #e2e8f0", background: "#fff",
+    padding: "0 0.75rem", fontSize: "0.875rem", color: "#0f172a", outline: "none",
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
       <Navbar />
-      <div className="pt-20 pb-16">
-        <div className="container max-w-4xl mx-auto px-4">
+      <div style={{ paddingTop: "5rem", paddingBottom: "4rem" }}>
+        <div style={{ maxWidth: "56rem", margin: "0 auto", padding: "2rem 1rem" }}>
 
           {/* Welcome header */}
-          <div className="mb-8 flex items-start justify-between">
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "2rem" }}>
             <div>
-              <h1 className="text-3xl font-display font-bold mb-1">
-                Welcome back, {profile.contactName?.split(" ")[0] ?? user?.name ?? "there"} 👋
+              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#0f172a", margin: "0 0 0.25rem" }}>
+                Welcome back, {profile.contactName?.split(" ")[0] ?? user?.name ?? "there"}
               </h1>
-              <p className="text-muted-foreground">{profile.companyName} · StageGate Client Portal</p>
+              <p style={{ fontSize: "0.875rem", color: "#64748b", margin: 0 }}>{profile.companyName} · StageGate Client Portal</p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 text-xs"
+            <button
               onClick={() => setEditProfileOpen(true)}
+              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.75rem", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", borderRadius: "0.375rem", cursor: "pointer" }}
             >
               <User size={12} /> Edit Profile
-            </Button>
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1.5rem" }}>
 
             {/* Left column */}
-            <div className="lg:col-span-1 space-y-4">
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
 
               {/* Company card */}
-              <div className="rounded-xl border border-border/60 bg-card p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Building2 size={18} className="text-primary" />
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+                  <div style={{ width: "2.25rem", height: "2.25rem", borderRadius: "0.375rem", background: "rgba(62,207,142,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Building2 size={16} style={{ color: "#3ecf8e" }} />
                   </div>
                   <div>
-                    <div className="font-semibold text-sm">{profile.companyName}</div>
-                    <div className="text-xs text-muted-foreground">{profile.country ?? "—"}</div>
+                    <div style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a" }}>{profile.companyName}</div>
+                    <div style={{ fontSize: "0.8125rem", color: "#94a3b8" }}>{profile.country ?? "—"}</div>
                   </div>
                 </div>
-                <div className="space-y-2 text-sm">
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.875rem" }}>
                   {profile.contactEmail && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Mail size={12} /> <span className="truncate">{profile.contactEmail}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#64748b" }}>
+                      <Mail size={12} /> <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.contactEmail}</span>
                     </div>
                   )}
                   {profile.contactPhone && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#64748b" }}>
                       <Phone size={12} /> {profile.contactPhone}
                     </div>
                   )}
                   {profile.website && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#64748b" }}>
                       <Globe size={12} />
-                      <a href={profile.website} target="_blank" rel="noreferrer" className="truncate hover:text-primary transition-colors">
+                      <a href={profile.website} target="_blank" rel="noreferrer" style={{ color: "#3ecf8e", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {profile.website.replace(/^https?:\/\//, "")}
                       </a>
                     </div>
@@ -204,18 +203,18 @@ export default function ClientDashboard() {
 
               {/* Robots */}
               {robots.length > 0 && (
-                <div className="rounded-xl border border-border/60 bg-card p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Bot size={14} className="text-primary" />
-                    <span className="text-sm font-semibold">Your Robots</span>
+                <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                    <Bot size={13} style={{ color: "#3ecf8e" }} />
+                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>Your Robots</span>
                   </div>
-                  <div className="space-y-2">
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                     {robots.map((r, i) => (
-                      <div key={i} className="p-3 rounded-lg bg-background border border-border/40">
-                        <div className="font-medium text-sm">{r.name || "Unnamed Robot"}</div>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {r.type && <Badge variant="secondary" className="text-xs">{r.type}</Badge>}
-                          {r.weight && <span className="text-xs text-muted-foreground">{r.weight}</span>}
+                      <div key={i} style={{ padding: "0.625rem 0.75rem", borderRadius: "0.375rem", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                        <div style={{ fontWeight: 500, fontSize: "0.875rem", color: "#0f172a" }}>{r.name || "Unnamed Robot"}</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.25rem" }}>
+                          {r.type && <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{r.type}</span>}
+                          {r.weight && <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{r.weight}</span>}
                         </div>
                       </div>
                     ))}
@@ -225,19 +224,19 @@ export default function ClientDashboard() {
 
               {/* Shows */}
               {showsAttending.length > 0 && (
-                <div className="rounded-xl border border-border/60 bg-card p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Calendar size={14} className="text-primary" />
-                    <span className="text-sm font-semibold">Upcoming Shows</span>
+                <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                    <Calendar size={13} style={{ color: "#3ecf8e" }} />
+                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>Upcoming Shows</span>
                   </div>
-                  <div className="space-y-2">
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                     {showsAttending.map((s, i) => (
-                      <div key={i} className="flex items-center justify-between">
+                      <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <div>
-                          <div className="text-sm font-medium">{s.showName}</div>
-                          {s.boothNumber && <div className="text-xs text-muted-foreground">{s.boothNumber}</div>}
+                          <div style={{ fontSize: "0.875rem", fontWeight: 500, color: "#0f172a" }}>{s.showName}</div>
+                          {s.boothNumber && <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{s.boothNumber}</div>}
                         </div>
-                        <Badge variant="outline" className="text-xs">{s.year}</Badge>
+                        <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{s.year}</span>
                       </div>
                     ))}
                   </div>
@@ -246,14 +245,16 @@ export default function ClientDashboard() {
 
               {/* Services needed */}
               {servicesNeeded.length > 0 && (
-                <div className="rounded-xl border border-border/60 bg-card p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Star size={14} className="text-primary" />
-                    <span className="text-sm font-semibold">Services Requested</span>
+                <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                    <Star size={13} style={{ color: "#3ecf8e" }} />
+                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>Services Requested</span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
                     {servicesNeeded.map(s => (
-                      <Badge key={s} variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">{s}</Badge>
+                      <span key={s} style={{ fontSize: "0.8125rem", color: "#3ecf8e", background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>
+                        {s}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -261,90 +262,92 @@ export default function ClientDashboard() {
             </div>
 
             {/* Right column — Service Requests */}
-            <div className="lg:col-span-2 space-y-4">
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
 
               {/* Submit new request */}
-              <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", background: "#fff", overflow: "hidden" }}>
                 <button
                   onClick={() => setShowRequestForm(v => !v)}
-                  className="w-full flex items-center justify-between p-5 hover:bg-muted/30 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                      <Plus size={16} className="text-primary-foreground" />
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.125rem 1.25rem", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <div style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", background: "#3ecf8e", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Plus size={15} style={{ color: "#fff" }} />
                     </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-sm">Submit a Service Request</div>
-                      <div className="text-xs text-muted-foreground">Request logistics, staging, or support for your next show</div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a" }}>Submit a Service Request</div>
+                      <div style={{ fontSize: "0.8125rem", color: "#64748b" }}>Request logistics, staging, or support for your next show</div>
                     </div>
                   </div>
-                  {showRequestForm ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                  {showRequestForm ? <ChevronUp size={15} style={{ color: "#94a3b8" }} /> : <ChevronDown size={15} style={{ color: "#94a3b8" }} />}
                 </button>
 
                 {showRequestForm && (
-                  <div className="px-5 pb-5 border-t border-border/40 pt-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <label className="text-xs font-medium mb-1.5 block text-muted-foreground">Service Type *</label>
-                        <select value={requestType} onChange={e => setRequestType(e.target.value)}
-                          className="w-full h-9 rounded-md border border-border/60 bg-background px-3 text-sm text-foreground">
+                  <div style={{ padding: "0 1.25rem 1.25rem", borderTop: "1px solid #e2e8f0", paddingTop: "1rem" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.875rem" }}>
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>Service Type *</label>
+                        <select value={requestType} onChange={e => setRequestType(e.target.value)} style={inputStyle}>
                           <option value="">Select service...</option>
                           {REQUEST_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="text-xs font-medium mb-1.5 block text-muted-foreground">Show Name</label>
-                        <Input value={showName} onChange={e => setShowName(e.target.value)}
-                          placeholder="e.g. CES 2026" className="bg-background border-border/60 text-sm" />
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>Show Name</label>
+                        <Input value={showName} onChange={e => setShowName(e.target.value)} placeholder="e.g. CES 2026" className="text-sm" />
                       </div>
                       <div>
-                        <label className="text-xs font-medium mb-1.5 block text-muted-foreground">Show Date</label>
-                        <Input value={showDate} onChange={e => setShowDate(e.target.value)}
-                          placeholder="e.g. Jan 7–10, 2026" className="bg-background border-border/60 text-sm" />
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>Show Date</label>
+                        <Input value={showDate} onChange={e => setShowDate(e.target.value)} placeholder="e.g. Jan 7–10, 2026" className="text-sm" />
                       </div>
                       <div>
-                        <label className="text-xs font-medium mb-1.5 block text-muted-foreground">Robot Name</label>
-                        <Input value={robotName} onChange={e => setRobotName(e.target.value)}
-                          placeholder="e.g. Spot" className="bg-background border-border/60 text-sm" />
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>Robot Name</label>
+                        <Input value={robotName} onChange={e => setRobotName(e.target.value)} placeholder="e.g. Spot" className="text-sm" />
                       </div>
                       <div>
-                        <label className="text-xs font-medium mb-1.5 block text-muted-foreground">Urgency</label>
-                        <select value={urgency} onChange={e => setUrgency(e.target.value as "low" | "normal" | "high" | "urgent")}
-                          className="w-full h-9 rounded-md border border-border/60 bg-background px-3 text-sm text-foreground">
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>Urgency</label>
+                        <select value={urgency} onChange={e => setUrgency(e.target.value as "low" | "normal" | "high" | "urgent")} style={inputStyle}>
                           {URGENCY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
                       </div>
-                      <div className="col-span-2">
-                        <label className="text-xs font-medium mb-1.5 block text-muted-foreground">Details</label>
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>Details</label>
                         <Textarea value={details} onChange={e => setDetails(e.target.value)}
                           placeholder="Describe what you need, timeline, any special requirements..."
-                          className="bg-background border-border/60 resize-none text-sm" rows={3} />
+                          className="resize-none text-sm" rows={3} />
                       </div>
-                      <div className="col-span-2">
-                        <label className="text-xs font-medium mb-1.5 block text-muted-foreground">
-                          Attachment <span className="text-muted-foreground/60 font-normal">(optional — spec sheet, crate dims, robot manual · PDF/image · max 16MB)</span>
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>
+                          Attachment <span style={{ fontWeight: 400, color: "#94a3b8" }}>(optional — spec sheet, crate dims, robot manual · PDF/image · max 16MB)</span>
                         </label>
                         {attachment ? (
-                          <div className="flex items-center gap-2 text-sm">
-                            <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-primary underline truncate max-w-xs">{attachment.name}</a>
-                            <button type="button" onClick={() => setAttachment(null)} className="text-muted-foreground hover:text-destructive text-xs ml-1">Remove</button>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem" }}>
+                            <a href={attachment.url} target="_blank" rel="noopener noreferrer" style={{ color: "#3ecf8e", textDecoration: "underline", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "18rem" }}>{attachment.name}</a>
+                            <button type="button" onClick={() => setAttachment(null)} style={{ fontSize: "0.75rem", color: "#94a3b8", background: "none", border: "none", cursor: "pointer", marginLeft: "0.25rem" }}>Remove</button>
                           </div>
                         ) : (
-                          <label className="cursor-pointer inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground border border-dashed border-border/60 rounded px-3 py-2 transition-colors">
-                            {uploadingFile ? <><Loader2 size={14} className="animate-spin" /> Uploading…</> : <span>Choose file</span>}
-                            <input type="file" className="hidden" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.xlsx,.csv" onChange={handleFileUpload} disabled={uploadingFile} />
+                          <label style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", color: "#64748b", border: "1px dashed #e2e8f0", borderRadius: "0.375rem", padding: "0.5rem 0.875rem" }}>
+                            {uploadingFile ? <><Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> Uploading…</> : <span>Choose file</span>}
+                            <input type="file" style={{ display: "none" }} accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.xlsx,.csv" onChange={handleFileUpload} disabled={uploadingFile} />
                           </label>
                         )}
                       </div>
                     </div>
-                    <div className="flex gap-3">
-                      <Button variant="outline" size="sm" onClick={() => setShowRequestForm(false)}>Cancel</Button>
-                      <Button size="sm"
+                    <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+                      <button
+                        onClick={() => setShowRequestForm(false)}
+                        style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", borderRadius: "0.375rem", cursor: "pointer" }}
+                      >
+                        Cancel
+                      </button>
+                      <button
                         disabled={!requestType || submitRequest.isPending || uploadingFile}
                         onClick={() => submitRequest.mutate({ requestType, showName: showName || undefined, showDate: showDate || undefined, robotName: robotName || undefined, details: details || undefined, urgency, attachmentUrl: attachment?.url, attachmentKey: attachment?.key, attachmentName: attachment?.name })}
-                        className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-                        {submitRequest.isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                        style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#3ecf8e", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: (!requestType || submitRequest.isPending || uploadingFile) ? 0.6 : 1 }}
+                      >
+                        {submitRequest.isPending ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={13} />}
                         Submit Request
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 )}
@@ -352,69 +355,78 @@ export default function ClientDashboard() {
 
               {/* Service request list */}
               <div>
-                <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                  <FileText size={14} /> Your Service Requests
+                <h2 style={{ fontSize: "0.875rem", fontWeight: 600, color: "#64748b", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <FileText size={13} /> Your Service Requests
                   {serviceReqs && serviceReqs.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">{serviceReqs.length}</Badge>
+                    <span style={{ fontSize: "0.75rem", background: "#f1f5f9", color: "#64748b", padding: "0.0625rem 0.4375rem", borderRadius: "0.25rem" }}>{serviceReqs.length}</span>
                   )}
                 </h2>
 
                 {reqsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="animate-spin text-muted-foreground" size={20} />
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem 0" }}>
+                    <Loader2 size={20} style={{ color: "#94a3b8", animation: "spin 1s linear infinite" }} />
                   </div>
                 ) : !serviceReqs || serviceReqs.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-border/60 p-8 text-center">
-                    <Package size={32} className="text-muted-foreground mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">No service requests yet.</p>
-                    <p className="text-xs text-muted-foreground mt-1">Submit your first request above to get started.</p>
+                  <div style={{ border: "1px dashed #e2e8f0", borderRadius: "0.5rem", padding: "2.5rem 1rem", textAlign: "center" }}>
+                    <Package size={28} style={{ color: "#cbd5e1", margin: "0 auto 0.75rem" }} />
+                    <p style={{ fontSize: "0.875rem", color: "#94a3b8" }}>No service requests yet.</p>
+                    <p style={{ fontSize: "0.8125rem", color: "#94a3b8", marginTop: "0.25rem" }}>Submit your first request above to get started.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                     {serviceReqs.map(req => {
                       const cfg = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.new;
                       const Icon = cfg.icon;
                       const isExpanded = expandedRequest === req.id;
                       return (
-                        <div key={req.id} className="rounded-xl border border-border/60 bg-card overflow-hidden">
+                        <div key={req.id} style={{ border: `1px solid ${isExpanded ? "#3ecf8e" : "#e2e8f0"}`, borderRadius: "0.5rem", background: "#fff", overflow: "hidden", transition: "border-color 0.1s" }}>
                           <button
                             onClick={() => setExpandedRequest(isExpanded ? null : req.id)}
-                            className="w-full flex items-center justify-between p-4 hover:bg-muted/20 transition-colors text-left">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${cfg.color}`}>
-                                <Icon size={14} />
+                            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.875rem 1rem", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
+                              <div style={{ width: "1.875rem", height: "1.875rem", borderRadius: "0.375rem", background: `${cfg.color}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <Icon size={13} />
                               </div>
-                              <div className="min-w-0">
-                                <div className="font-medium text-sm truncate">{req.requestType}</div>
-                                <div className="text-xs text-muted-foreground">
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontWeight: 500, fontSize: "0.9375rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{req.requestType}</div>
+                                <div style={{ fontSize: "0.8125rem", color: "#94a3b8" }}>
                                   {req.showName && <span>{req.showName} · </span>}
                                   {new Date(req.createdAt).toLocaleDateString()}
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <Badge variant="outline" className={`text-xs border ${cfg.color}`}>{cfg.label}</Badge>
-                              {isExpanded ? <ChevronUp size={14} className="text-muted-foreground" /> : <ChevronDown size={14} className="text-muted-foreground" />}
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
+                              <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: cfg.color }}>{cfg.label}</span>
+                              {isExpanded ? <ChevronUp size={13} style={{ color: "#94a3b8" }} /> : <ChevronDown size={13} style={{ color: "#94a3b8" }} />}
                             </div>
                           </button>
                           {isExpanded && (
-                            <div className="px-4 pb-4 border-t border-border/40 pt-3 space-y-2 text-sm">
-                              {req.robotName && <div><span className="text-muted-foreground">Robot:</span> {req.robotName}</div>}
-                              {req.showDate && <div><span className="text-muted-foreground">Date:</span> {req.showDate}</div>}
+                            <div style={{ padding: "0.875rem 1rem", borderTop: "1px solid #e2e8f0", background: "#f8fafc", display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.875rem" }}>
+                              {req.robotName && <div style={{ color: "#475569" }}><span style={{ color: "#94a3b8" }}>Robot: </span>{req.robotName}</div>}
+                              {req.showDate && <div style={{ color: "#475569" }}><span style={{ color: "#94a3b8" }}>Date: </span>{req.showDate}</div>}
                               {req.urgency && req.urgency !== "normal" && (
-                                <div><span className="text-muted-foreground">Urgency:</span> <span className="capitalize">{req.urgency}</span></div>
+                                <div style={{ color: "#475569" }}><span style={{ color: "#94a3b8" }}>Urgency: </span><span style={{ textTransform: "capitalize" }}>{req.urgency}</span></div>
                               )}
-                              {req.details && <div className="text-muted-foreground">{req.details}</div>}
+                              {req.details && <div style={{ color: "#64748b" }}>{req.details}</div>}
+                              {(req as any).attachmentUrl && (
+                                <div>
+                                  <span style={{ color: "#94a3b8" }}>Attachment: </span>
+                                  <a href={(req as any).attachmentUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#3ecf8e", textDecoration: "underline" }}>
+                                    {(req as any).attachmentName ?? "View file"}
+                                  </a>
+                                </div>
+                              )}
                               {req.quotedPrice && (
-                                <div className="mt-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
-                                  <div className="text-xs text-muted-foreground mb-1">Quoted Price</div>
-                                  <div className="font-semibold text-primary">{req.quotedPrice}</div>
+                                <div style={{ marginTop: "0.5rem", padding: "0.75rem", borderRadius: "0.375rem", background: "rgba(62,207,142,0.06)", border: "1px solid rgba(62,207,142,0.2)" }}>
+                                  <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "0.25rem" }}>Quoted Price</div>
+                                  <div style={{ fontWeight: 700, fontSize: "1.125rem", color: "#3ecf8e" }}>{req.quotedPrice}</div>
                                 </div>
                               )}
                               {req.adminNotes && (
-                                <div className="mt-2 p-3 rounded-lg bg-muted/30 border border-border/40">
-                                  <div className="text-xs text-muted-foreground mb-1">StageGate Note</div>
-                                  <div className="text-sm">{req.adminNotes}</div>
+                                <div style={{ marginTop: "0.5rem", padding: "0.75rem", borderRadius: "0.375rem", background: "#f1f5f9", border: "1px solid #e2e8f0" }}>
+                                  <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "0.25rem" }}>StageGate Note</div>
+                                  <div style={{ fontSize: "0.875rem", color: "#475569" }}>{req.adminNotes}</div>
                                 </div>
                               )}
                             </div>

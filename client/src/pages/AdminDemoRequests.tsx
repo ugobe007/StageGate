@@ -11,11 +11,11 @@ import {
 } from "lucide-react";
 
 const STATUS_CONFIG = {
-  new:       { label: "New",        color: "oklch(0.55 0.18 145)",  bg: "oklch(0.55 0.18 145 / 0.10)"  },
-  contacted: { label: "Contacted",  color: "oklch(0.65 0.18 60)",   bg: "oklch(0.65 0.18 60 / 0.10)"   },
-  scheduled: { label: "Scheduled",  color: "oklch(0.55 0.18 240)",  bg: "oklch(0.55 0.18 240 / 0.10)"  },
-  completed: { label: "Completed",  color: "oklch(0.72 0.21 145)",  bg: "oklch(0.72 0.21 145 / 0.10)"  },
-  closed:    { label: "Closed",     color: "oklch(0.45 0.008 240)", bg: "oklch(0.45 0.008 240 / 0.10)" },
+  new:       { label: "New",       color: "#3ecf8e" },
+  contacted: { label: "Contacted", color: "#f59e0b" },
+  scheduled: { label: "Scheduled", color: "#3b82f6" },
+  completed: { label: "Completed", color: "#3ecf8e" },
+  closed:    { label: "Closed",    color: "#94a3b8" },
 } as const;
 
 type DemoStatus = keyof typeof STATUS_CONFIG;
@@ -23,24 +23,12 @@ type DemoStatus = keyof typeof STATUS_CONFIG;
 type SortKey = "newest" | "oldest" | "company_asc" | "company_desc" | "robot_asc";
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: "newest",       label: "Newest First"    },
-  { key: "oldest",       label: "Oldest First"    },
-  { key: "company_asc",  label: "Company A → Z"   },
-  { key: "company_desc", label: "Company Z → A"   },
+  { key: "newest",       label: "Newest First"     },
+  { key: "oldest",       label: "Oldest First"     },
+  { key: "company_asc",  label: "Company A → Z"    },
+  { key: "company_desc", label: "Company Z → A"    },
   { key: "robot_asc",    label: "Robot Type A → Z" },
 ];
-
-function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status as DemoStatus] ?? STATUS_CONFIG.new;
-  return (
-    <span
-      className="px-2 py-0.5 rounded text-xs font-mono font-semibold"
-      style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}40` }}
-    >
-      {cfg.label}
-    </span>
-  );
-}
 
 export default function AdminDemoRequests() {
   const { user } = useAuth();
@@ -59,8 +47,8 @@ export default function AdminDemoRequests() {
 
   if (!user || user.role !== "admin") {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "oklch(0.08 0.006 240)" }}>
-        <p className="text-muted-foreground">Admin access required.</p>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ color: "#64748b" }}>Admin access required.</p>
       </div>
     );
   }
@@ -70,7 +58,6 @@ export default function AdminDemoRequests() {
     return acc;
   }, {} as Record<string, number>);
 
-  // Filter then sort
   const processed = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const base = (demos || []).filter((d) => {
@@ -84,18 +71,12 @@ export default function AdminDemoRequests() {
     });
     return [...base].sort((a, b) => {
       switch (sortKey) {
-        case "newest":
-          return (new Date(b.createdAt ?? 0).getTime()) - (new Date(a.createdAt ?? 0).getTime());
-        case "oldest":
-          return (new Date(a.createdAt ?? 0).getTime()) - (new Date(b.createdAt ?? 0).getTime());
-        case "company_asc":
-          return (a.company ?? "").localeCompare(b.company ?? "");
-        case "company_desc":
-          return (b.company ?? "").localeCompare(a.company ?? "");
-        case "robot_asc":
-          return (a.robotType ?? "").localeCompare(b.robotType ?? "");
-        default:
-          return 0;
+        case "newest":      return (new Date(b.createdAt ?? 0).getTime()) - (new Date(a.createdAt ?? 0).getTime());
+        case "oldest":      return (new Date(a.createdAt ?? 0).getTime()) - (new Date(b.createdAt ?? 0).getTime());
+        case "company_asc": return (a.company ?? "").localeCompare(b.company ?? "");
+        case "company_desc":return (b.company ?? "").localeCompare(a.company ?? "");
+        case "robot_asc":   return (a.robotType ?? "").localeCompare(b.robotType ?? "");
+        default:            return 0;
       }
     });
   }, [demos, statusFilter, sortKey, searchQuery]);
@@ -104,378 +85,280 @@ export default function AdminDemoRequests() {
   const currentSortLabel = SORT_OPTIONS.find((o) => o.key === sortKey)?.label ?? "Sort";
 
   return (
-    <div className="min-h-screen" style={{ background: "oklch(0.08 0.006 240)", color: "oklch(0.97 0.002 240)" }}>
-
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="border-b" style={{ borderColor: "oklch(0.16 0.010 240)", background: "oklch(0.10 0.006 240)" }}>
-        <div className="container py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Link href="/admin">
-              <button
-                className="p-2 rounded-lg transition-colors"
-                style={{ color: "oklch(0.55 0.008 240)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "oklch(0.88 0.008 240)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "oklch(0.55 0.008 240)")}
-              >
-                <ArrowLeft size={18} />
-              </button>
-            </Link>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "oklch(0.55 0.18 280 / 0.15)" }}>
-              <Play size={15} style={{ color: "oklch(0.72 0.21 280)" }} />
-            </div>
-            <div>
-              <h1 className="font-display font-bold text-lg">Demo Requests</h1>
-              <p className="text-xs" style={{ color: "oklch(0.50 0.008 240)" }}>
-                {demos?.length || 0} total · {counts["new"] || 0} new
-              </p>
-            </div>
+    <div style={{ padding: "2rem", maxWidth: "56rem", margin: "0 auto", color: "#0f172a" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <Link href="/admin">
+            <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", color: "#64748b", background: "none", border: "none", cursor: "pointer", padding: "0.25rem 0" }}>
+              <ArrowLeft size={14} /> Admin
+            </button>
+          </Link>
+          <div style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(62,207,142,0.1)" }}>
+            <Play size={14} style={{ color: "#3ecf8e" }} />
           </div>
-
-          {(counts["new"] || 0) > 0 && (
-            <span
-              className="px-3 py-1 rounded-full text-xs font-semibold animate-pulse"
-              style={{ background: "oklch(0.55 0.18 145 / 0.15)", color: "oklch(0.72 0.21 145)", border: "1px solid oklch(0.55 0.18 145 / 0.30)" }}
-            >
-              {counts["new"]} new
-            </span>
-          )}
+          <div>
+            <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>Demo Requests</h1>
+            <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.125rem 0 0" }}>
+              {demos?.length || 0} total · {counts["new"] || 0} new
+            </p>
+          </div>
         </div>
+        {(counts["new"] || 0) > 0 && (
+          <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#3ecf8e" }}>
+            {counts["new"]} new
+          </span>
+        )}
       </div>
 
-      <div className="container py-6 space-y-5">
+      {/* Search */}
+      <div style={{ position: "relative", marginBottom: "1rem" }}>
+        <Search size={14} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }} />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by name, company, or robot type…"
+          style={{
+            width: "100%", paddingLeft: "2.25rem", paddingRight: "2.25rem", paddingTop: "0.5rem", paddingBottom: "0.5rem",
+            fontSize: "0.875rem", border: "1px solid #e2e8f0", borderRadius: "0.375rem",
+            background: "#ffffff", color: "#0f172a", outline: "none", boxSizing: "border-box",
+          }}
+        />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94a3b8", display: "flex", alignItems: "center" }}>
+            <X size={13} />
+          </button>
+        )}
+      </div>
 
-        {/* ── Search input ────────────────────────────────────────────────── */}
-        <div className="relative">
-          <Search
-            size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ color: "oklch(0.45 0.008 240)" }}
-          />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name, company, or robot type…"
-            className="w-full pl-9 pr-9 py-2 rounded-lg text-sm border outline-none transition-all"
-            style={{
-              background: "oklch(0.11 0.006 240)",
-              borderColor: searchQuery ? "oklch(0.72 0.21 280 / 0.50)" : "oklch(0.20 0.008 240)",
-              color: "oklch(0.88 0.004 240)",
-            }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "oklch(0.72 0.21 280 / 0.60)")}
-            onBlur={(e) =>
-              (e.currentTarget.style.borderColor = searchQuery
-                ? "oklch(0.72 0.21 280 / 0.50)"
-                : "oklch(0.20 0.008 240)")
-            }
-          />
-          {searchQuery && (
+      {/* Filter + Sort bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem", flex: 1 }}>
+          {[
+            { key: "all", label: "All", count: demos?.length || 0 },
+            ...Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({ key, label: cfg.label, count: counts[key] || 0 })),
+          ].map(({ key, label, count }) => (
             <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-              style={{ color: "oklch(0.45 0.008 240)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "oklch(0.75 0.008 240)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "oklch(0.45 0.008 240)")}
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-
-        {/* ── Filter + Sort bar ───────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-
-          {/* Status filter pills */}
-          <div className="flex flex-wrap gap-2 flex-1">
-            {[
-              { key: "all", label: "All", count: demos?.length || 0 },
-              ...Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({
-                key,
-                label: cfg.label,
-                count: counts[key] || 0,
-              })),
-            ].map(({ key, label, count }) => (
-              <button
-                key={key}
-                onClick={() => setStatusFilter(key)}
-                className="px-3 py-1.5 rounded-lg text-sm border transition-all flex items-center gap-1.5"
-                style={{
-                  borderColor: statusFilter === key ? "oklch(0.72 0.21 280)" : "oklch(0.20 0.008 240)",
-                  background:  statusFilter === key ? "oklch(0.72 0.21 280 / 0.10)" : "transparent",
-                  color:       statusFilter === key ? "oklch(0.72 0.21 280)" : "oklch(0.55 0.008 240)",
-                }}
-              >
-                {label}
-                <span className="px-1.5 py-0.5 rounded text-xs font-mono" style={{ background: "oklch(0.15 0.006 240)", color: "oklch(0.60 0.008 240)" }}>
-                  {count}
-                </span>
-              </button>
-            ))}
-
-            {/* Clear filters */}
-            {hasActiveFilters && (
-              <button
-                onClick={() => { setStatusFilter("all"); setSearchQuery(""); }}
-                className="px-3 py-1.5 rounded-lg text-sm border transition-all flex items-center gap-1.5"
-                style={{ borderColor: "oklch(0.28 0.008 240)", color: "oklch(0.55 0.008 240)" }}
-              >
-                <X size={12} /> Clear all
-              </button>
-            )}
-          </div>
-
-          {/* Sort dropdown */}
-          <div className="relative flex-shrink-0">
-            <button
-              onClick={() => setSortOpen((v) => !v)}
-              className="px-3 py-1.5 rounded-lg text-sm border transition-all flex items-center gap-2"
+              key={key}
+              onClick={() => setStatusFilter(key)}
               style={{
-                borderColor: sortOpen ? "oklch(0.72 0.21 280)" : "oklch(0.20 0.008 240)",
-                background:  sortOpen ? "oklch(0.72 0.21 280 / 0.08)" : "transparent",
-                color: "oklch(0.65 0.008 240)",
+                padding: "0.3125rem 0.75rem",
+                fontSize: "0.8125rem", fontWeight: 500,
+                border: `1px solid ${statusFilter === key ? "#3ecf8e" : "#e2e8f0"}`,
+                background: statusFilter === key ? "rgba(62,207,142,0.08)" : "#ffffff",
+                color: statusFilter === key ? "#3ecf8e" : "#64748b",
+                borderRadius: "0.25rem", cursor: "pointer",
+                display: "flex", alignItems: "center", gap: "0.375rem",
               }}
             >
-              <ArrowUpDown size={13} />
-              {currentSortLabel}
-              <ChevronDown size={13} style={{ transform: sortOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+              {label}
+              <span style={{ fontSize: "0.75rem", background: "#f1f5f9", color: "#64748b", padding: "0.0625rem 0.3125rem", borderRadius: "0.1875rem" }}>{count}</span>
             </button>
-
-            {sortOpen && (
-              <div
-                className="absolute right-0 top-full mt-1 rounded-xl border overflow-hidden z-20 min-w-[180px]"
-                style={{ background: "oklch(0.12 0.008 240)", borderColor: "oklch(0.20 0.010 240)" }}
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.key}
-                    onClick={() => { setSortKey(opt.key); setSortOpen(false); }}
-                    className="w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between"
-                    style={{
-                      background: sortKey === opt.key ? "oklch(0.72 0.21 280 / 0.10)" : "transparent",
-                      color:      sortKey === opt.key ? "oklch(0.72 0.21 280)" : "oklch(0.65 0.008 240)",
-                    }}
-                    onMouseEnter={(e) => { if (sortKey !== opt.key) e.currentTarget.style.background = "oklch(0.16 0.006 240)"; }}
-                    onMouseLeave={(e) => { if (sortKey !== opt.key) e.currentTarget.style.background = "transparent"; }}
-                  >
-                    {opt.label}
-                    {sortKey === opt.key && <CheckCircle2 size={13} />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          ))}
+          {hasActiveFilters && (
+            <button
+              onClick={() => { setStatusFilter("all"); setSearchQuery(""); }}
+              style={{ padding: "0.3125rem 0.75rem", fontSize: "0.8125rem", border: "1px solid #e2e8f0", background: "#fff", color: "#94a3b8", borderRadius: "0.25rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.25rem" }}
+            >
+              <X size={11} /> Clear
+            </button>
+          )}
         </div>
 
-        {/* ── Result count ────────────────────────────────────────────────── */}
-        {!isLoading && demos && (
-          <p className="text-xs font-mono" style={{ color: "oklch(0.45 0.008 240)" }}>
-            Showing {processed.length} of {demos.length} request{demos.length !== 1 ? "s" : ""}
-            {statusFilter !== "all" && (
-              <> · status: <span style={{ color: "oklch(0.72 0.21 280)" }}>{STATUS_CONFIG[statusFilter as DemoStatus]?.label}</span></>
-            )}
-            {searchQuery.trim() && (
-              <> · search: <span style={{ color: "oklch(0.72 0.21 280)" }}>"{searchQuery.trim()}"</span></>
-            )}
-            {" · "}sorted by <span style={{ color: "oklch(0.60 0.008 240)" }}>{currentSortLabel.toLowerCase()}</span>
-          </p>
-        )}
-
-        {/* ── Loading ─────────────────────────────────────────────────────── */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-16 gap-3">
-            <Loader2 size={20} className="animate-spin" style={{ color: "oklch(0.72 0.21 280)" }} />
-            <span style={{ color: "oklch(0.55 0.008 240)" }}>Loading demo requests…</span>
-          </div>
-        )}
-
-        {/* ── Empty state ─────────────────────────────────────────────────── */}
-        {!isLoading && processed.length === 0 && (
-          <div
-            className="rounded-xl border py-16 text-center"
-            style={{ borderColor: "oklch(0.16 0.010 240)", background: "oklch(0.10 0.006 240)" }}
+        {/* Sort dropdown */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <button
+            onClick={() => setSortOpen((v) => !v)}
+            style={{ padding: "0.3125rem 0.75rem", fontSize: "0.8125rem", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", borderRadius: "0.25rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.375rem" }}
           >
-            <Play size={32} className="mx-auto mb-3" style={{ color: "oklch(0.30 0.008 240)" }} />
-            <p className="font-semibold" style={{ color: "oklch(0.65 0.008 240)" }}>
-              {searchQuery.trim()
-                ? `No results for "${searchQuery.trim()}"`
-                : statusFilter === "all"
-                  ? "No demo requests yet"
-                  : `No ${STATUS_CONFIG[statusFilter as DemoStatus]?.label.toLowerCase()} requests`}
-            </p>
-            <p className="text-sm mt-1" style={{ color: "oklch(0.45 0.008 240)" }}>
-              {hasActiveFilters
-                ? "Try adjusting your search or clearing the filters."
-                : "Demo requests submitted via the website will appear here."}
-            </p>
-            {hasActiveFilters && (
-              <button
-                onClick={() => { setStatusFilter("all"); setSearchQuery(""); }}
-                className="mt-4 px-4 py-2 rounded-lg text-sm border transition-all"
-                style={{ borderColor: "oklch(0.22 0.008 240)", color: "oklch(0.60 0.008 240)" }}
-              >
-                Clear all filters
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* ── Request list ────────────────────────────────────────────────── */}
-        {!isLoading && processed.length > 0 && (
-          <div className="space-y-3">
-            {processed.map((d) => {
-              const isExpanded = expandedId === d.id;
-              const createdDate = d.createdAt
-                ? new Date(d.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                : "—";
-
-              return (
-                <div
-                  key={d.id}
-                  className="rounded-xl border overflow-hidden transition-all"
-                  style={{
-                    borderColor: isExpanded ? "oklch(0.72 0.21 280 / 0.40)" : "oklch(0.16 0.010 240)",
-                    background: "oklch(0.10 0.006 240)",
-                  }}
+            <ArrowUpDown size={12} />
+            {currentSortLabel}
+            <ChevronDown size={12} style={{ transform: sortOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+          </button>
+          {sortOpen && (
+            <div style={{ position: "absolute", right: 0, top: "calc(100% + 0.25rem)", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "0.375rem", overflow: "hidden", zIndex: 20, minWidth: "11rem", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+              {SORT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => { setSortKey(opt.key); setSortOpen(false); }}
+                  style={{ width: "100%", padding: "0.5rem 0.875rem", textAlign: "left", fontSize: "0.8125rem", background: sortKey === opt.key ? "rgba(62,207,142,0.06)" : "transparent", color: sortKey === opt.key ? "#3ecf8e" : "#475569", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}
                 >
-                  {/* ── Row summary ─────────────────────────────────────────── */}
-                  <button
-                    className="w-full px-5 py-4 flex items-center gap-4 text-left transition-colors"
-                    style={{ background: "transparent" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "oklch(0.12 0.006 240)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                    onClick={() => setExpandedId(isExpanded ? null : d.id)}
-                  >
-                    {/* Avatar */}
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "oklch(0.55 0.18 280 / 0.12)" }}>
-                      <Bot size={16} style={{ color: "oklch(0.72 0.21 280)" }} />
-                    </div>
-
-                    {/* Name + company */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate">{d.name}</p>
-                      <p className="text-xs truncate" style={{ color: "oklch(0.55 0.008 240)" }}>{d.company}</p>
-                    </div>
-
-                    {/* Robot type */}
-                    <div className="hidden md:block flex-1 min-w-0">
-                      <p className="text-xs truncate" style={{ color: "oklch(0.65 0.008 240)" }}>{d.robotType}</p>
-                    </div>
-
-                    {/* Show */}
-                    <div className="hidden lg:block flex-1 min-w-0">
-                      <p className="text-xs truncate" style={{ color: "oklch(0.55 0.008 240)" }}>{d.preferredShowName || "Any show"}</p>
-                    </div>
-
-                    {/* Date */}
-                    <div className="hidden sm:block text-right flex-shrink-0">
-                      <p className="text-xs font-mono" style={{ color: "oklch(0.45 0.008 240)" }}>{createdDate}</p>
-                    </div>
-
-                    {/* Status badge */}
-                    <div className="flex-shrink-0">
-                      <StatusBadge status={d.status ?? "new"} />
-                    </div>
-
-                    {/* Expand chevron */}
-                    <div className="flex-shrink-0" style={{ color: "oklch(0.40 0.008 240)" }}>
-                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    </div>
-                  </button>
-
-                  {/* ── Expanded detail ───────────────────────────────────── */}
-                  {isExpanded && (
-                    <div className="px-5 pb-5 border-t space-y-5" style={{ borderColor: "oklch(0.14 0.008 240)" }}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4">
-                        {/* Contact info */}
-                        <div className="space-y-3">
-                          <p className="text-xs font-mono tracking-wide uppercase" style={{ color: "oklch(0.45 0.008 240)" }}>Contact</p>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2">
-                              <Mail size={13} style={{ color: "oklch(0.50 0.008 240)" }} />
-                              <a href={`mailto:${d.email}`} className="hover:underline" style={{ color: "oklch(0.72 0.21 280)" }}>{d.email}</a>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Building2 size={13} style={{ color: "oklch(0.50 0.008 240)" }} />
-                              <span style={{ color: "oklch(0.75 0.008 240)" }}>{d.company}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Robot + show */}
-                        <div className="space-y-3">
-                          <p className="text-xs font-mono tracking-wide uppercase" style={{ color: "oklch(0.45 0.008 240)" }}>Robot Details</p>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2">
-                              <Bot size={13} style={{ color: "oklch(0.50 0.008 240)" }} />
-                              <span style={{ color: "oklch(0.75 0.008 240)" }}>{d.robotType}</span>
-                            </div>
-                            {d.preferredShowName && (
-                              <div className="flex items-center gap-2">
-                                <Calendar size={13} style={{ color: "oklch(0.50 0.008 240)" }} />
-                                <span style={{ color: "oklch(0.75 0.008 240)" }}>{d.preferredShowName}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Optional message */}
-                      {d.message && (
-                        <div className="space-y-2">
-                          <p className="text-xs font-mono tracking-wide uppercase" style={{ color: "oklch(0.45 0.008 240)" }}>Message</p>
-                          <div
-                            className="rounded-lg px-4 py-3 text-sm leading-relaxed"
-                            style={{ background: "oklch(0.12 0.006 240)", border: "1px solid oklch(0.18 0.008 240)", color: "oklch(0.70 0.008 240)" }}
-                          >
-                            <MessageSquare size={13} className="inline mr-2 mb-0.5" style={{ color: "oklch(0.45 0.008 240)" }} />
-                            {d.message}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Status actions */}
-                      <div className="pt-3 border-t space-y-3" style={{ borderColor: "oklch(0.14 0.008 240)" }}>
-                        <p className="text-xs font-mono tracking-wide uppercase" style={{ color: "oklch(0.45 0.008 240)" }}>Update Status</p>
-                        <div className="flex flex-wrap gap-2">
-                          {(["new", "contacted", "scheduled", "completed", "closed"] as DemoStatus[]).map((s) => {
-                            const cfg = STATUS_CONFIG[s];
-                            const isCurrent = (d.status ?? "new") === s;
-                            return (
-                              <button
-                                key={s}
-                                disabled={isCurrent || updateStatus.isPending}
-                                onClick={() => updateStatus.mutate({ id: d.id, status: s })}
-                                className="px-3 py-1.5 rounded-lg text-xs border transition-all disabled:opacity-40 flex items-center gap-1.5"
-                                style={{
-                                  borderColor: isCurrent ? cfg.color : "oklch(0.22 0.008 240)",
-                                  background:  isCurrent ? cfg.bg : "transparent",
-                                  color:       isCurrent ? cfg.color : "oklch(0.55 0.008 240)",
-                                  cursor:      isCurrent ? "default" : "pointer",
-                                }}
-                              >
-                                {s === "new"       && <Clock       size={11} />}
-                                {s === "contacted" && <Phone       size={11} />}
-                                {s === "scheduled" && <Calendar    size={11} />}
-                                {s === "completed" && <CheckCircle2 size={11} />}
-                                {s === "closed"    && <XCircle     size={11} />}
-                                {cfg.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                  {opt.label}
+                  {sortKey === opt.key && <CheckCircle2 size={12} />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Result count */}
+      {!isLoading && demos && (
+        <p style={{ fontSize: "0.8125rem", color: "#94a3b8", marginBottom: "1rem" }}>
+          Showing {processed.length} of {demos.length} request{demos.length !== 1 ? "s" : ""}
+          {statusFilter !== "all" && <> · status: <span style={{ color: "#3ecf8e" }}>{STATUS_CONFIG[statusFilter as DemoStatus]?.label}</span></>}
+          {searchQuery.trim() && <> · search: <span style={{ color: "#3ecf8e" }}>"{searchQuery.trim()}"</span></>}
+          {" · "}sorted by {currentSortLabel.toLowerCase()}
+        </p>
+      )}
+
+      {/* Loading */}
+      {isLoading && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "4rem 0", gap: "0.75rem" }}>
+          <Loader2 size={20} style={{ color: "#3ecf8e", animation: "spin 1s linear infinite" }} />
+          <span style={{ color: "#64748b" }}>Loading demo requests…</span>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!isLoading && processed.length === 0 && (
+        <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", padding: "4rem 1rem", textAlign: "center", background: "#ffffff" }}>
+          <Play size={28} style={{ color: "#cbd5e1", margin: "0 auto 0.75rem" }} />
+          <p style={{ fontWeight: 600, color: "#475569" }}>
+            {searchQuery.trim() ? `No results for "${searchQuery.trim()}"` : statusFilter === "all" ? "No demo requests yet" : `No ${STATUS_CONFIG[statusFilter as DemoStatus]?.label.toLowerCase()} requests`}
+          </p>
+          <p style={{ fontSize: "0.875rem", color: "#94a3b8", marginTop: "0.25rem" }}>
+            {hasActiveFilters ? "Try adjusting your search or clearing the filters." : "Demo requests submitted via the website will appear here."}
+          </p>
+          {hasActiveFilters && (
+            <button onClick={() => { setStatusFilter("all"); setSearchQuery(""); }} style={{ marginTop: "1rem", padding: "0.5rem 1rem", fontSize: "0.875rem", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", borderRadius: "0.375rem", cursor: "pointer" }}>
+              Clear all filters
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Request list */}
+      {!isLoading && processed.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          {processed.map((d) => {
+            const isExpanded = expandedId === d.id;
+            const cfg = STATUS_CONFIG[d.status as DemoStatus] ?? STATUS_CONFIG.new;
+            const createdDate = d.createdAt
+              ? new Date(d.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+              : "—";
+
+            return (
+              <div
+                key={d.id}
+                style={{ border: `1px solid ${isExpanded ? "#3ecf8e" : "#e2e8f0"}`, borderRadius: "0.5rem", background: "#ffffff", overflow: "hidden", transition: "border-color 0.1s" }}
+              >
+                {/* Row summary */}
+                <button
+                  style={{ width: "100%", padding: "0.875rem 1rem", display: "flex", alignItems: "center", gap: "0.875rem", textAlign: "left", background: "transparent", border: "none", cursor: "pointer" }}
+                  onClick={() => setExpandedId(isExpanded ? null : d.id)}
+                >
+                  <div style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(62,207,142,0.1)", flexShrink: 0 }}>
+                    <Bot size={14} style={{ color: "#3ecf8e" }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</p>
+                    <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.125rem 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.company}</p>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, display: "none" }} className="md:block">
+                    <p style={{ fontSize: "0.8125rem", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.robotType}</p>
+                  </div>
+                  <div style={{ flexShrink: 0 }}>
+                    <p style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{createdDate}</p>
+                  </div>
+                  <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: cfg.color, flexShrink: 0 }}>{cfg.label}</span>
+                  <div style={{ flexShrink: 0, color: "#94a3b8" }}>
+                    {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                  </div>
+                </button>
+
+                {/* Expanded detail */}
+                {isExpanded && (
+                  <div style={{ padding: "1rem", borderTop: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                      {/* Contact */}
+                      <div>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>Contact</p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", fontSize: "0.875rem" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                            <Mail size={13} style={{ color: "#94a3b8" }} />
+                            <a href={`mailto:${d.email}`} style={{ color: "#3ecf8e", textDecoration: "none" }}>{d.email}</a>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                            <Building2 size={13} style={{ color: "#94a3b8" }} />
+                            <span style={{ color: "#475569" }}>{d.company}</span>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Robot */}
+                      <div>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>Robot Details</p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", fontSize: "0.875rem" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                            <Bot size={13} style={{ color: "#94a3b8" }} />
+                            <span style={{ color: "#475569" }}>{d.robotType}</span>
+                          </div>
+                          {d.preferredShowName && (
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                              <Calendar size={13} style={{ color: "#94a3b8" }} />
+                              <span style={{ color: "#475569" }}>{d.preferredShowName}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Message */}
+                    {d.message && (
+                      <div>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>Message</p>
+                        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "0.375rem", padding: "0.75rem", fontSize: "0.875rem", color: "#475569", lineHeight: 1.6 }}>
+                          <MessageSquare size={13} style={{ display: "inline", marginRight: "0.375rem", color: "#94a3b8", verticalAlign: "middle" }} />
+                          {d.message}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Status actions */}
+                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "0.875rem" }}>
+                      <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>Update Status</p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
+                        {(["new", "contacted", "scheduled", "completed", "closed"] as DemoStatus[]).map((s) => {
+                          const scfg = STATUS_CONFIG[s];
+                          const isCurrent = (d.status ?? "new") === s;
+                          return (
+                            <button
+                              key={s}
+                              disabled={isCurrent || updateStatus.isPending}
+                              onClick={() => updateStatus.mutate({ id: d.id, status: s })}
+                              style={{
+                                padding: "0.3125rem 0.75rem", fontSize: "0.8125rem", fontWeight: 500,
+                                border: `1px solid ${isCurrent ? scfg.color : "#e2e8f0"}`,
+                                background: isCurrent ? `${scfg.color}15` : "#ffffff",
+                                color: isCurrent ? scfg.color : "#64748b",
+                                borderRadius: "0.25rem", cursor: isCurrent ? "default" : "pointer",
+                                display: "flex", alignItems: "center", gap: "0.375rem",
+                                opacity: isCurrent || updateStatus.isPending ? (isCurrent ? 1 : 0.5) : 1,
+                              }}
+                            >
+                              {s === "new"       && <Clock        size={11} />}
+                              {s === "contacted" && <Phone        size={11} />}
+                              {s === "scheduled" && <Calendar     size={11} />}
+                              {s === "completed" && <CheckCircle2 size={11} />}
+                              {s === "closed"    && <XCircle      size={11} />}
+                              {scfg.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Close sort dropdown on outside click */}
       {sortOpen && (
-        <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
+        <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setSortOpen(false)} />
       )}
     </div>
   );

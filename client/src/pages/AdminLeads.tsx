@@ -1,15 +1,13 @@
 import { useState } from "react";
 import { Link, useSearch } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
-  Users, ArrowLeft, Loader2, Zap, Mail, CheckCircle, MessageSquare,
-  Trash2, Plus, ChevronDown, ChevronUp, Bot, Edit
+  Users, ArrowLeft, Loader2, Mail, CheckCircle, MessageSquare,
+  Trash2, Plus, ChevronDown, ChevronUp, Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -20,10 +18,10 @@ import {
 } from "@/components/ui/select";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  new: { label: "New", color: "bg-secondary text-muted-foreground border-border" },
-  emailed: { label: "Emailed", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-  responded: { label: "Responded", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
-  registered: { label: "Registered", color: "bg-primary/20 text-primary border-primary/30" },
+  new:        { label: "New",        color: "#94a3b8" },
+  emailed:    { label: "Emailed",    color: "#3b82f6" },
+  responded:  { label: "Responded",  color: "#f59e0b" },
+  registered: { label: "Registered", color: "#3ecf8e" },
 };
 
 export default function AdminLeads() {
@@ -80,12 +78,17 @@ export default function AdminLeads() {
   });
 
   const createLead = trpc.leads.create.useMutation({
-    onSuccess: () => { toast.success("Lead added"); utils.leads.all.invalidate(); setAddLeadOpen(false); setNewLead({ companyName: "", website: "", contactEmail: "", contactName: "", notes: "" }); },
+    onSuccess: () => {
+      toast.success("Lead added");
+      utils.leads.all.invalidate();
+      setAddLeadOpen(false);
+      setNewLead({ companyName: "", website: "", contactEmail: "", contactName: "", notes: "" });
+    },
     onError: (e) => toast.error(e.message),
   });
 
   if (!isAuthenticated || user?.role !== "admin") {
-    return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Admin access required.</p></div>;
+    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><p style={{ color: "#64748b" }}>Admin access required.</p></div>;
   }
 
   const filteredLeads = (allLeads || []).filter(l => {
@@ -95,247 +98,265 @@ export default function AdminLeads() {
   });
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="pt-24 pb-16">
-        <div className="container">
-          {/* Header */}
-          <div className="flex flex-wrap items-center gap-4 mb-6">
-            <Link href="/admin"><Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5"><ArrowLeft size={14} /> Admin</Button></Link>
-            <div className="flex-1">
-              <h1 className="text-2xl font-display font-bold text-foreground flex items-center gap-2">
-                <Users size={20} className="text-primary" /> Lead Discovery & Outreach
-              </h1>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {/* AI Discover */}
-              <Dialog open={discoveryOpen} onOpenChange={setDiscoveryOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold gap-2">
-                    <Bot size={16} /> AI Discover
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-card border-border max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle className="font-display flex items-center gap-2"><Bot size={18} className="text-primary" /> AI Lead Discovery</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-2">
-                    <div>
-                      <Label className="text-sm mb-1.5 block">Target Show</Label>
-                      <Select value={selectedShowId?.toString() || ""} onValueChange={(v) => setSelectedShowId(parseInt(v))}>
-                        <SelectTrigger className="bg-input border-border"><SelectValue placeholder="Select a show..." /></SelectTrigger>
-                        <SelectContent className="bg-card border-border">
-                          {(shows || []).map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-sm mb-1.5 block">Paste Exhibitor List Text</Label>
-                      <p className="text-xs text-muted-foreground mb-2">Copy and paste the exhibitor list from the trade show website. The AI will identify robotics companies automatically.</p>
-                      <Textarea
-                        value={discoveryText}
-                        onChange={e => setDiscoveryText(e.target.value)}
-                        placeholder="Paste exhibitor names, descriptions, booth numbers, etc. here..."
-                        className="bg-input border-border resize-none"
-                        rows={8}
-                      />
-                    </div>
-                    <Button
-                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold gap-2"
-                      onClick={() => {
-                        if (!selectedShowId) { toast.error("Select a show first"); return; }
-                        if (!discoveryText.trim()) { toast.error("Paste exhibitor list text"); return; }
-                        discover.mutate({ showId: selectedShowId, exhibitorListText: discoveryText });
-                      }}
-                      disabled={discover.isPending}
-                    >
-                      {discover.isPending ? <><Loader2 size={16} className="animate-spin" /> Analyzing with AI...</> : <><Bot size={16} /> Discover Robotics Companies</>}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              {/* Add Lead Manually */}
-              <Dialog open={addLeadOpen} onOpenChange={setAddLeadOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="border-border gap-2"><Plus size={16} /> Add Lead</Button>
-                </DialogTrigger>
-                <DialogContent className="bg-card border-border max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle className="font-display">Add Lead Manually</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-2">
-                    <div>
-                      <Label className="text-sm mb-1.5 block">Show</Label>
-                      <Select value={selectedShowId?.toString() || ""} onValueChange={(v) => setSelectedShowId(parseInt(v))}>
-                        <SelectTrigger className="bg-input border-border"><SelectValue placeholder="Select a show..." /></SelectTrigger>
-                        <SelectContent className="bg-card border-border">
-                          {(shows || []).map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-sm mb-1.5 block">Company Name *</Label>
-                      <Input value={newLead.companyName} onChange={e => setNewLead({...newLead, companyName: e.target.value})} placeholder="Acme Robotics" className="bg-input border-border" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-sm mb-1.5 block">Website</Label>
-                        <Input value={newLead.website} onChange={e => setNewLead({...newLead, website: e.target.value})} placeholder="https://..." className="bg-input border-border" />
-                      </div>
-                      <div>
-                        <Label className="text-sm mb-1.5 block">Contact Email</Label>
-                        <Input value={newLead.contactEmail} onChange={e => setNewLead({...newLead, contactEmail: e.target.value})} placeholder="ceo@..." className="bg-input border-border" />
-                      </div>
-                    </div>
-                    <Button
-                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
-                      onClick={() => {
-                        if (!selectedShowId) { toast.error("Select a show"); return; }
-                        if (!newLead.companyName) { toast.error("Company name required"); return; }
-                        createLead.mutate({ showId: selectedShowId, ...newLead });
-                      }}
-                      disabled={createLead.isPending}
-                    >
-                      {createLead.isPending ? <Loader2 size={16} className="animate-spin" /> : "Add Lead"}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="flex flex-wrap gap-3 mb-6">
-            <Select value={selectedShowId?.toString() || "all"} onValueChange={(v) => setSelectedShowId(v === "all" ? null : parseInt(v))}>
-              <SelectTrigger className="bg-input border-border w-48"><SelectValue placeholder="All Shows" /></SelectTrigger>
-              <SelectContent className="bg-card border-border">
-                <SelectItem value="all">All Shows</SelectItem>
-                {(shows || []).map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <div className="flex gap-2 flex-wrap">
-              {["all", "new", "emailed", "responded", "registered"].map((s) => (
+    <div style={{ padding: "2rem", maxWidth: "56rem", margin: "0 auto", color: "#0f172a" }}>
+      {/* Header */}
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "1rem", marginBottom: "2rem" }}>
+        <Link href="/admin">
+          <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", color: "#64748b", background: "none", border: "none", cursor: "pointer", padding: "0.25rem 0" }}>
+            <ArrowLeft size={14} /> Admin
+          </button>
+        </Link>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Users size={18} style={{ color: "#3ecf8e" }} /> Lead Discovery & Outreach
+          </h1>
+        </div>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          {/* AI Discover */}
+          <Dialog open={discoveryOpen} onOpenChange={setDiscoveryOpen}>
+            <DialogTrigger asChild>
+              <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#3ecf8e", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}>
+                <Bot size={14} /> AI Discover
+              </button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-border max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>AI Lead Discovery</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-2">
+                <div>
+                  <Label className="text-sm mb-1.5 block">Target Show</Label>
+                  <Select value={selectedShowId?.toString() || ""} onValueChange={(v) => setSelectedShowId(parseInt(v))}>
+                    <SelectTrigger><SelectValue placeholder="Select a show..." /></SelectTrigger>
+                    <SelectContent>
+                      {(shows || []).map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm mb-1.5 block">Paste Exhibitor List Text</Label>
+                  <p style={{ fontSize: "0.8125rem", color: "#64748b", marginBottom: "0.5rem" }}>Copy and paste the exhibitor list from the trade show website. The AI will identify robotics companies automatically.</p>
+                  <Textarea
+                    value={discoveryText}
+                    onChange={e => setDiscoveryText(e.target.value)}
+                    placeholder="Paste exhibitor names, descriptions, booth numbers, etc. here..."
+                    rows={8}
+                  />
+                </div>
                 <button
-                  key={s}
-                  onClick={() => setFilterStatus(s)}
-                  className={`px-3 py-1.5 rounded-full text-xs border transition-all ${filterStatus === s ? "bg-primary text-primary-foreground border-primary font-semibold" : "bg-secondary text-muted-foreground border-border hover:border-primary/50"}`}
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.625rem 1rem", border: "none", background: "#3ecf8e", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}
+                  onClick={() => {
+                    if (!selectedShowId) { toast.error("Select a show first"); return; }
+                    if (!discoveryText.trim()) { toast.error("Paste exhibitor list text"); return; }
+                    discover.mutate({ showId: selectedShowId, exhibitorListText: discoveryText });
+                  }}
+                  disabled={discover.isPending}
                 >
-                  {s === "all" ? "All" : STATUS_CONFIG[s]?.label}
-                  {s !== "all" && (
-                    <span className="ml-1.5 opacity-70">
-                      {(allLeads || []).filter(l => l.outreachStatus === s && (!selectedShowId || l.showId === selectedShowId)).length}
-                    </span>
-                  )}
+                  {discover.isPending ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Analyzing with AI…</> : <><Bot size={14} /> Discover Robotics Companies</>}
                 </button>
-              ))}
-            </div>
-          </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
-          {/* Leads List */}
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-primary" size={32} /></div>
-          ) : filteredLeads.length === 0 ? (
-            <div className="text-center py-20">
-              <Users size={48} className="text-muted-foreground/20 mx-auto mb-4" />
-              <p className="text-muted-foreground font-medium">No leads found</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">Use AI Discover to find robotics companies from a trade show exhibitor list.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredLeads.map((lead) => {
-                const show = (shows || []).find(s => s.id === lead.showId);
-                const status = STATUS_CONFIG[lead.outreachStatus] || STATUS_CONFIG.new;
-                const isExpanded = expandedLead === lead.id;
-                return (
-                  <div key={lead.id} className="rounded-xl border border-border bg-card overflow-hidden">
-                    <div className="p-4 flex items-start gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-foreground text-sm">{lead.companyName}</h3>
-                          <Badge className={`text-xs ${status.color}`}>{status.label}</Badge>
-                          {show && <span className="text-xs text-muted-foreground">{show.name}</span>}
-                        </div>
-                        {lead.website && <a href={lead.website} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-0.5 block">{lead.website}</a>}
-                        {lead.contactEmail && <div className="text-xs text-muted-foreground mt-0.5">{lead.contactEmail}</div>}
-                        {lead.aiSummary && <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{lead.aiSummary}</p>}
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                        {/* Action buttons based on status */}
-                        {lead.outreachStatus === "new" && (
-                          <Button size="sm" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 text-xs gap-1"
-                            onClick={() => generateEmail.mutate({ leadId: lead.id })}
-                            disabled={generateEmail.isPending}>
-                            {generateEmail.isPending ? <Loader2 size={12} className="animate-spin" /> : <Bot size={12} />}
-                            Draft Email
-                          </Button>
-                        )}
-                        {(lead.outreachStatus === "new" || lead.outreachStatus === "emailed") && lead.emailDraft && (
-                          <Button size="sm" variant="outline" className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10 text-xs gap-1"
-                            onClick={() => markEmailed.mutate({ leadId: lead.id })}
-                            disabled={markEmailed.isPending}>
-                            <Mail size={12} /> Mark Emailed
-                          </Button>
-                        )}
-                        {lead.outreachStatus === "emailed" && (
-                          <Button size="sm" variant="outline" className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 text-xs gap-1"
-                            onClick={() => markResponded.mutate({ leadId: lead.id })}
-                            disabled={markResponded.isPending}>
-                            <MessageSquare size={12} /> Mark Responded
-                          </Button>
-                        )}
-                        {lead.outreachStatus === "responded" && (
-                          <Button size="sm" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 text-xs gap-1"
-                            onClick={() => updateStatus.mutate({ id: lead.id, outreachStatus: "registered" })}
-                            disabled={updateStatus.isPending}>
-                            <CheckCircle size={12} /> Mark Registered
-                          </Button>
-                        )}
-                        <button onClick={() => setExpandedLead(isExpanded ? null : lead.id)} className="text-muted-foreground hover:text-foreground p-1">
-                          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        </button>
-                        <button onClick={() => { if (confirm("Delete this lead?")) deleteLead.mutate({ id: lead.id }); }} className="text-destructive/60 hover:text-destructive p-1">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+          {/* Add Lead Manually */}
+          <Dialog open={addLeadOpen} onOpenChange={setAddLeadOpen}>
+            <DialogTrigger asChild>
+              <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", borderRadius: "0.375rem", cursor: "pointer" }}>
+                <Plus size={14} /> Add Lead
+              </button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-border max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Add Lead Manually</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-2">
+                <div>
+                  <Label className="text-sm mb-1.5 block">Show</Label>
+                  <Select value={selectedShowId?.toString() || ""} onValueChange={(v) => setSelectedShowId(parseInt(v))}>
+                    <SelectTrigger><SelectValue placeholder="Select a show..." /></SelectTrigger>
+                    <SelectContent>
+                      {(shows || []).map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm mb-1.5 block">Company Name *</Label>
+                  <Input value={newLead.companyName} onChange={e => setNewLead({...newLead, companyName: e.target.value})} placeholder="Acme Robotics" />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                  <div>
+                    <Label className="text-sm mb-1.5 block">Website</Label>
+                    <Input value={newLead.website} onChange={e => setNewLead({...newLead, website: e.target.value})} placeholder="https://..." />
+                  </div>
+                  <div>
+                    <Label className="text-sm mb-1.5 block">Contact Email</Label>
+                    <Input value={newLead.contactEmail} onChange={e => setNewLead({...newLead, contactEmail: e.target.value})} placeholder="ceo@..." />
+                  </div>
+                </div>
+                <button
+                  style={{ width: "100%", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#3ecf8e", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}
+                  onClick={() => {
+                    if (!selectedShowId) { toast.error("Select a show"); return; }
+                    if (!newLead.companyName) { toast.error("Company name required"); return; }
+                    createLead.mutate({ showId: selectedShowId, ...newLead });
+                  }}
+                  disabled={createLead.isPending}
+                >
+                  {createLead.isPending ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : "Add Lead"}
+                </button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginBottom: "1.5rem" }}>
+        <Select value={selectedShowId?.toString() || "all"} onValueChange={(v) => setSelectedShowId(v === "all" ? null : parseInt(v))}>
+          <SelectTrigger className="w-48"><SelectValue placeholder="All Shows" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Shows</SelectItem>
+            {(shows || []).map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}>
+          {["all", "new", "emailed", "responded", "registered"].map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilterStatus(s)}
+              style={{
+                padding: "0.3125rem 0.75rem", fontSize: "0.8125rem", fontWeight: 500,
+                border: `1px solid ${filterStatus === s ? "#3ecf8e" : "#e2e8f0"}`,
+                background: filterStatus === s ? "rgba(62,207,142,0.08)" : "#fff",
+                color: filterStatus === s ? "#3ecf8e" : "#64748b",
+                borderRadius: "0.25rem", cursor: "pointer",
+              }}
+            >
+              {s === "all" ? "All" : STATUS_CONFIG[s]?.label}
+              {s !== "all" && (
+                <span style={{ marginLeft: "0.375rem", fontSize: "0.75rem", background: "#f1f5f9", color: "#64748b", padding: "0.0625rem 0.3125rem", borderRadius: "0.1875rem" }}>
+                  {(allLeads || []).filter(l => l.outreachStatus === s && (!selectedShowId || l.showId === selectedShowId)).length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Leads List */}
+      {isLoading ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "4rem 0" }}>
+          <Loader2 size={24} style={{ color: "#94a3b8", animation: "spin 1s linear infinite" }} />
+        </div>
+      ) : filteredLeads.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "4rem 0" }}>
+          <Users size={40} style={{ color: "#cbd5e1", margin: "0 auto 1rem" }} />
+          <p style={{ color: "#94a3b8", fontWeight: 500 }}>No leads found</p>
+          <p style={{ fontSize: "0.875rem", color: "#94a3b8", marginTop: "0.25rem" }}>Use AI Discover to find robotics companies from a trade show exhibitor list.</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          {filteredLeads.map((lead) => {
+            const show = (shows || []).find(s => s.id === lead.showId);
+            const status = STATUS_CONFIG[lead.outreachStatus] || STATUS_CONFIG.new;
+            const isExpanded = expandedLead === lead.id;
+            return (
+              <div key={lead.id} style={{ border: `1px solid ${isExpanded ? "#3ecf8e" : "#e2e8f0"}`, borderRadius: "0.5rem", background: "#ffffff", overflow: "hidden", transition: "border-color 0.1s" }}>
+                <div style={{ padding: "0.875rem 1rem", display: "flex", alignItems: "flex-start", gap: "1rem" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <h3 style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a", margin: 0 }}>{lead.companyName}</h3>
+                      <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: status.color }}>{status.label}</span>
+                      {show && <span style={{ fontSize: "0.8125rem", color: "#94a3b8" }}>{show.name}</span>}
                     </div>
-                    {isExpanded && (
-                      <div className="border-t border-border p-4 bg-secondary/20">
-                        {lead.aiSummary && (
-                          <div className="mb-4">
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">AI Summary</p>
-                            <p className="text-sm text-foreground">{lead.aiSummary}</p>
-                          </div>
-                        )}
-                        {lead.emailDraft && (
-                          <div className="mb-4">
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Email Draft</p>
-                            <div className="p-4 rounded-lg bg-card border border-border text-sm text-foreground whitespace-pre-wrap font-mono text-xs leading-relaxed">
-                              {lead.emailDraft}
-                            </div>
-                          </div>
-                        )}
-                        {!lead.emailDraft && lead.outreachStatus === "new" && (
-                          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold gap-2"
-                            onClick={() => generateEmail.mutate({ leadId: lead.id })}
-                            disabled={generateEmail.isPending}>
-                            {generateEmail.isPending ? <><Loader2 size={14} className="animate-spin" /> Generating...</> : <><Bot size={14} /> Generate Outreach Email</>}
-                          </Button>
-                        )}
-                        {lead.notes && (
-                          <div>
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Notes</p>
-                            <p className="text-sm text-muted-foreground">{lead.notes}</p>
-                          </div>
-                        )}
+                    {lead.website && <a href={lead.website} target="_blank" rel="noopener noreferrer" style={{ fontSize: "0.8125rem", color: "#3ecf8e", textDecoration: "none", display: "block", marginTop: "0.125rem" }}>{lead.website}</a>}
+                    {lead.contactEmail && <div style={{ fontSize: "0.8125rem", color: "#64748b", marginTop: "0.125rem" }}>{lead.contactEmail}</div>}
+                    {lead.aiSummary && <p style={{ fontSize: "0.8125rem", color: "#64748b", marginTop: "0.375rem", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{lead.aiSummary}</p>}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                    {lead.outreachStatus === "new" && (
+                      <button
+                        onClick={() => generateEmail.mutate({ leadId: lead.id })}
+                        disabled={generateEmail.isPending}
+                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: "#3ecf8e", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                      >
+                        {generateEmail.isPending ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> : <Bot size={11} />}
+                        Draft Email
+                      </button>
+                    )}
+                    {(lead.outreachStatus === "new" || lead.outreachStatus === "emailed") && lead.emailDraft && (
+                      <button
+                        onClick={() => markEmailed.mutate({ leadId: lead.id })}
+                        disabled={markEmailed.isPending}
+                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(59,130,246,0.4)", color: "#3b82f6", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                      >
+                        <Mail size={11} /> Mark Emailed
+                      </button>
+                    )}
+                    {lead.outreachStatus === "emailed" && (
+                      <button
+                        onClick={() => markResponded.mutate({ leadId: lead.id })}
+                        disabled={markResponded.isPending}
+                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(245,158,11,0.4)", color: "#f59e0b", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                      >
+                        <MessageSquare size={11} /> Mark Responded
+                      </button>
+                    )}
+                    {lead.outreachStatus === "responded" && (
+                      <button
+                        onClick={() => updateStatus.mutate({ id: lead.id, outreachStatus: "registered" })}
+                        disabled={updateStatus.isPending}
+                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: "#3ecf8e", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                      >
+                        <CheckCircle size={11} /> Mark Registered
+                      </button>
+                    )}
+                    <button onClick={() => setExpandedLead(isExpanded ? null : lead.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: "0.25rem", display: "flex", alignItems: "center" }}>
+                      {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                    </button>
+                    <button onClick={() => { if (confirm("Delete this lead?")) deleteLead.mutate({ id: lead.id }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: "0.25rem", display: "flex", alignItems: "center", opacity: 0.6 }}>
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+                {isExpanded && (
+                  <div style={{ borderTop: "1px solid #e2e8f0", padding: "1rem", background: "#f8fafc", display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    {lead.aiSummary && (
+                      <div>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>AI Summary</p>
+                        <p style={{ fontSize: "0.875rem", color: "#475569" }}>{lead.aiSummary}</p>
+                      </div>
+                    )}
+                    {lead.emailDraft && (
+                      <div>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>Email Draft</p>
+                        <pre style={{ fontSize: "0.8125rem", whiteSpace: "pre-wrap", fontFamily: "monospace", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "0.375rem", padding: "0.875rem", lineHeight: 1.6, color: "#0f172a", margin: 0 }}>
+                          {lead.emailDraft}
+                        </pre>
+                      </div>
+                    )}
+                    {!lead.emailDraft && lead.outreachStatus === "new" && (
+                      <button
+                        style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#3ecf8e", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}
+                        onClick={() => generateEmail.mutate({ leadId: lead.id })}
+                        disabled={generateEmail.isPending}
+                      >
+                        {generateEmail.isPending ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Generating…</> : <><Bot size={14} /> Generate Outreach Email</>}
+                      </button>
+                    )}
+                    {lead.notes && (
+                      <div>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>Notes</p>
+                        <p style={{ fontSize: "0.875rem", color: "#64748b" }}>{lead.notes}</p>
                       </div>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                )}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 }

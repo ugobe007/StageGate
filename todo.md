@@ -1513,3 +1513,20 @@
 - [x] Add Resend email on service request status change to quoted/approved
 - [x] Add file upload field to service request form with S3 storage
 - [x] Show uploaded files in admin service requests panel
+
+## v52 — Services Page Tightening + Admin Supabase Light Theme
+
+- [x] Services page: tighter typography, readable fonts, clean card layout
+- [x] DashboardLayout: confirm Supabase light sidebar renders correctly (white bg, #3ecf8e accent)
+- [x] AdminDashboard: Supabase light style (white bg, clean stat cards, no colored badges)
+- [x] AdminProspects: Supabase light table style (inline text status, no pill badges, white rows)
+- [x] AdminServiceRequests: Supabase light style
+- [x] AdminLogistics: Supabase light style
+- [x] AdminOrderDetail: Supabase light style
+- [x] AdminAgents: Supabase light style
+- [x] AdminOutreach: Supabase light style
+- [x] AdminShows: Supabase light style
+- [x] AdminDemoRequests: Supabase light style
+- [x] ClientDashboard: Supabase light style
+- [x] EditProfileSheet: Supabase light style
+- [x] Onboarding wizard: Supabase light style

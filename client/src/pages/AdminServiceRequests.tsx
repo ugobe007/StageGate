@@ -1,28 +1,45 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Clock, CheckCircle2, XCircle, Loader2, AlertTriangle,
-  ChevronDown, ChevronUp, Search, Bot, Calendar, Zap, Paperclip
+  ChevronDown, ChevronUp, Search, Bot, Calendar, Zap, Paperclip, RefreshCw
 } from "lucide-react";
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  new:         { label: "New",         color: "bg-blue-500/10 text-blue-400 border-blue-500/30",    icon: Clock },
-  reviewing:   { label: "Reviewing",   color: "bg-amber-500/10 text-amber-400 border-amber-500/30", icon: Loader2 },
-  quoted:      { label: "Quoted",      color: "bg-purple-500/10 text-purple-400 border-purple-500/30", icon: Zap },
-  approved:    { label: "Approved",    color: "bg-green-500/10 text-green-400 border-green-500/30", icon: CheckCircle2 },
-  in_progress: { label: "In Progress", color: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",   icon: Loader2 },
-  completed:   { label: "Completed",   color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30", icon: CheckCircle2 },
-  cancelled:   { label: "Cancelled",   color: "bg-red-500/10 text-red-400 border-red-500/30",      icon: XCircle },
+// ── Supabase light tokens ────────────────────────────────────────────────────
+const S = {
+  bg:      "#f8fafc",
+  surface: "#ffffff",
+  surface2:"#f1f5f9",
+  border:  "#e2e8f0",
+  text:    "#0f172a",
+  text2:   "#475569",
+  text3:   "#94a3b8",
+  green:   "#3ecf8e",
+  greenDim:"rgba(62,207,142,0.12)",
+  amber:   "#f59e0b",
+  blue:    "#3b82f6",
+  red:     "#ef4444",
+  purple:  "#8b5cf6",
+  cyan:    "#06b6d4",
+  font:    "'Inter','Space Grotesk',ui-sans-serif,system-ui,sans-serif",
 };
 
-const URGENCY_COLORS: Record<string, string> = {
-  low:    "bg-slate-500/10 text-slate-400",
-  normal: "bg-blue-500/10 text-blue-400",
-  high:   "bg-amber-500/10 text-amber-400",
-  urgent: "bg-red-500/10 text-red-400",
+// Inline status text — dot + label, no pill
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
+  new:         { label: "New",         color: S.blue,   icon: Clock },
+  reviewing:   { label: "Reviewing",   color: S.amber,  icon: Loader2 },
+  quoted:      { label: "Quoted",      color: S.purple, icon: Zap },
+  approved:    { label: "Approved",    color: S.green,  icon: CheckCircle2 },
+  in_progress: { label: "In Progress", color: S.cyan,   icon: Loader2 },
+  completed:   { label: "Completed",   color: S.green,  icon: CheckCircle2 },
+  cancelled:   { label: "Cancelled",   color: S.red,    icon: XCircle },
+};
+
+const URGENCY_COLOR: Record<string, string> = {
+  low:    S.text3,
+  normal: S.text3,
+  high:   S.amber,
+  urgent: S.red,
 };
 
 type ServiceRequest = {
@@ -43,6 +60,17 @@ type ServiceRequest = {
   userId: number;
 };
 
+// Inline status dot + text
+function StatusText({ status }: { status: string }) {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.new;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.8125rem", fontWeight: 500, color: cfg.color, whiteSpace: "nowrap" }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.color, flexShrink: 0, display: "inline-block" }} />
+      {cfg.label}
+    </span>
+  );
+}
+
 export default function AdminServiceRequests() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -53,7 +81,7 @@ export default function AdminServiceRequests() {
   const [editNotes, setEditNotes] = useState("");
 
   const utils = trpc.useUtils();
-  const { data: requests, isLoading } = trpc.company.getAllServiceRequests.useQuery();
+  const { data: requests, isLoading, refetch } = trpc.company.getAllServiceRequests.useQuery();
 
   const updateStatus = trpc.company.updateServiceRequestStatus.useMutation({
     onSuccess: () => {
@@ -77,230 +105,308 @@ export default function AdminServiceRequests() {
   }, {} as Record<string, number>);
 
   return (
-      <div className="p-6 max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-display font-bold text-foreground flex items-center gap-2">
-            <Bot size={22} className="text-primary" />
+    <div style={{ padding: "1.75rem 2rem", maxWidth: "64rem", margin: "0 auto", fontFamily: S.font, color: S.text }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+        <div>
+          <h1 style={{ fontSize: "1.125rem", fontWeight: 600, color: S.text, margin: 0, letterSpacing: "-0.01em" }}>
             Service Requests
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p style={{ fontSize: "0.8125rem", color: S.text2, margin: "0.25rem 0 0" }}>
             Incoming requests from robot companies — review, quote, and update status.
           </p>
         </div>
+        <button
+          onClick={() => refetch()}
+          style={{ padding: "0.375rem", border: `1px solid ${S.border}`, borderRadius: "0.375rem", background: S.surface, color: S.text3, cursor: "pointer", display: "flex", alignItems: "center" }}
+          title="Refresh"
+        >
+          <RefreshCw size={14} />
+        </button>
+      </div>
 
-        {/* Status tabs */}
-        <div className="flex flex-wrap gap-2 mb-5">
-          {["all", "new", "reviewing", "quoted", "approved", "in_progress", "completed", "cancelled"].map(s => {
-            const cfg = STATUS_CONFIG[s];
-            const count = s === "all" ? (requests?.length ?? 0) : (counts[s] ?? 0);
+      {/* Status filter tabs — inline text, no pills */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0", borderBottom: `1px solid ${S.border}`, marginBottom: "1.25rem", overflowX: "auto" }}>
+        {["all", "new", "reviewing", "quoted", "approved", "in_progress", "completed", "cancelled"].map(s => {
+          const cfg = STATUS_CONFIG[s];
+          const count = s === "all" ? (requests?.length ?? 0) : (counts[s] ?? 0);
+          const isActive = statusFilter === s;
+          const activeColor = s === "all" ? S.text : (cfg?.color ?? S.text2);
+          return (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              style={{
+                padding: "0.5rem 0.875rem",
+                fontSize: "0.8125rem",
+                fontWeight: isActive ? 500 : 400,
+                color: isActive ? activeColor : S.text2,
+                background: "transparent",
+                border: "none",
+                borderBottom: isActive ? `2px solid ${activeColor}` : "2px solid transparent",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                transition: "color 0.1s, border-color 0.1s",
+                marginBottom: "-1px",
+              }}
+            >
+              {cfg?.label ?? "All"}
+              {count > 0 && (
+                <span style={{ marginLeft: "0.375rem", fontSize: "0.6875rem", color: isActive ? activeColor : S.text3, fontVariantNumeric: "tabular-nums" }}>
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Search */}
+      <div style={{ position: "relative", marginBottom: "1.25rem", maxWidth: "28rem" }}>
+        <Search size={13} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: S.text3, pointerEvents: "none" }} />
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search by service type, show, or robot…"
+          style={{
+            width: "100%", paddingLeft: "2.25rem", paddingRight: "0.75rem", paddingTop: "0.4375rem", paddingBottom: "0.4375rem",
+            border: `1px solid ${S.border}`, borderRadius: "0.375rem",
+            background: S.surface, color: S.text, fontSize: "0.8125rem",
+            outline: "none", boxSizing: "border-box" as const,
+          }}
+          onFocus={e => { e.currentTarget.style.borderColor = S.green; e.currentTarget.style.boxShadow = `0 0 0 2px ${S.greenDim}`; }}
+          onBlur={e => { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.boxShadow = "none"; }}
+        />
+      </div>
+
+      {/* Table */}
+      {isLoading ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "4rem 0", color: S.text3 }}>
+          <Loader2 size={20} style={{ animation: "spin 1s linear infinite" }} />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "4rem 0", color: S.text3 }}>
+          <AlertTriangle size={28} style={{ margin: "0 auto 0.75rem", opacity: 0.4 }} />
+          <p style={{ fontSize: "0.875rem" }}>No service requests match your filters.</p>
+        </div>
+      ) : (
+        <div style={{ border: `1px solid ${S.border}`, borderRadius: "0.5rem", overflow: "hidden", background: S.surface }}>
+          {/* Table header */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "2fr 1fr 1fr 1fr auto",
+            gap: "1rem",
+            padding: "0.5rem 1rem",
+            background: S.bg,
+            borderBottom: `1px solid ${S.border}`,
+          }}>
+            {["Request", "Show / Robot", "Urgency", "Status", ""].map((h, i) => (
+              <span key={i} style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", color: S.text3 }}>{h}</span>
+            ))}
+          </div>
+
+          {filtered.map((req: ServiceRequest, idx: number) => {
+            const cfg = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.new;
+            const isExpanded = expandedId === req.id;
+            const isEditing = editingId === req.id;
+            const urgencyColor = URGENCY_COLOR[req.urgency ?? "normal"] ?? S.text3;
+
             return (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                  statusFilter === s
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-transparent text-muted-foreground border-border hover:border-primary/40"
-                }`}
-              >
-                {cfg?.label ?? "All"} {count > 0 && <span className="ml-1 opacity-70">{count}</span>}
-              </button>
+              <div key={req.id} style={{ borderBottom: idx < filtered.length - 1 ? `1px solid ${S.border}` : "none" }}>
+                {/* Row */}
+                <div
+                  onClick={() => setExpandedId(isExpanded ? null : req.id)}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "2fr 1fr 1fr 1fr auto",
+                    gap: "1rem",
+                    padding: "0.75rem 1rem",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = S.surface2; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+                >
+                  {/* Request type + meta */}
+                  <div>
+                    <div style={{ fontSize: "0.875rem", fontWeight: 500, color: S.text }}>{req.requestType}</div>
+                    <div style={{ fontSize: "0.75rem", color: S.text3, marginTop: "0.125rem" }}>
+                      #{req.id} · {new Date(req.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+
+                  {/* Show / Robot */}
+                  <div style={{ fontSize: "0.8125rem", color: S.text2 }}>
+                    {req.showName && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                        <Calendar size={11} style={{ color: S.text3, flexShrink: 0 }} />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{req.showName}</span>
+                      </div>
+                    )}
+                    {req.robotName && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", marginTop: "0.125rem" }}>
+                        <Bot size={11} style={{ color: S.text3, flexShrink: 0 }} />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{req.robotName}</span>
+                      </div>
+                    )}
+                    {!req.showName && !req.robotName && <span style={{ color: S.text3 }}>—</span>}
+                  </div>
+
+                  {/* Urgency — inline text */}
+                  <div style={{ fontSize: "0.8125rem", fontWeight: 500, color: urgencyColor, textTransform: "capitalize" }}>
+                    {req.urgency && req.urgency !== "normal" ? req.urgency : <span style={{ color: S.text3 }}>—</span>}
+                  </div>
+
+                  {/* Status — inline dot + text */}
+                  <StatusText status={req.status} />
+
+                  {/* Expand toggle */}
+                  <div style={{ color: S.text3, display: "flex", alignItems: "center" }}>
+                    {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </div>
+                </div>
+
+                {/* Expanded detail */}
+                {isExpanded && (
+                  <div style={{ padding: "1rem 1.25rem 1.25rem", borderTop: `1px solid ${S.border}`, background: S.bg }}>
+                    {/* Detail grid */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", marginBottom: "1rem" }}>
+                      {req.showDate && (
+                        <div>
+                          <div style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", color: S.text3, marginBottom: "0.25rem" }}>Show Date</div>
+                          <div style={{ fontSize: "0.875rem", color: S.text }}>{req.showDate}</div>
+                        </div>
+                      )}
+                      {req.urgency && (
+                        <div>
+                          <div style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", color: S.text3, marginBottom: "0.25rem" }}>Urgency</div>
+                          <div style={{ fontSize: "0.875rem", color: urgencyColor, textTransform: "capitalize", fontWeight: 500 }}>{req.urgency}</div>
+                        </div>
+                      )}
+                      {req.quotedPrice && (
+                        <div>
+                          <div style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", color: S.text3, marginBottom: "0.25rem" }}>Quoted Price</div>
+                          <div style={{ fontSize: "0.875rem", color: S.green, fontWeight: 600 }}>{req.quotedPrice}</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Details text */}
+                    {req.details && (
+                      <div style={{ padding: "0.75rem 1rem", background: S.surface, border: `1px solid ${S.border}`, borderRadius: "0.375rem", fontSize: "0.875rem", color: S.text2, marginBottom: "1rem", lineHeight: 1.6 }}>
+                        {req.details}
+                      </div>
+                    )}
+
+                    {/* Attachment */}
+                    {req.attachmentUrl && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", fontSize: "0.8125rem" }}>
+                        <Paperclip size={13} style={{ color: S.text3, flexShrink: 0 }} />
+                        <span style={{ color: S.text3 }}>Attachment:</span>
+                        <a
+                          href={req.attachmentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: S.green, textDecoration: "underline", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "20rem" }}
+                        >
+                          {req.attachmentName ?? "Download file"}
+                        </a>
+                      </div>
+                    )}
+
+                    {/* Admin notes */}
+                    {req.adminNotes && !isEditing && (
+                      <div style={{ padding: "0.75rem 1rem", background: S.greenDim, border: `1px solid rgba(62,207,142,0.25)`, borderRadius: "0.375rem", marginBottom: "1rem" }}>
+                        <div style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", color: S.green, marginBottom: "0.25rem" }}>Admin Note</div>
+                        <div style={{ fontSize: "0.875rem", color: S.text }}>{req.adminNotes}</div>
+                      </div>
+                    )}
+
+                    {/* Edit form */}
+                    {isEditing ? (
+                      <div style={{ borderTop: `1px solid ${S.border}`, paddingTop: "1rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ fontSize: "0.75rem", fontWeight: 500, color: S.text2, display: "block", marginBottom: "0.375rem" }}>Status</label>
+                            <select
+                              value={editStatus}
+                              onChange={e => setEditStatus(e.target.value)}
+                              style={{ width: "100%", padding: "0.4375rem 0.75rem", border: `1px solid ${S.border}`, borderRadius: "0.375rem", background: S.surface, color: S.text, fontSize: "0.8125rem", outline: "none" }}
+                            >
+                              {Object.entries(STATUS_CONFIG).map(([v, c]) => (
+                                <option key={v} value={v}>{c.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: "0.75rem", fontWeight: 500, color: S.text2, display: "block", marginBottom: "0.375rem" }}>Quoted Price</label>
+                            <input
+                              value={editQuote}
+                              onChange={e => setEditQuote(e.target.value)}
+                              placeholder="e.g. $2,500"
+                              style={{ width: "100%", padding: "0.4375rem 0.75rem", border: `1px solid ${S.border}`, borderRadius: "0.375rem", background: S.surface, color: S.text, fontSize: "0.8125rem", outline: "none", boxSizing: "border-box" as const }}
+                              onFocus={e => { e.currentTarget.style.borderColor = S.green; }}
+                              onBlur={e => { e.currentTarget.style.borderColor = S.border; }}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: "0.75rem" }}>
+                          <label style={{ fontSize: "0.75rem", fontWeight: 500, color: S.text2, display: "block", marginBottom: "0.375rem" }}>Admin Notes</label>
+                          <textarea
+                            value={editNotes}
+                            onChange={e => setEditNotes(e.target.value)}
+                            rows={3}
+                            placeholder="Notes visible to the client…"
+                            style={{ width: "100%", padding: "0.4375rem 0.75rem", border: `1px solid ${S.border}`, borderRadius: "0.375rem", background: S.surface, color: S.text, fontSize: "0.8125rem", outline: "none", resize: "vertical", boxSizing: "border-box" as const }}
+                            onFocus={e => { e.currentTarget.style.borderColor = S.green; }}
+                            onBlur={e => { e.currentTarget.style.borderColor = S.border; }}
+                          />
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            style={{ padding: "0.375rem 0.875rem", border: `1px solid ${S.border}`, borderRadius: "0.375rem", background: S.surface, color: S.text2, fontSize: "0.8125rem", cursor: "pointer" }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            disabled={updateStatus.isPending}
+                            onClick={() => updateStatus.mutate({
+                              id: req.id,
+                              status: editStatus as ServiceRequest["status"],
+                              quotedPrice: editQuote || undefined,
+                              adminNotes: editNotes || undefined,
+                            })}
+                            style={{ padding: "0.375rem 0.875rem", border: `1px solid ${S.green}`, borderRadius: "0.375rem", background: S.green, color: "#0f172a", fontSize: "0.8125rem", fontWeight: 600, cursor: updateStatus.isPending ? "wait" : "pointer", display: "flex", alignItems: "center", gap: "0.375rem", opacity: updateStatus.isPending ? 0.7 : 1 }}
+                          >
+                            {updateStatus.isPending && <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />}
+                            Save Changes
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setEditingId(req.id);
+                          setEditStatus(req.status);
+                          setEditQuote(req.quotedPrice ?? "");
+                          setEditNotes(req.adminNotes ?? "");
+                        }}
+                        style={{ padding: "0.375rem 0.875rem", border: `1px solid ${S.border}`, borderRadius: "0.375rem", background: S.surface, color: S.text2, fontSize: "0.8125rem", cursor: "pointer", transition: "background 0.1s, color 0.1s" }}
+                        onMouseEnter={e => { e.currentTarget.style.background = S.surface2; e.currentTarget.style.color = S.text; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = S.surface; e.currentTarget.style.color = S.text2; }}
+                      >
+                        Update Status / Add Quote
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
-
-        {/* Search */}
-        <div className="relative mb-5">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search by service type, show, or robot…"
-            className="pl-9 bg-background border-border/60 text-sm"
-          />
-        </div>
-
-        {/* List */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="animate-spin text-muted-foreground" size={24} />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <AlertTriangle size={32} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">No service requests match your filters.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map((req: ServiceRequest) => {
-              const cfg = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.new;
-              const Icon = cfg.icon;
-              const isExpanded = expandedId === req.id;
-              const isEditing = editingId === req.id;
-
-              return (
-                <div key={req.id} className="rounded-xl border border-border/60 bg-card overflow-hidden">
-                  {/* Row */}
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : req.id)}
-                    className="w-full flex items-center justify-between p-4 hover:bg-muted/20 transition-colors text-left"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border ${cfg.color}`}>
-                        <Icon size={14} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-medium text-sm truncate">{req.requestType}</div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                          {req.showName && (
-                            <span className="flex items-center gap-1">
-                              <Calendar size={10} /> {req.showName}
-                            </span>
-                          )}
-                          {req.robotName && (
-                            <span className="flex items-center gap-1">
-                              <Bot size={10} /> {req.robotName}
-                            </span>
-                          )}
-                          <span>#{req.id} · {new Date(req.createdAt).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                      {req.urgency && req.urgency !== "normal" && (
-                        <Badge className={`text-xs ${URGENCY_COLORS[req.urgency] ?? ""}`}>
-                          {req.urgency}
-                        </Badge>
-                      )}
-                      <Badge variant="outline" className={`text-xs border ${cfg.color}`}>{cfg.label}</Badge>
-                      {isExpanded ? <ChevronUp size={14} className="text-muted-foreground" /> : <ChevronDown size={14} className="text-muted-foreground" />}
-                    </div>
-                  </button>
-
-                  {/* Expanded detail */}
-                  {isExpanded && (
-                    <div className="px-4 pb-4 border-t border-border/40 pt-4 space-y-4">
-                      {/* Details */}
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        {req.showDate && (
-                          <div><span className="text-muted-foreground text-xs">Show Date</span><div>{req.showDate}</div></div>
-                        )}
-                        {req.urgency && (
-                          <div><span className="text-muted-foreground text-xs">Urgency</span><div className="capitalize">{req.urgency}</div></div>
-                        )}
-                        {req.quotedPrice && (
-                          <div><span className="text-muted-foreground text-xs">Quoted Price</span><div className="text-primary font-semibold">{req.quotedPrice}</div></div>
-                        )}
-                      </div>
-                      {req.details && (
-                        <div className="p-3 rounded-lg bg-muted/30 border border-border/40 text-sm text-muted-foreground">
-                          {req.details}
-                        </div>
-                      )}
-                      {req.attachmentUrl && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Paperclip size={13} className="text-muted-foreground flex-shrink-0" />
-                          <span className="text-xs text-muted-foreground">Attachment:</span>
-                          <a
-                            href={req.attachmentUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary underline truncate max-w-xs text-xs"
-                          >
-                            {req.attachmentName ?? "Download file"}
-                          </a>
-                        </div>
-                      )}
-                      {req.adminNotes && !isEditing && (
-                        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
-                          <div className="text-xs text-muted-foreground mb-1">Admin Note</div>
-                          {req.adminNotes}
-                        </div>
-                      )}
-
-                      {/* Edit form */}
-                      {isEditing ? (
-                        <div className="space-y-3 pt-2 border-t border-border/40">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">Status</label>
-                              <select
-                                value={editStatus}
-                                onChange={e => setEditStatus(e.target.value)}
-                                className="w-full h-9 rounded-md border border-border/60 bg-background px-3 text-sm text-foreground"
-                              >
-                                {Object.entries(STATUS_CONFIG).map(([v, c]) => (
-                                  <option key={v} value={v}>{c.label}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">Quoted Price</label>
-                              <Input
-                                value={editQuote}
-                                onChange={e => setEditQuote(e.target.value)}
-                                placeholder="e.g. $2,500"
-                                className="bg-background border-border/60 text-sm"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Admin Notes</label>
-                            <textarea
-                              value={editNotes}
-                              onChange={e => setEditNotes(e.target.value)}
-                              rows={3}
-                              placeholder="Notes visible to the client…"
-                              className="w-full rounded-md border border-border/60 bg-background px-3 py-2 text-sm text-foreground resize-none"
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setEditingId(null)}
-                            >
-                              Cancel
-                            </Button>
-                            <Button
-                              size="sm"
-                              disabled={updateStatus.isPending}
-                              onClick={() => updateStatus.mutate({
-                                id: req.id,
-                                status: editStatus as ServiceRequest["status"],
-                                quotedPrice: editQuote || undefined,
-                                adminNotes: editNotes || undefined,
-                              })}
-                              className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
-                            >
-                              {updateStatus.isPending ? <Loader2 size={12} className="animate-spin" /> : null}
-                              Save Changes
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingId(req.id);
-                            setEditStatus(req.status);
-                            setEditQuote(req.quotedPrice ?? "");
-                            setEditNotes(req.adminNotes ?? "");
-                          }}
-                          className="border-primary/30 text-primary hover:bg-primary/10"
-                        >
-                          Update Status / Add Quote
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      )}
+    </div>
   );
 }

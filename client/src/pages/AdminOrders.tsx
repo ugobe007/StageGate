@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Package, ArrowLeft, Loader2, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
@@ -11,11 +9,11 @@ import {
 } from "@/components/ui/select";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  pending: { label: "Pending", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
-  confirmed: { label: "Confirmed", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-  in_progress: { label: "In Progress", color: "bg-primary/20 text-primary border-primary/30" },
-  completed: { label: "Completed", color: "bg-green-500/20 text-green-400 border-green-500/30" },
-  cancelled: { label: "Cancelled", color: "bg-destructive/20 text-destructive border-destructive/30" },
+  pending:     { label: "Pending",     color: "#f59e0b" },
+  confirmed:   { label: "Confirmed",   color: "#3b82f6" },
+  in_progress: { label: "In Progress", color: "#8b5cf6" },
+  completed:   { label: "Completed",   color: "#3ecf8e" },
+  cancelled:   { label: "Cancelled",   color: "#ef4444" },
 };
 
 export default function AdminOrders() {
@@ -37,8 +35,8 @@ export default function AdminOrders() {
 
   if (!isAuthenticated || user?.role !== "admin") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Admin access required.</p>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ color: "#64748b" }}>Admin access required.</p>
       </div>
     );
   }
@@ -48,161 +46,162 @@ export default function AdminOrders() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="pt-24 pb-16">
-        <div className="container">
-          <div className="flex items-center gap-4 mb-8">
-            <Link href="/admin">
-              <Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5">
-                <ArrowLeft size={14} /> Admin
-              </Button>
-            </Link>
-            <h1 className="text-2xl font-display font-bold text-foreground flex items-center gap-2">
-              <Package size={20} className="text-primary" /> Service Orders
-            </h1>
-          </div>
+    <div style={{ padding: "2rem", maxWidth: "56rem", margin: "0 auto", color: "#0f172a" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem" }}>
+        <Link href="/admin">
+          <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", color: "#64748b", background: "none", border: "none", cursor: "pointer", padding: "0.25rem 0" }}>
+            <ArrowLeft size={14} /> Admin
+          </button>
+        </Link>
+        <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <Package size={18} style={{ color: "#3ecf8e" }} /> Service Orders
+        </h1>
+      </div>
 
-          {/* Filters */}
-          <div className="flex gap-2 flex-wrap mb-6">
-            {["all", "pending", "confirmed", "in_progress", "completed", "cancelled"].map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilterStatus(s)}
-                className={`px-3 py-1.5 rounded-full text-xs border transition-all ${filterStatus === s ? "bg-primary text-primary-foreground border-primary font-semibold" : "bg-secondary text-muted-foreground border-border hover:border-primary/50"}`}
-              >
-                {s === "all" ? "All Orders" : STATUS_CONFIG[s]?.label}
-                {s !== "all" && (
-                  <span className="ml-1.5 opacity-70">
-                    {(allOrders || []).filter(o => o.status === s).length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+      {/* Filter tabs */}
+      <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", marginBottom: "1.5rem" }}>
+        {["all", "pending", "confirmed", "in_progress", "completed", "cancelled"].map((s) => (
+          <button
+            key={s}
+            onClick={() => setFilterStatus(s)}
+            style={{
+              padding: "0.5rem 0.875rem", fontSize: "0.875rem", fontWeight: 500,
+              background: "none", border: "none",
+              borderBottom: `2px solid ${filterStatus === s ? "#3ecf8e" : "transparent"}`,
+              color: filterStatus === s ? "#0f172a" : "#64748b",
+              cursor: "pointer", marginBottom: "-1px",
+            }}
+          >
+            {s === "all" ? "All" : STATUS_CONFIG[s]?.label}
+            {s !== "all" && (
+              <span style={{ marginLeft: "0.375rem", fontSize: "0.75rem", background: "#f1f5f9", color: "#64748b", padding: "0.0625rem 0.3125rem", borderRadius: "0.1875rem" }}>
+                {(allOrders || []).filter(o => o.status === s).length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="animate-spin text-primary" size={32} />
-            </div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="text-center py-20">
-              <Package size={48} className="text-muted-foreground/20 mx-auto mb-4" />
-              <p className="text-muted-foreground font-medium">No orders found</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredOrders.map((order) => {
-                const show = (shows || []).find(s => s.id === order.showId);
-                const status = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
-                const isExpanded = expandedOrder === order.id;
+      {isLoading ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "4rem 0" }}>
+          <Loader2 size={24} style={{ color: "#94a3b8", animation: "spin 1s linear infinite" }} />
+        </div>
+      ) : filteredOrders.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "4rem 0" }}>
+          <Package size={40} style={{ color: "#cbd5e1", margin: "0 auto 1rem" }} />
+          <p style={{ color: "#94a3b8", fontWeight: 500 }}>No orders found</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          {filteredOrders.map((order) => {
+            const show = (shows || []).find(s => s.id === order.showId);
+            const status = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+            const isExpanded = expandedOrder === order.id;
 
-                return (
-                  <div key={order.id} className="rounded-xl border border-border bg-card overflow-hidden">
-                    <div className="p-4 flex items-start gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <Link href={`/admin/orders/${order.id}`} onClick={e => e.stopPropagation()} className="font-semibold text-foreground text-sm hover:text-primary transition-colors flex items-center gap-1">
-                            Order #{order.id} <ExternalLink size={10} className="opacity-40" />
-                          </Link>
-                          <Badge className={`text-xs ${status.color}`}>{status.label}</Badge>
-                          {show && <span className="text-xs text-muted-foreground">{show.name}</span>}
-                          {(order as any).bookingId && (
-                            <Link
-                              href="/admin/bookings"
-                              onClick={e => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
-                              title={`Converted from booking #${(order as any).bookingId}`}
-                            >
-                              From booking #{(order as any).bookingId}
-                            </Link>
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Placed {new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                        </div>
-                        {order.notes && (
-                          <p className="text-xs text-muted-foreground mt-1.5 line-clamp-1">{order.notes}</p>
+            return (
+              <div key={order.id} style={{ border: `1px solid ${isExpanded ? "#3ecf8e" : "#e2e8f0"}`, borderRadius: "0.5rem", background: "#ffffff", overflow: "hidden", transition: "border-color 0.1s" }}>
+                <div style={{ padding: "0.875rem 1rem", display: "flex", alignItems: "flex-start", gap: "1rem" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.25rem" }}>
+                      <Link href={`/admin/orders/${order.id}`} onClick={e => e.stopPropagation()}>
+                        <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a", display: "flex", alignItems: "center", gap: "0.25rem", cursor: "pointer" }}>
+                          Order #{order.id} <ExternalLink size={11} style={{ color: "#94a3b8" }} />
+                        </span>
+                      </Link>
+                      <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: status.color }}>{status.label}</span>
+                      {show && <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>{show.name}</span>}
+                      {(order as any).bookingId && (
+                        <Link href="/admin/bookings" onClick={e => e.stopPropagation()}>
+                          <span style={{ fontSize: "0.75rem", color: "#f59e0b", cursor: "pointer" }}>
+                            From booking #{(order as any).bookingId}
+                          </span>
+                        </Link>
+                      )}
+                    </div>
+                    <div style={{ fontSize: "0.8125rem", color: "#94a3b8" }}>
+                      Placed {new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </div>
+                    {order.notes && (
+                      <p style={{ fontSize: "0.8125rem", color: "#64748b", marginTop: "0.25rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{order.notes}</p>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
+                    {order.totalAmount && (
+                      <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a" }}>${parseFloat(order.totalAmount).toLocaleString()}</span>
+                    )}
+                    <Select
+                      value={order.status}
+                      onValueChange={(v) => updateOrderStatus.mutate({ id: order.id, status: v as any })}
+                    >
+                      <SelectTrigger className="h-8 text-xs w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(STATUS_CONFIG).map(([val, cfg]) => (
+                          <SelectItem key={val} value={val} className="text-xs">{cfg.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <button
+                      onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: "0.25rem", display: "flex", alignItems: "center" }}
+                    >
+                      {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                    </button>
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div style={{ borderTop: "1px solid #e2e8f0", padding: "1rem", background: "#f8fafc" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                      <div>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>Show Details</p>
+                        {show ? (
+                          <div style={{ fontSize: "0.875rem" }}>
+                            <div style={{ fontWeight: 500, color: "#0f172a" }}>{show.name}</div>
+                            {show.venue && <div style={{ color: "#64748b", fontSize: "0.8125rem", marginTop: "0.125rem" }}>{show.venue}, {show.city}</div>}
+                            {show.startDate && (
+                              <div style={{ fontSize: "0.8125rem", color: "#3ecf8e", marginTop: "0.25rem" }}>
+                                {new Date(show.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p style={{ fontSize: "0.875rem", color: "#94a3b8" }}>Show #{order.showId}</p>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        {order.totalAmount && (
-                          <span className="font-semibold text-foreground">${parseFloat(order.totalAmount).toLocaleString()}</span>
+                      <div>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>Services Ordered</p>
+                        {(order as any).serviceIds ? (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
+                            {JSON.parse((order as any).serviceIds).map((svcId: number) => {
+                              const svc = (services || []).find(s => s.id === svcId);
+                              return svc ? (
+                                <span key={svcId} style={{ fontSize: "0.8125rem", color: "#475569", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>
+                                  {svc.name}
+                                </span>
+                              ) : null;
+                            })}
+                          </div>
+                        ) : (
+                          <p style={{ fontSize: "0.875rem", color: "#94a3b8" }}>No services listed</p>
                         )}
-                        {/* Status update */}
-                        <Select
-                          value={order.status}
-                          onValueChange={(v) => updateOrderStatus.mutate({ id: order.id, status: v as any })}
-                        >
-                          <SelectTrigger className="bg-input border-border h-8 text-xs w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-card border-border">
-                            {Object.entries(STATUS_CONFIG).map(([val, cfg]) => (
-                              <SelectItem key={val} value={val} className="text-xs">{cfg.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <button
-                          onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                          className="text-muted-foreground hover:text-foreground p-1"
-                        >
-                          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        </button>
                       </div>
                     </div>
-
-                    {isExpanded && (
-                      <div className="border-t border-border p-4 bg-secondary/20">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Show Details</p>
-                            {show ? (
-                              <div className="text-sm text-foreground">
-                                <div className="font-medium">{show.name}</div>
-                                {show.venue && <div className="text-muted-foreground text-xs mt-0.5">{show.venue}, {show.city}</div>}
-                                {show.startDate && (
-                                  <div className="text-xs text-primary mt-1">
-                                    {new Date(show.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <p className="text-sm text-muted-foreground">Show #{order.showId}</p>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Services Ordered</p>
-                            {(order as any).serviceIds ? (
-                              <div className="flex flex-wrap gap-1.5">
-                                {JSON.parse((order as any).serviceIds).map((svcId: number) => {
-                                  const svc = (services || []).find(s => s.id === svcId);
-                                  return svc ? (
-                                    <Badge key={svcId} className="bg-secondary text-muted-foreground border-border text-xs">
-                                      {svc.name}
-                                    </Badge>
-                                  ) : null;
-                                })}
-                              </div>
-                            ) : (
-                              <p className="text-sm text-muted-foreground">No services listed</p>
-                            )}
-                          </div>
-                        </div>
-                        {order.notes && (
-                          <div className="mt-4">
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Notes</p>
-                            <p className="text-sm text-foreground">{order.notes}</p>
-                          </div>
-                        )}
+                    {order.notes && (
+                      <div style={{ marginTop: "1rem" }}>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>Notes</p>
+                        <p style={{ fontSize: "0.875rem", color: "#475569" }}>{order.notes}</p>
                       </div>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                )}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 }
