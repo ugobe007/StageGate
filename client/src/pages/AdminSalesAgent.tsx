@@ -20,7 +20,8 @@ import {
   Bot, Mail, Clock, MessageSquare,
   Zap, Send, RefreshCw, Eye, Users,
   TrendingUp, Calendar, Star, Cpu, Factory,
-  CheckCircle, XCircle, Edit3, Inbox
+  CheckCircle, XCircle, Edit3, Inbox,
+  ShieldCheck, Upload, FileText
 } from "lucide-react";
 
 const STAGES = [
@@ -435,6 +436,13 @@ export default function AdminSalesAgent() {
   const [verifyingId, setVerifyingId] = useState<number | null>(null);
   const [verifyResult, setVerifyResult] = useState<{ found: boolean; email: string | null; confidence: string; name: string | null; title: string | null; linkedIn: string | null; suggestions: string[]; orgFound: boolean } | null>(null);
   const [verifyModalOpen, setVerifyModalOpen] = useState(false);
+  // Bulk verify state
+  const [bulkVerifyResult, setBulkVerifyResult] = useState<{ total: number; verified: number; notFound: number; message: string } | null>(null);
+  const [bulkVerifyModalOpen, setBulkVerifyModalOpen] = useState(false);
+  // CSV import state
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
+  const [csvText, setCsvText] = useState("");
+  const [csvImportResult, setCsvImportResult] = useState<{ imported: number; skipped: number; errors: string[]; total: number; message: string } | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -468,6 +476,22 @@ export default function AdminSalesAgent() {
     },
   });
 
+  const verifyAllUnverified = trpc.salesAgent.verifyAllUnverified.useMutation({
+    onSuccess: (data) => {
+      setBulkVerifyResult(data);
+      setBulkVerifyModalOpen(true);
+      refetchConvs();
+    },
+    onError: (err) => toast.error(`Bulk verify failed: ${err.message}`),
+  });
+  const importProspects = trpc.salesAgent.importProspects.useMutation({
+    onSuccess: (data) => {
+      setCsvImportResult(data);
+      toast.success(data.message);
+      refetchConvs();
+    },
+    onError: (err) => toast.error(`Import failed: ${err.message}`),
+  });
   const verifyEmail = trpc.salesAgent.verifyProspectEmail.useMutation({
     onSuccess: (data, vars) => {
       setVerifyingId(null);
@@ -602,6 +626,27 @@ export default function AdminSalesAgent() {
                       {triggerDiscovery.isPending
                         ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Finding…</>
                         : <><TrendingUp className="w-3.5 h-3.5" /> Find Prospects</>}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-blue-700 text-blue-400 hover:bg-blue-950 gap-1.5"
+                      onClick={() => verifyAllUnverified.mutate()}
+                      disabled={verifyAllUnverified.isPending}
+                      title="Run Apollo verification on all low-confidence emails"
+                    >
+                      {verifyAllUnverified.isPending
+                        ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Verifying…</>
+                        : <><ShieldCheck className="w-3.5 h-3.5" /> Verify All</>}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-zinc-600 text-zinc-300 hover:bg-zinc-800 gap-1.5"
+                      onClick={() => { setCsvText(""); setCsvImportResult(null); setCsvModalOpen(true); }}
+                      title="Import prospects from CSV"
+                    >
+                      <Upload className="w-3.5 h-3.5" /> Import CSV
                     </Button>
                     <Button
                       size="sm"
@@ -958,6 +1003,108 @@ export default function AdminSalesAgent() {
                 className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
                 onClick={() => { setVerifyModalOpen(false); setVerifyResult(null); }}
               >Close</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Verify Result Modal */}
+      <Dialog open={bulkVerifyModalOpen} onOpenChange={setBulkVerifyModalOpen}>
+        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <ShieldCheck className="w-4 h-4 text-blue-400" />
+              Bulk Email Verification Complete
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500">
+              Apollo verification run against all low-confidence prospects.
+            </DialogDescription>
+          </DialogHeader>
+          {bulkVerifyResult && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-zinc-800 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-white">{bulkVerifyResult.total}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">Checked</p>
+                </div>
+                <div className="bg-emerald-950/30 border border-emerald-800/50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-emerald-400">{bulkVerifyResult.verified}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">Verified</p>
+                </div>
+                <div className="bg-zinc-800 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-zinc-400">{bulkVerifyResult.notFound}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">Not Found</p>
+                </div>
+              </div>
+              <p className="text-sm text-zinc-400">{bulkVerifyResult.message}</p>
+              <Button size="sm" className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                onClick={() => setBulkVerifyModalOpen(false)}>Close</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* CSV Import Modal */}
+      <Dialog open={csvModalOpen} onOpenChange={(v) => { if (!v) { setCsvModalOpen(false); setCsvImportResult(null); } }}>
+        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <FileText className="w-4 h-4 text-amber-400" />
+              Import Prospects from CSV
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500">
+              Paste CSV rows below. Supported columns: <code className="text-zinc-300">company, contact_name, contact_email, contact_title, website, robot_type, robot_category, show_name</code>
+            </DialogDescription>
+          </DialogHeader>
+          {csvImportResult ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-emerald-950/30 border border-emerald-800/50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-emerald-400">{csvImportResult.imported}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">Imported</p>
+                </div>
+                <div className="bg-zinc-800 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-zinc-400">{csvImportResult.skipped}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">Skipped (dup)</p>
+                </div>
+                <div className="bg-zinc-800 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-zinc-400">{csvImportResult.total}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">Total Rows</p>
+                </div>
+              </div>
+              {csvImportResult.errors.length > 0 && (
+                <div className="bg-red-950/30 border border-red-800/50 rounded-lg p-3">
+                  <p className="text-xs font-medium text-red-400 mb-1">Errors ({csvImportResult.errors.length}):</p>
+                  {csvImportResult.errors.slice(0, 5).map((e, i) => (
+                    <p key={i} className="text-xs text-red-300">{e}</p>
+                  ))}
+                </div>
+              )}
+              <Button size="sm" className="w-full bg-amber-600 hover:bg-amber-500 text-white"
+                onClick={() => { setCsvModalOpen(false); setCsvImportResult(null); }}>Done</Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Textarea
+                className="bg-zinc-800 border-zinc-700 text-zinc-200 font-mono text-xs h-64 resize-none"
+                placeholder={`company,contact_name,contact_email,contact_title,website,robot_type,robot_category,show_name\nAgility Robotics,Damion Shelton,ceo@agilityrobotics.com,CEO,https://agilityrobotics.com,Humanoid,light,CES 2026`}
+                value={csvText}
+                onChange={(e) => setCsvText(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1 bg-amber-600 hover:bg-amber-500 text-white gap-1.5"
+                  onClick={() => importProspects.mutate({ csvText })}
+                  disabled={importProspects.isPending || !csvText.trim()}
+                >
+                  {importProspects.isPending
+                    ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Importing…</>
+                    : <><Upload className="w-3.5 h-3.5" /> Import</>}
+                </Button>
+                <Button size="sm" variant="outline" className="border-zinc-700 text-zinc-400"
+                  onClick={() => setCsvModalOpen(false)}>Cancel</Button>
+              </div>
             </div>
           )}
         </DialogContent>

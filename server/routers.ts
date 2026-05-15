@@ -2652,6 +2652,205 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         });
         return { runId, showCount: shows.length, message: `Discovery started for ${shows.length} shows. Check Runs tab for progress.` };
       }),
+
+    verifyAllUnverified: adminProcedure
+      .mutation(async () => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const apolloKey = process.env.APOLLO_API_KEY;
+        if (!apolloKey) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Apollo API key not configured" });
+
+        // Fetch all low-confidence prospects
+        const unverified = await dbConn
+          .select()
+          .from(prospectsTable)
+          .where(eq(prospectsTable.emailConfidence, "low"))
+          .limit(100); // cap at 100 per run to avoid rate limits
+
+        let verified = 0;
+        let notFound = 0;
+        const errors: string[] = [];
+
+        for (const prospect of unverified) {
+          try {
+            // Rate limit: 1 request per 300ms to stay within Apollo free tier
+            await new Promise(r => setTimeout(r, 300));
+
+            // Step 1: Find org
+            let orgId: string | null = null;
+            try {
+              const orgBody: Record<string, unknown> = { q_organization_name: prospect.company, page: 1, per_page: 1 };
+              if (prospect.website) orgBody.q_organization_website_url = prospect.website;
+              const orgRes = await fetch("https://api.apollo.io/v1/mixed_companies/search", {
+                method: "POST",
+                headers: { "x-api-key": apolloKey, "Content-Type": "application/json" },
+                body: JSON.stringify(orgBody),
+              });
+              const orgData = await orgRes.json() as { organizations?: Array<{ id: string }> };
+              orgId = orgData.organizations?.[0]?.id ?? null;
+            } catch { /* ignore */ }
+
+            // Step 2: Find people
+            let bestEmail: string | null = null;
+            let bestConfidence: "high" | "medium" | "low" = "low";
+            let bestName: string | null = null;
+            let bestTitle: string | null = null;
+            let bestLinkedIn: string | null = null;
+
+            if (orgId) {
+              try {
+                const peopleRes = await fetch("https://api.apollo.io/v1/mixed_people/search", {
+                  method: "POST",
+                  headers: { "x-api-key": apolloKey, "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    organization_ids: [orgId],
+                    person_titles: ["CEO", "CTO", "COO", "VP", "Director", "Head of", "Chief", "President", "Founder", "Co-Founder", "Business Development", "Sales"],
+                    page: 1, per_page: 3,
+                  }),
+                });
+                const peopleData = await peopleRes.json() as { people?: Array<{ id: string; name: string; title?: string; email?: string; email_status?: string; linkedin_url?: string }> };
+                const people = peopleData.people ?? [];
+                const best = people.find(p => p.email_status === "verified" && p.email) ?? people.find(p => p.email) ?? people[0];
+                if (best) {
+                  bestEmail = best.email ?? null;
+                  bestConfidence = best.email_status === "verified" ? "high" : best.email ? "medium" : "low";
+                  bestName = best.name ?? null;
+                  bestTitle = best.title ?? null;
+                  bestLinkedIn = best.linkedin_url ?? null;
+                }
+              } catch { /* ignore */ }
+            }
+
+            if (bestEmail && bestEmail !== prospect.contactEmail) {
+              await dbConn.update(prospectsTable).set({
+                contactEmail: bestEmail,
+                emailConfidence: bestConfidence,
+                contactName: bestName ?? prospect.contactName,
+                contactTitle: bestTitle ?? prospect.contactTitle,
+                contactLinkedIn: bestLinkedIn ?? prospect.contactLinkedIn,
+                updatedAt: new Date(),
+              }).where(eq(prospectsTable.id, prospect.id));
+              verified++;
+            } else {
+              notFound++;
+            }
+          } catch (err) {
+            errors.push(`${prospect.company}: ${String(err)}`);
+          }
+        }
+
+        return {
+          total: unverified.length,
+          verified,
+          notFound,
+          errors: errors.slice(0, 5),
+          message: `Verified ${verified} of ${unverified.length} prospects. ${notFound} not found in Apollo.`,
+        };
+      }),
+
+    importProspects: adminProcedure
+      .input(z.object({
+        csvText: z.string().min(1),
+        defaultShowId: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        const lines = input.csvText.trim().split(/\r?\n/);
+        if (lines.length < 2) throw new TRPCError({ code: "BAD_REQUEST", message: "CSV must have a header row and at least one data row" });
+
+        const header = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/\s+/g, "_"));
+        const rows = lines.slice(1);
+
+        const REQUIRED = ["company"];
+        const missing = REQUIRED.filter(f => !header.includes(f));
+        if (missing.length > 0) throw new TRPCError({ code: "BAD_REQUEST", message: `CSV missing required columns: ${missing.join(", ")}` });
+
+        const col = (row: string[], name: string): string => {
+          const idx = header.indexOf(name);
+          return idx >= 0 ? (row[idx] ?? "").trim() : "";
+        };
+
+        let imported = 0;
+        let skipped = 0;
+        const errors: string[] = [];
+
+        for (const line of rows) {
+          if (!line.trim()) continue;
+          // Simple CSV split (handles basic cases; no quoted commas)
+          const cells = line.split(",");
+          const company = col(cells, "company");
+          if (!company) { skipped++; continue; }
+
+          const contactEmail = col(cells, "contact_email") || col(cells, "email");
+          const contactName = col(cells, "contact_name") || col(cells, "name");
+          const contactTitle = col(cells, "contact_title") || col(cells, "title");
+          const website = col(cells, "website");
+          const robotType = col(cells, "robot_type") || col(cells, "robottype");
+          const rawCategory = col(cells, "robot_category") || col(cells, "robotcategory") || "light";
+          const robotCategory = ["light", "heavy_industrial", "mixed"].includes(rawCategory) ? rawCategory as "light" | "heavy_industrial" | "mixed" : "light";
+          const showNameHint = col(cells, "show_name") || col(cells, "showname");
+
+          // Resolve showId
+          // Resolve show name for the shows jsonb array
+          let resolvedShowName: string | null = showNameHint || null;
+          if (!resolvedShowName && input.defaultShowId) {
+            const [show] = await dbConn.select({ name: tradeShows.name }).from(tradeShows)
+              .where(eq(tradeShows.id, input.defaultShowId)).limit(1);
+            if (show) resolvedShowName = show.name;
+          }
+
+          try {
+            // Upsert by company name (case-insensitive)
+            const [existing] = await dbConn.select({ id: prospectsTable.id })
+              .from(prospectsTable)
+              .where(sql`LOWER(${prospectsTable.company}) = LOWER(${company})`)
+              .limit(1);
+
+            if (existing) {
+              // Update existing prospect with any new info
+              await dbConn.update(prospectsTable).set({
+                ...(contactEmail ? { contactEmail, emailConfidence: "medium" as const } : {}),
+                ...(contactName ? { contactName } : {}),
+                ...(contactTitle ? { contactTitle } : {}),
+                ...(website ? { website } : {}),
+                ...(robotType ? { robotType } : {}),
+                robotCategory,
+                ...(resolvedShowName ? { shows: [resolvedShowName] } : {}),
+                updatedAt: new Date(),
+              }).where(eq(prospectsTable.id, existing.id));
+              skipped++; // counted as skipped (already existed)
+            } else {
+              await dbConn.insert(prospectsTable).values({
+                company,
+                contactEmail: contactEmail || null,
+                contactName: contactName || null,
+                contactTitle: contactTitle || null,
+                website: website || null,
+                robotType: robotType || null,
+                robotCategory,
+                shows: resolvedShowName ? [resolvedShowName] : [],
+                emailConfidence: contactEmail ? "medium" : "low",
+                status: "new",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              });
+              imported++;
+            }
+          } catch (err) {
+            errors.push(`Row ${imported + skipped + errors.length + 1} (${company}): ${String(err)}`);
+          }
+        }
+
+        return {
+          imported,
+          skipped,
+          errors: errors.slice(0, 10),
+          total: rows.filter(r => r.trim()).length,
+          message: `Imported ${imported} new prospects, ${skipped} already existed, ${errors.length} errors.`,
+        };
+      }),
   }),
 
   // ─── Vendors ───────────────────────────────────────────────────────────────

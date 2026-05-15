@@ -1167,3 +1167,27 @@
 ### v32 Tests
 - [x] Write server/v32.test.ts: Apollo verification, triggerDiscovery, dashboard card, new shows (78 tests)
 - [x] All 688 tests passing (v32)
+
+## v33 — Discovery Run, Bulk Apollo Verification, CSV Import
+
+### v33.1 — Trigger discovery run
+- [x] Verified triggerDiscovery procedure fires correctly against all 25 shows
+- [x] Runs tab shows live status of running discovery (polls getRuns)
+- [x] Toast shows runId and showCount on trigger
+
+### v33.2 — Bulk Apollo verification
+- [x] Add salesAgent.verifyAllUnverified adminProcedure: fetches all prospects with emailConfidence=low, runs Apollo verify in sequence, returns total/verified/notFound/message
+- [x] Add Verify All button (blue, ShieldCheck icon) to AdminSalesAgent header
+- [x] Bulk verify result modal: Checked / Verified / Not Found stats
+- [x] Button shows loading state while running
+
+### v33.3 — CSV prospect import
+- [x] Add salesAgent.importProspects adminProcedure: accepts csvText + optional defaultShowId, parses rows, validates company (required), deduplicates by name, upserts with shows jsonb array + robotCategory
+- [x] CSV columns: company, contact_name, contact_email, contact_title, website, robot_type, robot_category, show_name
+- [x] Add Import CSV button (amber, FileText icon) to AdminSalesAgent header
+- [x] CSV import modal: textarea for paste, column format hint, Import button
+- [x] Import result modal: Imported / Skipped (dup) / Total stats + error list
+
+### v33 Tests
+- [x] Write server/v33.test.ts: verifyAllUnverified, importProspects, triggerDiscovery, UI buttons (42 tests)
+- [x] All 730 tests passing (v33)
