@@ -972,3 +972,38 @@
 ### v25.4 — Tests
 - [x] Write server/v25.test.ts: 38 new tests (5-day filter, idempotency, email content, auth guard, job management)
 - [x] All 371 tests passing
+
+## v26 — Dashboard Pipeline Fix & Outreach Engine Repair
+
+### Root Cause Diagnosis
+- [x] Identified 3 missing DB tables: sales_agent_runs, sales_agent_conversations, email_threads
+- [x] Confirmed all 3 heartbeat jobs were firing but crashing at DB layer (tables didn't exist)
+- [x] Confirmed 78 prospects + 20 trade shows + 8 services + 7 logistics partners + 5 xbot projects exist in DB
+- [x] Confirmed outreach job failed at 9am UTC with "Failed query" error (missing table)
+
+### v26.1 — Missing Tables Created
+- [x] Create sales_agent_conversations table with correct camelCase column names
+- [x] Create sales_agent_runs table
+- [x] Create email_threads table
+- [x] Verify all 3 tables joinable with prospects
+
+### v26.2 — Conversation Backfill
+- [x] Backfill 78 sales_agent_conversations records (one per existing prospect, state=discovery, followUpCount=0)
+- [x] Verified exact outreach query returns 10 prospects ready for first email tonight
+- [x] Tonight's 9am UTC outreach run will send first 10 emails
+
+### v26.3 — getSiteStats Updated
+- [x] Add tradeShows, services, logisticsPartners, xbotProjects, agentRuns, outreachCampaigns, conversations to getSiteStats
+- [x] Import all required schema tables in routers.ts
+- [x] conversations field includes byState breakdown, awaiting count, active count
+
+### v26.4 — AdminDashboard Rebuilt
+- [x] Replace 6-tile siteStats row with 8-tile Pipeline Health row (all clickable links)
+- [x] Tiles: Prospects (78), Trade Shows (20), Services (8), Logistics Partners (7), XBOT Projects (5), Agent Runs, Conversations (78), Users
+- [x] Replace "Outreach Pipeline" (exhibitor_leads funnel, all zeros) with "Sales Agent Pipeline" (conversations funnel)
+- [x] Funnel stages: Discovery / Awaiting / In Convo / Scheduling / Booked
+- [x] Add MessageSquare icon to lucide-react import
+
+### v26 Tests
+- [x] Write server/v26.test.ts: 19 new tests
+- [x] All 390 tests passing

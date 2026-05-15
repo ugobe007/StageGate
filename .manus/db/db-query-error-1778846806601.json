@@ -1,0 +1,21 @@
+{
+  "query": "\nCREATE TABLE IF NOT EXISTS email_threads (\n  id SERIAL PRIMARY KEY,\n  \"prospectId\" INTEGER,\n  \"threadId\" TEXT,\n  direction TEXT NOT NULL,\n  \"fromAddress\" TEXT NOT NULL,\n  \"toAddress\" TEXT NOT NULL,\n  subject TEXT,\n  body TEXT,\n  \"htmlBody\" TEXT,\n  \"resendMessageId\" TEXT,\n  \"inReplyTo\" TEXT,\n  references TEXT,\n  \"receivedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  \"createdAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\nCREATE TABLE IF NOT EXISTS sales_agent_conversations (\n  id SERIAL PRIMARY KEY,\n  \"prospectId\" INTEGER NOT NULL,\n  state TEXT NOT NULL DEFAULT 'discovery',\n  strategy TEXT,\n  \"outreachAngle\" TEXT,\n  \"lastActivityAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  \"nextFollowUpAt\" TIMESTAMPTZ,\n  \"followUpCount\" INTEGER DEFAULT 0,\n  notes TEXT,\n  \"createdAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  \"updatedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\nCREATE TABLE IF NOT EXISTS sales_agent_runs (\n  id SERIAL PRIMARY KEY,\n  \"runType\" TEXT NOT NULL,\n  status TEXT NOT NULL DEFAULT 'running',\n  \"prospectsFound\" INTEGER DEFAULT 0,\n  \"prospectsCreated\" INTEGER DEFAULT 0,\n  \"emailsSent\" INTEGER DEFAULT 0,\n  \"showsFound\" INTEGER DEFAULT 0,\n  \"errorMessage\" TEXT,\n  details JSONB,\n  \"startedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  \"completedAt\" TIMESTAMPTZ\n);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute \nCREATE TABLE IF NOT EXISTS email_threads (\n  id SERIAL PRIMARY KEY,\n  \"prospectId\" INTEGER,\n  \"threadId\" TEXT,\n  direction TEXT NOT NULL,\n  \"fromAddress\" TEXT NOT NULL,\n  \"toAddress\" TEXT NOT NULL,\n  subject TEXT,\n  body TEXT,\n  \"htmlBody\" TEXT,\n  \"resendMessageId\" TEXT,\n  \"inReplyTo\" TEXT,\n  references TEXT,\n  \"receivedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  \"createdAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\nCREATE TABLE IF NOT EXISTS sales_agent_conversations (\n  id SERIAL PRIMARY KEY,\n  \"prospectId\" INTEGER NOT NULL,\n  state TEXT NOT NULL DEFAULT 'discovery',\n  strategy TEXT,\n  \"outreachAngle\" TEXT,\n  \"lastActivityAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  \"nextFollowUpAt\" TIMESTAMPTZ,\n  \"followUpCount\" INTEGER DEFAULT 0,\n  notes TEXT,\n  \"createdAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  \"updatedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\nCREATE TABLE IF NOT EXISTS sales_agent_runs (\n  id SERIAL PRIMARY KEY,\n  \"runType\" TEXT NOT NULL,\n  status TEXT NOT NULL DEFAULT 'running',\n  \"prospectsFound\" INTEGER DEFAULT 0,\n  \"prospectsCreated\" INTEGER DEFAULT 0,\n  \"emailsSent\" INTEGER DEFAULT 0,\n  \"showsFound\" INTEGER DEFAULT 0,\n  \"errorMessage\" TEXT,\n  details JSONB,\n  \"startedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  \"completedAt\" TIMESTAMPTZ\n);\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 2: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 3 column 15 near \"\"prospectId\" INTEGER,",
+    "  \"threadId\" TEXT,",
+    "  direction TEXT NOT NULL,",
+    "  \"fromAddress\" TEXT NOT NULL,",
+    "  \"toAddress\" TEXT NOT NULL,",
+    "  subject TEXT,",
+    "  body TEXT,",
+    "  \"htmlBody\" TEXT,",
+    "  \"resendMessageId\" TEXT,",
+    "  \"inReplyTo\" TEXT,",
+    "  references TEXT,",
+    "  \"receivedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),",
+    "  \"createdAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW()",
+    ")\""
+  ]
+}

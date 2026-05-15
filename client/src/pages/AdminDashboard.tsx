@@ -11,7 +11,7 @@ import {
   Building2, Calendar, Package, Users, TrendingUp, ArrowRight,
   Loader2, AlertCircle, Zap, FileText, Play,
   ShieldCheck, BarChart3, UserCheck, Shield, ShieldOff,
-  Database, RefreshCw, CheckCircle2, XCircle, Send
+  Database, RefreshCw, CheckCircle2, XCircle, Send, MessageSquare
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -169,64 +169,75 @@ export default function AdminDashboard() {
             ))}
           </div>
 
-          {/* Site Stats Row */}
+          {/* Pipeline Health Row */}
           {siteStats && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-8">
               {[
-                { label: "Registered Users", value: siteStats.users.total, sub: `${siteStats.users.admins} admin`, icon: UserCheck, color: "text-primary" },
-                { label: "Service Orders", value: siteStats.orders.total, sub: `${siteStats.orders.byStatus?.pending ?? 0} pending`, icon: Package, color: "text-yellow-400" },
-                { label: "Demo Requests", value: siteStats.demos.total, sub: `${siteStats.demos.pending} pending`, icon: Play, color: "text-violet-400" },
-                { label: "Quote Requests", value: siteStats.quotes.total, sub: `${siteStats.quotes.pending} pending`, icon: FileText, color: "text-green-400" },
-                { label: "Exhibitor Leads", value: siteStats.leads.total, sub: "from trade shows", icon: Zap, color: "text-orange-400" },
-                { label: "XBOT Prospects", value: siteStats.prospects.total, sub: `${siteStats.prospects.byStatus?.responded ?? 0} responded`, icon: BarChart3, color: "text-emerald-400" },
+                { label: "Prospects", value: siteStats.prospects.total, sub: `${siteStats.prospects.byStatus?.new ?? 0} new`, icon: Users, color: "text-emerald-400", href: "/admin/prospects" },
+                { label: "Trade Shows", value: siteStats.tradeShows?.upcoming ?? siteStats.tradeShows?.total ?? 0, sub: "upcoming", icon: Calendar, color: "text-blue-400", href: "/admin/shows" },
+                { label: "Services", value: siteStats.services?.active ?? siteStats.services?.total ?? 0, sub: "active", icon: Package, color: "text-yellow-400", href: "/admin/orders" },
+                { label: "Logistics Partners", value: siteStats.logisticsPartners?.total ?? 0, sub: "vendors", icon: TrendingUp, color: "text-orange-400", href: "/admin/vendors" },
+                { label: "XBOT Projects", value: siteStats.xbotProjects?.total ?? 0, sub: "active", icon: BarChart3, color: "text-violet-400", href: "/admin/xbot" },
+                { label: "Agent Runs", value: siteStats.agentRuns?.total ?? 0, sub: "all time", icon: Zap, color: "text-primary", href: "/admin/agents" },
+                { label: "Conversations", value: siteStats.conversations?.total ?? 0, sub: `${siteStats.conversations?.awaiting ?? 0} awaiting`, icon: MessageSquare, color: "text-cyan-400", href: "/admin/sales-agent" },
+                { label: "Users", value: siteStats.users.total, sub: `${siteStats.users.admins} admin`, icon: UserCheck, color: "text-primary", href: "/admin" },
               ].map(s => (
-                <div key={s.label} className="p-4 rounded-xl border border-border bg-card">
-                  <s.icon size={15} className={`${s.color} mb-2`} />
-                  <div className={`text-2xl font-display font-bold ${s.color}`}>{s.value}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{s.label}</div>
-                  <div className="text-xs text-muted-foreground/60 mt-0.5">{s.sub}</div>
-                </div>
+                <Link key={s.label} href={s.href}>
+                  <div className="p-4 rounded-xl border border-border bg-card hover:border-primary/40 transition-all cursor-pointer">
+                    <s.icon size={15} className={`${s.color} mb-2`} />
+                    <div className={`text-2xl font-display font-bold ${s.color}`}>{s.value}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{s.label}</div>
+                    <div className="text-xs text-muted-foreground/60 mt-0.5">{s.sub}</div>
+                  </div>
+                </Link>
               ))}
             </div>
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Outreach Pipeline */}
+            {/* Sales Agent Pipeline */}
             <div className="p-6 rounded-xl border border-border bg-card">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
-                  <Zap size={16} className="text-primary" />
-                  Outreach Pipeline
+                  <MessageSquare size={16} className="text-primary" />
+                  Sales Agent Pipeline
                 </h2>
-                <Link href="/admin/leads">
+                <Link href="/admin/sales-agent">
                   <Button size="sm" variant="outline" className="border-border text-xs gap-1">
                     View All <ArrowRight size={12} />
                   </Button>
                 </Link>
               </div>
-              <div className="space-y-3">
-                {[
-                  { label: "New", count: newLeads, color: "bg-secondary text-muted-foreground border-border", bar: "bg-muted-foreground/30" },
-                  { label: "Emailed", count: emailedLeads, color: "bg-blue-500/20 text-blue-400 border-blue-500/30", bar: "bg-blue-500/50" },
-                  { label: "Responded", count: respondedLeads, color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", bar: "bg-yellow-500/50" },
-                  { label: "Registered", count: (allLeads || []).filter(l => l.outreachStatus === "registered").length, color: "bg-primary/20 text-primary border-primary/30", bar: "bg-primary/50" },
-                ].map((stage) => {
-                  const total = (allLeads || []).length || 1;
-                  const pct = Math.round((stage.count / total) * 100);
-                  return (
-                    <div key={stage.label} className="flex items-center gap-3">
-                      <Badge className={`${stage.color} w-24 justify-center text-xs shrink-0`}>{stage.label}</Badge>
-                      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${stage.bar} transition-all`} style={{ width: `${pct}%` }} />
+              {siteStats ? (
+                <div className="space-y-3">
+                  {[
+                    { label: "Discovery", count: siteStats.conversations?.byState?.discovery ?? 0, color: "bg-secondary text-muted-foreground border-border", bar: "bg-muted-foreground/30" },
+                    { label: "Awaiting", count: siteStats.conversations?.byState?.awaiting_reply ?? 0, color: "bg-amber-500/20 text-amber-400 border-amber-500/30", bar: "bg-amber-500/50" },
+                    { label: "In Convo", count: siteStats.conversations?.byState?.in_conversation ?? 0, color: "bg-blue-500/20 text-blue-400 border-blue-500/30", bar: "bg-blue-500/50" },
+                    { label: "Scheduling", count: siteStats.conversations?.byState?.scheduling_sent ?? 0, color: "bg-violet-500/20 text-violet-400 border-violet-500/30", bar: "bg-violet-500/50" },
+                    { label: "Booked", count: (siteStats.conversations?.byState?.meeting_booked ?? 0) + (siteStats.conversations?.byState?.converted ?? 0), color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30", bar: "bg-emerald-500/50" },
+                  ].map((stage) => {
+                    const total = siteStats.conversations?.total || 1;
+                    const pct = Math.round((stage.count / total) * 100);
+                    return (
+                      <div key={stage.label} className="flex items-center gap-3">
+                        <Badge className={`${stage.color} w-24 justify-center text-xs shrink-0`}>{stage.label}</Badge>
+                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${stage.bar} transition-all`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-sm font-semibold text-foreground w-6 text-right">{stage.count}</span>
                       </div>
-                      <span className="text-sm font-semibold text-foreground w-6 text-right">{stage.count}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="mt-4 pt-4 border-t border-border">
-                <p className="text-xs text-muted-foreground">Total leads: <strong className="text-foreground">{(allLeads || []).length}</strong></p>
-              </div>
+                    );
+                  })}
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <p className="text-xs text-muted-foreground">Total prospects in pipeline: <strong className="text-foreground">{siteStats.conversations?.total ?? 0}</strong></p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {[1,2,3,4,5].map(i => <div key={i} className="h-8 bg-secondary rounded animate-pulse" />)}
+                </div>
+              )}
             </div>
 
             {/* Recent Orders */}
