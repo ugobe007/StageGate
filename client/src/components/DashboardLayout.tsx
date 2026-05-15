@@ -44,6 +44,7 @@ const menuItems = [
   { icon: Zap, label: "Sales Agent", path: "/admin/sales-agent" },
   { icon: Truck, label: "Vendors", path: "/admin/vendors" },
   { icon: Calendar, label: "Scheduling", path: "/admin/scheduling" },
+  { icon: Truck, label: "Logistics", path: "/admin/logistics" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";

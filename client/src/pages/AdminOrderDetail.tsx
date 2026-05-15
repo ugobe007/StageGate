@@ -8,6 +8,7 @@ import {
   ArrowLeft, Package, Building2, Bot, Calendar, MapPin,
   Phone, Mail, Loader2, CheckCircle2, Clock, AlertCircle,
   ExternalLink, RefreshCw, Plus, Trash2, Pencil, Check, X,
+  Truck, Zap, AlertTriangle, PlayCircle, BarChart3,
 } from "lucide-react";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -77,6 +78,45 @@ export default function AdminOrderDetail() {
 
   const updateLineItem = trpc.orders.updateLineItem.useMutation({
     onSuccess: () => { invalidateDetail(); setEditingItemId(null); toast.success("Line item updated"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  // Logistics state
+  const [showMeetingHandoff, setShowMeetingHandoff] = useState(false);
+  const [meetingNotesInput, setMeetingNotesInput] = useState("");
+  const [showWorkflowForm, setShowWorkflowForm] = useState(false);
+  const [workflowShowName, setWorkflowShowName] = useState("");
+  const [workflowShowDate, setWorkflowShowDate] = useState("");
+  const [selectedCheckpoint, setSelectedCheckpoint] = useState<number | null>(null);
+  const [problemDesc, setProblemDesc] = useState("");
+  const [problemSeverity, setProblemSeverity] = useState<"low" | "medium" | "high" | "critical">("medium");
+
+  const { data: workflowData, refetch: refetchWorkflow } = trpc.logistics.getWorkflowByOrder.useQuery(
+    { orderId: orderId! },
+    { enabled: !!orderId && !isNaN(orderId!) }
+  );
+
+  const createWorkflow = trpc.logistics.createWorkflow.useMutation({
+    onSuccess: () => { refetchWorkflow(); setShowWorkflowForm(false); toast.success("Logistics workflow created with 13 checkpoints"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const updateCheckpoint = trpc.logistics.updateCheckpoint.useMutation({
+    onSuccess: () => { refetchWorkflow(); toast.success("Checkpoint updated"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const reportProblem = trpc.logistics.reportProblem.useMutation({
+    onSuccess: () => { refetchWorkflow(); setProblemDesc(""); setSelectedCheckpoint(null); toast.success("Problem reported and email sent to robot company"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const summarizeMeeting = trpc.logistics.summarizeMeetingAndHandoff.useMutation({
+    onSuccess: (res) => {
+      setShowMeetingHandoff(false);
+      setMeetingNotesInput("");
+      toast.success(`Meeting summarized. Next steps: ${res.nextSteps.slice(0, 2).join("; ")}`);
+    },
     onError: (e) => toast.error(e.message),
   });
 
@@ -496,6 +536,202 @@ export default function AdminOrderDetail() {
             </div>
           </>
         ) : null}
+
+        {/* ─── Logistics Workflow Panel ─────────────────────────────────── */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Truck size={16} className="text-amber-400" />
+              <h2 className="text-[14px] font-semibold text-zinc-100">Logistics Workflow</h2>
+            </div>
+            {!workflowData && (
+              <button
+                onClick={() => setShowWorkflowForm(v => !v)}
+                className="flex items-center gap-1.5 text-[11px] bg-amber-500 hover:bg-amber-400 text-black font-semibold px-3 py-1.5 rounded transition-colors"
+              >
+                <Plus size={11} /> Create Workflow
+              </button>
+            )}
+          </div>
+
+          {showWorkflowForm && (
+            <div className="bg-zinc-800/60 border border-zinc-700 rounded-lg p-4 mb-4 space-y-3">
+              <p className="text-[12px] text-zinc-400">Creates a 13-checkpoint logistics workflow for this order.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] text-zinc-500 mb-1 block">Show Name</label>
+                  <input value={workflowShowName} onChange={e => setWorkflowShowName(e.target.value)}
+                    placeholder="e.g. CES 2026" className="w-full text-[12px] bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-zinc-200 outline-none" />
+                </div>
+                <div>
+                  <label className="text-[11px] text-zinc-500 mb-1 block">Show Start Date</label>
+                  <input type="date" value={workflowShowDate} onChange={e => setWorkflowShowDate(e.target.value)}
+                    className="w-full text-[12px] bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-zinc-200 outline-none" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => createWorkflow.mutate({
+                    orderId: orderId!,
+                    prospectId: data?.booking?.prospectId ?? undefined,
+                    robotCompany: data?.booking?.company ?? "Robot Company",
+                    robotName: data?.booking?.robotType ?? undefined,
+                    showName: workflowShowName || undefined,
+                    showStartDate: workflowShowDate || undefined,
+                  })}
+                  disabled={createWorkflow.isPending}
+                  className="flex items-center gap-1 text-[11px] bg-amber-500 hover:bg-amber-400 text-black font-semibold px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+                >
+                  {createWorkflow.isPending ? <Loader2 size={11} className="animate-spin" /> : <PlayCircle size={11} />} Create
+                </button>
+                <button onClick={() => setShowWorkflowForm(false)} className="text-[11px] text-zinc-500 hover:text-zinc-300 px-2">Cancel</button>
+              </div>
+            </div>
+          )}
+
+          {workflowData ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 mb-3 text-[12px] text-zinc-400">
+                <span className="flex items-center gap-1"><BarChart3 size={12} /> {workflowData.checkpoints.filter(c => c.status === "completed").length} / {workflowData.checkpoints.length} completed</span>
+                {workflowData.workflow.showName && <span className="flex items-center gap-1"><Calendar size={12} /> {workflowData.workflow.showName}</span>}
+              </div>
+              {workflowData.checkpoints.map((cp) => {
+                const statusColors: Record<string, string> = {
+                  pending:     "bg-zinc-800 text-zinc-400 border-zinc-700",
+                  in_progress: "bg-amber-900/60 text-amber-300 border-amber-700/40",
+                  completed:   "bg-emerald-900/60 text-emerald-300 border-emerald-700/40",
+                  blocked:     "bg-red-900/60 text-red-300 border-red-700/40",
+                  escalated:   "bg-red-900/80 text-red-200 border-red-600",
+                };
+                return (
+                  <div key={cp.id} className="flex items-start gap-3 p-3 bg-zinc-800/40 border border-zinc-700/50 rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[12px] font-medium text-zinc-200">{cp.title}</span>
+                        <span className={`text-[10px] border px-1.5 py-0.5 rounded-full font-medium ${statusColors[cp.status] ?? statusColors.pending}`}>{cp.status.replace("_", " ")}</span>
+                        {cp.dueAt && <span className="text-[10px] text-zinc-500">{new Date(cp.dueAt).toLocaleDateString()}</span>}
+                      </div>
+                      {cp.problemDescription && (
+                        <p className="text-[11px] text-red-400 mt-1">⚠ {cp.problemDescription}</p>
+                      )}
+                      {cp.trackingNumber && (
+                        <p className="text-[11px] text-zinc-500 mt-0.5">Tracking: {cp.trackingNumber} {cp.carrierName && `(${cp.carrierName})`}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {cp.status !== "completed" && (
+                        <button
+                          onClick={() => updateCheckpoint.mutate({ checkpointId: cp.id, status: "completed" })}
+                          className="text-[10px] bg-emerald-800/60 hover:bg-emerald-700/60 text-emerald-300 border border-emerald-700/40 px-2 py-1 rounded transition-colors"
+                        >
+                          <Check size={10} />
+                        </button>
+                      )}
+                      {cp.status !== "escalated" && (cp.type === "activation_test" || cp.type === "staging") && (
+                        <button
+                          onClick={() => setSelectedCheckpoint(selectedCheckpoint === cp.id ? null : cp.id)}
+                          className="text-[10px] bg-red-900/60 hover:bg-red-800/60 text-red-300 border border-red-700/40 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                        >
+                          <AlertTriangle size={10} /> Problem
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Problem report form */}
+              {selectedCheckpoint !== null && (
+                <div className="bg-red-950/30 border border-red-800/40 rounded-lg p-4 space-y-3">
+                  <p className="text-[12px] font-semibold text-red-300 flex items-center gap-1.5"><AlertTriangle size={12} /> Report Robot Problem</p>
+                  <textarea
+                    value={problemDesc}
+                    onChange={e => setProblemDesc(e.target.value)}
+                    placeholder="Describe the problem found during staging/activation…"
+                    rows={3}
+                    className="w-full text-[12px] bg-zinc-900 border border-red-800/40 rounded px-3 py-2 text-zinc-200 outline-none resize-none"
+                  />
+                  <div className="flex items-center gap-3">
+                    <select value={problemSeverity} onChange={e => setProblemSeverity(e.target.value as typeof problemSeverity)}
+                      className="text-[12px] bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-zinc-200 outline-none">
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="critical">Critical</option>
+                    </select>
+                    <button
+                      onClick={() => {
+                        if (!problemDesc.trim() || problemDesc.trim().length < 10) return toast.error("Describe the problem (min 10 chars)");
+                        const order = data?.order;
+                        if (!order) return;
+                        reportProblem.mutate({
+                          checkpointId: selectedCheckpoint,
+                          workflowId: workflowData.workflow.id,
+                          problemDescription: problemDesc,
+                          problemSeverity: problemSeverity,
+                          robotCompanyEmail: data?.booking?.contactEmail ?? "",
+                          robotCompanyName: data?.booking?.company ?? "Robot Company",
+                        });
+                      }}
+                      disabled={reportProblem.isPending}
+                      className="flex items-center gap-1 text-[11px] bg-red-600 hover:bg-red-500 text-white font-semibold px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+                    >
+                      {reportProblem.isPending ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />} Send Report
+                    </button>
+                    <button onClick={() => setSelectedCheckpoint(null)} className="text-[11px] text-zinc-500 hover:text-zinc-300">Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-[12px] text-zinc-500">No logistics workflow yet. Create one after converting this booking to activate the 13-checkpoint pipeline.</p>
+          )}
+        </div>
+
+        {/* ─── Meeting Handoff Panel ─────────────────────────────────────── */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Zap size={16} className="text-amber-400" />
+              <h2 className="text-[14px] font-semibold text-zinc-100">Meeting Handoff</h2>
+            </div>
+            <button
+              onClick={() => setShowMeetingHandoff(v => !v)}
+              className="text-[11px] text-zinc-400 hover:text-zinc-200 border border-zinc-700 px-3 py-1.5 rounded transition-colors"
+            >
+              {showMeetingHandoff ? "Cancel" : "Log Meeting Notes"}
+            </button>
+          </div>
+          {showMeetingHandoff ? (
+            <div className="space-y-3">
+              <p className="text-[12px] text-zinc-400">Paste your raw meeting notes. The AI will summarize them, extract next steps, and mark this prospect as committed.</p>
+              <textarea
+                value={meetingNotesInput}
+                onChange={e => setMeetingNotesInput(e.target.value)}
+                placeholder="e.g. Spoke with Sarah at Agility Robotics. She is interested in CES 2026. Robot is Digit v4. Main concern is customs clearance timeline. Budget approved. Ready to move forward…"
+                rows={6}
+                className="w-full text-[12px] bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-200 outline-none resize-none"
+              />
+              <button
+                onClick={() => {
+                  if (!meetingNotesInput.trim() || meetingNotesInput.trim().length < 10) return toast.error("Add meeting notes (min 10 chars)");
+                  summarizeMeeting.mutate({
+                    prospectId: data?.booking?.prospectId ?? 0,
+                    meetingNotes: meetingNotesInput,
+                    orderId: orderId ?? undefined,
+                  });
+                }}
+                disabled={summarizeMeeting.isPending}
+                className="flex items-center gap-1.5 text-[11px] bg-amber-500 hover:bg-amber-400 text-black font-semibold px-4 py-2 rounded transition-colors disabled:opacity-50"
+              >
+                {summarizeMeeting.isPending ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+                {summarizeMeeting.isPending ? "Summarizing…" : "Summarize & Mark Committed"}
+              </button>
+            </div>
+          ) : (
+            <p className="text-[12px] text-zinc-500">After your call with the robot company, log meeting notes here. The AI will summarize them, extract next steps, and hand off to the Logistics Agent.</p>
+          )}
+        </div>
       </div>
     </DashboardLayout>
   );

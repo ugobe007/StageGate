@@ -18,6 +18,7 @@ import {
 } from "../agents/salesAgent";
 import { salesAgentDiscoveryHandler } from "../agents/salesAgentDiscovery";
 import { vendorScraperHandler } from "../agents/vendorScraper";
+import { runCheckpointPoller } from "../agents/checkpointPoller";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -64,6 +65,18 @@ async function startServer() {
   app.post("/api/scheduled/sales-agent-outreach", salesAgentOutreachHandler);
   app.post("/api/scheduled/sales-agent-followup", salesAgentFollowupHandler);
   app.post("/api/scheduled/vendor-scraper", vendorScraperHandler);
+
+  // Logistics checkpoint poller — daily
+  app.post("/api/scheduled/logistics-checkpoint-poll", async (req, res) => {
+    try {
+      const result = await runCheckpointPoller();
+      res.json({ ok: true, ...result });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[checkpointPoller] Error:", msg);
+      res.status(500).json({ ok: false, error: msg });
+    }
+  });
 
   // Resend email tracking webhook (outbound events: opened, clicked)
   app.post("/api/webhooks/resend", resendWebhookHandler);

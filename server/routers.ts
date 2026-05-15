@@ -9,8 +9,8 @@ import { notifyOwner } from "./_core/notification";
 import * as db from "./db";
 import * as workflows from "./workflows";
 import * as emailHelpers from "./email";
-import { eq, desc, count, sql } from "drizzle-orm";
-import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems, schedulingSlots, salesAgentConversations, salesAgentRuns, vendors, emailThreads } from "../drizzle/schema";
+import { eq, desc, count, sql, inArray } from "drizzle-orm";
+import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems, schedulingSlots, salesAgentConversations, salesAgentRuns, vendors, emailThreads, logisticsWorkflows, logisticsCheckpoints } from "../drizzle/schema";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 
@@ -2099,6 +2099,380 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         const { id, ...rest } = input;
         await dbConn.update(vendors).set({ ...rest, updatedAt: new Date() }).where(eq(vendors.id, id));
         return { success: true };
+      }),
+  }),
+
+  // ─── Logistics Agent ────────────────────────────────────────────────────────
+  logistics: router({
+    // P5: Create a workflow from a committed order (triggered after meeting handoff)
+    createWorkflow: adminProcedure
+      .input(z.object({
+        orderId: z.number(),
+        prospectId: z.number().optional(),
+        robotCompany: z.string(),
+        robotName: z.string().optional(),
+        showName: z.string().optional(),
+        showStartDate: z.string().optional(), // ISO date string
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        // Create the workflow
+        const [workflow] = await dbConn.insert(logisticsWorkflows).values({
+          orderId: input.orderId,
+          prospectId: input.prospectId,
+          robotCompany: input.robotCompany,
+          robotName: input.robotName,
+          showName: input.showName,
+          showStartDate: input.showStartDate ? new Date(input.showStartDate) : undefined,
+          notes: input.notes,
+          status: "active",
+        }).returning();
+
+        // Auto-create the standard checkpoint sequence
+        const CHECKPOINT_TYPES = [
+          { type: "shipping_out",       title: "Robot Shipped by Company",          responsibleParty: "robot_company", daysFromNow: 0 },
+          { type: "customs",            title: "Customs Clearance",                 responsibleParty: "vendor",        daysFromNow: 3 },
+          { type: "airport_arrival",    title: "Robot Arrives at Airport/Freight",  responsibleParty: "vendor",        daysFromNow: 5 },
+          { type: "receiving",          title: "StageGate Receives Robot",          responsibleParty: "stagegate",     daysFromNow: 7 },
+          { type: "warehouse_in",       title: "Robot Checked into Warehouse",      responsibleParty: "stagegate",     daysFromNow: 7 },
+          { type: "staging",            title: "Robot Unpacked and Staged",         responsibleParty: "stagegate",     daysFromNow: 10 },
+          { type: "activation_test",    title: "Power-On & Calibration Test",       responsibleParty: "stagegate",     daysFromNow: 11 },
+          { type: "booth_delivery",     title: "Robot Delivered to Trade Show Booth", responsibleParty: "stagegate",   daysFromNow: 14 },
+          { type: "show_floor_checkin", title: "Show Floor Check-In (Day 1)",       responsibleParty: "stagegate",     daysFromNow: 15 },
+          { type: "show_end",           title: "Show Ends — Robot Ready for Pickup", responsibleParty: "robot_company", daysFromNow: 18 },
+          { type: "return_pickup",      title: "Robot Picked Up / Returned",        responsibleParty: "stagegate",     daysFromNow: 19 },
+          { type: "warehouse_return",   title: "Robot Back in StageGate Warehouse", responsibleParty: "stagegate",     daysFromNow: 20 },
+          { type: "completed",          title: "Lifecycle Complete",                responsibleParty: "stagegate",     daysFromNow: 21 },
+        ];
+
+        const now = Date.now();
+        const checkpointValues = CHECKPOINT_TYPES.map(cp => ({
+          workflowId: workflow.id,
+          type: cp.type,
+          title: cp.title,
+          responsibleParty: cp.responsibleParty,
+          dueAt: new Date(now + cp.daysFromNow * 24 * 60 * 60 * 1000),
+          status: "pending" as const,
+        }));
+
+        await dbConn.insert(logisticsCheckpoints).values(checkpointValues);
+
+        return { workflowId: workflow.id, checkpointsCreated: checkpointValues.length };
+      }),
+
+    // Get all workflows (admin)
+    getWorkflows: adminProcedure
+      .query(async () => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        return dbConn.select().from(logisticsWorkflows).orderBy(desc(logisticsWorkflows.createdAt));
+      }),
+
+    // Get a single workflow with its checkpoints
+    getWorkflow: adminProcedure
+      .input(z.object({ workflowId: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const [workflow] = await dbConn
+          .select()
+          .from(logisticsWorkflows)
+          .where(eq(logisticsWorkflows.id, input.workflowId));
+        if (!workflow) throw new TRPCError({ code: "NOT_FOUND", message: "Workflow not found" });
+        const checkpoints = await dbConn
+          .select()
+          .from(logisticsCheckpoints)
+          .where(eq(logisticsCheckpoints.workflowId, input.workflowId))
+          .orderBy(logisticsCheckpoints.dueAt);
+        return { workflow, checkpoints };
+      }),
+
+    // Get workflow by orderId
+    getWorkflowByOrder: adminProcedure
+      .input(z.object({ orderId: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return null;
+        const [workflow] = await dbConn
+          .select()
+          .from(logisticsWorkflows)
+          .where(eq(logisticsWorkflows.orderId, input.orderId));
+        if (!workflow) return null;
+        const checkpoints = await dbConn
+          .select()
+          .from(logisticsCheckpoints)
+          .where(eq(logisticsCheckpoints.workflowId, workflow.id))
+          .orderBy(logisticsCheckpoints.dueAt);
+        return { workflow, checkpoints };
+      }),
+
+    // Update a checkpoint status (admin)
+    updateCheckpoint: adminProcedure
+      .input(z.object({
+        checkpointId: z.number(),
+        status: z.enum(["pending", "in_progress", "completed", "blocked", "escalated"]),
+        notes: z.string().optional(),
+        trackingNumber: z.string().optional(),
+        carrierName: z.string().optional(),
+        problemDescription: z.string().optional(),
+        problemSeverity: z.enum(["low", "medium", "high", "critical"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const { checkpointId, status, ...rest } = input;
+        const completedAt = status === "completed" ? new Date() : undefined;
+        const escalatedAt = status === "escalated" ? new Date() : undefined;
+        await dbConn
+          .update(logisticsCheckpoints)
+          .set({ status, ...rest, completedAt, escalatedAt, updatedAt: new Date() })
+          .where(eq(logisticsCheckpoints.id, checkpointId));
+        return { success: true };
+      }),
+
+    // P8: Log a problem during activation/staging
+    reportProblem: adminProcedure
+      .input(z.object({
+        checkpointId: z.number(),
+        workflowId: z.number(),
+        problemDescription: z.string().min(10),
+        problemSeverity: z.enum(["low", "medium", "high", "critical"]),
+        robotCompanyEmail: z.string().email(),
+        robotCompanyName: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        // Update checkpoint to escalated
+        await dbConn
+          .update(logisticsCheckpoints)
+          .set({
+            status: "escalated",
+            problemDescription: input.problemDescription,
+            problemSeverity: input.problemSeverity,
+            escalatedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(logisticsCheckpoints.id, input.checkpointId));
+
+        // Generate AI problem report email
+        const llmResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are the StageGate operations team. Write a professional, clear problem report email to a robot company about an issue found during staging/activation. Be factual, helpful, and present two options: (1) video call support session with StageGate, or (2) send a technician on-site. Sign as "The StageGate Team".`,
+            },
+            {
+              role: "user",
+              content: `Robot company: ${input.robotCompanyName}\nProblem: ${input.problemDescription}\nSeverity: ${input.problemSeverity}\n\nWrite the problem report email.`,
+            },
+          ],
+        });
+
+        const emailBody = typeof llmResponse.choices[0].message.content === "string"
+          ? llmResponse.choices[0].message.content
+          : "We have identified an issue with your robot during our staging process. Please contact us to discuss resolution options.";
+
+        // Send the problem report email
+        await emailHelpers.sendEmail({
+          to: input.robotCompanyEmail,
+          subject: `[StageGate] Robot Staging Issue — Action Required (${input.problemSeverity.toUpperCase()})`,
+          body: emailBody,
+        });
+
+        // Notify admins
+        await notifyOwner({
+          title: `🚨 Robot Problem Reported (${input.problemSeverity})`,
+          content: `${input.robotCompanyName}: ${input.problemDescription}`,
+        });
+
+        return { success: true, emailSent: true };
+      }),
+
+    // P9: Send show-floor daily check-in email
+    sendShowCheckin: adminProcedure
+      .input(z.object({
+        workflowId: z.number(),
+        robotCompanyEmail: z.string().email(),
+        robotCompanyName: z.string(),
+        showName: z.string(),
+        dayNumber: z.number().min(1),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        const llmResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are the StageGate team. Write a brief, friendly daily check-in email to a robot company during their trade show. Ask how the robot is performing, if they need any support, and remind them StageGate is available. Keep it under 100 words. Sign as "The StageGate Team".`,
+            },
+            {
+              role: "user",
+              content: `Robot company: ${input.robotCompanyName}\nShow: ${input.showName}\nDay: ${input.dayNumber}\n\nWrite the check-in email.`,
+            },
+          ],
+        });
+
+        const emailBody = typeof llmResponse.choices[0].message.content === "string"
+          ? llmResponse.choices[0].message.content
+          : `Hi ${input.robotCompanyName} team! Just checking in on Day ${input.dayNumber} of ${input.showName}. How is your robot performing? Let us know if you need anything. — The StageGate Team`;
+
+        await emailHelpers.sendEmail({
+          to: input.robotCompanyEmail,
+          subject: `Day ${input.dayNumber} Check-In — ${input.showName} | StageGate`,
+          body: emailBody,
+        });
+
+        // Mark the show_floor_checkin checkpoint as in_progress
+        await dbConn
+          .update(logisticsCheckpoints)
+          .set({ status: "in_progress", updatedAt: new Date() })
+          .where(
+            eq(logisticsCheckpoints.workflowId, input.workflowId)
+          );
+
+        return { success: true };
+      }),
+
+    // P9: Prompt robot company for post-show pickup
+    sendPickupPrompt: adminProcedure
+      .input(z.object({
+        workflowId: z.number(),
+        robotCompanyEmail: z.string().email(),
+        robotCompanyName: z.string(),
+        showName: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        const llmResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are the StageGate team. Write a post-show email to a robot company asking if they are ready for StageGate to pick up their robot, or if they will be shipping it back themselves. Mention StageGate can handle return logistics. Keep it friendly and professional. Sign as "The StageGate Team".`,
+            },
+            {
+              role: "user",
+              content: `Robot company: ${input.robotCompanyName}\nShow: ${input.showName}\n\nWrite the post-show pickup prompt email.`,
+            },
+          ],
+        });
+
+        const emailBody = typeof llmResponse.choices[0].message.content === "string"
+          ? llmResponse.choices[0].message.content
+          : `Hi ${input.robotCompanyName} team! ${input.showName} has wrapped up — great show! Please let us know if you are ready for StageGate to arrange pickup of your robot, or if you have other return logistics planned. We are here to help. — The StageGate Team`;
+
+        await emailHelpers.sendEmail({
+          to: input.robotCompanyEmail,
+          subject: `Post-Show Pickup — ${input.showName} | StageGate`,
+          body: emailBody,
+        });
+
+        // Update return_pickup checkpoint to in_progress
+        await dbConn
+          .update(logisticsCheckpoints)
+          .set({ status: "in_progress", updatedAt: new Date() })
+          .where(eq(logisticsCheckpoints.workflowId, input.workflowId));
+
+        return { success: true };
+      }),
+
+    // Get all workflows with their checkpoints (admin overview)
+    getAllWorkflows: adminProcedure
+      .query(async () => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        const workflows = await dbConn
+          .select()
+          .from(logisticsWorkflows)
+          .orderBy(desc(logisticsWorkflows.createdAt));
+        if (workflows.length === 0) return [];
+        const allCheckpoints = await dbConn
+          .select()
+          .from(logisticsCheckpoints)
+          .where(inArray(logisticsCheckpoints.workflowId, workflows.map(w => w.id)))
+          .orderBy(logisticsCheckpoints.dueAt);
+        return workflows.map(workflow => ({
+          workflow,
+          checkpoints: allCheckpoints.filter(cp => cp.workflowId === workflow.id),
+        }));
+      }),
+
+    // P5: AI summarizes meeting notes and updates prospect to committed
+    summarizeMeetingAndHandoff: adminProcedure
+      .input(z.object({
+        prospectId: z.number(),
+        meetingNotes: z.string().min(10),
+        orderId: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        // AI summarizes notes and extracts next steps
+        const llmResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are a CRM assistant. Given raw meeting notes from a sales call with a robot company, extract: (1) a 2-3 sentence summary, (2) a list of 3-5 concrete next steps, (3) the robot company's primary concern or interest. Return JSON with keys: summary, nextSteps (array of strings), primaryInterest.`,
+            },
+            {
+              role: "user",
+              content: `Meeting notes:\n${input.meetingNotes}`,
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "meeting_summary",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  summary: { type: "string" },
+                  nextSteps: { type: "array", items: { type: "string" } },
+                  primaryInterest: { type: "string" },
+                },
+                required: ["summary", "nextSteps", "primaryInterest"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        let parsed: { summary: string; nextSteps: string[]; primaryInterest: string };
+        try {
+          const raw = typeof llmResponse.choices[0].message.content === "string"
+            ? llmResponse.choices[0].message.content
+            : JSON.stringify(llmResponse.choices[0].message.content);
+          parsed = JSON.parse(raw);
+        } catch {
+          parsed = { summary: input.meetingNotes.slice(0, 200), nextSteps: ["Follow up with proposal"], primaryInterest: "Robotics activation services" };
+        }
+
+        // Update prospect status to committed
+        await dbConn
+          .update(prospectsTable)
+          .set({ status: "converted", updatedAt: new Date() })
+          .where(eq(prospectsTable.id, input.prospectId));
+
+        // Log activity
+        await dbConn.insert(prospectActivities).values({
+          prospectId: input.prospectId,
+          type: "meeting_completed",
+          title: "Meeting Completed — Committed",
+          description: parsed.summary,
+          metadata: { nextSteps: parsed.nextSteps, primaryInterest: parsed.primaryInterest },
+        });
+
+        return { success: true, summary: parsed.summary, nextSteps: parsed.nextSteps, primaryInterest: parsed.primaryInterest };
       }),
   }),
 });

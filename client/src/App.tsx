@@ -34,6 +34,7 @@ import AdminBookings from "./pages/AdminBookings";
 import AdminSalesAgent from "./pages/AdminSalesAgent";
 import AdminScheduling from "./pages/AdminScheduling";
 import AdminVendors from "./pages/AdminVendors";
+import AdminLogistics from "./pages/AdminLogistics";
 import VideoIntake from "./pages/VideoIntake";
 import Schedule from "./pages/Schedule";
 import DbStatusBanner from "@/components/DbStatusBanner";
@@ -78,6 +79,7 @@ function Router() {
       <Route path="/admin/sales-agent" component={AdminSalesAgent} />
       <Route path="/admin/scheduling" component={AdminScheduling} />
       <Route path="/admin/vendors" component={AdminVendors} />
+      <Route path="/admin/logistics" component={AdminLogistics} />
 
       {/* Video intake */}
       <Route path="/xbot/video" component={VideoIntake} />

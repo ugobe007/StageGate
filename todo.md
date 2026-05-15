@@ -794,33 +794,33 @@
 - [x] Confirmation email sent to prospect from hello@onstage.bot
 
 ### P5 — Meeting Notes + Handoff
-- [ ] Post-call: admin enters meeting notes in prospect record
-- [ ] AI summarizes notes, extracts next steps, updates prospect status to committed
-- [ ] Logistics Agent triggered: creates logistics_workflow record linked to prospect + order
+- [x] Post-call: admin enters meeting notes in prospect record
+- [x] AI summarizes notes, extracts next steps, updates prospect status to committed
+- [x] Logistics Agent triggered: creates logistics_workflow record linked to prospect + order
 
 ### P6 — Logistics Agent Foundation
 - [x] Build vendor scraper: search for freight forwarders, AV companies, rigging companies, warehouse operators in Las Vegas
 - [x] Populate vendors table with 16 real Las Vegas vendors (scraped + seeded)
-- [ ] Build workflow builder: for each committed order, generate logistics_workflow with ordered checkpoints
-- [ ] Checkpoint types: shipping_out, customs, receiving, warehousing, staging, activation, booth_delivery, show_floor, return_pickup
+- [x] Build workflow builder: for each committed order, generate logistics_workflow with 13 ordered checkpoints
+- [x] Checkpoint types: shipping_out, customs, airport_arrival, receiving, warehouse_in, staging, activation_test, booth_delivery, show_floor_checkin, show_end, return_pickup, warehouse_return, completed
 
 ### P7 — Checkpoint Engine
-- [ ] Shipping tracker: poll carrier APIs or ask robot company for tracking number, monitor status
-- [ ] Receiving checklist: customs cleared?, at airport?, in transit?, forklift needed?, warehouse space available?, staff assigned?
-- [ ] Warehouse space matcher: calculate space needed from robot dimensions, match to available bays, price accordingly
-- [ ] Staging + activation protocol: unpacking checklist, power-on test, calibration check, functionality test
-- [ ] Daily checkpoint poller: if checkpoint due date passed and not confirmed, send nudge to responsible party
-- [ ] Checkpoint status UI in AdminOrderDetail
+- [x] Shipping tracker: poll carrier APIs or ask robot company for tracking number, monitor status
+- [x] Receiving checklist: customs cleared?, at airport?, in transit?, forklift needed?, warehouse space available?, staff assigned?
+- [x] Warehouse space matcher: calculate space needed from robot dimensions, match to available bays, price accordingly
+- [x] Staging + activation protocol: unpacking checklist, power-on test, calibration check, functionality test
+- [x] Daily checkpoint poller: if checkpoint due date passed and not confirmed, send nudge to responsible party
+- [x] Checkpoint status UI in AdminOrderDetail
 
 ### P8 — Problem Escalation
-- [ ] Robot issue detection: during staging, log problem type, severity, description
-- [ ] Escalation to robot company: AI drafts problem report email with photos/notes
-- [ ] Options presented: video call support or send tech on-site
-- [ ] Resolution tracking: log resolution steps, confirm robot is operational before booth delivery
+- [x] Robot issue detection: during staging, log problem type, severity, description
+- [x] Escalation to robot company: AI drafts problem report email with photos/notes
+- [x] Options presented: video call support or send tech on-site
+- [x] Resolution tracking: log resolution steps, confirm robot is operational before booth delivery
 
 ### P9 — Show Floor + Return
-- [ ] Booth delivery tracking: confirm robot arrived at booth, get confirmation from robot company
-- [ ] Show-floor check-ins: AI sends daily check-in email to robot company during show
-- [ ] Post-show: AI prompts robot company to confirm pickup readiness
-- [ ] Return logistics workflow: same checkpoint engine as inbound
-- [ ] Full lifecycle marked complete in order record
+- [x] Booth delivery tracking: confirm robot arrived at booth, get confirmation from robot company
+- [x] Show-floor check-ins: AI sends daily check-in email to robot company during show
+- [x] Post-show: AI prompts robot company to confirm pickup readiness
+- [x] Return logistics workflow: same checkpoint engine as inbound
+- [x] Full lifecycle marked complete in order record
