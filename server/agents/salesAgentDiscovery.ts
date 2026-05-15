@@ -164,11 +164,12 @@ Return ONLY valid JSON with "prospects" array and empty "shows" array. No markdo
                         website: { type: "string" },
                         robotName: { type: "string" },
                         robotType: { type: "string" },
+                        robotCategory: { type: "string" }, // light | heavy_industrial | mixed
                         shows: { type: "array", items: { type: "string" } },
                         notes: { type: "string" },
                         emailConfidence: { type: "string" },
                       },
-                      required: ["company", "contactName", "contactEmail", "contactTitle", "website", "robotName", "robotType", "shows", "notes", "emailConfidence"],
+                      required: ["company", "contactName", "contactEmail", "contactTitle", "website", "robotName", "robotType", "robotCategory", "shows", "notes", "emailConfidence"],
                       additionalProperties: false,
                     },
                   },
@@ -387,6 +388,7 @@ interface DiscoveredProspect {
   website?: string;
   robotName?: string;
   robotType?: string;
+  robotCategory?: string; // light | heavy_industrial | mixed
   shows?: string[];
   notes?: string;
   emailConfidence?: string;

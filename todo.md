@@ -1084,3 +1084,30 @@
 - [x] Add CTA priority: showroom tour booking or distribution partnership call
 - [x] Write server/v29.test.ts: voice directives, lifecycle phases, heavy industrial terms, CTA priorities
 - [x] All 579 tests passing (v29)
+
+## v30 — Frank Email Preview, Showroom Tour Page, Robot Category
+
+### v30.1 — robotCategory on prospects
+- [x] Add robotCategory varchar (light / heavy_industrial / mixed) to prospects table
+- [x] Run DB migration for robotCategory column (ALTER TABLE)
+- [x] Update salesAgentDiscovery to auto-classify prospects via LLM (light/heavy_industrial/mixed)
+- [x] Pass robotCategory into pickBreakpoints so Frank uses correct hardware language per email
+
+### v30.2 — Frank email preview in Admin
+- [x] Add salesAgent.previewEmail tRPC procedure: takes prospectId + stage, calls LLM, returns draft subject + body
+- [x] Add salesAgentPreviewHandler to salesAgent.ts (no-send, generate only)
+- [x] Register /api/scheduled/sales-agent-preview route in index.ts
+- [x] Add "Preview Frank's Email" button to AdminSalesAgent prospect detail panel
+- [x] Show preview in a Dialog modal with subject, body, stage selector, and copy button
+- [x] Preview uses the new FRANK_SYSTEM_PROMPT and robotCategory-aware stage prompt
+
+### v30.3 — Showroom tour booking page
+- [x] Create /tour route in App.tsx
+- [x] Build TourBooking.tsx page: 4 venue options, robot type selector, contact form
+- [x] Form submission via bookings.create tRPC procedure (services=['showroom_tour'])
+- [x] Success state shows frank@onstage.bot contact
+- [x] Amber accent, dark theme, heavy industrial robot types listed
+
+### v30 Tests
+- [x] Write server/v30.test.ts: robotCategory schema, previewEmail handler, /tour page, hardware-aware breakpoints (67 tests)
+- [x] All 610 tests passing (v30)

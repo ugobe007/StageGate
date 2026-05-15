@@ -284,6 +284,7 @@ export const prospects = pgTable("prospects", {
   scheduledCallAt: timestamp("scheduledCallAt", { withTimezone: true }),
   contactLinkedIn: varchar("contactLinkedIn", { length: 512 }),
   emailConfidence: varchar("emailConfidence", { length: 20 }).default("low"),
+  robotCategory: varchar("robotCategory", { length: 30 }).default("light"), // light | heavy_industrial | mixed
   repliedAt: timestamp("repliedAt", { withTimezone: true }),
   followUpDate: timestamp("followUpDate", { withTimezone: true }),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),

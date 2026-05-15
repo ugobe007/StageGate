@@ -276,6 +276,7 @@ export async function salesAgentIngestHandler(req: Request, res: Response) {
         website: p.website ?? null,
         robotName: p.robotName ?? null,
         robotType: p.robotType ?? null,
+        robotCategory: p.robotCategory ?? "light",
         shows: p.shows ?? [],
         notes: p.notes ?? null,
         emailConfidence: p.emailConfidence ?? "low",
@@ -409,6 +410,43 @@ export async function salesAgentManualSendHandler(req: Request, res: Response) {
   res.json({ ok: true, subject, messageId, nextStage });
 }
 
+// ─── 3b. Preview Handler (generates email but does NOT send) ────────────────
+export async function salesAgentPreviewHandler(req: Request, res: Response) {
+  try {
+    const authHeader = req.headers.authorization;
+    const isCronToken = authHeader === `Bearer ${process.env.BUILT_IN_FORGE_API_KEY}`;
+    if (!isCronToken) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+  } catch {
+    return res.status(403).json({ error: "Invalid auth" });
+  }
+
+  const db = await getDb();
+  if (!db) return res.status(503).json({ error: "db unavailable" });
+
+  const { prospectId, stage } = req.body as { prospectId: number; stage?: ConversationStage };
+  if (!prospectId) return res.status(400).json({ error: "prospectId required" });
+
+  const [prospect] = await db
+    .select()
+    .from(prospects)
+    .where(eq(prospects.id, prospectId))
+    .limit(1);
+  if (!prospect) return res.status(404).json({ error: "Prospect not found" });
+
+  const [conv] = await db
+    .select()
+    .from(salesAgentConversations)
+    .where(eq(salesAgentConversations.prospectId, prospectId))
+    .limit(1);
+
+  const currentStage = (stage ?? conv?.state ?? "discovery") as ConversationStage;
+  const { subject, body, nextStage } = await generateFrankEmail(prospect, conv ?? null, currentStage);
+
+  res.json({ subject, body, stage: currentStage, nextStage });
+}
+
 // ─── 4. Generate Frank's Email ────────────────────────────────────────────────
 async function generateFrankEmail(
   prospect: typeof prospects.$inferSelect,
@@ -425,7 +463,7 @@ async function generateFrankEmail(
     .filter(Boolean)
     .join(" — ") || "your robot";
 
-  const breakpoints = pickBreakpoints(prospect.robotType ?? "");
+  const breakpoints = pickBreakpoints(prospect.robotType ?? "", prospect.robotCategory ?? "light");
   const venueOptions = DEMO_VENUES.slice(0, 2)
     .map((v) => `${v.name}: ${v.description}`)
     .join("\n");
@@ -521,8 +559,17 @@ async function sendFrankEmail(
 }
 
 // ─── 6. Pick Relevant Breakpoints ────────────────────────────────────────────
-function pickBreakpoints(robotType: string) {
+function pickBreakpoints(robotType: string, robotCategory: string = "light") {
   const type = robotType.toLowerCase();
+  const isHeavy = robotCategory === "heavy_industrial" || robotCategory === "mixed";
+
+  // Heavy industrial robots (Fanuc, Yaskawa, Omron, KUKA) — power and rigging are the key pain points
+  if (isHeavy) {
+    return LOGISTICS_BREAKPOINTS.filter((b) =>
+      ["power", "staging", "crating", "repair"].includes(b.id)
+    ).slice(0, 2);
+  }
+
 
   if (type.includes("humanoid") || type.includes("biped")) {
     return LOGISTICS_BREAKPOINTS.filter((b) =>
@@ -559,6 +606,7 @@ export interface DiscoveredProspect {
   website?: string;
   robotName?: string;
   robotType?: string;
+  robotCategory?: string; // light | heavy_industrial | mixed
   shows?: string[];
   notes?: string;
   emailConfidence?: string;

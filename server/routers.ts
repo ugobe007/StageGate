@@ -2467,6 +2467,51 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return res.json() as Promise<{ ok: boolean; subject: string; messageId: string | null; nextStage: string }>;
       }),
 
+    // Admin: preview a Frank email (LLM draft, not sent)
+    previewEmail: adminProcedure
+      .input(z.object({
+        prospectId: z.number(),
+        stage: z.enum(["discovery", "intro_sent", "followup_1", "followup_2", "robot_guild"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        const [prospect] = await dbConn
+          .select()
+          .from(prospectsTable)
+          .where(eq(prospectsTable.id, input.prospectId))
+          .limit(1);
+        if (!prospect) throw new TRPCError({ code: "NOT_FOUND", message: "Prospect not found" });
+
+        const [conv] = await dbConn
+          .select()
+          .from(salesAgentConversations)
+          .where(eq(salesAgentConversations.prospectId, input.prospectId))
+          .limit(1);
+
+        const stage = input.stage ?? (conv?.state as "discovery" | "intro_sent" | "followup_1" | "followup_2" | "robot_guild") ?? "discovery";
+
+        // Call the preview endpoint
+        const res = await fetch(
+          `http://localhost:${process.env.PORT ?? 3000}/api/scheduled/sales-agent-preview`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${process.env.BUILT_IN_FORGE_API_KEY ?? ""}`,
+              "x-heartbeat-cron": "true",
+            },
+            body: JSON.stringify({ prospectId: input.prospectId, stage }),
+          }
+        );
+        if (!res.ok) {
+          const err = await res.text();
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err });
+        }
+        return res.json() as Promise<{ subject: string; body: string; stage: string; nextStage: string }>;
+      }),
+
     // Admin: update conversation stage manually
     updateConversationStage: adminProcedure
       .input(z.object({

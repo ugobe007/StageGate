@@ -37,6 +37,7 @@ import AdminVendors from "./pages/AdminVendors";
 import AdminLogistics from "./pages/AdminLogistics";
 import VideoIntake from "./pages/VideoIntake";
 import Schedule from "./pages/Schedule";
+import TourBooking from "./pages/TourBooking";
 import DbStatusBanner from "@/components/DbStatusBanner";
 
 function Router() {
@@ -86,6 +87,7 @@ function Router() {
 
       {/* Schedule */}
       <Route path="/schedule" component={Schedule} />
+      <Route path="/tour" component={TourBooking} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

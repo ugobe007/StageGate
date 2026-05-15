@@ -15,6 +15,7 @@ import {
   salesAgentIngestHandler,
   salesAgentOutreachHandler,
   salesAgentManualSendHandler,
+  salesAgentPreviewHandler,
 } from "../agents/salesAgent";
 import { salesAgentDiscoveryHandler } from "../agents/salesAgentDiscovery";
 import { vendorScraperHandler } from "../agents/vendorScraper";
@@ -65,6 +66,7 @@ async function startServer() {
   app.post("/api/scheduled/sales-agent-ingest", salesAgentIngestHandler);
   app.post("/api/scheduled/sales-agent-outreach", salesAgentOutreachHandler);
   app.post("/api/scheduled/sales-agent-manual", salesAgentManualSendHandler);
+  app.post("/api/scheduled/sales-agent-preview", salesAgentPreviewHandler);
   app.post("/api/scheduled/vendor-scraper", vendorScraperHandler);
 
   // Quote follow-up nudge — daily 09:00 UTC
