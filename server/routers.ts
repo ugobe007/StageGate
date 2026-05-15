@@ -2559,7 +2559,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     updateConversationStage: adminProcedure
       .input(z.object({
         conversationId: z.number(),
-        state: z.enum(["discovery", "intro_sent", "followup_1", "followup_2", "robot_guild", "email_opened", "link_clicked", "responded", "scheduling", "booked", "not_interested", "converted"]),
+        state: z.enum(["discovery", "intro_sent", "followup_1", "followup_2", "robot_guild", "email_opened", "link_clicked", "awaiting_reply", "responded", "scheduling", "booked", "not_interested", "converted"]),
       }))
       .mutation(async ({ input }) => {
         const dbConn = await getDb();

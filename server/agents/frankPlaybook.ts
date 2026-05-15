@@ -264,7 +264,10 @@ export type ConversationStage =
   | "followup_1"     // Stage 2 breakpoints follow-up sent
   | "followup_2"     // Stage 3 demo venue / showroom offer sent
   | "robot_guild"    // Stage 4 Robot Guild + Vegas distribution handoff sent
-  | "responded"      // Prospect replied
+  | "email_opened"   // Prospect opened an outreach email (engagement signal)
+  | "link_clicked"   // Prospect clicked a link in an outreach email (strong signal)
+  | "awaiting_reply" // v37: Prospect replied — automated follow-ups paused
+  | "responded"      // Legacy: Prospect replied (use awaiting_reply for new records)
   | "scheduling"     // Moving toward a call/meeting
   | "booked"         // Call/meeting booked
   | "not_interested" // Opted out
@@ -272,11 +275,14 @@ export type ConversationStage =
 
 export const STAGE_DELAYS_DAYS: Record<ConversationStage, number> = {
   discovery: 0,
-  intro_sent: 5,      // Wait 5 days before follow-up 1
-  followup_1: 5,      // Wait 5 days before follow-up 2
-  followup_2: 7,      // Wait 7 days before Robot Guild pitch
-  robot_guild: 0,     // No further automated follow-up
-  responded: 0,
+  intro_sent: 5,       // Wait 5 days before follow-up 1
+  followup_1: 5,       // Wait 5 days before follow-up 2
+  followup_2: 7,       // Wait 7 days before Robot Guild pitch
+  robot_guild: 0,      // No further automated follow-up
+  email_opened: 3,     // Opened but no reply — follow up in 3 days
+  link_clicked: 1,     // Clicked a link — follow up in 1 day (v36)
+  awaiting_reply: 0,   // v37: replied — no automated follow-up
+  responded: 0,        // Legacy: no automated follow-up
   scheduling: 0,
   booked: 0,
   not_interested: 0,

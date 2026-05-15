@@ -31,13 +31,15 @@ import { FRANK_PERSONA, FRANK_SYSTEM_PROMPT } from "../agents/frankPlaybook";
 const FRANK_FROM = `${FRANK_PERSONA.fromName} <${FRANK_PERSONA.fromEmail}>`;
 const ADMIN_BCC = ["bob@starsupportinc.com", "tom@starsupportinc.com"];
 
-// Stages that can be advanced to "responded" on inbound reply
+// Stages that can be advanced to "awaiting_reply" on inbound reply
 const OUTREACH_STAGES = new Set([
   "discovery",
   "intro_sent",
   "followup_1",
   "followup_2",
   "robot_guild",
+  "email_opened",
+  "link_clicked",
 ]);
 
 // Keywords that indicate scheduling intent
@@ -124,8 +126,8 @@ export async function resendInboundHandler(req: Request, res: Response) {
     await db.insert(prospectActivities).values({
       prospectId,
       type: "email_replied",
-      title: `Inbound reply: "${subject.slice(0, 80)}"`,
-      description: `Inbound reply from ${fromAddress}`,
+      title: `Reply received: "${subject.slice(0, 80)}"`,
+      description: `Inbound reply from ${fromAddress} — automated follow-ups paused`,
       metadata: { fromAddress, subject },
       createdAt: new Date(),
     });
@@ -146,11 +148,13 @@ export async function resendInboundHandler(req: Request, res: Response) {
 
     let newState: string;
     if (wantsToSchedule) {
+      // Scheduling intent → skip awaiting_reply and go straight to scheduling
       newState = "scheduling";
-    } else if (OUTREACH_STAGES.has(currentState)) {
-      newState = "responded";
+    } else if (OUTREACH_STAGES.has(currentState) || currentState === "responded") {
+      // v37: use awaiting_reply as the canonical "replied, paused" state
+      newState = "awaiting_reply";
     } else {
-      newState = currentState; // already in responded/scheduling/booked — keep
+      newState = currentState; // already in awaiting_reply/scheduling/booked — keep
     }
 
     if (conv) {

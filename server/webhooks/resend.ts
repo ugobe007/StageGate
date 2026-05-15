@@ -92,8 +92,8 @@ export async function resendWebhookHandler(req: Request, res: Response): Promise
   const occurredAt = data.created_at ? new Date(data.created_at) : new Date();
   const clickUrl = data.click?.link ?? null;
 
-  // Only handle email.opened and email.clicked
-  if (eventType !== "email.opened" && eventType !== "email.clicked") {
+  // Handle email.opened, email.clicked, and email.replied
+  if (eventType !== "email.opened" && eventType !== "email.clicked" && eventType !== "email.replied") {
     res.status(200).json({ received: true, ignored: true });
     return;
   }
@@ -166,10 +166,36 @@ export async function resendWebhookHandler(req: Request, res: Response): Promise
         });
       }
 
+      // v37: handle email.replied — advance to awaiting_reply and pause follow-ups
+      if (eventType === "email.replied") {
+        const replyConvRows = await db
+          .select({ id: salesAgentConversations.id, state: salesAgentConversations.state })
+          .from(salesAgentConversations)
+          .where(eq(salesAgentConversations.prospectId, prospectId))
+          .limit(1);
+        const replyConv = replyConvRows[0];
+        if (replyConv && replyConv.state !== "awaiting_reply" && replyConv.state !== "scheduling" && replyConv.state !== "booked") {
+          await db
+            .update(salesAgentConversations)
+            .set({ state: "awaiting_reply", nextFollowUpAt: null, lastActivityAt: new Date(), updatedAt: new Date() })
+            .where(eq(salesAgentConversations.id, replyConv.id));
+          await db.insert(prospectActivities).values({
+            prospectId,
+            type: "email_replied",
+            title: "Reply received",
+            description: "Prospect replied to outreach email — automated follow-ups paused",
+            metadata: { messageId, occurredAt: occurredAt.toISOString() },
+          });
+          console.log(`[Resend Webhook] Prospect ${prospectId} replied — advanced to awaiting_reply`);
+        }
+        res.status(200).json({ received: true, prospectId, eventType });
+        return;
+      }
+
       // v35: advance conversation state on engagement signals
       // email.opened → email_opened (if currently in an outreach-sent state)
       // email.clicked → link_clicked (strongest engagement signal)
-      const OUTREACH_SENT_STATES = ["intro_sent", "followup_1", "followup_2", "robot_guild", "awaiting_reply"];
+      const OUTREACH_SENT_STATES = ["intro_sent", "followup_1", "followup_2", "robot_guild", "email_opened", "link_clicked"];
       const convRows = await db
         .select({
           id: salesAgentConversations.id,

@@ -52,6 +52,9 @@ const NEXT_STAGE: Record<ConversationStage, ConversationStage> = {
   followup_1: "followup_2",
   followup_2: "robot_guild",
   robot_guild: "robot_guild",
+  email_opened: "followup_1",  // Opened but no reply — send follow-up 1
+  link_clicked: "followup_1",  // Clicked a link — send follow-up 1
+  awaiting_reply: "awaiting_reply", // v37: replied — no auto-advance
   responded: "responded",
   scheduling: "scheduling",
   booked: "booked",
@@ -86,6 +89,8 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
     const now = new Date();
 
     // Find conversations ready for next action (any actionable stage with nextFollowUpAt due)
+    // NOTE: awaiting_reply, responded, scheduling, booked, not_interested, converted are
+    // intentionally excluded — automated follow-ups are paused for these states.
     const readyConvs = await db
       .select({ conv: salesAgentConversations, prospect: prospects })
       .from(salesAgentConversations)
@@ -97,6 +102,8 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
             "intro_sent",
             "followup_1",
             "followup_2",
+            "email_opened",  // Opened but no reply — still eligible for follow-up
+            "link_clicked",  // Clicked a link — still eligible for follow-up
           ] as ConversationStage[]),
           lte(salesAgentConversations.nextFollowUpAt, now)
         )

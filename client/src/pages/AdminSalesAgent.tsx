@@ -36,8 +36,9 @@ const STAGES = [
   { id: "scheduling",     label: "Scheduling",      color: "bg-teal-500/20 text-teal-400" },
   { id: "booked",         label: "Booked",          color: "bg-emerald-600/20 text-emerald-300" },
   { id: "not_interested", label: "Not Interested",  color: "bg-zinc-600/40 text-zinc-500" },
-  { id: "email_opened",  label: "Email Opened",    color: "bg-sky-500/20 text-sky-400" },
-  { id: "link_clicked",  label: "Link Clicked",    color: "bg-cyan-500/20 text-cyan-400" },
+  { id: "email_opened",   label: "Email Opened",   color: "bg-sky-500/20 text-sky-400" },
+  { id: "link_clicked",   label: "Link Clicked",   color: "bg-cyan-500/20 text-cyan-400" },
+  { id: "awaiting_reply", label: "Replied",         color: "bg-amber-500/20 text-amber-400" },
   { id: "converted",      label: "Converted",       color: "bg-yellow-500/20 text-yellow-400" },
 ] as const;
 

@@ -1254,3 +1254,23 @@
 ### v36 Tests
 - [x] Write server/v36.test.ts: verify link_clicked sets nextFollowUpAt ≈ now+1d, verify activity log entry, verify no shortening when already within 1 day
 - [x] All 810 tests passing
+
+## v37 — Reply Detection & Follow-Up Pause
+
+### v37.1 — Inbound webhook
+- [x] Ensure resend-inbound.ts sets state=awaiting_reply and nextFollowUpAt=null on any reply
+- [x] Log a prospect_activities entry: "Reply received — automated follow-ups paused"
+- [x] Handle email.replied Resend event type in the outbound webhook (resend.ts) as a fallback
+
+### v37.2 — SalesAgent loop guard
+- [x] In salesAgent.ts outreach loop: skip conversations where state is 'awaiting_reply' or 'replied'
+- [x] Add email_opened and link_clicked to the inArray allowlist in salesAgent.ts
+
+### v37.3 — Admin UI
+- [x] Add 'awaiting_reply' to STAGES array in AdminSalesAgent.tsx (amber/orange color, label: Replied)
+- [x] Add awaiting_reply to updateConversationStage state enum in routers.ts
+- [x] Add awaiting_reply to ConversationStage type in frankPlaybook.ts
+
+### v37 Tests
+- [x] Write server/v37.test.ts: 21 tests covering inbound/outbound webhook, salesAgent loop, frankPlaybook, AdminSalesAgent UI, routers enum
+- [x] All 831 tests passing
