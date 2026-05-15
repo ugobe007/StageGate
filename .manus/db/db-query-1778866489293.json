@@ -1,0 +1,13 @@
+{
+  "query": "SHOW TABLES LIKE '%email%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SHOW TABLES LIKE '%email%';",
+  "rows": [
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (%email%)": "email_threads"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (%email%)\nemail_threads\n",
+  "stderr": "",
+  "execution_time_ms": 336
+}

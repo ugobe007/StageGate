@@ -21,7 +21,8 @@ import {
   Zap, Send, RefreshCw, Eye, Users,
   TrendingUp, Calendar, Star, Cpu, Factory,
   CheckCircle, XCircle, Edit3, Inbox,
-  ShieldCheck, Upload, FileText, Loader2
+  ShieldCheck, Upload, FileText, Loader2,
+  MousePointerClick
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
@@ -35,6 +36,8 @@ const STAGES = [
   { id: "scheduling",     label: "Scheduling",      color: "bg-teal-500/20 text-teal-400" },
   { id: "booked",         label: "Booked",          color: "bg-emerald-600/20 text-emerald-300" },
   { id: "not_interested", label: "Not Interested",  color: "bg-zinc-600/40 text-zinc-500" },
+  { id: "email_opened",  label: "Email Opened",    color: "bg-sky-500/20 text-sky-400" },
+  { id: "link_clicked",  label: "Link Clicked",    color: "bg-cyan-500/20 text-cyan-400" },
   { id: "converted",      label: "Converted",       color: "bg-yellow-500/20 text-yellow-400" },
 ] as const;
 
@@ -755,7 +758,9 @@ export default function AdminSalesAgent() {
                   </div>
                 ) : (
                   <div className="divide-y divide-zinc-800/50">
-                    {filtered.map(({ conv, prospect }) => {
+                    {filtered.map((item) => {
+                      const { conv, prospect } = item;
+                      const eng = (item as { engagement?: { opens: number; clicks: number } }).engagement ?? { opens: 0, clicks: 0 };
                       const isSelected = selectedProspectId === prospect.id;
                       const readyLabel = nextActionLabel(conv.state ?? "", conv.nextFollowUpAt);
                       const isReady = readyLabel === "Ready now";
@@ -772,6 +777,18 @@ export default function AdminSalesAgent() {
                                 {isReady && <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
                                 {prospect.robotCategory === "heavy_industrial" && (
                                   <Factory className="w-3 h-3 text-orange-400 flex-shrink-0" />
+                                )}
+                                {eng.clicks > 0 && (
+                                  <span className="flex items-center gap-0.5 text-cyan-400" title={`${eng.clicks} link click${eng.clicks !== 1 ? 's' : ''}`}>
+                                    <MousePointerClick className="w-3 h-3" />
+                                    <span className="text-[10px] font-medium">{eng.clicks}</span>
+                                  </span>
+                                )}
+                                {eng.opens > 0 && eng.clicks === 0 && (
+                                  <span className="flex items-center gap-0.5 text-sky-400" title={`${eng.opens} open${eng.opens !== 1 ? 's' : ''}`}>
+                                    <Eye className="w-3 h-3" />
+                                    <span className="text-[10px] font-medium">{eng.opens}</span>
+                                  </span>
                                 )}
                               </div>
                               <div className="flex items-center gap-2 text-xs text-zinc-500">
@@ -851,6 +868,32 @@ export default function AdminSalesAgent() {
                         </div>
                       )}
                     </div>
+                    {/* v35: Engagement summary row */}
+                    {(() => {
+                      const eng = (selectedConv as { engagement?: { opens: number; clicks: number; lastOpenedAt?: string | null; lastClickedAt?: string | null } }).engagement;
+                      if (!eng || (eng.opens === 0 && eng.clicks === 0)) return null;
+                      return (
+                        <div className="mt-2.5 flex items-center gap-3 px-2.5 py-2 rounded-lg bg-zinc-900/60 border border-zinc-800">
+                          {eng.opens > 0 && (
+                            <div className="flex items-center gap-1.5 text-sky-400" title={eng.lastOpenedAt ? `Last opened: ${new Date(eng.lastOpenedAt).toLocaleString()}` : undefined}>
+                              <Eye className="w-3.5 h-3.5" />
+                              <span className="text-xs font-medium">{eng.opens} open{eng.opens !== 1 ? 's' : ''}</span>
+                            </div>
+                          )}
+                          {eng.clicks > 0 && (
+                            <div className="flex items-center gap-1.5 text-cyan-400" title={eng.lastClickedAt ? `Last clicked: ${new Date(eng.lastClickedAt).toLocaleString()}` : undefined}>
+                              <MousePointerClick className="w-3.5 h-3.5" />
+                              <span className="text-xs font-medium">{eng.clicks} click{eng.clicks !== 1 ? 's' : ''}</span>
+                            </div>
+                          )}
+                          {eng.lastOpenedAt && (
+                            <span className="text-[10px] text-zinc-600 ml-auto">
+                              Last: {new Date(eng.lastOpenedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="px-5 py-3 border-b border-zinc-800 space-y-2">

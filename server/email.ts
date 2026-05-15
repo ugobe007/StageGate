@@ -39,6 +39,9 @@ export async function sendEmail({
         .split("\n\n")
         .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
         .join(""),
+      // v35: enable Resend native open + click tracking
+      open_tracking: true,
+      click_tracking: true,
     }),
   });
 

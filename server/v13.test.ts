@@ -398,9 +398,14 @@ describe("Resend webhook handler", () => {
         limit: vi.fn().mockResolvedValue([{ id: 42 }]),
       };
 
+      const updateChain = {
+        set: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue(undefined),
+      };
       const db = {
         select: vi.fn().mockReturnValue(prospectSelectChain),
         insert: vi.fn().mockReturnValue(insertChain),
+        update: vi.fn().mockReturnValue(updateChain),
       };
       getDb.mockResolvedValue(db as never);
 

@@ -2430,8 +2430,9 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       .query(async () => {
         const dbConn = await getDb();
         if (!dbConn) return [];
-        const { desc: drizzleDesc } = await import("drizzle-orm");
-        return dbConn
+        const { desc: drizzleDesc, sql: drizzleSql } = await import("drizzle-orm");
+        // Fetch conversations with prospects
+        const rows = await dbConn
           .select({
             conv: salesAgentConversations,
             prospect: prospectsTable,
@@ -2440,6 +2441,35 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           .innerJoin(prospectsTable, eq(salesAgentConversations.prospectId, prospectsTable.id))
           .orderBy(drizzleDesc(salesAgentConversations.lastActivityAt))
           .limit(100);
+        if (rows.length === 0) return [];
+        // Fetch engagement counts for all prospects in one query
+        const prospectIds = rows.map(r => r.conv.prospectId);
+        const engRows = await dbConn
+          .select({
+            prospectId: emailTrackingEvents.prospectId,
+            opens: drizzleSql<number>`SUM(CASE WHEN ${emailTrackingEvents.eventType} = 'email.opened' THEN 1 ELSE 0 END)`.as('opens'),
+            clicks: drizzleSql<number>`SUM(CASE WHEN ${emailTrackingEvents.eventType} = 'email.clicked' THEN 1 ELSE 0 END)`.as('clicks'),
+            lastOpenedAt: drizzleSql<Date | null>`MAX(CASE WHEN ${emailTrackingEvents.eventType} = 'email.opened' THEN ${emailTrackingEvents.occurredAt} END)`.as('lastOpenedAt'),
+            lastClickedAt: drizzleSql<Date | null>`MAX(CASE WHEN ${emailTrackingEvents.eventType} = 'email.clicked' THEN ${emailTrackingEvents.occurredAt} END)`.as('lastClickedAt'),
+          })
+          .from(emailTrackingEvents)
+          .where(drizzleSql`${emailTrackingEvents.prospectId} IN (${drizzleSql.join(prospectIds.map(id => drizzleSql`${id}`), drizzleSql`, `)})`)
+          .groupBy(emailTrackingEvents.prospectId);
+        const engMap = new Map<number, { opens: number; clicks: number; lastOpenedAt: Date | null; lastClickedAt: Date | null }>();
+        for (const row of engRows) {
+          if (row.prospectId !== null) {
+            engMap.set(row.prospectId, {
+              opens: Number(row.opens),
+              clicks: Number(row.clicks),
+              lastOpenedAt: row.lastOpenedAt,
+              lastClickedAt: row.lastClickedAt,
+            });
+          }
+        }
+        return rows.map(r => ({
+          ...r,
+          engagement: engMap.get(r.conv.prospectId) ?? { opens: 0, clicks: 0, lastOpenedAt: null, lastClickedAt: null },
+        }));
       }),
 
     // Admin: get email thread for a prospect
@@ -2529,7 +2559,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     updateConversationStage: adminProcedure
       .input(z.object({
         conversationId: z.number(),
-        state: z.enum(["discovery", "intro_sent", "followup_1", "followup_2", "robot_guild", "responded", "scheduling", "booked", "not_interested", "converted"]),
+        state: z.enum(["discovery", "intro_sent", "followup_1", "followup_2", "robot_guild", "email_opened", "link_clicked", "responded", "scheduling", "booked", "not_interested", "converted"]),
       }))
       .mutation(async ({ input }) => {
         const dbConn = await getDb();

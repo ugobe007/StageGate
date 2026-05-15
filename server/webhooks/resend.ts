@@ -6,8 +6,8 @@
 import type { Request, Response } from "express";
 import crypto from "crypto";
 import { getDb } from "../db";
-import { emailTrackingEvents, prospectActivities, draftEmails } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { emailTrackingEvents, prospectActivities, draftEmails, salesAgentConversations } from "../../drizzle/schema";
+import { eq, and } from "drizzle-orm";
 
 // Resend uses Svix-style webhook signing: HMAC-SHA256 over "timestamp.body"
 // Header: svix-id, svix-timestamp, svix-signature
@@ -164,6 +164,34 @@ export async function resendWebhookHandler(req: Request, res: Response): Promise
           description: `Prospect clicked a link in outreach email${clickUrl ? `: ${clickUrl}` : ""}`,
           metadata: { messageId, url: clickUrl, occurredAt: occurredAt.toISOString() },
         });
+      }
+
+      // v35: advance conversation state on engagement signals
+      // email.opened → email_opened (if currently in an outreach-sent state)
+      // email.clicked → link_clicked (strongest engagement signal)
+      const OUTREACH_SENT_STATES = ["intro_sent", "followup_1", "followup_2", "robot_guild", "awaiting_reply"];
+      const convRows = await db
+        .select({ id: salesAgentConversations.id, state: salesAgentConversations.state })
+        .from(salesAgentConversations)
+        .where(eq(salesAgentConversations.prospectId, prospectId))
+        .limit(1);
+      const conv = convRows[0];
+      if (conv) {
+        if (eventType === "email.clicked" && conv.state !== "link_clicked") {
+          // Click is the strongest signal — always advance to link_clicked
+          await db
+            .update(salesAgentConversations)
+            .set({ state: "link_clicked", lastActivityAt: new Date(), updatedAt: new Date() })
+            .where(eq(salesAgentConversations.id, conv.id));
+          console.log(`[Resend Webhook] Prospect ${prospectId} advanced to link_clicked`);
+        } else if (eventType === "email.opened" && OUTREACH_SENT_STATES.includes(conv.state ?? "") && conv.state !== "link_clicked") {
+          // Open advances from outreach-sent states to email_opened
+          await db
+            .update(salesAgentConversations)
+            .set({ state: "email_opened", lastActivityAt: new Date(), updatedAt: new Date() })
+            .where(eq(salesAgentConversations.id, conv.id));
+          console.log(`[Resend Webhook] Prospect ${prospectId} advanced to email_opened`);
+        }
       }
     }
 

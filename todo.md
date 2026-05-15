@@ -1214,3 +1214,32 @@
 ### v34 Tests
 - [x] Write server/v34.test.ts: batchId returned immediately, progress map structure, getVerifyProgress query
 - [x] All 766 tests passing
+
+## v35 — Email Open & Click Tracking
+
+### v35.1 — DB migration
+- [x] Create email_tracking_events table in MySQL (id, prospectId, messageId, eventType, url, occurredAt, raw, createdAt)
+- [x] Generate migration SQL via pnpm drizzle-kit generate and apply via webdev_execute_sql
+- [x] Create prospect_activities table if not already in DB (id, prospectId, type, title, description, metadata, createdAt)
+- [x] Create draft_emails table if not already in DB (id, prospectId, subject, body, status, resendMessageId, sentAt, agentReasoning, updatedAt, createdAt)
+
+### v35.2 — Resend open/click tracking on outgoing emails
+- [x] Enable Resend open and click tracking on all outgoing emails (open_tracking: true, click_tracking: true in the API payload)
+- [x] Resend webhook at /api/webhooks/resend already handles email.opened and email.clicked events — verify it inserts into email_tracking_events and prospect_activities
+
+### v35.3 — Pipeline state update on engagement
+- [x] On first email.opened event for a prospect: if conv.state is 'intro_sent' or 'followup_1' or 'followup_2', advance state to 'email_opened'
+- [x] On first email.clicked event: advance state to 'link_clicked' (higher engagement signal)
+- [x] Add 'email_opened' and 'link_clicked' to the salesAgentConversations state machine comment
+- [x] Update getConversations to join engagement counts (opens, clicks, lastOpenedAt, lastClickedAt) from email_tracking_events
+
+### v35.4 — Admin UI: engagement indicators
+- [x] AdminSalesAgent pipeline board: show open/click badge on prospect cards (eye icon for opens, cursor icon for clicks)
+- [x] AdminSalesAgent prospect detail panel: show engagement timeline section with open/click events
+- [x] AdminPipeline: update prospects.list to use listWithEngagement so open/click counts appear on pipeline cards
+- [x] AdminPipeline prospect card: show small eye/cursor badge when opens > 0 or clicks > 0
+- [x] AdminPipeline detail panel: show engagement section with open count, click count, last opened, last clicked
+
+### v35 Tests
+- [x] Write server/v35.test.ts: email_tracking_events table structure, Resend webhook handler, engagement join in getConversations, open/click tracking flags in sendEmail
+- [x] All 801 tests passing

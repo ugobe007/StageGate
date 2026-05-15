@@ -1,0 +1,82 @@
+{
+  "query": "SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SHOW TABLES;",
+  "rows": [
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "__drizzle_migrations"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "agent_runs"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "company_profiles"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "demo_requests"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "email_threads"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "exhibitor_leads"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "logistics_checkpoints"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "logistics_partners"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "logistics_workflows"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "order_items"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "outreach_campaigns"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "prospects"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "quote_requests"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "sales_agent_conversations"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "sales_agent_runs"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "scheduling_slots"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "service_orders"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "services"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "show_notifications"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "trade_shows"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "users"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "vendors"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "xbot_logistics_briefs"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ": "xbot_projects"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ\n__drizzle_migrations\nagent_runs\ncompany_profiles\ndemo_requests\nemail_threads\nexhibitor_leads\nlogistics_checkpoints\nlogistics_partners\nlogistics_workflows\norder_items\noutreach_campaigns\nprospects\nquote_requests\nsales_agent_conversations\nsales_agent_runs\nscheduling_slots\nservice_orders\nservices\nshow_notifications\ntrade_shows\nusers\nvendors\nxbot_logistics_briefs\nxbot_projects\n",
+  "stderr": "",
+  "execution_time_ms": 906
+}

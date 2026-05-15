@@ -1,0 +1,28 @@
+{
+  "query": "SHOW TABLES LIKE '%draft%'; SHOW TABLES LIKE '%prospect%'; SHOW TABLES LIKE '%vendor%'; SHOW TABLES LIKE '%warehouse%'; SHOW TABLES LIKE '%xbot%'; SHOW TABLES LIKE '%booking%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SHOW TABLES LIKE '%draft%'; SHOW TABLES LIKE '%prospect%'; SHOW TABLES LIKE '%vendor%'; SHOW TABLES LIKE '%warehouse%'; SHOW TABLES LIKE '%xbot%'; SHOW TABLES LIKE '%booking%';",
+  "rows": [
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (%prospect%)": "prospects"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (%prospect%)": "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (%vendor%)"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (%prospect%)": "vendors"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (%prospect%)": "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (%xbot%)"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (%prospect%)": "xbot_logistics_briefs"
+    },
+    {
+      "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (%prospect%)": "xbot_projects"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_LwE9ahmaKQsfHr8pVsGoiJ (%prospect%)\nprospects\nTables_in_LwE9ahmaKQsfHr8pVsGoiJ (%vendor%)\nvendors\nTables_in_LwE9ahmaKQsfHr8pVsGoiJ (%xbot%)\nxbot_logistics_briefs\nxbot_projects\n",
+  "stderr": "",
+  "execution_time_ms": 301
+}

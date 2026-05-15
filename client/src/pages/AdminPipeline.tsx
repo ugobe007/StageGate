@@ -25,6 +25,7 @@ import {
   Sparkles, ChevronRight, ExternalLink, Users, Activity,
   FileText, Zap, Clock, TrendingUp, Shield, Star,
   Phone, Calendar, AlertCircle, CheckCircle2,
+  Eye, MousePointerClick,
 } from "lucide-react";
 
 // ─── Pipeline stages ──────────────────────────────────────────────────────────
@@ -58,6 +59,10 @@ type Prospect = {
   emailConfidence: string | null;
   followUpDate: string | null;
   createdAt: string;
+  // v35 engagement
+  opens?: number;
+  clicks?: number;
+  engagementScore?: number;
 };
 
 type ResearchData = {
@@ -97,6 +102,8 @@ function DraggableCard({
   isDragging?: boolean;
   onClick: () => void;
 }) {
+  const hasClicks = (prospect.clicks ?? 0) > 0;
+  const hasOpens = (prospect.opens ?? 0) > 0;
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `prospect-${prospect.id}`,
     data: { prospect },
@@ -130,8 +137,22 @@ function DraggableCard({
             <GripVertical size={12} />
           </button>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-white leading-tight truncate text-[13px]">
-              {prospect.company}
+            <div className="flex items-center gap-1.5">
+              <div className="font-semibold text-white leading-tight truncate text-[13px]">
+                {prospect.company}
+              </div>
+              {hasClicks && (
+                <span className="flex items-center gap-0.5 text-cyan-400 flex-shrink-0" title={`${prospect.clicks} link click${prospect.clicks !== 1 ? 's' : ''}`}>
+                  <MousePointerClick size={10} />
+                  <span className="text-[9px] font-medium">{prospect.clicks}</span>
+                </span>
+              )}
+              {!hasClicks && hasOpens && (
+                <span className="flex items-center gap-0.5 text-sky-400 flex-shrink-0" title={`${prospect.opens} open${prospect.opens !== 1 ? 's' : ''}`}>
+                  <Eye size={10} />
+                  <span className="text-[9px] font-medium">{prospect.opens}</span>
+                </span>
+              )}
             </div>
             {prospect.robotName && (
               <div className="flex items-center gap-1 mt-1">
@@ -398,7 +419,7 @@ function CRMPanel({
   }, [prospect.id]);
 
   const updateStatus = trpc.prospects.bulkUpdateStatus.useMutation({
-    onSuccess: () => { ctx.prospects.list.invalidate(); toast.success("Stage updated"); },
+    onSuccess: () => { ctx.prospects.listWithEngagement.invalidate(); toast.success("Stage updated"); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -998,7 +1019,7 @@ export default function AdminPipeline() {
 
   const ctx = trpc.useUtils();
 
-  const { data, isLoading, refetch } = trpc.prospects.list.useQuery(
+  const { data, isLoading, refetch } = trpc.prospects.listWithEngagement.useQuery(
     {},
     { enabled: isAuthenticated && user?.role === "admin", refetchInterval: 30_000 }
   );
@@ -1012,7 +1033,7 @@ export default function AdminPipeline() {
       });
       toast.error(`Failed: ${e.message}`);
     },
-    onSuccess: () => ctx.prospects.list.invalidate(),
+    onSuccess: () => ctx.prospects.listWithEngagement.invalidate(),
   });
 
   const rawProspects = (data?.prospects ?? []) as unknown as Prospect[];
