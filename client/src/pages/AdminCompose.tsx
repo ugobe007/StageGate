@@ -328,7 +328,7 @@ export default function AdminCompose() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-0 bg-zinc-950 flex items-center justify-center">
         <Loader2 className="animate-spin text-zinc-600" size={24} />
       </div>
     );
@@ -336,7 +336,7 @@ export default function AdminCompose() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-zinc-950">
+      <div className="min-h-0 bg-zinc-950">
         <div className="pt-32 text-center">
           <a href={getLoginUrl()} className="text-blue-400 underline text-sm">Sign in to continue</a>
         </div>
@@ -346,14 +346,14 @@ export default function AdminCompose() {
 
   if (user?.role !== "admin") {
     return (
-      <div className="min-h-screen bg-zinc-950">
+      <div className="min-h-0 bg-zinc-950">
         <div className="pt-32 text-center text-sm text-zinc-500">Admin access required.</div>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-white flex flex-col">
+    <main className="min-h-0 bg-zinc-950 text-white flex flex-col">
       {/* Top bar */}
       <div className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between shrink-0 bg-zinc-900">
         <div>

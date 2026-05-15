@@ -88,7 +88,7 @@ export default function AdminLeads() {
   });
 
   if (!isAuthenticated || user?.role !== "admin") {
-    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><p style={{ color: "#64748b" }}>Admin access required.</p></div>;
+    return <div style={{ minHeight: "auto", display: "flex", alignItems: "center", justifyContent: "center" }}><p style={{ color: "#64748b" }}>Admin access required.</p></div>;
   }
 
   const filteredLeads = (allLeads || []).filter(l => {

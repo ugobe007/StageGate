@@ -47,7 +47,7 @@ export default function AdminDemoRequests() {
 
   if (!user || user.role !== "admin") {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ minHeight: "auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <p style={{ color: "#64748b" }}>Admin access required.</p>
       </div>
     );

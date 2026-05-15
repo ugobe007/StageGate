@@ -118,20 +118,20 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-2">
             {isAuthenticated ? (
               <>
-                <Link href="/dashboard">
+                <Link href={isAdmin ? "/admin" : "/dashboard"}>
                   <span
                     style={{
                       display: "block",
                       padding: "0.375rem 0.75rem",
                       fontSize: "0.875rem",
-                      color: isActive("/dashboard") ? "#fff" : "rgba(255,255,255,0.45)",
+                      color: (isAdmin ? isActive("/admin") : isActive("/dashboard")) ? "#fff" : "rgba(255,255,255,0.45)",
                       cursor: "pointer",
                       transition: "color 0.15s",
                     }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.80)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isActive("/dashboard") ? "#fff" : "rgba(255,255,255,0.45)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = (isAdmin ? isActive("/admin") : isActive("/dashboard")) ? "#fff" : "rgba(255,255,255,0.45)"; }}
                   >
-                    Dashboard
+                    {isAdmin ? "Admin Panel" : "My Dashboard"}
                   </span>
                 </Link>
                 <button
@@ -260,12 +260,12 @@ export default function Navbar() {
             >
               {isAuthenticated ? (
                 <>
-                  <Link href="/dashboard">
+                  <Link href={isAdmin ? "/admin" : "/dashboard"}>
                     <span
                       style={{ display: "block", padding: "0.75rem", fontSize: "0.9375rem", color: "rgba(255,255,255,0.50)", cursor: "pointer" }}
                       onClick={() => setMobileOpen(false)}
                     >
-                      Dashboard
+                      {isAdmin ? "Admin Panel" : "My Dashboard"}
                     </span>
                   </Link>
                   <button

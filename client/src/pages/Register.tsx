@@ -1,15 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { CheckCircle, ArrowRight, Loader2 } from "lucide-react";
+import { CheckCircle, ArrowRight, Loader2, Building2, Bot } from "lucide-react";
 import { toast } from "sonner";
 
 const ROBOT_TYPES = [
@@ -17,6 +14,14 @@ const ROBOT_TYPES = [
   "Delivery Robot", "Service Robot", "Drone / UAV", "Medical Robot",
   "Agricultural Robot", "Security Robot", "Other",
 ];
+
+const labelStyle: React.CSSProperties = {
+  fontSize: "0.8125rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem",
+};
+
+const sectionStyle: React.CSSProperties = {
+  padding: "1.5rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "#fff",
+};
 
 export default function Register() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -26,8 +31,8 @@ export default function Register() {
   const [form, setForm] = useState({
     companyName: "",
     website: "",
-    contactName: "",
-    contactEmail: "",
+    contactName: user?.name ?? "",
+    contactEmail: user?.email ?? "",
     contactPhone: "",
     country: "",
     description: "",
@@ -45,55 +50,46 @@ export default function Register() {
   });
 
   const toggleRobotType = (type: string) => {
-    setForm((prev) => ({
+    setForm(prev => ({
       ...prev,
       robotTypes: prev.robotTypes.includes(type)
-        ? prev.robotTypes.filter((t) => t !== type)
+        ? prev.robotTypes.filter(t => t !== type)
         : [...prev.robotTypes, type],
     }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.companyName) {
-      toast.error("Company name is required");
-      return;
-    }
-    upsertProfile.mutate({
-      ...form,
-      robotTypes: JSON.stringify(form.robotTypes),
-    });
+    if (!form.companyName) { toast.error("Company name is required"); return; }
+    upsertProfile.mutate({ ...form, robotTypes: JSON.stringify(form.robotTypes) });
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary" size={32} />
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc" }}>
+        <Loader2 size={28} style={{ color: "#3ecf8e", animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
         <Navbar />
-        <div className="pt-32 pb-16">
-          <div className="container max-w-lg mx-auto text-center">
-            <div className="p-12 rounded-2xl border border-primary/30 bg-primary/5">
-              <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-primary">SG</span>
+        <div style={{ paddingTop: "8rem", paddingBottom: "4rem" }}>
+          <div style={{ maxWidth: "28rem", margin: "0 auto", padding: "0 1rem", textAlign: "center" }}>
+            <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#fff" }}>
+              <div style={{ width: "3rem", height: "3rem", borderRadius: "0.5rem", background: "rgba(62,207,142,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem" }}>
+                <Bot size={22} style={{ color: "#3ecf8e" }} />
               </div>
-              <h1 className="text-3xl font-display font-bold mb-4">Register Your Company</h1>
-              <p className="text-muted-foreground mb-8">
+              <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.625rem" }}>Register Your Company</h1>
+              <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "2rem" }}>
                 Create a free StageGate account to register your company and access our full service catalog.
               </p>
-              <a href={getLoginUrl()}>
-                <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold w-full gap-2">
-                  Sign In to Continue
-                  <ArrowRight size={16} />
-                </Button>
+              <a href={getLoginUrl()} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#3ecf8e", color: "#fff", fontWeight: 700, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+                Sign In to Continue <ArrowRight size={16} />
               </a>
-              <p className="mt-4 text-xs text-muted-foreground">Free forever · No credit card required</p>
+              <p style={{ marginTop: "1rem", fontSize: "0.75rem", color: "#94a3b8" }}>Free forever · No credit card required</p>
             </div>
           </div>
         </div>
@@ -103,27 +99,31 @@ export default function Register() {
 
   if (existingProfile) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
         <Navbar />
-        <div className="pt-32 pb-16">
-          <div className="container max-w-lg mx-auto text-center">
-            <div className="p-12 rounded-2xl border border-primary/30 bg-primary/5">
-              <CheckCircle size={48} className="text-primary mx-auto mb-4" />
-              <h1 className="text-3xl font-display font-bold mb-4">You're Already Registered!</h1>
-              <p className="text-muted-foreground mb-2">
-                <strong className="text-foreground">{existingProfile.companyName}</strong> is registered on StageGate.
+        <div style={{ paddingTop: "8rem", paddingBottom: "4rem" }}>
+          <div style={{ maxWidth: "28rem", margin: "0 auto", padding: "0 1rem", textAlign: "center" }}>
+            <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#fff" }}>
+              <div style={{ width: "3rem", height: "3rem", borderRadius: "9999px", background: "rgba(62,207,142,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem" }}>
+                <CheckCircle size={22} style={{ color: "#3ecf8e" }} />
+              </div>
+              <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.5rem" }}>Already Registered</h1>
+              <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "0.375rem" }}>
+                <strong style={{ color: "#0f172a" }}>{existingProfile.companyName}</strong> is registered on StageGate.
               </p>
-              <p className="text-muted-foreground mb-8">Head to your dashboard to view orders, book services, or update your profile.</p>
-              <div className="flex flex-col gap-3">
+              <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "2rem" }}>
+                Head to your dashboard to view orders, book services, or update your profile.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 <Link href="/dashboard">
-                  <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold w-full gap-2">
-                    Go to Dashboard <ArrowRight size={16} />
-                  </Button>
+                  <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", background: "#3ecf8e", color: "#fff", fontWeight: 700, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+                    Go to My Dashboard <ArrowRight size={15} />
+                  </a>
                 </Link>
                 <Link href="/order">
-                  <Button size="lg" variant="outline" className="border-border w-full">
+                  <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                     Book Services
-                  </Button>
+                  </a>
                 </Link>
               </div>
             </div>
@@ -134,151 +134,118 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
       <Navbar />
-      <div className="pt-24 pb-16">
-        <div className="container max-w-2xl mx-auto">
-          <div className="text-center mb-10">
-            <Badge className="mb-4 bg-primary/10 text-primary border-primary/30">Free Registration</Badge>
-            <h1 className="text-4xl font-display font-bold mb-3">Register Your Company</h1>
-            <p className="text-muted-foreground">
-              Tell us about your company and robots. This takes about 3 minutes.
-            </p>
+      <div style={{ paddingTop: "6rem", paddingBottom: "4rem" }}>
+        <div style={{ maxWidth: "42rem", margin: "0 auto", padding: "0 1rem" }}>
+          <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, color: "#3ecf8e", background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.25rem 0.75rem", marginBottom: "1rem" }}>
+              Free Registration
+            </div>
+            <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.5rem" }}>Register Your Company</h1>
+            <p style={{ fontSize: "0.9375rem", color: "#64748b" }}>Tell us about your company and robots. This takes about 3 minutes.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             {/* Company Info */}
-            <div className="p-8 rounded-2xl border border-border bg-card">
-              <h2 className="font-display font-bold text-lg text-foreground mb-6">Company Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="md:col-span-2">
-                  <Label htmlFor="companyName" className="text-sm font-medium text-foreground mb-2 block">
-                    Company Name <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="companyName"
-                    value={form.companyName}
-                    onChange={(e) => setForm({ ...form, companyName: e.target.value })}
-                    placeholder="Acme Robotics Inc."
-                    className="bg-input border-border"
-                    required
-                  />
+            <div style={sectionStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>
+                <Building2 size={15} style={{ color: "#3ecf8e" }} />
+                <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#0f172a", margin: 0 }}>Company Information</h2>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.875rem" }}>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={labelStyle}>Company Name *</label>
+                  <Input value={form.companyName} onChange={e => setForm({ ...form, companyName: e.target.value })} placeholder="Acme Robotics Inc." required />
                 </div>
                 <div>
-                  <Label htmlFor="website" className="text-sm font-medium text-foreground mb-2 block">Website</Label>
-                  <Input
-                    id="website"
-                    value={form.website}
-                    onChange={(e) => setForm({ ...form, website: e.target.value })}
-                    placeholder="https://acmerobotics.com"
-                    className="bg-input border-border"
-                  />
+                  <label style={labelStyle}>Website</label>
+                  <Input value={form.website} onChange={e => setForm({ ...form, website: e.target.value })} placeholder="https://acmerobotics.com" />
                 </div>
                 <div>
-                  <Label htmlFor="country" className="text-sm font-medium text-foreground mb-2 block">Country of Origin</Label>
-                  <Input
-                    id="country"
-                    value={form.country}
-                    onChange={(e) => setForm({ ...form, country: e.target.value })}
-                    placeholder="United States"
-                    className="bg-input border-border"
-                  />
+                  <label style={labelStyle}>Country</label>
+                  <Input value={form.country} onChange={e => setForm({ ...form, country: e.target.value })} placeholder="United States" />
                 </div>
-                <div className="md:col-span-2">
-                  <Label htmlFor="description" className="text-sm font-medium text-foreground mb-2 block">Company Description</Label>
-                  <Textarea
-                    id="description"
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={labelStyle}>Company Description</label>
+                  <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
                     placeholder="Brief description of your company and the robots you make..."
-                    className="bg-input border-border resize-none"
-                    rows={3}
-                  />
+                    className="resize-none" rows={3} />
                 </div>
               </div>
             </div>
 
             {/* Contact Info */}
-            <div className="p-8 rounded-2xl border border-border bg-card">
-              <h2 className="font-display font-bold text-lg text-foreground mb-6">Primary Contact</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div style={sectionStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>
+                <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#0f172a", margin: 0 }}>Primary Contact</h2>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.875rem" }}>
                 <div>
-                  <Label htmlFor="contactName" className="text-sm font-medium text-foreground mb-2 block">Contact Name</Label>
-                  <Input
-                    id="contactName"
-                    value={form.contactName}
-                    onChange={(e) => setForm({ ...form, contactName: e.target.value })}
-                    placeholder="Jane Smith"
-                    className="bg-input border-border"
-                  />
+                  <label style={labelStyle}>Contact Name</label>
+                  <Input value={form.contactName} onChange={e => setForm({ ...form, contactName: e.target.value })} placeholder="Jane Smith" />
                 </div>
                 <div>
-                  <Label htmlFor="contactEmail" className="text-sm font-medium text-foreground mb-2 block">Contact Email</Label>
-                  <Input
-                    id="contactEmail"
-                    type="email"
-                    value={form.contactEmail}
-                    onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
-                    placeholder="jane@acmerobotics.com"
-                    className="bg-input border-border"
-                  />
+                  <label style={labelStyle}>Contact Email</label>
+                  <Input type="email" value={form.contactEmail} onChange={e => setForm({ ...form, contactEmail: e.target.value })} placeholder="jane@acmerobotics.com" />
                 </div>
                 <div>
-                  <Label htmlFor="contactPhone" className="text-sm font-medium text-foreground mb-2 block">Contact Phone</Label>
-                  <Input
-                    id="contactPhone"
-                    value={form.contactPhone}
-                    onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
-                    placeholder="+1 (555) 000-0000"
-                    className="bg-input border-border"
-                  />
+                  <label style={labelStyle}>Contact Phone</label>
+                  <Input value={form.contactPhone} onChange={e => setForm({ ...form, contactPhone: e.target.value })} placeholder="+1 (555) 000-0000" />
                 </div>
               </div>
             </div>
 
             {/* Robot Types */}
-            <div className="p-8 rounded-2xl border border-border bg-card">
-              <h2 className="font-display font-bold text-lg text-foreground mb-2">Robot Types</h2>
-              <p className="text-sm text-muted-foreground mb-5">Select all robot types your company makes or sells.</p>
-              <div className="flex flex-wrap gap-2">
-                {ROBOT_TYPES.map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => toggleRobotType(type)}
-                    className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
-                      form.robotTypes.includes(type)
-                        ? "bg-primary text-primary-foreground border-primary font-medium"
-                        : "bg-secondary text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
-                    }`}
-                  >
-                    {type}
-                  </button>
-                ))}
+            <div style={sectionStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
+                <Bot size={15} style={{ color: "#3ecf8e" }} />
+                <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#0f172a", margin: 0 }}>Robot Types</h2>
+              </div>
+              <p style={{ fontSize: "0.8125rem", color: "#94a3b8", marginBottom: "1rem" }}>Select all robot types your company makes or sells.</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                {ROBOT_TYPES.map(type => {
+                  const selected = form.robotTypes.includes(type);
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => toggleRobotType(type)}
+                      style={{
+                        padding: "0.3125rem 0.75rem",
+                        fontSize: "0.8125rem",
+                        fontWeight: selected ? 500 : 400,
+                        border: `1px solid ${selected ? "#3ecf8e" : "#e2e8f0"}`,
+                        borderRadius: "0.25rem",
+                        background: selected ? "rgba(62,207,142,0.08)" : "#fff",
+                        color: selected ? "#3ecf8e" : "#64748b",
+                        cursor: "pointer",
+                        transition: "all 0.1s",
+                      }}
+                    >
+                      {type}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Submit */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
                 type="submit"
-                size="lg"
-                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-bold gap-2"
                 disabled={upsertProfile.isPending}
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", background: "#3ecf8e", color: "#fff", fontWeight: 700, fontSize: "0.9375rem", borderRadius: "0.375rem", border: "none", cursor: "pointer", opacity: upsertProfile.isPending ? 0.7 : 1 }}
               >
-                {upsertProfile.isPending ? (
-                  <><Loader2 size={16} className="animate-spin" /> Saving...</>
-                ) : (
-                  <>Complete Registration <ArrowRight size={16} /></>
-                )}
-              </Button>
+                {upsertProfile.isPending ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Saving…</> : <>Complete Registration <ArrowRight size={15} /></>}
+              </button>
               <Link href="/">
-                <Button size="lg" variant="outline" className="border-border text-muted-foreground">
+                <a style={{ display: "flex", alignItems: "center", padding: "0.75rem 1.25rem", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                   Cancel
-                </Button>
+                </a>
               </Link>
             </div>
-            <p className="text-xs text-center text-muted-foreground">
+            <p style={{ fontSize: "0.75rem", textAlign: "center", color: "#94a3b8" }}>
               Free forever · No credit card required · You can update your profile anytime
             </p>
           </form>

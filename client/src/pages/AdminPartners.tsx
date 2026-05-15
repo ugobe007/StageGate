@@ -89,7 +89,7 @@ export default function AdminPartners() {
   };
 
   if (!isAuthenticated || user?.role !== "admin") {
-    return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Admin access required.</p></div>;
+    return <div className="min-h-0 bg-background flex items-center justify-center"><p className="text-muted-foreground">Admin access required.</p></div>;
   }
 
   const filteredPartners = (partners || []).filter(p =>
@@ -99,7 +99,7 @@ export default function AdminPartners() {
   const getCategoryConfig = (svcType: string) => CATEGORIES.find(c => c.value === svcType) || CATEGORIES[CATEGORIES.length - 1];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-0 bg-background text-foreground">
       <div className="pt-24 pb-16">
         <div className="container">
           <div className="flex flex-wrap items-center gap-4 mb-8">

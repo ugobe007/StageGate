@@ -325,7 +325,7 @@ export default function AdminProspects() {
 
   if (!user) {
     return (
-      <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
+      <div style={{ background: "#f8fafc" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", gap: "1.5rem" }}>
           <p style={{ color: "#475569", fontSize: "0.875rem" }}>Admin access required</p>
           <a href={getLoginUrl()} style={{ padding: "0.5rem 1rem", background: "#3ecf8e", color: "#0f172a", fontWeight: 600, borderRadius: "0.375rem", textDecoration: "none", fontSize: "0.875rem" }}>Sign In</a>
@@ -336,7 +336,7 @@ export default function AdminProspects() {
 
   if (user.role !== "admin") {
     return (
-      <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
+      <div style={{ background: "#f8fafc" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
           <p style={{ color: "#475569", fontSize: "0.875rem" }}>Forbidden — admin only</p>
         </div>
@@ -431,7 +431,7 @@ export default function AdminProspects() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", color: "#0f172a", fontFamily: "'Inter','Space Grotesk',ui-sans-serif,system-ui,sans-serif" }}>
+    <div style={{ background: "#f8fafc", color: "#0f172a", fontFamily: "'Inter','Space Grotesk',ui-sans-serif,system-ui,sans-serif" }}>
       <div className="container" style={{ paddingTop: "2rem", paddingBottom: "4rem" }}>
         {/* Header */}
         <div style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "1.25rem", marginBottom: "1.5rem" }}>

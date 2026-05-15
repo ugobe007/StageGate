@@ -42,7 +42,7 @@ export default function AdminQuotes() {
 
   if (!user || user.role !== "admin") {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "oklch(0.08 0.006 240)" }}>
+      <div className="min-h-0 flex items-center justify-center" style={{ background: "#f8fafc" }}>
         <p className="text-muted-foreground">Admin access required.</p>
       </div>
     );
@@ -68,7 +68,7 @@ export default function AdminQuotes() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "oklch(0.08 0.006 240)", color: "oklch(0.97 0.002 240)" }}>
+    <div className="min-h-0" style={{ background: "#f8fafc", color: "#0f172a" }}>
       {/* Header */}
       <div className="border-b" style={{ borderColor: "oklch(0.16 0.010 240)", background: "oklch(0.10 0.006 240)" }}>
         <div className="container py-4 flex items-center justify-between gap-4">
