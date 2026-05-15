@@ -1072,3 +1072,15 @@
 ### v28 Tests
 - [x] Write server/v28.test.ts: exhibitorListUrl seeding, inbound state transitions, Frank reply-from
 - [x] All 512 tests passing (v28)
+
+## v29 — Frank Agent Instructions Upgrade
+
+- [x] Rewrite FRANK_SYSTEM_PROMPT with "Boots-on-the-Ground / Las Vegas Powerhouse" voice
+- [x] Update STAGEGATE_PITCH with three-phase lifecycle framework (Pre-Show / Main Event / Legacy)
+- [x] Update STAGE_PROMPTS with new tone directives and scenario examples
+- [x] Add heavy industrial robot handling language (Fanuc, Yaskawa, Omron, 480V three-phase)
+- [x] Add Las Vegas showroom / distribution pitch to ROBOT_GUILD_PITCH and DEMO_VENUES
+- [x] Add "Zero-Risk Demo" framing to breakpoints and staging prompts
+- [x] Add CTA priority: showroom tour booking or distribution partnership call
+- [x] Write server/v29.test.ts: voice directives, lifecycle phases, heavy industrial terms, CTA priorities
+- [x] All 579 tests passing (v29)
