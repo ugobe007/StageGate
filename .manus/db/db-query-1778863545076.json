@@ -1,0 +1,150 @@
+{
+  "query": "SELECT id, name, city, `startDate`, `exhibitorListUrl` FROM trade_shows ORDER BY `startDate` LIMIT 30;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SELECT id, name, city, `startDate`, `exhibitorListUrl` FROM trade_shows ORDER BY `startDate` LIMIT 30;",
+  "rows": [
+    {
+      "id": "30001",
+      "name": "CES 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-01-06 00:00:00",
+      "exhibitorListUrl": "https://exhibitors.ces.tech/8_0/exhibitorsearch/exhibitorsearch.cfm?exhsearch=1&searchtype=keyword&keyword=robot"
+    },
+    {
+      "id": "30002",
+      "name": "World of Concrete 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-01-20 00:00:00",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30003",
+      "name": "SHOT Show 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-01-20 00:00:00",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30004",
+      "name": "Manifest 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-02-09 00:00:00",
+      "exhibitorListUrl": "https://manifestvegas.com/exhibitors/"
+    },
+    {
+      "id": "30006",
+      "name": "CONEXPO-CON/AGG 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-03-03 00:00:00",
+      "exhibitorListUrl": "https://www.conexpoconagg.com/exhibitors/"
+    },
+    {
+      "id": "30005",
+      "name": "HIMSS 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-03-09 00:00:00",
+      "exhibitorListUrl": "https://www.himss.org/global-conference/exhibitors"
+    },
+    {
+      "id": "30007",
+      "name": "ISC West 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-04-01 00:00:00",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30008",
+      "name": "NAB Show 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-04-18 00:00:00",
+      "exhibitorListUrl": "https://www.nabshow.com/2026/exhibitors/"
+    },
+    {
+      "id": "30009",
+      "name": "Interop 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-05-04 00:00:00",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30010",
+      "name": "HDExpo + Conference 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-05-12 00:00:00",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "3",
+      "name": "MINExpo 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-09-22 09:00:00",
+      "exhibitorListUrl": "https://www.minexpo.com/exhibitors/"
+    },
+    {
+      "id": "30011",
+      "name": "PACK EXPO Las Vegas 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-09-28 00:00:00",
+      "exhibitorListUrl": "https://www.packexpolasvegas.com/exhibitors/"
+    },
+    {
+      "id": "30012",
+      "name": "G2E — Global Gaming Expo 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-10-06 00:00:00",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30013",
+      "name": "SEMA Show 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-11-03 00:00:00",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30014",
+      "name": "AWS re:Invent 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-11-30 00:00:00",
+      "exhibitorListUrl": "https://reinvent.awsevents.com/partners/expo/"
+    },
+    {
+      "id": "30015",
+      "name": "MJBizCon 2026",
+      "city": "Las Vegas",
+      "startDate": "2026-12-02 00:00:00",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "1",
+      "name": "CES 2027",
+      "city": "Las Vegas",
+      "startDate": "2027-01-06 09:00:00",
+      "exhibitorListUrl": "https://exhibitors.ces.tech/8_0/exhibitorsearch/exhibitorsearch.cfm?exhsearch=1&searchtype=keyword&keyword=robot"
+    },
+    {
+      "id": "2",
+      "name": "Manifest 2027",
+      "city": "Las Vegas",
+      "startDate": "2027-02-10 09:00:00",
+      "exhibitorListUrl": "https://www.manifestvegas.com/exhibitors/"
+    },
+    {
+      "id": "4",
+      "name": "HIMSS 2027",
+      "city": "Las Vegas",
+      "startDate": "2027-03-17 09:00:00",
+      "exhibitorListUrl": "https://www.himssconference.org/exhibitors"
+    },
+    {
+      "id": "5",
+      "name": "Automate 2027",
+      "city": "Chicago",
+      "startDate": "2027-05-17 09:00:00",
+      "exhibitorListUrl": "https://www.automateshow.com/exhibitors/"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tcity\tstartDate\texhibitorListUrl\n30001\tCES 2026\tLas Vegas\t2026-01-06 00:00:00\thttps://exhibitors.ces.tech/8_0/exhibitorsearch/exhibitorsearch.cfm?exhsearch=1&searchtype=keyword&keyword=robot\n30002\tWorld of Concrete 2026\tLas Vegas\t2026-01-20 00:00:00\tNULL\n30003\tSHOT Show 2026\tLas Vegas\t2026-01-20 00:00:00\tNULL\n30004\tManifest 2026\tLas Vegas\t2026-02-09 00:00:00\thttps://manifestvegas.com/exhibitors/\n30006\tCONEXPO-CON/AGG 2026\tLas Vegas\t2026-03-03 00:00:00\thttps://www.conexpoconagg.com/exhibitors/\n30005\tHIMSS 2026\tLas Vegas\t2026-03-09 00:00:00\thttps://www.himss.org/global-conference/exhibitors\n30007\tISC West 2026\tLas Vegas\t2026-04-01 00:00:00\tNULL\n30008\tNAB Show 2026\tLas Vegas\t2026-04-18 00:00:00\thttps://www.nabshow.com/2026/exhibitors/\n30009\tInterop 2026\tLas Vegas\t2026-05-04 00:00:00\tNULL\n30010\tHDExpo + Conference 2026\tLas Vegas\t2026-05-12 00:00:00\tNULL\n3\tMINExpo 2026\tLas Vegas\t2026-09-22 09:00:00\thttps://www.minexpo.com/exhibitors/\n30011\tPACK EXPO Las Vegas 2026\tLas Vegas\t2026-09-28 00:00:00\thttps://www.packexpolasvegas.com/exhibitors/\n30012\tG2E — Global Gaming Expo 2026\tLas Vegas\t2026-10-06 00:00:00\tNULL\n30013\tSEMA Show 2026\tLas Vegas\t2026-11-03 00:00:00\tNULL\n30014\tAWS re:Invent 2026\tLas Vegas\t2026-11-30 00:00:00\thttps://reinvent.awsevents.com/partners/expo/\n30015\tMJBizCon 2026\tLas Vegas\t2026-12-02 00:00:00\tNULL\n1\tCES 2027\tLas Vegas\t2027-01-06 09:00:00\thttps://exhibitors.ces.tech/8_0/exhibitorsearch/exhibitorsearch.cfm?exhsearch=1&searchtype=keyword&keyword=robot\n2\tManifest 2027\tLas Vegas\t2027-02-10 09:00:00\thttps://www.manifestvegas.com/exhibitors/\n4\tHIMSS 2027\tLas Vegas\t2027-03-17 09:00:00\thttps://www.himssconference.org/exhibitors\n5\tAutomate 2027\tChicago\t2027-05-17 09:00:00\thttps://www.automateshow.com/exhibitors/\n",
+  "stderr": "",
+  "execution_time_ms": 436
+}

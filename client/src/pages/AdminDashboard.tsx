@@ -389,14 +389,19 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* Outreach Card */}
+          {/* Frank's Outreach Card */}
           {draftCount !== undefined && (
             <div className="mt-6 p-5 rounded-xl border border-amber-500/30 bg-amber-500/5">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-3">
                   <Send size={20} className="text-amber-400 shrink-0" />
                   <div>
-                    <div className="font-semibold text-sm text-foreground">Outreach Queue</div>
+                    <div className="font-semibold text-sm text-foreground flex items-center gap-2">
+                      Frank's Outreach
+                      {draftCount.pending > 0 && (
+                        <Badge className="bg-amber-500 text-black text-[10px] px-1.5 py-0 h-4 font-bold">{draftCount.pending} pending</Badge>
+                      )}
+                    </div>
                     <div className="text-xs text-muted-foreground mt-0.5">
                       {draftCount.pending > 0
                         ? `${draftCount.pending} draft${draftCount.pending !== 1 ? 's' : ''} pending review`
@@ -411,24 +416,30 @@ export default function AdminDashboard() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="flex gap-3 text-center">
+                <div className="flex items-center gap-4 shrink-0 flex-wrap">
+                  <div className="flex gap-4 text-center">
                     <div>
-                      <div className="text-lg font-bold text-amber-400">{draftCount.pending}</div>
+                      <div className="text-xl font-bold text-amber-400">{draftCount.pending}</div>
                       <div className="text-[10px] text-muted-foreground">Pending</div>
                     </div>
                     <div>
-                      <div className="text-lg font-bold text-emerald-400">{draftCount.approved}</div>
+                      <div className="text-xl font-bold text-emerald-400">{draftCount.approved}</div>
                       <div className="text-[10px] text-muted-foreground">Approved</div>
                     </div>
                     <div>
-                      <div className="text-lg font-bold text-blue-400">{draftCount.sent}</div>
+                      <div className="text-xl font-bold text-blue-400">{draftCount.sent}</div>
                       <div className="text-[10px] text-muted-foreground">Sent</div>
                     </div>
+                    {siteStats && (
+                      <div>
+                        <div className="text-xl font-bold text-violet-400">{siteStats.conversations?.total ?? 0}</div>
+                        <div className="text-[10px] text-muted-foreground">In Pipeline</div>
+                      </div>
+                    )}
                   </div>
-                  <Link href="/admin/outreach">
-                    <Button size="sm" variant="outline" className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10">
-                      Go to Outreach <ArrowRight size={12} className="ml-1" />
+                  <Link href="/admin/sales-agent">
+                    <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-semibold gap-1.5">
+                      Go to Outreach <ArrowRight size={12} />
                     </Button>
                   </Link>
                 </div>

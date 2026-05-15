@@ -403,3 +403,206 @@ interface DiscoveredShow {
   description?: string;
   roboticsRelevance?: number;
 }
+
+// ─── Admin-triggered core (bypasses cron auth) ────────────────────────────────
+// Called from the salesAgent.triggerDiscovery tRPC procedure.
+export async function salesAgentDiscoveryCore(runId?: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  // ── Step 1: Get shows with exhibitorListUrl ──────────────────────────────
+  const showsWithUrl = await db
+    .select({
+      id: tradeShows.id,
+      name: tradeShows.name,
+      city: tradeShows.city,
+      venue: tradeShows.venue,
+      exhibitorListUrl: tradeShows.exhibitorListUrl,
+    })
+    .from(tradeShows)
+    .where(isNotNull(tradeShows.exhibitorListUrl))
+    .limit(8); // Admin runs can process more shows than nightly cron
+
+  const allUpcomingShows = await db
+    .select({ name: tradeShows.name, city: tradeShows.city })
+    .from(tradeShows)
+    .where(eq(tradeShows.status, "upcoming"))
+    .limit(25);
+
+  const fallbackShowNames = allUpcomingShows.map(s => s.name).join(", ");
+
+  let allProspects: DiscoveredProspect[] = [];
+  let allNewShows: DiscoveredShow[] = [];
+
+  // ── Step 2: Scrape exhibitor list pages ──────────────────────────────────
+  for (const show of showsWithUrl) {
+    if (!show.exhibitorListUrl) continue;
+    let pageText = "";
+    let scrapeSuccess = false;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+      const pageRes = await fetch(show.exhibitorListUrl, {
+        signal: controller.signal,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; StageGate-Bot/1.0; +https://onstage.bot)",
+          "Accept": "text/html,application/xhtml+xml",
+        },
+      });
+      clearTimeout(timeoutId);
+      if (pageRes.ok) {
+        const html = await pageRes.text();
+        pageText = html
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, MAX_PAGE_CHARS);
+        scrapeSuccess = pageText.length > 200;
+      }
+    } catch (fetchErr) {
+      console.warn(`[Discovery Core] Failed to fetch ${show.exhibitorListUrl}:`, String(fetchErr).slice(0, 100));
+    }
+
+    const showContext = `${show.name} at ${show.venue ?? "Las Vegas"}, ${show.city ?? "NV"}`;
+    const prompt = scrapeSuccess
+      ? `You are analyzing the exhibitor list page for ${showContext}.\n\nPage content (truncated):\n${pageText}\n\nFrom this exhibitor list, identify up to 12 robot companies. Return ONLY valid JSON with "prospects" array and empty "shows" array.`
+      : `Find up to 12 robot companies that exhibit at ${showContext}. Return ONLY valid JSON with "prospects" array and empty "shows" array.`;
+
+    try {
+      const result = await invokeLLM({
+        messages: [
+          { role: "system", content: `You are a research assistant identifying robot companies for StageGate's sales outreach. Return ONLY valid JSON, no markdown.` },
+          { role: "user", content: prompt },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "discovery_results",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                prospects: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      company: { type: "string" }, contactName: { type: "string" },
+                      contactEmail: { type: "string" }, contactTitle: { type: "string" },
+                      website: { type: "string" }, robotName: { type: "string" },
+                      robotType: { type: "string" }, robotCategory: { type: "string" },
+                      shows: { type: "array", items: { type: "string" } },
+                      notes: { type: "string" }, emailConfidence: { type: "string" },
+                    },
+                    required: ["company", "contactName", "contactEmail", "contactTitle", "website", "robotName", "robotType", "robotCategory", "shows", "notes", "emailConfidence"],
+                    additionalProperties: false,
+                  },
+                },
+                shows: { type: "array", items: { type: "object", properties: { name: { type: "string" }, location: { type: "string" }, venue: { type: "string" }, city: { type: "string" }, website: { type: "string" }, description: { type: "string" }, roboticsRelevance: { type: "number" } }, required: ["name", "location", "venue", "city", "website", "description", "roboticsRelevance"], additionalProperties: false } },
+              },
+              required: ["prospects", "shows"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+      const rawContent = result.choices?.[0]?.message?.content;
+      const contentStr = typeof rawContent === "string" ? rawContent : "";
+      try {
+        const parsed: { prospects: DiscoveredProspect[]; shows: DiscoveredShow[] } = JSON.parse(contentStr);
+        allProspects = allProspects.concat(parsed.prospects ?? []);
+        allNewShows = allNewShows.concat(parsed.shows ?? []);
+        console.log(`[Discovery Core] ${show.name}: found ${parsed.prospects?.length ?? 0} prospects`);
+      } catch { /* ignore parse errors */ }
+    } catch (llmErr) {
+      console.error("[Discovery Core] LLM error for show:", show.name, String(llmErr).slice(0, 200));
+    }
+  }
+
+  // ── Step 3: Fallback if fewer than 10 prospects found ───────────────────
+  if (allProspects.length < 10) {
+    try {
+      const fallbackResult = await invokeLLM({
+        messages: [
+          { role: "system", content: `You are a research assistant for StageGate. Return ONLY valid JSON, no markdown.` },
+          { role: "user", content: `Find 20 high-quality robot company prospects that exhibit at these shows: ${fallbackShowNames || "CES, NAB Show, MODEX, Automate, ICRA"}. Focus on humanoid robots, AMRs, service robots, industrial arms, and drones. Return JSON with "prospects" array and empty "shows" array.` },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "discovery_results",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                prospects: { type: "array", items: { type: "object", properties: { company: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, contactTitle: { type: "string" }, website: { type: "string" }, robotName: { type: "string" }, robotType: { type: "string" }, shows: { type: "array", items: { type: "string" } }, notes: { type: "string" }, emailConfidence: { type: "string" } }, required: ["company", "contactName", "contactEmail", "contactTitle", "website", "robotName", "robotType", "shows", "notes", "emailConfidence"], additionalProperties: false } },
+                shows: { type: "array", items: { type: "object", properties: { name: { type: "string" }, location: { type: "string" }, venue: { type: "string" }, city: { type: "string" }, website: { type: "string" }, description: { type: "string" }, roboticsRelevance: { type: "number" } }, required: ["name", "location", "venue", "city", "website", "description", "roboticsRelevance"], additionalProperties: false } },
+              },
+              required: ["prospects", "shows"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+      const rawContent = fallbackResult.choices?.[0]?.message?.content;
+      const contentStr = typeof rawContent === "string" ? rawContent : "";
+      try {
+        const parsed: { prospects: DiscoveredProspect[]; shows: DiscoveredShow[] } = JSON.parse(contentStr);
+        allProspects = allProspects.concat(parsed.prospects ?? []);
+        allNewShows = allNewShows.concat(parsed.shows ?? []);
+        console.log(`[Discovery Core] Fallback: found ${parsed.prospects?.length ?? 0} prospects`);
+      } catch { /* ignore */ }
+    } catch { /* ignore */ }
+  }
+
+  // ── Step 4: Deduplicate ──────────────────────────────────────────────────
+  const seen = new Set<string>();
+  const uniqueProspects = allProspects.filter(p => {
+    const key = p.company.toLowerCase().trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // ── Step 5: POST to ingest endpoint ─────────────────────────────────────
+  const baseUrl = process.env.VITE_APP_ID
+    ? `https://onstage.bot`
+    : `http://localhost:${process.env.PORT ?? 3000}`;
+  const heartbeatSecret = process.env.BUILT_IN_FORGE_API_KEY ?? "";
+  const ingestRes = await fetch(`${baseUrl}${INGEST_PATH}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${heartbeatSecret}`,
+      "x-heartbeat-cron": "true",
+    },
+    body: JSON.stringify({ newProspects: uniqueProspects, newShows: allNewShows, runId }),
+  });
+
+  const ingestData = ingestRes.ok
+    ? (await ingestRes.json() as { prospectsCreated?: number; showsCreated?: number })
+    : null;
+
+  // ── Step 6: Update run record ────────────────────────────────────────────
+  if (runId && db) {
+    await db.update(salesAgentRuns).set({
+      prospectsFound: uniqueProspects.length,
+      prospectsCreated: ingestData?.prospectsCreated ?? 0,
+      showsFound: allNewShows.length,
+      status: "completed",
+      completedAt: new Date(),
+      details: {
+        ingestStatus: ingestRes.status,
+        prospectsFound: uniqueProspects.length,
+        showsFound: allNewShows.length,
+        showsWithUrlScraped: showsWithUrl.length,
+        usedFallback: allProspects.length < 10,
+        triggeredBy: "admin",
+      },
+    }).where(eq(salesAgentRuns.id, runId));
+  }
+
+  console.log(`[Discovery Core] Complete: ${uniqueProspects.length} prospects, ${allNewShows.length} shows`);
+}

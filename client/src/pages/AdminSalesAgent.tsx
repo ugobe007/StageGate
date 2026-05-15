@@ -432,6 +432,9 @@ export default function AdminSalesAgent() {
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [verifyingId, setVerifyingId] = useState<number | null>(null);
+  const [verifyResult, setVerifyResult] = useState<{ found: boolean; email: string | null; confidence: string; name: string | null; title: string | null; linkedIn: string | null; suggestions: string[]; orgFound: boolean } | null>(null);
+  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
 
   const utils = trpc.useUtils();
 
@@ -463,6 +466,33 @@ export default function AdminSalesAgent() {
       toast.error(`Send failed: ${err.message}`);
       setSendingId(null);
     },
+  });
+
+  const verifyEmail = trpc.salesAgent.verifyProspectEmail.useMutation({
+    onSuccess: (data, vars) => {
+      setVerifyingId(null);
+      setVerifyResult(data as { found: boolean; email: string | null; confidence: string; name: string | null; title: string | null; linkedIn: string | null; suggestions: string[]; orgFound: boolean });
+      setVerifyModalOpen(true);
+      if (data.found) {
+        toast.success(`Apollo found: ${data.email} (${data.confidence} confidence)`);
+        utils.salesAgent.getConversations.invalidate();
+      } else {
+        toast.info(`No verified email found for this company in Apollo`);
+      }
+      void vars;
+    },
+    onError: (err) => {
+      toast.error(`Verify failed: ${err.message}`);
+      setVerifyingId(null);
+    },
+  });
+
+  const triggerDiscovery = trpc.salesAgent.triggerDiscovery.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      refetchConvs();
+    },
+    onError: (err) => toast.error(`Discovery failed: ${err.message}`),
   });
 
   const updateStage = trpc.salesAgent.updateConversationStage.useMutation({
@@ -561,14 +591,27 @@ export default function AdminSalesAgent() {
                       </p>
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 gap-1.5"
-                    onClick={() => refetchConvs()}
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" /> Refresh
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-amber-700 text-amber-400 hover:bg-amber-950 gap-1.5"
+                      onClick={() => triggerDiscovery.mutate()}
+                      disabled={triggerDiscovery.isPending}
+                    >
+                      {triggerDiscovery.isPending
+                        ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Finding…</>
+                        : <><TrendingUp className="w-3.5 h-3.5" /> Find Prospects</>}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 gap-1.5"
+                      onClick={() => refetchConvs()}
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" /> Refresh
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-5 gap-3">
@@ -755,6 +798,21 @@ export default function AdminSalesAgent() {
                     >
                       <Eye className="w-3.5 h-3.5" /> Preview Frank's Email
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full border-zinc-700 text-emerald-400 hover:bg-emerald-950/30 hover:border-emerald-700 gap-1.5"
+                      disabled={verifyingId === selectedConv.prospect.id}
+                      onClick={() => {
+                        setVerifyingId(selectedConv.prospect.id);
+                        verifyEmail.mutate({ prospectId: selectedConv.prospect.id });
+                      }}
+                    >
+                      {verifyingId === selectedConv.prospect.id
+                        ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Verifying via Apollo…</>
+                        : <><CheckCircle className="w-3.5 h-3.5" /> Verify Email via Apollo</>
+                      }
+                    </Button>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-zinc-500 whitespace-nowrap">Move to:</span>
                       <Select
@@ -846,6 +904,64 @@ export default function AdminSalesAgent() {
           currentStage={selectedConv.conv.state ?? "discovery"}
         />
       )}
+
+      {/* Apollo Verify Result Modal */}
+      <Dialog open={verifyModalOpen} onOpenChange={(v) => { if (!v) { setVerifyModalOpen(false); setVerifyResult(null); } }}>
+        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <CheckCircle className="w-4 h-4 text-emerald-400" />
+              Apollo Email Lookup
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500">
+              {verifyResult?.orgFound ? "Company found in Apollo." : "Company not found in Apollo — using pattern suggestions."}
+            </DialogDescription>
+          </DialogHeader>
+          {verifyResult && (
+            <div className="space-y-4">
+              {verifyResult.found ? (
+                <div className="bg-emerald-950/30 border border-emerald-800/50 rounded-lg p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-emerald-400" />
+                    <span className="font-mono text-emerald-300 text-sm">{verifyResult.email}</span>
+                    <Badge className={`text-xs border-0 ml-auto ${
+                      verifyResult.confidence === "high" ? "bg-emerald-500/20 text-emerald-400" :
+                      verifyResult.confidence === "medium" ? "bg-amber-500/20 text-amber-400" :
+                      "bg-zinc-700 text-zinc-400"
+                    }`}>{verifyResult.confidence}</Badge>
+                  </div>
+                  {verifyResult.name && (
+                    <p className="text-sm text-zinc-300">{verifyResult.name}{verifyResult.title ? ` — ${verifyResult.title}` : ""}</p>
+                  )}
+                  {verifyResult.linkedIn && (
+                    <a href={verifyResult.linkedIn} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-blue-400 hover:underline flex items-center gap-1">
+                      <Users className="w-3 h-3" /> LinkedIn Profile
+                    </a>
+                  )}
+                  <p className="text-xs text-zinc-500 mt-1">Prospect updated with this email and contact info.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-zinc-400">No verified email found. Suggested patterns to try:</p>
+                  <div className="space-y-1">
+                    {verifyResult.suggestions.slice(0, 6).map((s, i) => (
+                      <div key={i} className="flex items-center gap-2 font-mono text-xs text-zinc-300 bg-zinc-800 rounded px-3 py-1.5">
+                        <Mail className="w-3 h-3 text-zinc-500" /> {s}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <Button
+                size="sm"
+                className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                onClick={() => { setVerifyModalOpen(false); setVerifyResult(null); }}
+              >Close</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

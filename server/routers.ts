@@ -2528,6 +2528,130 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           .returning();
         return updated;
       }),
+
+    verifyProspectEmail: adminProcedure
+      .input(z.object({ prospectId: z.number() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const [prospect] = await dbConn.select().from(prospectsTable).where(eq(prospectsTable.id, input.prospectId)).limit(1);
+        if (!prospect) throw new TRPCError({ code: "NOT_FOUND", message: "Prospect not found" });
+
+        const apolloKey = process.env.APOLLO_API_KEY;
+        if (!apolloKey) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Apollo API key not configured" });
+
+        interface ApolloOrg { id: string; name: string; website_url?: string; }
+        interface ApolloPerson { id: string; name: string; title?: string; email?: string; email_status?: string; linkedin_url?: string; }
+
+        // Step 1: Find the org in Apollo
+        let orgId: string | null = null;
+        try {
+          const orgBody: Record<string, unknown> = { q_organization_name: prospect.company, page: 1, per_page: 1 };
+          if (prospect.website) orgBody.q_organization_website_url = prospect.website;
+          const orgRes = await fetch("https://api.apollo.io/v1/mixed_companies/search", {
+            method: "POST",
+            headers: { "x-api-key": apolloKey, "Content-Type": "application/json" },
+            body: JSON.stringify(orgBody),
+          });
+          const orgData = await orgRes.json() as { organizations?: ApolloOrg[] };
+          orgId = orgData.organizations?.[0]?.id ?? null;
+        } catch { /* ignore */ }
+
+        // Step 2: Find people at the org
+        let bestEmail: string | null = null;
+        let bestConfidence: "high" | "medium" | "low" = "low";
+        let bestName: string | null = null;
+        let bestTitle: string | null = null;
+        let bestLinkedIn: string | null = null;
+
+        if (orgId) {
+          try {
+            const peopleRes = await fetch("https://api.apollo.io/v1/mixed_people/search", {
+              method: "POST",
+              headers: { "x-api-key": apolloKey, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                organization_ids: [orgId],
+                person_titles: ["CEO", "CTO", "COO", "VP", "Director", "Head of", "Chief", "President", "Founder", "Co-Founder", "Business Development", "Sales"],
+                page: 1, per_page: 5,
+              }),
+            });
+            const peopleData = await peopleRes.json() as { people?: ApolloPerson[] };
+            const people = peopleData.people ?? [];
+            const verified = people.find(p => p.email_status === "verified" && p.email);
+            const guessed = people.find(p => p.email);
+            const best = verified ?? guessed ?? people[0];
+            if (best) {
+              bestEmail = best.email ?? null;
+              bestConfidence = best.email_status === "verified" ? "high" : best.email ? "medium" : "low";
+              bestName = best.name ?? null;
+              bestTitle = best.title ?? null;
+              bestLinkedIn = best.linkedin_url ?? null;
+            }
+          } catch { /* ignore */ }
+        }
+
+        // Step 3: Fallback email pattern suggestions
+        const suggestions: string[] = [];
+        if (!bestEmail && prospect.company) {
+          const domain = prospect.website
+            ? prospect.website.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]
+            : prospect.company.toLowerCase().replace(/[^a-z0-9]/g, "") + ".com";
+          suggestions.push(`support@${domain}`, `info@${domain}`, `hello@${domain}`);
+          if (bestName) {
+            const parts = bestName.toLowerCase().split(" ");
+            const first = parts[0] ?? "";
+            const last = parts[parts.length - 1] ?? "";
+            if (first && last) {
+              suggestions.push(`${first}@${domain}`, `${last}@${domain}`, `${first}.${last}@${domain}`, `${first[0] ?? ""}${last}@${domain}`);
+            }
+          }
+        }
+
+        // Step 4: Update prospect if we found a better email
+        if (bestEmail && bestEmail !== prospect.contactEmail) {
+          await dbConn.update(prospectsTable).set({
+            contactEmail: bestEmail,
+            emailConfidence: bestConfidence,
+            contactName: bestName ?? prospect.contactName,
+            contactTitle: bestTitle ?? prospect.contactTitle,
+            contactLinkedIn: bestLinkedIn ?? prospect.contactLinkedIn,
+            updatedAt: new Date(),
+          }).where(eq(prospectsTable.id, input.prospectId));
+        }
+
+        return {
+          found: !!bestEmail,
+          email: bestEmail,
+          confidence: bestConfidence,
+          name: bestName,
+          title: bestTitle,
+          linkedIn: bestLinkedIn,
+          suggestions,
+          orgFound: !!orgId,
+        };
+      }),
+
+    triggerDiscovery: adminProcedure
+      .mutation(async () => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        // Count shows available
+        const shows = await dbConn.select({ id: tradeShows.id, name: tradeShows.name }).from(tradeShows);
+        // Create a discovery run record
+        const [run] = await dbConn.insert(salesAgentRuns).values({
+          runType: "discovery",
+          status: "running",
+        }).returning({ id: salesAgentRuns.id });
+        const runId = run?.id;
+        // Fire-and-forget: import and call the core discovery logic
+        const { salesAgentDiscoveryCore } = await import("./agents/salesAgentDiscovery");
+        salesAgentDiscoveryCore(runId).catch(async (err: unknown) => {
+          if (runId) {
+            await dbConn.update(salesAgentRuns).set({ status: "failed", errorMessage: String(err) }).where(eq(salesAgentRuns.id, runId));
+          }
+        });
+        return { runId, showCount: shows.length, message: `Discovery started for ${shows.length} shows. Check Runs tab for progress.` };
+      }),
   }),
 
   // ─── Vendors ───────────────────────────────────────────────────────────────

@@ -1137,3 +1137,33 @@
 ### v31 Tests
 - [x] Write server/v31.test.ts: tour CTA, pending drafts tab, cron handlers, admin procedures (38 tests)
 - [x] All 648 tests passing (v31)
+
+## v32 — Outreach Dashboard Card, Apollo Email Verification, Prospect Expansion
+
+### v32.1 — Outreach quick-link card on Admin Dashboard
+- [x] Fix outreach card link from /admin/outreach to /admin/sales-agent
+- [x] Add In Pipeline count to outreach card (shows conversations total)
+- [x] Upgrade Go to Outreach button to amber-filled style
+- [x] Outreach card shows pending/approved/sent draft counts
+
+### v32.2 — Apollo email verification on prospect detail
+- [x] Add verifyProspectEmail adminProcedure to salesAgent router (Apollo org search + people search)
+- [x] Step 1: Apollo mixed_companies/search to find org by name + website
+- [x] Step 2: Apollo mixed_people/search to find CEO/CTO/VP contacts at org
+- [x] Step 3: Generate email pattern suggestions when Apollo finds no email
+- [x] Step 4: Update prospect contactEmail + emailConfidence + contactName/Title/LinkedIn in DB
+- [x] Returns found, email, confidence, name, title, linkedIn, suggestions, orgFound
+- [x] Add Verify Email button to prospect detail panel in AdminSalesAgent
+- [x] Add Apollo result modal: shows found email + confidence, or suggestions if not found
+
+### v32.3 — Expand prospect discovery (find more than 78)
+- [x] Seed 5 new robotics-focused shows: MODEX 2026, ProMat 2027, ROSCon 2026, ICRA 2026, Automate 2026
+- [x] Update exhibitorListUrls for ISC West, SEMA, G2E
+- [x] Add salesAgentDiscoveryCore export to salesAgentDiscovery.ts for admin-triggered runs
+- [x] Add triggerDiscovery adminProcedure to salesAgent router (fire-and-forget, returns runId + showCount)
+- [x] Add Find Prospects button to AdminSalesAgent header (amber, calls triggerDiscovery)
+- [x] Button shows loading state while discovery is running
+
+### v32 Tests
+- [x] Write server/v32.test.ts: Apollo verification, triggerDiscovery, dashboard card, new shows (78 tests)
+- [x] All 688 tests passing (v32)
