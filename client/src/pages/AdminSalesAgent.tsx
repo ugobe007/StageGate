@@ -450,6 +450,10 @@ export default function AdminSalesAgent() {
   const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
   const [csvImportResult, setCsvImportResult] = useState<{ imported: number; skipped: number; errors: string[]; total: number; message: string } | null>(null);
+  // v38: notes editing state
+  const [notesValue, setNotesValue] = useState<string>("");
+  const [notesSaving, setNotesSaving] = useState(false);
+  const [notesProspectId, setNotesProspectId] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -464,6 +468,13 @@ export default function AdminSalesAgent() {
 
   const { data: thread = [], isLoading: threadLoading } =
     trpc.salesAgent.getEmailThread.useQuery(
+      { prospectId: selectedProspectId! },
+      { enabled: selectedProspectId !== null }
+    );
+
+  // v38: prospect activities timeline
+  const { data: prospectActivities = [], isLoading: activitiesLoading } =
+    trpc.salesAgent.getProspectActivities.useQuery(
       { prospectId: selectedProspectId! },
       { enabled: selectedProspectId !== null }
     );
@@ -556,6 +567,28 @@ export default function AdminSalesAgent() {
     onError: (err) => toast.error(`Discovery failed: ${err.message}`),
   });
 
+  // v38: update prospect notes
+  const updateProspectNotes = trpc.salesAgent.updateProspectNotes.useMutation({
+    onSuccess: () => {
+      toast.success("Notes saved");
+      setNotesSaving(false);
+      refetchConvs();
+    },
+    onError: (err) => {
+      toast.error(`Save failed: ${err.message}`);
+      setNotesSaving(false);
+    },
+  });
+
+  // v38: resume follow-ups
+  const resumeFollowUps = trpc.salesAgent.resumeFollowUps.useMutation({
+    onSuccess: () => {
+      toast.success("Follow-ups resumed — moved back to Follow-up 1");
+      refetchConvs();
+    },
+    onError: (err) => toast.error(`Resume failed: ${err.message}`),
+  });
+
   const updateStage = trpc.salesAgent.updateConversationStage.useMutation({
     onSuccess: () => {
       toast.success("Stage updated");
@@ -595,6 +628,13 @@ export default function AdminSalesAgent() {
   const selectedConv = selectedProspectId
     ? conversations.find(c => c.prospect.id === selectedProspectId)
     : null;
+
+  // v38: sync notes textarea when selection changes
+  const selectedProspectNotes = (selectedConv?.prospect as { notes?: string | null } | undefined)?.notes ?? "";
+  if (notesProspectId !== selectedProspectId) {
+    setNotesProspectId(selectedProspectId);
+    setNotesValue(selectedProspectNotes);
+  }
 
   const pendingCount = (draftCount as { pending?: number } | undefined)?.pending ?? 0;
 
@@ -914,6 +954,20 @@ export default function AdminSalesAgent() {
                         }
                       </Button>
                     )}
+                    {/* v38: Resume follow-ups button — only shown for awaiting_reply */}
+                    {selectedConv.conv.state === "awaiting_reply" && (
+                      <Button
+                        size="sm"
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-1.5"
+                        disabled={resumeFollowUps.isPending}
+                        onClick={() => resumeFollowUps.mutate({ conversationId: selectedConv.conv.id })}
+                      >
+                        {resumeFollowUps.isPending
+                          ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Resuming…</>
+                          : <><RefreshCw className="w-3.5 h-3.5" /> Resume Follow-ups</>
+                        }
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
@@ -965,6 +1019,28 @@ export default function AdminSalesAgent() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                    {/* v38: Notes section */}
+                    <div>
+                      <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">Notes</h3>
+                      <Textarea
+                        className="w-full text-xs bg-zinc-900 border-zinc-700 text-zinc-300 placeholder:text-zinc-600 resize-none min-h-[72px]"
+                        placeholder="Add notes about this prospect… (auto-saves on blur)"
+                        value={notesValue}
+                        onChange={(e) => setNotesValue(e.target.value)}
+                        onBlur={() => {
+                          if (selectedConv && notesValue !== selectedProspectNotes) {
+                            setNotesSaving(true);
+                            updateProspectNotes.mutate({ prospectId: selectedConv.prospect.id, notes: notesValue });
+                          }
+                        }}
+                      />
+                      {notesSaving && (
+                        <p className="text-[10px] text-zinc-600 mt-1 flex items-center gap-1">
+                          <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Saving…
+                        </p>
+                      )}
+                    </div>
+
                     <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Email Thread</h3>
                     {threadLoading ? (
                       <div className="text-xs text-zinc-600 flex items-center gap-1.5">
@@ -996,6 +1072,56 @@ export default function AdminSalesAgent() {
                           <p className="text-zinc-500 leading-relaxed line-clamp-4 whitespace-pre-wrap">{email.body}</p>
                         </div>
                       ))
+                    )}
+
+                    {/* v38: Activity timeline */}
+                    <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wide pt-2">Activity</h3>
+                    {activitiesLoading ? (
+                      <div className="space-y-2">
+                        {[1,2,3].map(i => <div key={i} className="h-10 bg-zinc-800/60 rounded animate-pulse" />)}
+                      </div>
+                    ) : (prospectActivities as unknown[]).length === 0 ? (
+                      <p className="text-xs text-zinc-600 py-2">No activity recorded yet.</p>
+                    ) : (
+                      <div className="space-y-0">
+                        {(prospectActivities as Array<{ id: number; type: string; title: string; description?: string | null; createdAt: string | Date }>).map(act => {
+                          const actIconMap: Record<string, React.ReactNode> = {
+                            email_sent:           <Send className="w-2.5 h-2.5 text-blue-400" />,
+                            email_opened:         <Eye className="w-2.5 h-2.5 text-sky-400" />,
+                            email_clicked:        <MousePointerClick className="w-2.5 h-2.5 text-cyan-400" />,
+                            email_replied:        <MessageSquare className="w-2.5 h-2.5 text-emerald-400" />,
+                            followup_accelerated: <Zap className="w-2.5 h-2.5 text-amber-400" />,
+                            followup_resumed:     <RefreshCw className="w-2.5 h-2.5 text-emerald-400" />,
+                          };
+                          const dotColorMap: Record<string, string> = {
+                            email_sent:           "bg-blue-500",
+                            email_opened:         "bg-sky-500",
+                            email_clicked:        "bg-cyan-500",
+                            email_replied:        "bg-emerald-500",
+                            followup_accelerated: "bg-amber-500",
+                            followup_resumed:     "bg-emerald-500",
+                          };
+                          return (
+                            <div key={act.id} className="flex gap-2.5 py-2.5 border-b border-zinc-800/60 last:border-0">
+                              <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${dotColorMap[act.type] ?? "bg-zinc-600"}`} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-center gap-1">
+                                    {actIconMap[act.type]}
+                                    <span className="text-[11px] font-semibold text-zinc-300">{act.title}</span>
+                                  </div>
+                                  <span className="text-[10px] text-zinc-600 shrink-0">
+                                    {new Date(act.createdAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                {act.description && (
+                                  <p className="text-[10px] text-zinc-500 mt-0.5 leading-relaxed">{act.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 </>

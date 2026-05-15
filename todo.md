@@ -1274,3 +1274,30 @@
 ### v37 Tests
 - [x] Write server/v37.test.ts: 21 tests covering inbound/outbound webhook, salesAgent loop, frankPlaybook, AdminSalesAgent UI, routers enum
 - [x] All 831 tests passing
+
+## v38 — Prospect Notes, Resume Follow-ups & Reply Content Capture
+
+### v38.1 — Prospect notes field
+- [x] Add `notes` text column to prospects table in drizzle/schema.ts (already existed)
+- [x] Verified notes column exists in DB (no migration needed)
+- [x] Add salesAgent.updateProspectNotes adminProcedure (prospectId, notes) in routers.ts
+- [x] AdminSalesAgent detail panel: inline notes textarea with auto-save on blur
+- [x] Show notes in detail panel below contact info section
+- [x] Show "Saving…" indicator while mutation is pending
+
+### v38.2 — Resume follow-ups button
+- [x] Add salesAgent.resumeFollowUps adminProcedure: sets state=followup_1, nextFollowUpAt=now+1d, logs activity
+- [x] AdminSalesAgent detail panel: show "Resume Follow-ups" button only when state=awaiting_reply
+- [x] On click: mutate resumeFollowUps, invalidate getConversations
+- [x] Log prospect_activities entry: "Follow-ups resumed — moved back to Follow-up 1"
+
+### v38.3 — Reply content capture
+- [x] Update resend-inbound.ts to store first 300 chars of reply body in activity description
+- [x] Add ellipsis (…) when body is truncated
+- [x] AdminSalesAgent detail panel: activity timeline with email_replied, followup_accelerated, followup_resumed entries
+- [x] Activity timeline: type icon, title, description, timestamp for each activity
+- [x] Fetch prospect activities via salesAgent.getProspectActivities query
+
+### v38 Tests
+- [x] Write server/v38.test.ts (29 tests) covering all above
+- [x] All 860 tests passing

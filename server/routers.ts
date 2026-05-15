@@ -2931,6 +2931,66 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           message: `Imported ${imported} new prospects, ${skipped} already existed, ${errors.length} errors.`,
         };
       }),
+
+    // v38: update prospect notes
+    updateProspectNotes: adminProcedure
+      .input(z.object({
+        prospectId: z.number(),
+        notes: z.string().max(5000),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        await dbConn
+          .update(prospectsTable)
+          .set({ notes: input.notes || null, updatedAt: new Date() })
+          .where(eq(prospectsTable.id, input.prospectId));
+        return { success: true };
+      }),
+
+    // v38: resume follow-ups for a prospect in awaiting_reply state
+    resumeFollowUps: adminProcedure
+      .input(z.object({ conversationId: z.number() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const [conv] = await dbConn
+          .select({ id: salesAgentConversations.id, prospectId: salesAgentConversations.prospectId, state: salesAgentConversations.state })
+          .from(salesAgentConversations)
+          .where(eq(salesAgentConversations.id, input.conversationId))
+          .limit(1);
+        if (!conv) throw new TRPCError({ code: "NOT_FOUND", message: "Conversation not found" });
+        if (conv.state !== "awaiting_reply") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Conversation is not in awaiting_reply state" });
+        }
+        const oneDayFromNow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await dbConn
+          .update(salesAgentConversations)
+          .set({ state: "followup_1", nextFollowUpAt: oneDayFromNow, lastActivityAt: new Date(), updatedAt: new Date() })
+          .where(eq(salesAgentConversations.id, conv.id));
+        await dbConn.insert(prospectActivities).values({
+          prospectId: conv.prospectId,
+          type: "followup_resumed",
+          title: "Follow-ups resumed",
+          description: "Manually resumed automated follow-ups — moved back to Follow-up 1",
+          metadata: { nextFollowUpAt: oneDayFromNow.toISOString(), resumedAt: new Date().toISOString() },
+        });
+        return { success: true, nextFollowUpAt: oneDayFromNow };
+      }),
+
+    // v38: get prospect activities for the detail panel timeline
+    getProspectActivities: adminProcedure
+      .input(z.object({ prospectId: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        return dbConn
+          .select()
+          .from(prospectActivities)
+          .where(eq(prospectActivities.prospectId, input.prospectId))
+          .orderBy(desc(prospectActivities.createdAt))
+          .limit(50);
+      }),
   }),
 
   // ─── Vendors ───────────────────────────────────────────────────────────────

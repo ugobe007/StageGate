@@ -123,11 +123,15 @@ export async function resendInboundHandler(req: Request, res: Response) {
     }
 
     // ── 3. Log activity on prospect timeline ──────────────────────────────────
+    // v38: include reply body snippet so it's readable in the activity timeline
+    const replySnippet = bodyText.trim().slice(0, 300);
     await db.insert(prospectActivities).values({
       prospectId,
       type: "email_replied",
       title: `Reply received: "${subject.slice(0, 80)}"`,
-      description: `Inbound reply from ${fromAddress} — automated follow-ups paused`,
+      description: replySnippet
+        ? `${replySnippet}${bodyText.trim().length > 300 ? "\u2026" : ""}`
+        : `Inbound reply from ${fromAddress} — automated follow-ups paused`,
       metadata: { fromAddress, subject },
       createdAt: new Date(),
     });
