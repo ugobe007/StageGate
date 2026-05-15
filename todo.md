@@ -1319,3 +1319,39 @@
 - [x] Write server/v39.test.ts (15 tests) covering all above
 - [x] Fix v38.test.ts to use trimmedBody.slice instead of bodyText.trim().slice
 - [x] All 875 tests passing
+
+## v40 — Smoke & Link Tests (Admin Workflow + AI Agents)
+
+### v40.1 — Test matrix enumeration
+- [x] List all admin routes in App.tsx (18 routes)
+- [x] List all tRPC procedures used in UI vs defined in routers.ts (60+ procedures checked)
+- [x] List all nav links in DashboardLayout sidebar (16 nav items)
+
+### v40.2 — Static analysis
+- [x] All tRPC procedure names used in UI match server definitions (100% match)
+- [x] All route paths in App.tsx have corresponding page components
+- [x] All sidebar nav links point to registered routes
+- [x] Fixed: broken /admin/xbot link in AdminDashboard.tsx → /admin/agents
+
+### v40.3 — Runtime smoke test (browser)
+- [x] Admin Dashboard loads without JS errors (after DB migration)
+- [x] Admin Pipeline loads and renders kanban columns
+- [x] Admin Sales Agent (Frank) loads conversation list
+- [x] Admin Prospects loads prospect table
+- [x] Admin Agents (XBOT) loads without errors
+- [x] Admin Bookings loads without errors
+- [x] Admin Logistics loads without errors
+- [x] Admin Shows loads without errors
+- [x] Admin Outreach loads without errors
+
+### v40.4 — AI agent surface checks
+- [x] Frank salesAgent loop: all 19 procedures verified present in routers.ts
+- [x] Frank state allowlist: email_opened, link_clicked included; awaiting_reply excluded
+- [x] Frank NEXT_STAGE map: all states mapped correctly
+- [x] All 31 procedures across 11 admin pages verified present in routers.ts
+
+### v40.5 — Fix any critical issues found
+- [x] Fixed: broken /admin/xbot link → /admin/agents in AdminDashboard.tsx
+- [x] Fixed: DB migration — added robotCategory, repliedAt, followUpDate, emailConfidence, robotName columns to Postgres prospects table
+- [x] No 500 errors after migration
+- [x] All 875 tests passing

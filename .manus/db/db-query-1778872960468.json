@@ -1,0 +1,30 @@
+{
+  "query": "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'prospects' AND column_name IN ('robotCategory', 'repliedAt', 'followUpDate', 'emailConfidence', 'contactLinkedIn') ORDER BY column_name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'prospects' AND column_name IN ('robotCategory', 'repliedAt', 'followUpDate', 'emailConfidence', 'contactLinkedIn') ORDER BY column_name;",
+  "rows": [
+    {
+      "column_name": "contactLinkedIn",
+      "data_type": "varchar"
+    },
+    {
+      "column_name": "emailConfidence",
+      "data_type": "varchar"
+    },
+    {
+      "column_name": "followUpDate",
+      "data_type": "timestamp"
+    },
+    {
+      "column_name": "repliedAt",
+      "data_type": "timestamp"
+    },
+    {
+      "column_name": "robotCategory",
+      "data_type": "varchar"
+    }
+  ],
+  "messages": [],
+  "stdout": "column_name\tdata_type\ncontactLinkedIn\tvarchar\nemailConfidence\tvarchar\nfollowUpDate\ttimestamp\nrepliedAt\ttimestamp\nrobotCategory\tvarchar\n",
+  "stderr": "",
+  "execution_time_ms": 929
+}

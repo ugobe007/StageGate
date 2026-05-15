@@ -177,7 +177,7 @@ export default function AdminDashboard() {
                 { label: "Trade Shows", value: siteStats.tradeShows?.upcoming ?? siteStats.tradeShows?.total ?? 0, sub: "upcoming", icon: Calendar, color: "text-blue-400", href: "/admin/shows" },
                 { label: "Services", value: siteStats.services?.active ?? siteStats.services?.total ?? 0, sub: "active", icon: Package, color: "text-yellow-400", href: "/admin/orders" },
                 { label: "Logistics Partners", value: siteStats.logisticsPartners?.total ?? 0, sub: "vendors", icon: TrendingUp, color: "text-orange-400", href: "/admin/vendors" },
-                { label: "XBOT Projects", value: siteStats.xbotProjects?.total ?? 0, sub: "active", icon: BarChart3, color: "text-violet-400", href: "/admin/xbot" },
+                { label: "XBOT Projects", value: siteStats.xbotProjects?.total ?? 0, sub: "active", icon: BarChart3, color: "text-violet-400", href: "/admin/agents" },
                 { label: "Agent Runs", value: siteStats.agentRuns?.total ?? 0, sub: "all time", icon: Zap, color: "text-primary", href: "/admin/agents" },
                 { label: "Conversations", value: siteStats.conversations?.total ?? 0, sub: `${siteStats.conversations?.awaiting ?? 0} awaiting`, icon: MessageSquare, color: "text-cyan-400", href: "/admin/sales-agent" },
                 { label: "Users", value: siteStats.users.total, sub: `${siteStats.users.admins} admin`, icon: UserCheck, color: "text-primary", href: "/admin" },

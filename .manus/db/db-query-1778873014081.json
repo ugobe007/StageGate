@@ -1,0 +1,148 @@
+{
+  "query": "SELECT column_name, data_type, column_default, is_nullable FROM information_schema.columns WHERE table_name = 'prospects' ORDER BY ordinal_position;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SELECT column_name, data_type, column_default, is_nullable FROM information_schema.columns WHERE table_name = 'prospects' ORDER BY ordinal_position;",
+  "rows": [
+    {
+      "column_name": "id",
+      "data_type": "int",
+      "column_default": "NULL",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "company",
+      "data_type": "varchar",
+      "column_default": "NULL",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "robotName",
+      "data_type": "varchar",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "robotType",
+      "data_type": "varchar",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "hqCountry",
+      "data_type": "varchar",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "attendsLasVegas",
+      "data_type": "varchar",
+      "column_default": "unknown",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "contactName",
+      "data_type": "varchar",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "contactEmail",
+      "data_type": "varchar",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "contactTitle",
+      "data_type": "varchar",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "contactDept",
+      "data_type": "varchar",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "website",
+      "data_type": "varchar",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "shows",
+      "data_type": "json",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "notes",
+      "data_type": "text",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "status",
+      "data_type": "enum",
+      "column_default": "new",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "videoMessageUrl",
+      "data_type": "varchar",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "scheduledCallAt",
+      "data_type": "timestamp",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "createdAt",
+      "data_type": "timestamp",
+      "column_default": "CURRENT_TIMESTAMP",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "updatedAt",
+      "data_type": "timestamp",
+      "column_default": "CURRENT_TIMESTAMP",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "contactLinkedIn",
+      "data_type": "varchar",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "emailConfidence",
+      "data_type": "varchar",
+      "column_default": "low",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "repliedAt",
+      "data_type": "timestamp",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "followUpDate",
+      "data_type": "timestamp",
+      "column_default": "NULL",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "robotCategory",
+      "data_type": "varchar",
+      "column_default": "light",
+      "is_nullable": "YES"
+    }
+  ],
+  "messages": [],
+  "stdout": "column_name\tdata_type\tcolumn_default\tis_nullable\nid\tint\tNULL\tNO\ncompany\tvarchar\tNULL\tNO\nrobotName\tvarchar\tNULL\tYES\nrobotType\tvarchar\tNULL\tYES\nhqCountry\tvarchar\tNULL\tYES\nattendsLasVegas\tvarchar\tunknown\tYES\ncontactName\tvarchar\tNULL\tYES\ncontactEmail\tvarchar\tNULL\tYES\ncontactTitle\tvarchar\tNULL\tYES\ncontactDept\tvarchar\tNULL\tYES\nwebsite\tvarchar\tNULL\tYES\nshows\tjson\tNULL\tYES\nnotes\ttext\tNULL\tYES\nstatus\tenum\tnew\tNO\nvideoMessageUrl\tvarchar\tNULL\tYES\nscheduledCallAt\ttimestamp\tNULL\tYES\ncreatedAt\ttimestamp\tCURRENT_TIMESTAMP\tNO\nupdatedAt\ttimestamp\tCURRENT_TIMESTAMP\tNO\ncontactLinkedIn\tvarchar\tNULL\tYES\nemailConfidence\tvarchar\tlow\tYES\nrepliedAt\ttimestamp\tNULL\tYES\nfollowUpDate\ttimestamp\tNULL\tYES\nrobotCategory\tvarchar\tlight\tYES\n",
+  "stderr": "",
+  "execution_time_ms": 269
+}
