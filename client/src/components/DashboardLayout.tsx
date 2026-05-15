@@ -43,6 +43,7 @@ const menuItems = [
   { icon: Users, label: "Partners", path: "/admin/partners" },
   { icon: Zap, label: "Sales Agent", path: "/admin/sales-agent" },
   { icon: Truck, label: "Vendors", path: "/admin/vendors" },
+  { icon: Calendar, label: "Scheduling", path: "/admin/scheduling" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";

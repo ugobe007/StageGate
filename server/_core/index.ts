@@ -16,6 +16,8 @@ import {
   salesAgentOutreachHandler,
   salesAgentFollowupHandler,
 } from "../agents/salesAgent";
+import { salesAgentDiscoveryHandler } from "../agents/salesAgentDiscovery";
+import { vendorScraperHandler } from "../agents/vendorScraper";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -57,9 +59,11 @@ async function startServer() {
   app.post("/api/scheduled/nightly-research", nightlyResearchHandler);
 
   // Sales Agent handlers
+  app.post("/api/scheduled/sales-agent-discover", salesAgentDiscoveryHandler);
   app.post("/api/scheduled/sales-agent-ingest", salesAgentIngestHandler);
   app.post("/api/scheduled/sales-agent-outreach", salesAgentOutreachHandler);
   app.post("/api/scheduled/sales-agent-followup", salesAgentFollowupHandler);
+  app.post("/api/scheduled/vendor-scraper", vendorScraperHandler);
 
   // Resend email tracking webhook (outbound events: opened, clicked)
   app.post("/api/webhooks/resend", resendWebhookHandler);

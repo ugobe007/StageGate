@@ -768,30 +768,30 @@
 - [x] Verify hello@onstage.bot sending identity in Resend and update outreach send-from address
 
 ### P2 — Sales Agent: Nightly Discovery
-- [ ] Read periodic-updates.md and set up heartbeat scheduler for nightly discovery job
-- [ ] Build discovery agent: search web for robot companies attending trade shows, press releases, industry sites
-- [ ] Discover new shows/events not yet in DB and add them
-- [ ] Deduplicate against existing prospects (by company name + domain)
-- [ ] Auto-create new prospect records with status=new
-- [ ] Build per-company strategy: AI generates outreach angle based on company profile, robot type, show context
-- [ ] Queue first outreach email draft (do not send yet — queue for review or auto-send after 1hr delay)
-- [ ] Auto-send first outreach from hello@onstage.bot via Resend, store resendMessageId
+- [x] Read periodic-updates.md and set up heartbeat scheduler for nightly discovery job
+- [x] Build discovery agent: search web for robot companies attending trade shows, press releases, industry sites
+- [x] Discover new shows/events not yet in DB and add them
+- [x] Deduplicate against existing prospects (by company name + domain)
+- [x] Auto-create new prospect records with status=new
+- [x] Build per-company strategy: AI generates outreach angle based on company profile, robot type, show context
+- [x] Queue first outreach email draft (do not send yet — queue for review or auto-send after 1hr delay)
+- [x] Auto-send first outreach from hello@onstage.bot via Resend, store resendMessageId
 
 ### P3 — Conversational Reply Engine
-- [ ] On inbound email webhook: match to prospect by sender email address
-- [ ] Load full thread history (all prior emails in thread) as context
-- [ ] AI generates natural conversational reply (no scripts, no templates — contextual)
-- [ ] Reply sent from hello@onstage.bot, BCC to admin (Bob) and Tommy
-- [ ] Log reply to email_threads table
-- [ ] Update prospect activity timeline with email_replied event
-- [ ] Track conversation state: discovery → interested → questions → ready_to_schedule
+- [x] On inbound email webhook: match to prospect by sender email address
+- [x] Load full thread history (all prior emails in thread) as context
+- [x] AI generates natural conversational reply (no scripts, no templates — contextual)
+- [x] Reply sent from hello@onstage.bot, BCC to admin (Bob) and Tommy
+- [x] Log reply to email_threads table
+- [x] Update prospect activity timeline with email_replied event
+- [x] Track conversation state: discovery → interested → questions → ready_to_schedule
 
 ### P4 — Scheduling Page
-- [ ] Build /schedule page on onstage.bot: robot team availability calendar
-- [ ] Admin panel: Bob and Tommy set available time slots per week
-- [ ] Prospect picks slot → booking created in DB → calendar invite sent to Bob, Tommy, and prospect
-- [ ] AI detects scheduling intent in conversation and sends /schedule link at right moment
-- [ ] Confirmation email sent to prospect from hello@onstage.bot
+- [x] Build /schedule page on onstage.bot: robot team availability calendar
+- [x] Admin panel: Bob and Tommy set available time slots per week
+- [x] Prospect picks slot → booking created in DB → calendar invite sent to Bob, Tommy, and prospect
+- [x] AI detects scheduling intent in conversation and sends /schedule link at right moment
+- [x] Confirmation email sent to prospect from hello@onstage.bot
 
 ### P5 — Meeting Notes + Handoff
 - [ ] Post-call: admin enters meeting notes in prospect record
@@ -799,8 +799,8 @@
 - [ ] Logistics Agent triggered: creates logistics_workflow record linked to prospect + order
 
 ### P6 — Logistics Agent Foundation
-- [ ] Build vendor scraper: search for freight forwarders, AV companies, rigging companies, warehouse operators in Las Vegas
-- [ ] Populate vendors table with scraped data (name, type, contact, website, notes)
+- [x] Build vendor scraper: search for freight forwarders, AV companies, rigging companies, warehouse operators in Las Vegas
+- [x] Populate vendors table with 16 real Las Vegas vendors (scraped + seeded)
 - [ ] Build workflow builder: for each committed order, generate logistics_workflow with ordered checkpoints
 - [ ] Checkpoint types: shipping_out, customs, receiving, warehousing, staging, activation, booth_delivery, show_floor, return_pickup
 
