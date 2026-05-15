@@ -1447,3 +1447,25 @@
 - [x] Vendor bypass test: known exhibit houses pass filterAndClassify without robot signal
 - [x] Vendor type seeding test: all seeded vendors have correct vendor_type
 - [x] All 980 tests still pass
+
+## v43 — Partner Templates, Show URL Seeds, Partner Enrichment
+
+- [x] Partner email template: separate intro email for outreachAngle=partner with "robotics technical operations layer" pitch
+- [x] Wire partner template into email draft generation (check outreachAngle before choosing template)
+- [x] Seed CES 2026/2027, NAB 2026, MODEX 2026 exhibitor URLs into trade shows table / discovery config
+- [x] Add show URL seed script for discovery run config
+- [x] Trigger research-agent enrichment pass for all 22 ecosystem partner prospects
+- [x] Add tRPC procedure: prospects.triggerPartnerEnrichment (batch research for vendorType != robot_oem)
+- [x] Admin UI button: "Enrich Partners" on AdminProspects filter bar
+- [x] Write v43 tests: partner template selection, show URL config, enrichment trigger
+
+## v43 — Partner Templates, Show URL Seeds, Partner Enrichment
+
+- [x] Partner email template: separate intro email for outreachAngle=partner with robotics technical operations layer pitch
+- [x] Wire partner template into email draft generation (check outreachAngle before choosing template)
+- [x] Seed CES 2026/2027, NAB 2026, MODEX 2026 exhibitor URLs into trade shows table / discovery config
+- [x] Add show URL seed script for discovery run config
+- [x] Trigger research-agent enrichment pass for all 22 ecosystem partner prospects
+- [x] Add tRPC procedure: prospects.triggerPartnerEnrichment (batch research for vendorType != robot_oem)
+- [x] Admin UI button: Enrich Partners on AdminProspects filter bar
+- [x] Write v43 tests: partner template selection, show URL config, enrichment trigger

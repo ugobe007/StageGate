@@ -96,6 +96,17 @@ export default function AdminProspects() {
   const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
   const [pendingConfirm, setPendingConfirm] = useState(false);
 
+  const [enrichingPartners, setEnrichingPartners] = useState(false);
+  const triggerPartnerEnrichment = trpc.prospects.triggerPartnerEnrichment.useMutation({
+    onSuccess: (data) => {
+      const result = (data as Record<string, unknown>)?.result as Record<string, unknown> | undefined;
+      const started = result?.started ?? 0;
+      toast.success(`Partner enrichment started for ${started} prospects`);
+      setEnrichingPartners(false);
+    },
+    onError: (err) => { toast.error(err.message); setEnrichingPartners(false); },
+  });
+
   const bulkUpdateStatusMutation = trpc.prospects.bulkUpdateStatus.useMutation({
     onSuccess: (data) => {
       const label = STATUS_CONFIG[bulkStatusTarget]?.label ?? bulkStatusTarget;
@@ -670,6 +681,31 @@ export default function AdminProspects() {
                 fontVariantNumeric: "tabular-nums",
               }}>{hotCount}</span>
             )}
+          </button>
+
+          {/* Enrich Partners action button */}
+          <button
+            onClick={() => { setEnrichingPartners(true); triggerPartnerEnrichment.mutate(); }}
+            disabled={enrichingPartners}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.5625rem",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              padding: "0.3rem 0.75rem",
+              border: `1px solid ${enrichingPartners ? "rgba(245,158,11,0.30)" : "rgba(245,158,11,0.50)"}`,
+              background: enrichingPartners ? "rgba(245,158,11,0.08)" : "transparent",
+              color: enrichingPartners ? "rgba(245,158,11,0.50)" : "#f59e0b",
+              cursor: enrichingPartners ? "not-allowed" : "pointer",
+              borderRadius: "0.125rem",
+              transition: "all 0.15s",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.35rem",
+            }}
+          >
+            <RefreshCw size={10} style={{ animation: enrichingPartners ? "spin 1s linear infinite" : "none" }} />
+            {enrichingPartners ? "Enriching..." : "Enrich Partners"}
           </button>
 
           {/* Vendor Type filter pills */}

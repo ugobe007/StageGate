@@ -1047,16 +1047,21 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           ? `Tone: ${input.tone}. `
           : "Tone: professional but warm. ";
 
+        const isPartnerRegen = (prospect as Record<string, unknown>).outreachAngle === "partner" || ((prospect as Record<string, unknown>).vendorType && (prospect as Record<string, unknown>).vendorType !== "robot_oem");
+        const vendorLabelRegen = (prospect as Record<string, unknown>).vendorType ? String((prospect as Record<string, unknown>).vendorType).replace(/_/g, " ") : "trade show vendor";
+
+        const regenSystemPrompt = isPartnerRegen
+          ? `You are a B2B sales writer for StageGate — the robotics technical operations layer for trade shows. StageGate is NOT a competitor to exhibit houses, freight companies, AV firms, or venues. We plug into the workflow of ${vendorLabelRegen} companies to handle robot-specific complexity. Write short, punchy partnership outreach. No fluff. ${toneInstruction}Output plain text only, no subject line, no JSON wrapper.`
+          : `You are a B2B sales writer for StageGate — a robotics activation company that handles robot receiving, unpacking, testing, staging, and delivery at trade shows. Write short, punchy outreach emails. No fluff. ${toneInstruction}Output plain text only, no subject line, no JSON wrapper.`;
+
+        const regenUserPrompt = isPartnerRegen
+          ? `Write a fresh partnership outreach email for this prospect:\n\nCompany: ${prospect.company} (${vendorLabelRegen})\nShows: ${showList}\n${prospect.contactName ? `Contact: ${prospect.contactName}` : ""}\n\nRequirements:\n- 4-6 sentences\n- Position StageGate as the robotics technical operations layer that plugs into their workflow\n- Mention that their robotics clients need specialist robot handling they are not equipped for\n- End with a soft CTA to connect and explore a referral/subcontractor relationship\n- Sign off as the StageGate team\n- No subject line`
+          : `Write a fresh outreach email for this prospect:\n\nCompany: ${prospect.company}\nRobot: ${robot}\nShows: ${showList}\n${prospect.contactName ? `Contact: ${prospect.contactName}` : ""}\n\nRequirements:\n- 4-6 sentences\n- Reference their specific robot and show\n- Mention one concrete StageGate service (receiving, staging, or delivery)\n- End with a soft CTA to schedule a StageGate intake call\n- Sign off as the StageGate team\n- No subject line`;
+
         const result = await invokeLLM({
           messages: [
-            {
-              role: "system",
-              content: `You are a B2B sales writer for StageGate — a robotics activation company that handles robot receiving, unpacking, testing, staging, and delivery at trade shows. Write short, punchy outreach emails. No fluff. ${toneInstruction}Output plain text only, no subject line, no JSON wrapper.`,
-            },
-            {
-              role: "user",
-              content: `Write a fresh outreach email for this prospect:\n\nCompany: ${prospect.company}\nRobot: ${robot}\nShows: ${showList}\n${prospect.contactName ? `Contact: ${prospect.contactName}` : ""}\n\nRequirements:\n- 4-6 sentences\n- Reference their specific robot and show\n- Mention one concrete StageGate service (receiving, staging, or delivery)\n- End with a soft CTA to schedule a StageGate intake call\n- Sign off as the StageGate team\n- No subject line`,
-            },
+            { role: "system", content: regenSystemPrompt },
+            { role: "user", content: regenUserPrompt },
           ],
         });
 
@@ -1310,6 +1315,32 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         researchProspect(input.prospectId).catch(console.error);
         return { started: true };
       }),
+    // Batch research enrichment for all ecosystem partner prospects (exhibit houses, freight, AV, venues)
+    triggerPartnerEnrichment: adminProcedure
+      .mutation(async ({ ctx }) => {
+        return workflows.withAgentRun(
+          { agentName: "Partner Enrichment", triggeredBy: ctx.user?.name ?? "admin", inputSummary: "all ecosystem partner prospects" },
+          async () => {
+            const allProspects = await db.listProspects();
+            // Target: any prospect with vendorType set and not robot_oem, or outreachAngle = partner
+            const partners = (allProspects as Array<{ id: number; company: string; vendorType?: string | null; outreachAngle?: string | null }>)
+              .filter(p => (p.vendorType && p.vendorType !== "robot_oem") || p.outreachAngle === "partner");
+
+            let started = 0;
+            for (const partner of partners) {
+              // Fire and forget with stagger to avoid rate limits
+              await new Promise(r => setTimeout(r, 200));
+              researchProspect(partner.id).catch(err =>
+                console.error(`[PartnerEnrichment] Failed for ${partner.company} (${partner.id}):`, err.message)
+              );
+              started++;
+            }
+
+            return { started, total: partners.length, message: `Enrichment triggered for ${started} partner prospects` };
+          }
+        );
+      }),
+
     // Send a draft email with full workflow: log activity, advance stage, schedule follow-up, notify owner
     sendDraftWithWorkflow: adminProcedure
       .input(z.object({
@@ -1557,7 +1588,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
             const showNames = upcomingShows.map((s: { name: string }) => s.name).join(", ") || "upcoming trade shows";
 
             let generated = 0;
-            for (const prospect of targets as Array<{ id: number; company: string; contactName: string | null; contactEmail: string | null; robotName: string | null; robotType: string | null; shows: string[] | null; notes: string | null }>) {
+            for (const prospect of targets as Array<{ id: number; company: string; contactName: string | null; contactEmail: string | null; robotName: string | null; robotType: string | null; shows: string[] | null; notes: string | null; outreachAngle?: string | null; vendorType?: string | null }>) {
               if (!prospect.contactEmail) continue;
 
               // Check if a pending/approved draft already exists
@@ -1565,19 +1596,25 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
               const hasPending = existing.some((d: { status: string }) => d.status === "pending" || d.status === "approved");
               if (hasPending) continue;
 
-              const showContext = prospect.shows?.length ? `They have exhibited at: ${prospect.shows.join(", ")}.` : "";
+              const showContext = prospect.shows?.length ? `They service trade shows including: ${prospect.shows.join(", ")}.` : "";
               const robotContext = prospect.robotName ? `Their robot is the ${prospect.robotName}${prospect.robotType ? ` (${prospect.robotType})` : ""}.` : "";
+              const isPartner = (prospect.outreachAngle === "partner") || (prospect.vendorType && prospect.vendorType !== "robot_oem");
+              const vendorLabel = prospect.vendorType ? prospect.vendorType.replace(/_/g, " ") : "trade show vendor";
+
+              // ── Partner pitch (exhibit houses, freight, AV, venues) ──────────────
+              // ── Customer pitch (robot OEMs) ──────────────────────────────────────
+              const systemPrompt = isPartner
+                ? `You are an outreach specialist for StageGate — the robotics technical operations layer for trade shows. StageGate is NOT a competitor to exhibit houses, freight companies, AV firms, or venues. We are a specialist subcontractor that handles robot-specific logistics: receiving, customs, staging, testing, and on-site robot support. We plug into the existing workflow of ${vendorLabel} companies to handle the robot-specific complexity they are not equipped for. Write concise, professional B2B partnership emails. Under 150 words. No fluff. Sign off as "Bob Christopher, StageGate".`
+                : `You are an outreach specialist for StageGate, the first warehouse, staging, and activation service built for robotics companies exhibiting at trade shows. Write concise, professional cold outreach emails. Be specific about the company's robot. Keep emails under 150 words. No fluff, no marketing speak. Sign off as "Bob Christopher, StageGate".`;
+
+              const userPrompt = isPartner
+                ? `Write a cold outreach email to ${prospect.contactName ?? "the team"} at ${prospect.company} (a ${vendorLabel} company). ${showContext} StageGate is the robotics technical operations layer that plugs into your workflow — we handle all robot-specific logistics (receiving, customs, staging, testing, on-site support) so your team can focus on what you do best. We want to introduce ourselves as a specialist partner for your robotics clients at ${showNames}. Subject line and email body only. Format: SUBJECT: ...\n\nBODY: ...`
+                : `Write a cold outreach email to ${prospect.contactName ?? "the team"} at ${prospect.company}. ${robotContext} ${showContext} We are reaching out because StageGate handles all trade show logistics for robotics companies — shipping, customs, warehousing, booth setup, and on-site support — at ${showNames}. Subject line and email body only. Format: SUBJECT: ...\n\nBODY: ...`;
 
               const llmRes = await invokeLLM({
                 messages: [
-                  {
-                    role: "system",
-                    content: `You are an outreach specialist for StageGate, the first warehouse, staging, and activation service built for robotics companies exhibiting at trade shows. Write concise, professional cold outreach emails. Be specific about the company's robot. Keep emails under 150 words. No fluff, no marketing speak. Sign off as "Bob Christopher, StageGate".`,
-                  },
-                  {
-                    role: "user",
-                    content: `Write a cold outreach email to ${prospect.contactName ?? "the team"} at ${prospect.company}. ${robotContext} ${showContext} We are reaching out because StageGate handles all trade show logistics for robotics companies — shipping, customs, warehousing, booth setup, and on-site support — at ${showNames}. Subject line and email body only. Format: SUBJECT: ...\n\nBODY: ...`,
-                  },
+                  { role: "system", content: systemPrompt },
+                  { role: "user", content: userPrompt },
                 ],
               });
               const rawContent = llmRes.choices?.[0]?.message?.content;
@@ -1585,9 +1622,11 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
               const subjectMatch = content.match(/SUBJECT:\s*(.+)/i);
               const bodyMatch = content.match(/BODY:\s*([\s\S]+)/i);
 
-              const subject = subjectMatch?.[1]?.trim() ?? `Trade Show Logistics for ${prospect.company}`;
+              const subject = subjectMatch?.[1]?.trim() ?? (isPartner ? `Partnership Opportunity — StageGate × ${prospect.company}` : `Trade Show Logistics for ${prospect.company}`);
               const body = bodyMatch?.[1]?.trim() ?? content.trim();
-              const reasoning = `${prospect.company} matched because: ${robotContext} ${showContext} Outreach for ${showNames}.`.trim();
+              const reasoning = isPartner
+                ? `${prospect.company} is a ${vendorLabel} partner prospect. Pitch: robotics technical operations layer. ${showContext}`.trim()
+                : `${prospect.company} matched because: ${robotContext} ${showContext} Outreach for ${showNames}.`.trim();
 
               await emailHelpers.createDraft({ prospectId: prospect.id, subject, body, agentReasoning: reasoning });
               generated++;
