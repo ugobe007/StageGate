@@ -1301,3 +1301,21 @@
 ### v38 Tests
 - [x] Write server/v38.test.ts (29 tests) covering all above
 - [x] All 860 tests passing
+
+## v39 — Expandable Full Reply Body in Activity Timeline
+
+### v39.1 — Store full reply body in metadata
+- [x] Update resend-inbound.ts: store full reply body text in metadata.replyBody (no truncation)
+- [x] Keep the 300-char description snippet for the timeline preview
+
+### v39.2 — Expandable UI in activity timeline
+- [x] email_replied activity entries: show 300-char preview by default
+- [x] Add "View full reply ▾" toggle button below the preview when metadata.replyBody exists
+- [x] On expand: show full reply body in a scrollable pre block (max-h-48, overflow-y-auto)
+- [x] Toggle label changes to "Collapse ▴" when expanded
+- [x] Per-activity expanded state (not global) — each entry expands independently
+
+### v39 Tests
+- [x] Write server/v39.test.ts (15 tests) covering all above
+- [x] Fix v38.test.ts to use trimmedBody.slice instead of bodyText.trim().slice
+- [x] All 875 tests passing

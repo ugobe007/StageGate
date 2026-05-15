@@ -266,7 +266,8 @@ describe("v38: Runtime — inbound webhook reply body capture", () => {
   it("inbound webhook stores reply body snippet (first 300 chars) in activity description", () => {
     const content = fs.readFileSync(INBOUND_WEBHOOK, "utf-8");
     // Verify the snippet logic is present
-    expect(content).toContain("bodyText.trim().slice(0, 300)");
+    // v39 refactored to use trimmedBody variable instead of bodyText.trim() inline
+    expect(content).toContain("trimmedBody.slice(0, 300)");
     expect(content).toContain("replySnippet");
   });
 

@@ -454,6 +454,14 @@ export default function AdminSalesAgent() {
   const [notesValue, setNotesValue] = useState<string>("");
   const [notesSaving, setNotesSaving] = useState(false);
   const [notesProspectId, setNotesProspectId] = useState<number | null>(null);
+  // v39: per-activity expanded state for full reply body
+  const [expandedActivities, setExpandedActivities] = useState<Set<number>>(new Set());
+  const toggleActivityExpand = (id: number) =>
+    setExpandedActivities(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   const utils = trpc.useUtils();
 
@@ -1084,7 +1092,7 @@ export default function AdminSalesAgent() {
                       <p className="text-xs text-zinc-600 py-2">No activity recorded yet.</p>
                     ) : (
                       <div className="space-y-0">
-                        {(prospectActivities as Array<{ id: number; type: string; title: string; description?: string | null; createdAt: string | Date }>).map(act => {
+                        {(prospectActivities as Array<{ id: number; type: string; title: string; description?: string | null; metadata?: Record<string, unknown> | null; createdAt: string | Date }>).map(act => {
                           const actIconMap: Record<string, React.ReactNode> = {
                             email_sent:           <Send className="w-2.5 h-2.5 text-blue-400" />,
                             email_opened:         <Eye className="w-2.5 h-2.5 text-sky-400" />,
@@ -1101,6 +1109,11 @@ export default function AdminSalesAgent() {
                             followup_accelerated: "bg-amber-500",
                             followup_resumed:     "bg-emerald-500",
                           };
+                          // v39: full reply body from metadata
+                          const fullReplyBody = act.type === "email_replied"
+                            ? (act.metadata?.replyBody as string | null | undefined) ?? null
+                            : null;
+                          const isExpanded = expandedActivities.has(act.id);
                           return (
                             <div key={act.id} className="flex gap-2.5 py-2.5 border-b border-zinc-800/60 last:border-0">
                               <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${dotColorMap[act.type] ?? "bg-zinc-600"}`} />
@@ -1116,6 +1129,24 @@ export default function AdminSalesAgent() {
                                 </div>
                                 {act.description && (
                                   <p className="text-[10px] text-zinc-500 mt-0.5 leading-relaxed">{act.description}</p>
+                                )}
+                                {/* v39: expandable full reply body */}
+                                {fullReplyBody && (
+                                  <div className="mt-1">
+                                    <button
+                                      onClick={() => toggleActivityExpand(act.id)}
+                                      className="text-[10px] text-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-0.5"
+                                    >
+                                      {isExpanded ? "Collapse ▴" : "View full reply ▾"}
+                                    </button>
+                                    {isExpanded && (
+                                      <div className="mt-1.5 max-h-48 overflow-y-auto rounded border border-zinc-700/60 bg-zinc-900/80 p-2">
+                                        <pre className="text-[10px] text-zinc-400 whitespace-pre-wrap break-words leading-relaxed font-sans">
+                                          {fullReplyBody}
+                                        </pre>
+                                      </div>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             </div>
