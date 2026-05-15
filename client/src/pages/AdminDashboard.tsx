@@ -2,7 +2,6 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useState } from "react";
@@ -56,7 +55,6 @@ export default function AdminDashboard() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background text-foreground">
-        <Navbar />
         <div className="pt-32 pb-16 container max-w-lg mx-auto text-center">
           <div className="p-12 rounded-2xl border border-primary/30 bg-primary/5">
             <h1 className="text-3xl font-display font-bold mb-4">Admin Access Required</h1>
@@ -72,7 +70,6 @@ export default function AdminDashboard() {
   if (user?.role !== "admin") {
     return (
       <div className="min-h-screen bg-background text-foreground">
-        <Navbar />
         <div className="pt-32 pb-16 container max-w-lg mx-auto text-center">
           <div className="p-12 rounded-2xl border border-destructive/30 bg-destructive/5">
             <AlertCircle size={48} className="text-destructive mx-auto mb-4" />
@@ -104,7 +101,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Navbar />
       <div className="pt-24 pb-16">
         <div className="container">
           {/* Header */}

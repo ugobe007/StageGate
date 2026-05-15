@@ -157,6 +157,13 @@ export async function getAllServiceRequests(): Promise<ServiceRequest[]> {
   return db.select().from(serviceRequests).orderBy(desc(serviceRequests.createdAt));
 }
 
+export async function getServiceRequestById(id: number): Promise<ServiceRequest | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(serviceRequests).where(eq(serviceRequests.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
 export async function updateServiceRequestStatus(
   id: number,
   status: string,

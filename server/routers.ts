@@ -99,6 +99,9 @@ export const appRouter = router({
           robotType: z.string().optional(),
           details: z.string().optional(),
           urgency: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
+          attachmentUrl: z.string().optional(),
+          attachmentKey: z.string().optional(),
+          attachmentName: z.string().optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -134,6 +137,34 @@ export const appRouter = router({
       )
       .mutation(async ({ input }) => {
         await db.updateServiceRequestStatus(input.id, input.status, input.adminNotes, input.quotedPrice);
+        // Send Resend email notification when status changes to quoted or approved
+        if (input.status === "quoted" || input.status === "approved") {
+          try {
+            const req = await db.getServiceRequestById(input.id);
+            if (req) {
+              const profiles = await db.getAllCompanyProfiles();
+              const profile = profiles.find((p) => p.userId === req.userId);
+              const toEmail = profile?.contactEmail;
+              if (toEmail) {
+                const statusLabel = input.status === "quoted" ? "Quoted" : "Approved";
+                const priceNote = input.quotedPrice ? `\n\nQuoted price: ${input.quotedPrice}` : "";
+                const notesNote = input.adminNotes ? `\n\nNotes from StageGate: ${input.adminNotes}` : "";
+                const subject = input.status === "quoted"
+                  ? `Your StageGate service request has been quoted — ${req.requestType}`
+                  : `Your StageGate service request is approved — ${req.requestType}`;
+                const textBody = `Hi ${profile?.companyName ?? "there"},\n\nYour service request for "${req.requestType}" at ${req.showName ?? "your upcoming show"} has been updated to: ${statusLabel}.${priceNote}${notesNote}\n\nLog in to your StageGate dashboard to view the full details and next steps:\nhttps://onstage.bot/dashboard\n\nThank you,\nThe StageGate Team`;
+                await emailHelpers.sendEmail({
+                  to: toEmail,
+                  subject,
+                  body: textBody,
+                  htmlBody: `<p>${textBody.replace(/\n/g, "<br>")}</p>`,
+                });
+              }
+            }
+          } catch (err) {
+            console.warn("[ServiceRequest] Failed to send status notification email:", err);
+          }
+        }
         return { success: true };
       }),
   }),
@@ -985,7 +1016,18 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       .input(z.object({ status: z.string().optional() }))
       .query(async ({ input }) => {
         const items = await db.listProspects(input.status);
-        return { prospects: items };
+        // Cross-reference company_profiles to flag which prospects have signed up as clients
+        const profiles = await db.getAllCompanyProfiles();
+        const clientEmails = new Set(profiles.map(p => (p.contactEmail ?? "").toLowerCase()).filter(Boolean));
+        const clientCompanies = new Set(profiles.map(p => (p.companyName ?? "").toLowerCase()).filter(Boolean));
+        const prospectsWithClientFlag = items.map(p => ({
+          ...p,
+          hasClientProfile: (
+            (p.contactEmail ? clientEmails.has(p.contactEmail.toLowerCase()) : false) ||
+            (p.company ? clientCompanies.has(p.company.toLowerCase()) : false)
+          ),
+        }));
+        return { prospects: prospectsWithClientFlag };
       }),
 
     // List prospects with computed engagement score (opens×1 + clicks×2)

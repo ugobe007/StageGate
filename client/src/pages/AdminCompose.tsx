@@ -13,7 +13,6 @@ import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import Navbar from "@/components/Navbar";
 import { toast } from "sonner";
 import {
   Loader2, Send, Eye, X, Check, ChevronDown, ChevronUp,
@@ -338,7 +337,6 @@ export default function AdminCompose() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-zinc-950">
-        <Navbar />
         <div className="pt-32 text-center">
           <a href={getLoginUrl()} className="text-blue-400 underline text-sm">Sign in to continue</a>
         </div>
@@ -349,7 +347,6 @@ export default function AdminCompose() {
   if (user?.role !== "admin") {
     return (
       <div className="min-h-screen bg-zinc-950">
-        <Navbar />
         <div className="pt-32 text-center text-sm text-zinc-500">Admin access required.</div>
       </div>
     );

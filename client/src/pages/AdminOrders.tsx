@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Package, ArrowLeft, Loader2, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
@@ -50,7 +49,6 @@ export default function AdminOrders() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Navbar />
       <div className="pt-24 pb-16">
         <div className="container">
           <div className="flex items-center gap-4 mb-8">

@@ -158,7 +158,7 @@ function BookingDetailPanel({
     }} onClick={onClose}>
       <div
         style={{
-          width: "min(520px, 100vw)", height: "100vh", background: "#0a0a0a",
+          width: "min(520px, 100vw)", height: "100vh", background: 'transparent',
           borderLeft: "1px solid rgba(255,255,255,0.08)",
           overflowY: "auto", display: "flex", flexDirection: "column",
         }}
@@ -262,7 +262,7 @@ function BookingDetailPanel({
                   <span key={s} style={{
                     fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.06em", textTransform: "uppercase",
                     padding: "0.2rem 0.5rem", borderRadius: "0.25rem",
-                    border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.65)",
+                    border: '1px solid #e2e8f0', color: "rgba(255,255,255,0.65)",
                   }}>
                     {SERVICE_LABELS[s] ?? s}
                   </span>
@@ -281,7 +281,7 @@ function BookingDetailPanel({
               onChange={e => setNotes(e.target.value)}
               rows={3}
               style={{
-                width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)",
+                width: "100%", background: '#f8fafc', border: "1px solid rgba(255,255,255,0.10)",
                 borderRadius: "0.375rem", padding: "0.5rem 0.75rem",
                 color: "rgba(255,255,255,0.80)", fontSize: "0.8125rem",
                 resize: "vertical", outline: "none",
@@ -461,7 +461,7 @@ export default function AdminBookings() {
           </span>
           <button
             onClick={() => refetch()}
-            style={{ background: "none", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.375rem", padding: "0.35rem 0.6rem", color: "rgba(255,255,255,0.50)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem" }}
+            style={{ background: "none", border: '1px solid #e2e8f0', borderRadius: "0.375rem", padding: "0.35rem 0.6rem", color: "rgba(255,255,255,0.50)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem" }}
           >
             <RefreshCw size={12} /> Refresh
           </button>
@@ -561,7 +561,7 @@ export default function AdminBookings() {
                   <div>
                     {b.robotName ? (
                       <>
-                        <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{b.robotName}</p>
+                        <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: '#0f172a' }}>{b.robotName}</p>
                         {b.robotType && <p style={{ margin: "0.1rem 0 0", fontSize: "0.75rem", color: "rgba(255,255,255,0.40)" }}>{b.robotType}</p>}
                         {b.robotCount && b.robotCount > 1 && <p style={{ margin: "0.1rem 0 0", fontSize: "0.75rem", color: "rgba(255,255,255,0.40)" }}>{b.robotCount} units</p>}
                       </>
@@ -574,7 +574,7 @@ export default function AdminBookings() {
                   <div>
                     {b.showName ? (
                       <>
-                        <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{b.showName}</p>
+                        <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: '#0f172a' }}>{b.showName}</p>
                         {b.showDate && <p style={{ margin: "0.1rem 0 0", fontSize: "0.75rem", color: "rgba(255,255,255,0.40)" }}>{b.showDate}</p>}
                       </>
                     ) : (
@@ -588,7 +588,7 @@ export default function AdminBookings() {
                       <span key={s} style={{
                         fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.06em", textTransform: "uppercase",
                         padding: "0.1rem 0.35rem", borderRadius: "0.2rem",
-                        border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.50)",
+                        border: '1px solid #e2e8f0', color: "rgba(255,255,255,0.50)",
                       }}>
                         {SERVICE_LABELS[s] ?? s}
                       </span>

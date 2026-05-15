@@ -65,6 +65,9 @@ export const serviceRequests = pgTable("service_requests", {
   status: varchar("status", { length: 50 }).default("new").notNull(),
   adminNotes: text("adminNotes"),
   quotedPrice: varchar("quotedPrice", { length: 100 }),
+  attachmentUrl: text("attachmentUrl"),
+  attachmentKey: text("attachmentKey"),
+  attachmentName: varchar("attachmentName", { length: 255 }),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });

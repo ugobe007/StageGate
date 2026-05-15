@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
-import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Users, ArrowLeft, Loader2, Zap, Mail, CheckCircle, MessageSquare,
@@ -97,7 +96,6 @@ export default function AdminLeads() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Navbar />
       <div className="pt-24 pb-16">
         <div className="container">
           {/* Header */}

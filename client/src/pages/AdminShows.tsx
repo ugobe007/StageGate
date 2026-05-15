@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
-import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Calendar, Plus, Trash2, Edit, ArrowLeft, Loader2, Globe, Bell } from "lucide-react";
 import { toast } from "sonner";
@@ -106,7 +105,6 @@ export default function AdminShows() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Navbar />
       <div className="pt-24 pb-16">
         <div className="container">
           <div className="flex items-center gap-4 mb-8">

@@ -84,6 +84,24 @@ async function startServer() {
     }
   });
 
+  // File upload endpoint — service request attachments (PDF, images, docs up to 16MB)
+  const multer = (await import("multer")).default;
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 16 * 1024 * 1024 } });
+  app.post("/api/upload/service-request-attachment", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
+      const { storagePut } = await import("../storage");
+      const ext = req.file.originalname.split(".").pop() ?? "bin";
+      const key = `service-requests/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { url } = await storagePut(key, req.file.buffer, req.file.mimetype);
+      res.json({ url, key, name: req.file.originalname });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[upload] Error:", msg);
+      res.status(500).json({ error: msg });
+    }
+  });
+
   // Resend email tracking webhook (outbound events: opened, clicked)
   app.post("/api/webhooks/resend", resendWebhookHandler);
 

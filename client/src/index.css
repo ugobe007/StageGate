@@ -330,6 +330,240 @@
   }
 }
 
+/* ── Supabase Admin Design System ─────────────────────────────────────── */
+/* Applied via .sb-admin wrapper on DashboardLayout */
+.sb-admin {
+  /* Light base */
+  --sb-bg:            #f8fafc;
+  --sb-surface:       #ffffff;
+  --sb-surface-2:     #f1f5f9;
+  --sb-border:        #e2e8f0;
+  --sb-border-strong: #cbd5e1;
+
+  /* Text */
+  --sb-text:          #0f172a;
+  --sb-text-2:        #475569;
+  --sb-text-3:        #94a3b8;
+
+  /* Accent — Supabase green */
+  --sb-green:         #3ecf8e;
+  --sb-green-dim:     rgba(62,207,142,0.12);
+
+  /* Status colors — inline text only, no backgrounds */
+  --sb-status-new:        #3b82f6;   /* blue */
+  --sb-status-active:     #3ecf8e;   /* green */
+  --sb-status-pending:    #f59e0b;   /* amber */
+  --sb-status-done:       #64748b;   /* slate */
+  --sb-status-error:      #ef4444;   /* red */
+
+  background-color: var(--sb-bg);
+  color: var(--sb-text);
+  font-family: "Inter", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Supabase table */
+.sb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+.sb-table th {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sb-text-3);
+  border-bottom: 1px solid var(--sb-border);
+  background: var(--sb-surface);
+  white-space: nowrap;
+}
+.sb-table td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--sb-border);
+  color: var(--sb-text);
+  vertical-align: middle;
+}
+.sb-table tr:last-child td { border-bottom: none; }
+.sb-table tr:hover td { background: var(--sb-surface-2); }
+
+/* Supabase inline status text — NO pill, just colored text */
+.sb-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.sb-status::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+  background: currentColor;
+}
+.sb-status-new     { color: var(--sb-status-new); }
+.sb-status-active  { color: var(--sb-status-active); }
+.sb-status-pending { color: var(--sb-status-pending); }
+.sb-status-done    { color: var(--sb-status-done); }
+.sb-status-error   { color: var(--sb-status-error); }
+
+/* Supabase sidebar nav item */
+.sb-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--sb-text-2);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  text-decoration: none;
+  white-space: nowrap;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.sb-nav-item:hover {
+  background: var(--sb-surface-2);
+  color: var(--sb-text);
+}
+.sb-nav-item.active {
+  background: var(--sb-green-dim);
+  color: var(--sb-text);
+  font-weight: 500;
+}
+.sb-nav-item.active svg { color: var(--sb-green); }
+
+/* Supabase card */
+.sb-card {
+  background: var(--sb-surface);
+  border: 1px solid var(--sb-border);
+  border-radius: 0.5rem;
+}
+
+/* Supabase button — text only with optional border */
+.sb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  border: 1px solid var(--sb-border);
+  background: var(--sb-surface);
+  color: var(--sb-text);
+  white-space: nowrap;
+}
+.sb-btn:hover { background: var(--sb-surface-2); }
+.sb-btn-primary {
+  background: var(--sb-green);
+  border-color: var(--sb-green);
+  color: #0f172a;
+  font-weight: 600;
+}
+.sb-btn-primary:hover { filter: brightness(1.08); }
+.sb-btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--sb-text-2);
+}
+.sb-btn-ghost:hover { background: var(--sb-surface-2); color: var(--sb-text); }
+
+/* Supabase input */
+.sb-input {
+  width: 100%;
+  padding: 0.4375rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--sb-border);
+  background: var(--sb-surface);
+  color: var(--sb-text);
+  font-size: 0.8125rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.sb-input:focus { border-color: var(--sb-green); box-shadow: 0 0 0 2px var(--sb-green-dim); }
+.sb-input::placeholder { color: var(--sb-text-3); }
+
+/* Supabase section header */
+.sb-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--sb-border);
+}
+.sb-section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--sb-text);
+}
+
+/* Force light theme inside admin panel — override dark Tailwind utilities */
+.sb-admin .bg-background  { background-color: #f8fafc !important; }
+.sb-admin .bg-card        { background-color: #ffffff !important; }
+.sb-admin .bg-muted       { background-color: #f1f5f9 !important; }
+.sb-admin .bg-secondary   { background-color: #f1f5f9 !important; }
+.sb-admin .bg-accent      { background-color: #f1f5f9 !important; }
+.sb-admin .text-foreground      { color: #0f172a !important; }
+.sb-admin .text-card-foreground { color: #0f172a !important; }
+.sb-admin .text-muted-foreground { color: #475569 !important; }
+.sb-admin .text-secondary-foreground { color: #475569 !important; }
+.sb-admin .border-border  { border-color: #e2e8f0 !important; }
+.sb-admin .border         { border-color: #e2e8f0 !important; }
+.sb-admin input, .sb-admin textarea, .sb-admin select {
+  background-color: #ffffff;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+.sb-admin input::placeholder, .sb-admin textarea::placeholder { color: #94a3b8; }
+/* shadcn/ui card override inside admin */
+.sb-admin [data-slot="card"] { background: #ffffff; border-color: #e2e8f0; color: #0f172a; }
+.sb-admin [data-slot="card-header"] { color: #0f172a; }
+.sb-admin [data-slot="card-content"] { color: #0f172a; }
+.sb-admin [data-slot="card-title"] { color: #0f172a; }
+.sb-admin [data-slot="card-description"] { color: #475569; }
+/* shadcn/ui table override */
+.sb-admin [data-slot="table"] th { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
+.sb-admin [data-slot="table"] td { color: #0f172a; border-color: #e2e8f0; }
+.sb-admin [data-slot="table"] tr:hover td { background: #f1f5f9; }
+/* shadcn/ui badge override — flatten to inline text */
+.sb-admin [data-slot="badge"] {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+/* shadcn/ui button override */
+.sb-admin button[data-slot="button"][data-variant="outline"] {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+.sb-admin button[data-slot="button"][data-variant="outline"]:hover {
+  background: #f1f5f9;
+}
+
+/* Supabase count chip — inline, no pill */
+.sb-count {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--sb-text-3);
+  margin-left: 0.375rem;
+}
+
 /* ── XBOT Wizard Step Transition Keyframes ─────────────────────────────── */
 
 @keyframes xbot-enter-forward {

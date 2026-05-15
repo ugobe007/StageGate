@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import DashboardLayout from "@/components/DashboardLayout";
 import { toast } from "sonner";
 import {
   Truck, CheckCircle2, Clock, AlertTriangle, AlertCircle,
@@ -61,22 +60,18 @@ export default function AdminLogistics() {
 
   if (authLoading) {
     return (
-      <DashboardLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 size={24} className="animate-spin text-zinc-500" />
         </div>
-      </DashboardLayout>
     );
   }
 
   if (!user || user.role !== "admin") {
     return (
-      <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-64 gap-3">
           <AlertCircle size={32} className="text-red-500" />
           <p className="text-zinc-300 font-semibold">Admin access required</p>
         </div>
-      </DashboardLayout>
     );
   }
 
@@ -106,7 +101,6 @@ export default function AdminLogistics() {
   const bayMap = new Map(baysData.map(b => [b.id, b]));
 
   return (
-    <DashboardLayout>
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -334,6 +328,5 @@ export default function AdminLogistics() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }

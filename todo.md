@@ -1497,3 +1497,19 @@
 - [x] Wire Edit Profile button into ClientDashboard profile card
 - [x] Ensure upsertProfile tRPC procedure covers robots, showsAttending, servicesNeeded fields
 - [x] Optimistic update on save so dashboard reflects changes immediately
+
+## v51 — Supabase Design Unification + Features
+
+- [x] Define Supabase design tokens in index.css (neutral grays, green accent, clean typography, no pill badges)
+- [x] Rewrite DashboardLayout sidebar to Supabase style (flat list, no rounded pill nav items)
+- [ ] Rewrite AdminProspects to Supabase table style (inline text status, no badge pills) — partial (CLIENT badge added; full table style pending)
+- [ ] Rewrite AdminDashboard to Supabase style (clean stat cards, no colored badges) — pending
+- [ ] Rewrite AdminServiceRequests to Supabase table style — pending
+- [ ] Rewrite AdminAgents/AdminOutreach to Supabase style — pending
+- [ ] Rewrite ClientDashboard to Supabase style — pending
+- [ ] Rewrite EditProfileSheet to Supabase style — pending
+- [ ] Rewrite Onboarding wizard to Supabase style — pending
+- [x] Add Client badge (inline text, not pill) to Prospects table rows
+- [x] Add Resend email on service request status change to quoted/approved
+- [x] Add file upload field to service request form with S3 storage
+- [x] Show uploaded files in admin service requests panel

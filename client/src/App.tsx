@@ -4,6 +4,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import DashboardLayout from "./components/DashboardLayout";
 import Home from "./pages/Home";
 import Services from "./pages/Services";
 import StageHandPage from "./pages/StageHandPage";
@@ -44,6 +45,11 @@ import Onboarding from "./pages/Onboarding";
 import AuthRedirect from "./pages/AuthRedirect";
 import AdminServiceRequests from "./pages/AdminServiceRequests";
 
+/** Wraps admin pages in the shared DashboardLayout sidebar shell */
+function AdminShell({ children }: { children: React.ReactNode }) {
+  return <DashboardLayout>{children}</DashboardLayout>;
+}
+
 function Router() {
   return (
     <Switch>
@@ -71,26 +77,26 @@ function Router() {
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/order" component={ServiceOrder} />
 
-      {/* Admin */}
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/admin/shows" component={AdminShows} />
-      <Route path="/admin/leads" component={AdminLeads} />
-      <Route path="/admin/orders/:id" component={AdminOrderDetail} />
-      <Route path="/admin/orders" component={AdminOrders} />
-      <Route path="/admin/partners" component={AdminPartners} />
-      <Route path="/admin/quotes" component={AdminQuotes} />
-      <Route path="/admin/demos" component={AdminDemoRequests} />
-      <Route path="/admin/prospects" component={AdminProspects} />
-      <Route path="/admin/agents" component={AdminAgents} />
-      <Route path="/admin/outreach" component={AdminOutreach} />
-      <Route path="/admin/pipeline" component={AdminPipeline} />
-      <Route path="/admin/compose" component={AdminCompose} />
-      <Route path="/admin/bookings" component={AdminBookings} />
-      <Route path="/admin/sales-agent" component={AdminSalesAgent} />
-      <Route path="/admin/scheduling" component={AdminScheduling} />
-      <Route path="/admin/vendors" component={AdminVendors} />
-      <Route path="/admin/logistics" component={AdminLogistics} />
-      <Route path="/admin/service-requests" component={AdminServiceRequests} />
+      {/* Admin — all wrapped in DashboardLayout sidebar */}
+      <Route path="/admin">{() => <AdminShell><AdminDashboard /></AdminShell>}</Route>
+      <Route path="/admin/shows">{() => <AdminShell><AdminShows /></AdminShell>}</Route>
+      <Route path="/admin/leads">{() => <AdminShell><AdminLeads /></AdminShell>}</Route>
+      <Route path="/admin/orders/:id">{() => <AdminShell><AdminOrderDetail /></AdminShell>}</Route>
+      <Route path="/admin/orders">{() => <AdminShell><AdminOrders /></AdminShell>}</Route>
+      <Route path="/admin/partners">{() => <AdminShell><AdminPartners /></AdminShell>}</Route>
+      <Route path="/admin/quotes">{() => <AdminShell><AdminQuotes /></AdminShell>}</Route>
+      <Route path="/admin/demos">{() => <AdminShell><AdminDemoRequests /></AdminShell>}</Route>
+      <Route path="/admin/prospects">{() => <AdminShell><AdminProspects /></AdminShell>}</Route>
+      <Route path="/admin/agents">{() => <AdminShell><AdminAgents /></AdminShell>}</Route>
+      <Route path="/admin/outreach">{() => <AdminShell><AdminOutreach /></AdminShell>}</Route>
+      <Route path="/admin/pipeline">{() => <AdminShell><AdminPipeline /></AdminShell>}</Route>
+      <Route path="/admin/compose">{() => <AdminShell><AdminCompose /></AdminShell>}</Route>
+      <Route path="/admin/bookings">{() => <AdminShell><AdminBookings /></AdminShell>}</Route>
+      <Route path="/admin/sales-agent">{() => <AdminShell><AdminSalesAgent /></AdminShell>}</Route>
+      <Route path="/admin/scheduling">{() => <AdminShell><AdminScheduling /></AdminShell>}</Route>
+      <Route path="/admin/vendors">{() => <AdminShell><AdminVendors /></AdminShell>}</Route>
+      <Route path="/admin/logistics">{() => <AdminShell><AdminLogistics /></AdminShell>}</Route>
+      <Route path="/admin/service-requests">{() => <AdminShell><AdminServiceRequests /></AdminShell>}</Route>
 
       {/* Video intake */}
       <Route path="/xbot/video" component={VideoIntake} />

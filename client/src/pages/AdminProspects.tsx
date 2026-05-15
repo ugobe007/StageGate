@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import Navbar from "@/components/Navbar";
 import ProspectCRMCard from "@/components/ProspectCRMCard";
 import { ExternalLink, Mail, RefreshCw, ChevronDown, Check, X, Clock, Phone, AlertCircle, Square, CheckSquare, Zap, ArrowUpDown, ArrowUp, ArrowDown, Download, Upload, Calendar, ArrowRight } from "lucide-react";
 
@@ -326,8 +325,7 @@ export default function AdminProspects() {
 
   if (!user) {
     return (
-      <div style={{ minHeight: "100vh", background: "#080808" }}>
-        <Navbar />
+      <div style={{ minHeight: "100vh", background: 'transparent' }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", gap: "1.5rem" }}>
           <p style={{ color: "rgba(255,255,255,0.55)", fontFamily: "var(--font-mono)", fontSize: "0.875rem" }}>Admin access required</p>
           <a href={getLoginUrl()} className="btn-primary">Sign In</a>
@@ -338,8 +336,7 @@ export default function AdminProspects() {
 
   if (user.role !== "admin") {
     return (
-      <div style={{ minHeight: "100vh", background: "#080808" }}>
-        <Navbar />
+      <div style={{ minHeight: "100vh", background: 'transparent' }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
           <p style={{ color: "rgba(255,255,255,0.55)", fontFamily: "var(--font-mono)", fontSize: "0.875rem" }}>Forbidden — admin only</p>
         </div>
@@ -434,8 +431,7 @@ export default function AdminProspects() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#080808" }}>
-      <Navbar />
+    <div style={{ minHeight: "100vh", background: 'transparent' }}>
       <div className="container" style={{ paddingTop: "6rem", paddingBottom: "6rem" }}>
         {/* Header */}
         <div style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "2rem", marginBottom: "2rem" }}>
@@ -457,7 +453,7 @@ export default function AdminProspects() {
                   display: "flex", alignItems: "center", gap: "0.3rem",
                   fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em", textTransform: "uppercase",
                   padding: "0.3rem 0.65rem",
-                  border: "1px solid rgba(255,255,255,0.15)",
+                  border: '1px solid #e2e8f0',
                   color: "rgba(255,255,255,0.50)",
                   background: "transparent", cursor: "pointer", borderRadius: "0.125rem",
                   transition: "all 0.15s",
@@ -489,7 +485,7 @@ export default function AdminProspects() {
                 <Upload size={11} /> Import
               </button>
               {/* View toggle */}
-              <div style={{ display: "flex", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.125rem", overflow: "hidden" }}>
+              <div style={{ display: "flex", border: '1px solid #e2e8f0', borderRadius: "0.125rem", overflow: "hidden" }}>
                 <button
                   onClick={() => setViewMode("table")}
                   title="Table view"
@@ -542,7 +538,7 @@ export default function AdminProspects() {
               alignItems: "stretch",
               gap: 0,
               marginBottom: "1.75rem",
-              border: "1px solid rgba(255,255,255,0.08)",
+              border: '1px solid #e2e8f0',
               borderRadius: "0.25rem",
               overflow: "hidden",
             }}>
@@ -579,7 +575,7 @@ export default function AdminProspects() {
               width: "100%",
               fontFamily: "var(--font-mono)",
               fontSize: "0.75rem",
-              background: "rgba(255,255,255,0.04)",
+              background: '#f8fafc',
               border: `1px solid ${searchQuery ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.10)"}`,
               color: "#fff",
               padding: "0.55rem 2.25rem 0.55rem 0.85rem",
@@ -811,7 +807,7 @@ export default function AdminProspects() {
                 display: "flex", alignItems: "center", gap: "0.3rem",
                 fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em", textTransform: "uppercase",
                 padding: "0.3rem 0.65rem",
-                border: "1px solid rgba(255,255,255,0.12)",
+                border: '1px solid #e2e8f0',
                 color: "rgba(255,255,255,0.40)",
                 background: "transparent", cursor: "pointer", borderRadius: "0.125rem",
               }}
@@ -877,7 +873,7 @@ export default function AdminProspects() {
                       letterSpacing: "0.08em", textTransform: "uppercase",
                       padding: "0.2rem 0.5rem",
                       background: "transparent", color: "rgba(255,255,255,0.35)",
-                      border: "1px solid rgba(255,255,255,0.12)",
+                      border: '1px solid #e2e8f0',
                       cursor: "pointer", borderRadius: "0.125rem",
                     }}
                   >
@@ -914,7 +910,7 @@ export default function AdminProspects() {
                 <div
                   style={{
                     position: "absolute", top: "calc(100% + 4px)", left: 0,
-                    background: "#0d0d0d", border: "1px solid rgba(99,102,241,0.35)",
+                    background: 'transparent', border: "1px solid rgba(99,102,241,0.35)",
                     borderRadius: "0.25rem", zIndex: 100, minWidth: "10rem",
                     boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
                     overflow: "hidden",
@@ -1189,7 +1185,7 @@ export default function AdminProspects() {
                       )}
                     </div>
                     {/* Prospect rows for this show */}
-                    <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0 0 0.25rem 0.25rem", overflow: "hidden" }}>
+                    <div style={{ border: '1px solid #e2e8f0', borderRadius: "0 0 0.25rem 0.25rem", overflow: "hidden" }}>
                       {showProspects.map((p, idx) => {
                         const statusCfg = STATUS_CONFIG[p.status as ProspectStatus] ?? STATUS_CONFIG.new;
                         const conf = String((p as Record<string, unknown>).emailConfidence ?? "");
@@ -1385,6 +1381,9 @@ export default function AdminProspects() {
                           {String(i + 1).padStart(2, "0")}
                         </span>
                         <span style={{ fontWeight: 700, fontSize: "0.9375rem", color: "#fff" }}>{p.company}</span>
+                        {Boolean((p as { hasClientProfile?: boolean }).hasClientProfile) && (
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "#3ecf8e", fontWeight: 700 }} title="Company has signed up as a StageGate client">● CLIENT</span>
+                        )}
                         {urgency && (
                           <span style={{
                             fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.08em", textTransform: "uppercase",
@@ -1481,7 +1480,7 @@ export default function AdminProspects() {
                           onKeyDown={e => { if (e.key === "Escape") setEditingFollowUpId(null); }}
                           style={{
                             fontFamily: "var(--font-mono)", fontSize: "0.5625rem",
-                            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.20)",
+                            background: '#f1f5f9', border: "1px solid rgba(255,255,255,0.20)",
                             color: "#fff", padding: "0.25rem 0.4rem", borderRadius: "0.125rem",
                             outline: "none", width: "8rem",
                           }}
@@ -1636,7 +1635,7 @@ export default function AdminProspects() {
           display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
         }} onClick={() => setCsvPreview(null)}>
           <div style={{
-            background: "#111", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.5rem",
+            background: 'transparent', border: '1px solid #e2e8f0', borderRadius: "0.5rem",
             padding: "2rem", maxWidth: "48rem", width: "100%", maxHeight: "80vh", overflow: "auto",
           }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
@@ -1673,7 +1672,7 @@ export default function AdminProspects() {
                 onClick={() => setCsvPreview(null)}
                 style={{
                   fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.08em", textTransform: "uppercase",
-                  padding: "0.5rem 1.25rem", border: "1px solid rgba(255,255,255,0.15)",
+                  padding: "0.5rem 1.25rem", border: '1px solid #e2e8f0',
                   color: "rgba(255,255,255,0.50)", background: "transparent", cursor: "pointer", borderRadius: "0.25rem",
                 }}
               >

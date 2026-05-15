@@ -50,6 +50,8 @@ export default function ClientDashboard() {
   const [robotName, setRobotName] = useState("");
   const [details, setDetails] = useState("");
   const [urgency, setUrgency] = useState<"low" | "normal" | "high" | "urgent">("normal");
+  const [attachment, setAttachment] = useState<{ url: string; key: string; name: string } | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [expandedRequest, setExpandedRequest] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
@@ -62,9 +64,27 @@ export default function ClientDashboard() {
       utils.company.getMyServiceRequests.invalidate();
       setShowRequestForm(false);
       setRequestType(""); setShowName(""); setShowDate("");
-      setRobotName(""); setDetails(""); setUrgency("normal");
+      setRobotName(""); setDetails(""); setUrgency("normal"); setAttachment(null);
     },
   });
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 16 * 1024 * 1024) { alert("File must be under 16MB"); return; }
+    setUploadingFile(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload/service-request-attachment", { method: "POST", body: fd });
+      const data = await res.json() as { url?: string; key?: string; name?: string; error?: string };
+      if (!res.ok || data.error) throw new Error(data.error ?? "Upload failed");
+      setAttachment({ url: data.url!, key: data.key!, name: data.name! });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploadingFile(false);
+    }
+  };
 
   if (loading || profileLoading) {
     return (
@@ -299,12 +319,28 @@ export default function ClientDashboard() {
                           placeholder="Describe what you need, timeline, any special requirements..."
                           className="bg-background border-border/60 resize-none text-sm" rows={3} />
                       </div>
+                      <div className="col-span-2">
+                        <label className="text-xs font-medium mb-1.5 block text-muted-foreground">
+                          Attachment <span className="text-muted-foreground/60 font-normal">(optional — spec sheet, crate dims, robot manual · PDF/image · max 16MB)</span>
+                        </label>
+                        {attachment ? (
+                          <div className="flex items-center gap-2 text-sm">
+                            <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-primary underline truncate max-w-xs">{attachment.name}</a>
+                            <button type="button" onClick={() => setAttachment(null)} className="text-muted-foreground hover:text-destructive text-xs ml-1">Remove</button>
+                          </div>
+                        ) : (
+                          <label className="cursor-pointer inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground border border-dashed border-border/60 rounded px-3 py-2 transition-colors">
+                            {uploadingFile ? <><Loader2 size={14} className="animate-spin" /> Uploading…</> : <span>Choose file</span>}
+                            <input type="file" className="hidden" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.xlsx,.csv" onChange={handleFileUpload} disabled={uploadingFile} />
+                          </label>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-3">
                       <Button variant="outline" size="sm" onClick={() => setShowRequestForm(false)}>Cancel</Button>
                       <Button size="sm"
-                        disabled={!requestType || submitRequest.isPending}
-                        onClick={() => submitRequest.mutate({ requestType, showName: showName || undefined, showDate: showDate || undefined, robotName: robotName || undefined, details: details || undefined, urgency })}
+                        disabled={!requestType || submitRequest.isPending || uploadingFile}
+                        onClick={() => submitRequest.mutate({ requestType, showName: showName || undefined, showDate: showDate || undefined, robotName: robotName || undefined, details: details || undefined, urgency, attachmentUrl: attachment?.url, attachmentKey: attachment?.key, attachmentName: attachment?.name })}
                         className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
                         {submitRequest.isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                         Submit Request

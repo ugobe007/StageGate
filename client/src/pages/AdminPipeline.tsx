@@ -16,7 +16,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import Navbar from "@/components/Navbar";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import {
@@ -1106,7 +1105,6 @@ export default function AdminPipeline() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-zinc-950">
-        <Navbar />
         <div className="pt-32 text-center">
           <a href={getLoginUrl()} className="text-blue-400 underline text-sm">Sign in to continue</a>
         </div>
@@ -1117,7 +1115,6 @@ export default function AdminPipeline() {
   if (user?.role !== "admin") {
     return (
       <div className="min-h-screen bg-zinc-950">
-        <Navbar />
         <div className="pt-32 text-center text-sm text-zinc-500">Admin access required.</div>
       </div>
     );

@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Clock, CheckCircle2, XCircle, Loader2, AlertTriangle,
-  ChevronDown, ChevronUp, Search, Bot, Calendar, Zap
+  ChevronDown, ChevronUp, Search, Bot, Calendar, Zap, Paperclip
 } from "lucide-react";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
@@ -37,6 +36,9 @@ type ServiceRequest = {
   details: string | null;
   quotedPrice: string | null;
   adminNotes: string | null;
+  attachmentUrl: string | null;
+  attachmentKey: string | null;
+  attachmentName: string | null;
   createdAt: Date;
   userId: number;
 };
@@ -75,7 +77,6 @@ export default function AdminServiceRequests() {
   }, {} as Record<string, number>);
 
   return (
-    <DashboardLayout>
       <div className="p-6 max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -197,6 +198,20 @@ export default function AdminServiceRequests() {
                           {req.details}
                         </div>
                       )}
+                      {req.attachmentUrl && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Paperclip size={13} className="text-muted-foreground flex-shrink-0" />
+                          <span className="text-xs text-muted-foreground">Attachment:</span>
+                          <a
+                            href={req.attachmentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline truncate max-w-xs text-xs"
+                          >
+                            {req.attachmentName ?? "Download file"}
+                          </a>
+                        </div>
+                      )}
                       {req.adminNotes && !isEditing && (
                         <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
                           <div className="text-xs text-muted-foreground mb-1">Admin Note</div>
@@ -287,6 +302,5 @@ export default function AdminServiceRequests() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }

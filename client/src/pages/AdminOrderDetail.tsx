@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import DashboardLayout from "@/components/DashboardLayout";
 import { toast } from "sonner";
 import {
   ArrowLeft, Package, Building2, Bot, Calendar, MapPin,
@@ -146,28 +145,23 @@ export default function AdminOrderDetail() {
 
   if (authLoading) {
     return (
-      <DashboardLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 size={24} className="animate-spin text-zinc-500" />
         </div>
-      </DashboardLayout>
     );
   }
 
   if (!user || user.role !== "admin") {
     return (
-      <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-64 gap-3">
           <AlertCircle size={32} className="text-red-500" />
           <p className="text-zinc-300 font-semibold">Admin access required</p>
         </div>
-      </DashboardLayout>
     );
   }
 
   if (!orderId || isNaN(orderId)) {
     return (
-      <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-64 gap-3">
           <AlertCircle size={32} className="text-zinc-600" />
           <p className="text-zinc-400">Invalid order ID</p>
@@ -177,12 +171,10 @@ export default function AdminOrderDetail() {
             </button>
           </Link>
         </div>
-      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout>
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         {/* Back nav */}
         <Link href="/admin/orders">
@@ -792,6 +784,5 @@ export default function AdminOrderDetail() {
           )}
         </div>
       </div>
-    </DashboardLayout>
   );
 }
