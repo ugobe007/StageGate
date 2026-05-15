@@ -171,19 +171,42 @@ export async function resendWebhookHandler(req: Request, res: Response): Promise
       // email.clicked → link_clicked (strongest engagement signal)
       const OUTREACH_SENT_STATES = ["intro_sent", "followup_1", "followup_2", "robot_guild", "awaiting_reply"];
       const convRows = await db
-        .select({ id: salesAgentConversations.id, state: salesAgentConversations.state })
+        .select({
+          id: salesAgentConversations.id,
+          state: salesAgentConversations.state,
+          nextFollowUpAt: salesAgentConversations.nextFollowUpAt,
+        })
         .from(salesAgentConversations)
         .where(eq(salesAgentConversations.prospectId, prospectId))
         .limit(1);
       const conv = convRows[0];
       if (conv) {
         if (eventType === "email.clicked" && conv.state !== "link_clicked") {
-          // Click is the strongest signal — always advance to link_clicked
+          // v36: Click is the strongest signal — advance to link_clicked AND shorten follow-up to 1 day
+          const oneDayFromNow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+          // Only shorten if the current nextFollowUpAt is more than 1 day away (don't push it further out)
+          const currentNext = conv.nextFollowUpAt ? new Date(conv.nextFollowUpAt) : null;
+          const shouldShorten = !currentNext || currentNext > oneDayFromNow;
           await db
             .update(salesAgentConversations)
-            .set({ state: "link_clicked", lastActivityAt: new Date(), updatedAt: new Date() })
+            .set({
+              state: "link_clicked",
+              lastActivityAt: new Date(),
+              updatedAt: new Date(),
+              ...(shouldShorten ? { nextFollowUpAt: oneDayFromNow } : {}),
+            })
             .where(eq(salesAgentConversations.id, conv.id));
-          console.log(`[Resend Webhook] Prospect ${prospectId} advanced to link_clicked`);
+          console.log(`[Resend Webhook] Prospect ${prospectId} advanced to link_clicked${shouldShorten ? " — follow-up shortened to 1 day" : ""}`);
+          // Log accelerated follow-up activity
+          if (shouldShorten) {
+            await db.insert(prospectActivities).values({
+              prospectId,
+              type: "followup_accelerated",
+              title: "Follow-up accelerated",
+              description: "Link click detected — next follow-up shortened to 1 day",
+              metadata: { messageId, url: clickUrl, occurredAt: occurredAt.toISOString(), nextFollowUpAt: oneDayFromNow.toISOString() },
+            });
+          }
         } else if (eventType === "email.opened" && OUTREACH_SENT_STATES.includes(conv.state ?? "") && conv.state !== "link_clicked") {
           // Open advances from outreach-sent states to email_opened
           await db

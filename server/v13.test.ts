@@ -421,7 +421,9 @@ describe("Resend webhook handler", () => {
       await resendWebhookHandler(req as never, res as never);
       expect(statusMock).toHaveBeenCalledWith(200);
       expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ received: true, eventType: "email.clicked" }));
-      expect(db.insert).toHaveBeenCalledTimes(2);
+      // v36: 3 inserts — tracking event + email.clicked activity + followup_accelerated activity
+      // (nextFollowUpAt is null on the conv row, so shortening fires)
+      expect(db.insert).toHaveBeenCalledTimes(3);
     } finally {
       process.env.RESEND_WEBHOOK_SECRET = origSecret;
     }

@@ -1243,3 +1243,14 @@
 ### v35 Tests
 - [x] Write server/v35.test.ts: email_tracking_events table structure, Resend webhook handler, engagement join in getConversations, open/click tracking flags in sendEmail
 - [x] All 801 tests passing
+
+## v36 — Engagement-Based Follow-Up Shortening
+
+### v36.1 — Webhook logic
+- [x] On email.clicked: after advancing state to link_clicked, also set nextFollowUpAt = now + 1 day on the salesAgentConversation row
+- [x] Log a prospect_activities entry: "Follow-up accelerated — link click detected, next follow-up in 1 day"
+- [x] Only shorten if current nextFollowUpAt is more than 1 day away (don't push it further out)
+
+### v36 Tests
+- [x] Write server/v36.test.ts: verify link_clicked sets nextFollowUpAt ≈ now+1d, verify activity log entry, verify no shortening when already within 1 day
+- [x] All 810 tests passing
