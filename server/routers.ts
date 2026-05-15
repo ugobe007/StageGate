@@ -2443,6 +2443,46 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           .orderBy(drizzleDesc(emailThreads.receivedAt))
           .limit(50);
       }),
+
+    // Admin: manually trigger Frank to send to a specific prospect
+    manualSend: adminProcedure
+      .input(z.object({ prospectId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const res = await fetch(
+          `http://localhost:${process.env.PORT ?? 3000}/api/scheduled/sales-agent-manual`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              // Pass admin session cookie so the handler can authenticate
+              Cookie: ctx.req.headers.cookie ?? "",
+            },
+            body: JSON.stringify({ prospectId: input.prospectId }),
+          }
+        );
+        if (!res.ok) {
+          const err = await res.text();
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err });
+        }
+        return res.json() as Promise<{ ok: boolean; subject: string; messageId: string | null; nextStage: string }>;
+      }),
+
+    // Admin: update conversation stage manually
+    updateConversationStage: adminProcedure
+      .input(z.object({
+        conversationId: z.number(),
+        state: z.enum(["discovery", "intro_sent", "followup_1", "followup_2", "robot_guild", "responded", "scheduling", "booked", "not_interested", "converted"]),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const [updated] = await dbConn
+          .update(salesAgentConversations)
+          .set({ state: input.state, updatedAt: new Date() })
+          .where(eq(salesAgentConversations.id, input.conversationId))
+          .returning();
+        return updated;
+      }),
   }),
 
   // ─── Vendors ───────────────────────────────────────────────────────────────

@@ -14,7 +14,7 @@ import { resendInboundHandler } from "../webhooks/resend-inbound";
 import {
   salesAgentIngestHandler,
   salesAgentOutreachHandler,
-  salesAgentFollowupHandler,
+  salesAgentManualSendHandler,
 } from "../agents/salesAgent";
 import { salesAgentDiscoveryHandler } from "../agents/salesAgentDiscovery";
 import { vendorScraperHandler } from "../agents/vendorScraper";
@@ -64,7 +64,7 @@ async function startServer() {
   app.post("/api/scheduled/sales-agent-discover", salesAgentDiscoveryHandler);
   app.post("/api/scheduled/sales-agent-ingest", salesAgentIngestHandler);
   app.post("/api/scheduled/sales-agent-outreach", salesAgentOutreachHandler);
-  app.post("/api/scheduled/sales-agent-followup", salesAgentFollowupHandler);
+  app.post("/api/scheduled/sales-agent-manual", salesAgentManualSendHandler);
   app.post("/api/scheduled/vendor-scraper", vendorScraperHandler);
 
   // Quote follow-up nudge — daily 09:00 UTC

@@ -1007,3 +1007,39 @@
 ### v26 Tests
 - [x] Write server/v26.test.ts: 19 new tests
 - [x] All 390 tests passing
+
+## v27 — Frank Sales Agent Rebuild
+
+### v27.1 — Research & Playbook
+- [x] Research top robotics conferences 2025-2026 (CES, NAB, IREX, MODEX, ProMat, ROSCon, ICRA, etc.)
+- [x] Research The Robot Guild services and positioning
+- [x] Research off-floor demo venues in Las Vegas (Innovation Center, Black Fire, hotel/casino options)
+- [x] Document Frank's voice guidelines and conversation stage playbook
+- [x] Document StageGate logistics breakpoints (shipping, customs, staging, power, demos, returns)
+
+### v27.2 — Discovery Engine Rebuild
+- [x] Add exhibitorListUrl field to trade_shows table
+- [x] Rebuild salesAgentDiscovery: fetch exhibitor list URLs, extract robot company names + contacts
+- [x] Use LLM to identify which exhibitors are robot companies (not just any tech company)
+- [x] Upsert new prospects with show context (showName, showDate, boothInfo)
+- [x] Deduplicate by company domain
+
+### v27.3 — Frank Outreach Engine Rebuild
+- [x] Define Frank persona in a server-side config (voice, tone, signature, from address)
+- [x] Stage 1 — Intro email: Hi from Frank, short StageGate pitch, specific show mention, soft CTA
+- [x] Stage 2 — Breakpoints follow-up: logistics pain points (shipping delays, customs, staging, power)
+- [x] Stage 3 — Demo venue offer: off-floor demo space options (StageGate office, Innovation Center, Black Fire, hotel/casino)
+- [x] Stage 4 — Robot Guild handoff: brand/promo services intro, offer warm introduction
+- [x] LLM generates each email fresh per prospect (company name, show, robot type context)
+- [x] Human-sounding, not verbose, not AI-sounding — Frank voice enforced via system prompt
+
+### v27.4 — AdminSalesAgent Conversation View
+- [x] Build full conversation view page: list of all prospects with conversation state
+- [x] Per-prospect detail: show current stage, last email sent, draft preview, manual send button
+- [x] Frank persona settings panel: edit voice guidelines, signature, from name/email
+- [x] Draft preview: show LLM-generated draft before it goes out (approve/edit/send)
+- [x] Manual trigger: "Send now" override for any prospect
+
+### v27 Tests
+- [x] Write server/v27.test.ts: Frank voice validation, stage progression, venue options, Robot Guild handoff
+- [x] All 445 tests passing (v27)
