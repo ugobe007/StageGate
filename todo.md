@@ -847,3 +847,30 @@
 - [x] On booking: send calendar invite email to Bob (bob@starsupportinc.com), Tommy (tom@starsupportinc.com), and prospect
 - [x] Mark slot as booked after confirmed, prevent double-booking
 - [x] Vitest: test slot booking, double-booking prevention, calendar invite email
+
+## v21 — Space Matcher Integration, Schedule Page Upgrade, Bay Occupancy Tracking
+
+### v21.1 — Space Matcher in Booking Flow
+- [x] Add robotSqft + storageDays fields to booking_requests table (migration)
+- [x] Update bookingRequests.create procedure to accept robotSqft + storageDays
+- [x] Call matchSpace in bookingRequests.create to auto-compute warehouse line item
+- [x] Store warehouseBayId + warehouseEstimate on the booking record
+- [x] Update GetStarted / booking form UI to include robot sqft + storage days inputs
+- [x] Show auto-populated warehouse storage estimate in booking confirmation
+- [x] Vitest: test matchSpace auto-population in booking creation
+
+### v21.2 — Public /schedule Page Upgrade
+- [x] Build /schedule public page: available slots grouped by date
+- [x] Prospect booking form: name, email, company fields per slot
+- [x] On submit: call scheduling.bookSlot, show confirmation
+- [x] Send calendar invite email to host + prospect via Resend (ICS attachment)
+- [x] Add /schedule route to App.tsx and navbar link
+- [x] Vitest: test slot booking, double-booking prevention
+
+### v21.3 — Warehouse Bay Occupancy Tracking
+- [x] Add warehouseBayId column to logistics_workflows table (migration)
+- [x] Update logistics.createWorkflow to accept optional warehouseBayId
+- [x] On warehouse_in checkpoint completion: set warehouseBays.isAvailable = false
+- [x] On warehouse_return checkpoint completion: set warehouseBays.isAvailable = true
+- [x] logistics.assignBay procedure: assign/reassign bay to any workflow
+- [x] Vitest: test bay flip on warehouse_in and warehouse_return (244 tests total)

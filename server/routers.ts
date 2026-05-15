@@ -1769,10 +1769,30 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         showDate: z.string().optional(),
         boothNumber: z.string().optional(),
         services: z.array(z.string()).default([]),
+        // v21: warehouse space matching
+        robotSqft: z.number().int().positive().optional(),
+        storageDays: z.number().int().positive().optional(),
       }))
       .mutation(async ({ input }) => {
         const dbConn = await getDb();
         if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        // Auto-match warehouse bay if robot sqft + storage days provided
+        let warehouseBayId: number | null = null;
+        let warehouseEstimate: string | null = null;
+        let warehouseMessage = "";
+        if (input.robotSqft && input.storageDays) {
+          const bays = await dbConn.select().from(warehouseBays)
+            .where(eq(warehouseBays.isAvailable, true))
+            .orderBy(warehouseBays.sqft);
+          const match = bays.find((b) => b.sqft >= input.robotSqft!);
+          if (match) {
+            const rate = parseFloat(match.pricePerSqftPerDay);
+            const total = rate * input.robotSqft! * input.storageDays!;
+            warehouseBayId = match.id;
+            warehouseEstimate = total.toFixed(2);
+            warehouseMessage = `\nWarehouse: ${match.name} (${match.sqft} sqft) @ $${rate}/sqft/day × ${input.robotSqft} sqft × ${input.storageDays} days = $${total.toFixed(2)}`;
+          }
+        }
         await dbConn.insert(bookingRequests).values({
           company: input.company,
           contactName: input.contactName,
@@ -1790,12 +1810,16 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           showDate: input.showDate,
           boothNumber: input.boothNumber,
           services: input.services,
+          robotSqft: input.robotSqft ?? null,
+          storageDays: input.storageDays ?? null,
+          warehouseBayId: warehouseBayId,
+          warehouseEstimate: warehouseEstimate,
         });
         await notifyOwner({
           title: `📥 New Booking Request: ${input.company}`,
-          content: `${input.contactName} (${input.contactEmail}) from ${input.company} submitted a logistics intake.\n\nRobot: ${input.robotName ?? "TBD"} (${input.robotType ?? "unknown type"})\nShow: ${input.showName ?? "TBD"}\nServices: ${input.services.join(", ") || "none selected"}`,
+          content: `${input.contactName} (${input.contactEmail}) from ${input.company} submitted a logistics intake.\n\nRobot: ${input.robotName ?? "TBD"} (${input.robotType ?? "unknown type"})\nShow: ${input.showName ?? "TBD"}\nServices: ${input.services.join(", ") || "none selected"}${warehouseMessage}`,
         });
-        return { success: true };
+        return { success: true, warehouseBayId, warehouseEstimate };
       }),
     // Admin: list all booking requests (with optional status/show filters)
     list: adminProcedure
@@ -1945,15 +1969,65 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
             bookedByProspectId: input.prospectId ?? null,
             bookedByName: input.bookedByName,
             bookedByEmail: input.bookedByEmail,
+            bookedByCompany: input.company ?? null,
             updatedAt: new Date(),
           })
           .where(drizzleEq(schedulingSlots.id, input.slotId));
-        // Notify robot team
+        // Send calendar invite emails to host + prospect
+        const slot = slots[0];
+        const startIso = slot.slotStart.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+        const endIso = slot.slotEnd.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+        const icsContent = [
+          "BEGIN:VCALENDAR",
+          "VERSION:2.0",
+          "PRODID:-//StageGate//EN",
+          "BEGIN:VEVENT",
+          `UID:stagegate-call-${slot.id}-${Date.now()}@onstage.bot`,
+          `DTSTART:${startIso}`,
+          `DTEND:${endIso}`,
+          `SUMMARY:StageGate Call — ${input.bookedByName} (${input.company ?? ""})`,
+          `DESCRIPTION:Intro call with ${input.bookedByName} from ${input.company ?? "unknown company"}.\\nContact: ${input.bookedByEmail}`,
+          `ORGANIZER;CN=StageGate:mailto:hello@onstage.bot`,
+          `ATTENDEE;CN=${slot.hostName}:mailto:${slot.hostEmail}`,
+          `ATTENDEE;CN=${input.bookedByName}:mailto:${input.bookedByEmail}`,
+          "END:VEVENT",
+          "END:VCALENDAR",
+        ].join("\r\n");
+        const startDisplay = slot.slotStart.toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+        // Email to prospect
+        try {
+          await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              from: "StageGate <hello@onstage.bot>",
+              to: [input.bookedByEmail],
+              subject: `Your StageGate call is confirmed — ${startDisplay}`,
+              html: `<p>Hi ${input.bookedByName},</p><p>Your call with <strong>${slot.hostName}</strong> is confirmed for <strong>${startDisplay}</strong>.</p><p>We'll walk through your robot's logistics needs, upcoming shows, and how StageGate can handle everything from port to booth.</p><p>Questions? Reply to this email or reach us at <a href="mailto:hello@onstage.bot">hello@onstage.bot</a>.</p><p>— The StageGate Team</p>`,
+              attachments: [{ filename: "invite.ics", content: Buffer.from(icsContent).toString("base64") }],
+            }),
+          });
+          // Email to host
+          await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              from: "StageGate <hello@onstage.bot>",
+              to: [slot.hostEmail],
+              subject: `New call booked: ${input.bookedByName} (${input.company ?? ""}) — ${startDisplay}`,
+              html: `<p>Hi ${slot.hostName},</p><p><strong>${input.bookedByName}</strong> from <strong>${input.company ?? "unknown"}</strong> has booked a call for <strong>${startDisplay}</strong>.</p><p>Contact: <a href="mailto:${input.bookedByEmail}">${input.bookedByEmail}</a></p>`,
+              attachments: [{ filename: "invite.ics", content: Buffer.from(icsContent).toString("base64") }],
+            }),
+          });
+        } catch (emailErr) {
+          console.error("[bookSlot] Calendar invite email failed:", emailErr);
+        }
+        // Notify owner
         await notifyOwner({
           title: `📅 New call booked — ${input.bookedByName} (${input.company ?? "unknown company"})`,
-          content: `${input.bookedByName} from ${input.company ?? "unknown"} booked a call for ${slots[0].slotStart.toLocaleString()}.\nContact: ${input.bookedByEmail}`,
+          content: `${input.bookedByName} from ${input.company ?? "unknown"} booked a call for ${slot.slotStart.toLocaleString()}.\nHost: ${slot.hostName} (${slot.hostEmail})\nContact: ${input.bookedByEmail}`,
         });
-        return { success: true, slot: slots[0] };
+        return { success: true, slot };
       }),
 
     // Admin: add availability slots
@@ -2125,6 +2199,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         showName: z.string().optional(),
         showStartDate: z.string().optional(), // ISO date string
         notes: z.string().optional(),
+        warehouseBayId: z.number().optional(), // v21: pre-assign a bay
       }))
       .mutation(async ({ input }) => {
         const dbConn = await getDb();
@@ -2140,6 +2215,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           showStartDate: input.showStartDate ? new Date(input.showStartDate) : undefined,
           notes: input.notes,
           status: "active",
+          warehouseBayId: input.warehouseBayId ?? null,
         }).returning();
 
         // Auto-create the standard checkpoint sequence
@@ -2172,6 +2248,22 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         await dbConn.insert(logisticsCheckpoints).values(checkpointValues);
 
         return { workflowId: workflow.id, checkpointsCreated: checkpointValues.length };
+      }),
+
+    // v21: Assign or reassign a warehouse bay to a workflow
+    assignBay: adminProcedure
+      .input(z.object({
+        workflowId: z.number(),
+        warehouseBayId: z.number().nullable(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        await dbConn
+          .update(logisticsWorkflows)
+          .set({ warehouseBayId: input.warehouseBayId, updatedAt: new Date() })
+          .where(eq(logisticsWorkflows.id, input.workflowId));
+        return { success: true };
       }),
 
     // Get all workflows (admin)
@@ -2241,6 +2333,37 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           .update(logisticsCheckpoints)
           .set({ status, ...rest, completedAt, escalatedAt, updatedAt: new Date() })
           .where(eq(logisticsCheckpoints.id, checkpointId));
+
+        // v21: Auto-flip warehouse bay availability on warehouse_in / warehouse_return completion
+        if (status === "completed") {
+          const checkpoints = await dbConn
+            .select()
+            .from(logisticsCheckpoints)
+            .where(eq(logisticsCheckpoints.id, checkpointId))
+            .limit(1);
+          const cp = checkpoints[0];
+          if (cp && (cp.type === "warehouse_in" || cp.type === "warehouse_return")) {
+            // Get the workflow to find the assigned bay
+            const workflows = await dbConn
+              .select()
+              .from(logisticsWorkflows)
+              .where(eq(logisticsWorkflows.id, cp.workflowId))
+              .limit(1);
+            const wf = workflows[0];
+            if (wf?.warehouseBayId) {
+              const isNowAvailable = cp.type === "warehouse_return"; // return = bay free again
+              await dbConn
+                .update(warehouseBays)
+                .set({ isAvailable: isNowAvailable, updatedAt: new Date() })
+                .where(eq(warehouseBays.id, wf.warehouseBayId));
+              await notifyOwner({
+                title: `🏭 Bay ${isNowAvailable ? "freed" : "occupied"}: ${cp.type === "warehouse_in" ? "Robot checked in" : "Robot returned"}`,
+                content: `Workflow #${wf.id} (${wf.robotCompany ?? "unknown"}) — bay #${wf.warehouseBayId} is now ${isNowAvailable ? "available" : "occupied"}.`,
+              });
+            }
+          }
+        }
+
         return { success: true };
       }),
 

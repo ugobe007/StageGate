@@ -23,17 +23,23 @@ const SHOWS = ["CES 2026 (January, Las Vegas)", "NAB Show 2026 (April, Las Vegas
 export default function GetStarted() {
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  const [warehouseEstimate, setWarehouseEstimate] = useState<string | null>(null);
   const [form, setForm] = useState({
     company: "", contactName: "", contactEmail: "", contactPhone: "",
     website: "", country: "",
     robotName: "", robotType: "", robotCount: 1,
     robotDimensions: "", robotWeight: "", specialHandling: "",
+    robotSqft: "" as string | number,
+    storageDays: "" as string | number,
     showName: "", showDate: "", boothNumber: "",
     services: [] as string[],
   });
 
   const submitMutation = trpc.bookings.create.useMutation({
-    onSuccess: () => setSubmitted(true),
+    onSuccess: (data) => {
+      setWarehouseEstimate(data.warehouseEstimate ?? null);
+      setSubmitted(true);
+    },
     onError: (e) => toast.error(e.message || "Something went wrong. Please try again."),
   });
 
@@ -51,7 +57,26 @@ export default function GetStarted() {
       toast.error("Company name, contact name, and email are required.");
       return;
     }
-    submitMutation.mutate(form);
+    submitMutation.mutate({
+      company: form.company,
+      contactName: form.contactName,
+      contactEmail: form.contactEmail,
+      contactPhone: form.contactPhone || undefined,
+      website: form.website || undefined,
+      country: form.country || undefined,
+      robotName: form.robotName || undefined,
+      robotType: form.robotType || undefined,
+      robotCount: form.robotCount,
+      robotDimensions: form.robotDimensions || undefined,
+      robotWeight: form.robotWeight || undefined,
+      specialHandling: form.specialHandling || undefined,
+      showName: form.showName || undefined,
+      showDate: form.showDate || undefined,
+      boothNumber: form.boothNumber || undefined,
+      services: form.services,
+      robotSqft: form.robotSqft ? Number(form.robotSqft) : undefined,
+      storageDays: form.storageDays ? Number(form.storageDays) : undefined,
+    });
   };
 
   if (submitted) {
@@ -67,6 +92,13 @@ export default function GetStarted() {
           <p className="text-neutral-600 text-base mb-2">
             A StageGate coordinator will contact <strong>{form.contactName}</strong> at <strong>{form.contactEmail}</strong> within 24 hours to confirm your logistics plan for <strong>{form.company}</strong>.
           </p>
+          {warehouseEstimate && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-left">
+              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">Warehouse Storage Estimate</p>
+              <p className="text-sm text-amber-900 font-medium">${warehouseEstimate} estimated</p>
+              <p className="text-xs text-amber-600 mt-1">A bay has been pre-matched for your robot. Final pricing confirmed at quote stage.</p>
+            </div>
+          )}
           <p className="text-sm text-neutral-500 mb-8">
             Questions? Email us at{" "}
             <a href="mailto:hello@onstage.bot" className="text-emerald-600 underline">hello@onstage.bot</a>
@@ -259,6 +291,30 @@ export default function GetStarted() {
                   placeholder="e.g. 60cm × 40cm × 120cm"
                   className="border-neutral-300 text-neutral-900 placeholder:text-neutral-400 h-11"
                 />
+              </div>
+              <div>
+                <Label className="text-neutral-900 font-semibold mb-1.5 block text-sm">Floor Footprint (sqft)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={form.robotSqft}
+                  onChange={e => update("robotSqft", e.target.value)}
+                  placeholder="e.g. 12"
+                  className="border-neutral-300 text-neutral-900 placeholder:text-neutral-400 h-11"
+                />
+                <p className="text-xs text-neutral-400 mt-1">Used to auto-match a warehouse bay</p>
+              </div>
+              <div>
+                <Label className="text-neutral-900 font-semibold mb-1.5 block text-sm">Storage Days Needed</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={form.storageDays}
+                  onChange={e => update("storageDays", e.target.value)}
+                  placeholder="e.g. 7"
+                  className="border-neutral-300 text-neutral-900 placeholder:text-neutral-400 h-11"
+                />
+                <p className="text-xs text-neutral-400 mt-1">Days in warehouse before/after show</p>
               </div>
               <div className="col-span-2">
                 <Label className="text-neutral-900 font-semibold mb-1.5 block text-sm">Special Handling Notes</Label>

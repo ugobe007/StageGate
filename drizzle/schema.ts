@@ -421,6 +421,11 @@ export const bookingRequests = pgTable("booking_requests", {
   boothNumber: varchar("boothNumber", { length: 50 }),
   // Services requested
   services: jsonb("services").$type<string[]>().default([]),
+  // Warehouse space matching (v21)
+  robotSqft: integer("robotSqft"),
+  storageDays: integer("storageDays"),
+  warehouseBayId: integer("warehouseBayId"),
+  warehouseEstimate: decimal("warehouseEstimate", { precision: 10, scale: 2 }),
   // Status
   status: text("status").notNull().default("new"), // new | reviewed | quoted | confirmed | cancelled
   adminNotes: text("adminNotes"),
@@ -535,6 +540,7 @@ export const logisticsWorkflows = pgTable("logistics_workflows", {
   showName: varchar("showName", { length: 255 }),
   showStartDate: timestamp("showStartDate", { withTimezone: true }),
   notes: text("notes"),
+  warehouseBayId: integer("warehouseBayId"), // assigned bay (v21)
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -581,6 +587,7 @@ export const schedulingSlots = pgTable("scheduling_slots", {
   bookedByProspectId: integer("bookedByProspectId"),
   bookedByName: varchar("bookedByName", { length: 255 }),
   bookedByEmail: varchar("bookedByEmail", { length: 320 }),
+  bookedByCompany: varchar("bookedByCompany", { length: 255 }),
   meetingNotes: text("meetingNotes"),
   calendarEventId: varchar("calendarEventId", { length: 512 }),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
@@ -598,6 +605,7 @@ export const warehouseBays = pgTable("warehouse_bays", {
   isAvailable: boolean("is_available").notNull().default(true),
   notes: text("notes"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 export type WarehouseBay = typeof warehouseBays.$inferSelect;
 export type InsertWarehouseBay = typeof warehouseBays.$inferInsert;
