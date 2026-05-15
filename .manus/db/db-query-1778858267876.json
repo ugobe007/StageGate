@@ -1,0 +1,14 @@
+{
+  "query": "SELECT state, COUNT(*) as count FROM sales_agent_conversations GROUP BY state ORDER BY count DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SELECT state, COUNT(*) as count FROM sales_agent_conversations GROUP BY state ORDER BY count DESC;",
+  "rows": [
+    {
+      "state": "discovery",
+      "count": "78"
+    }
+  ],
+  "messages": [],
+  "stdout": "state\tcount\ndiscovery\t78\n",
+  "stderr": "",
+  "execution_time_ms": 274
+}

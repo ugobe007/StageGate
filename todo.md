@@ -1043,3 +1043,32 @@
 ### v27 Tests
 - [x] Write server/v27.test.ts: Frank voice validation, stage progression, venue options, Robot Guild handoff
 - [x] All 445 tests passing (v27)
+
+## v28 — Activate Frank's Full Autonomous Cycle
+
+### v28.1 — Nightly Outreach Activation
+- [x] Verify OUTREACH_BATCH_SIZE=8 and nextFollowUpAt filter are correct
+- [x] Seed nextFollowUpAt=now for all 78 discovery-state prospects so tonight's cron fires
+- [x] OUTREACH_BATCH_SIZE confirmed at 8 (safe for Resend, no change needed)
+- [x] Outreach runs via existing heartbeat cron at 3am UTC (registered in prior version)
+- [x] AdminSalesAgent: cron status visible in existing runs panel
+
+### v28.2 — Continuous Discovery Pipeline (exhibitorListUrl scraping)
+- [x] exhibitorListUrl column already exists in schema (no migration needed)
+- [x] Seed exhibitorListUrl for 12 shows (CES, NAB, Automate, PACK EXPO, CONEXPO, MINExpo, Manifest, HIMSS, AWS re:Invent)
+- [x] Rebuild salesAgentDiscovery to scrape exhibitorListUrl pages via fetch + LLM parse
+- [x] Fallback to LLM knowledge if exhibitorListUrl is null or fetch fails
+- [x] Deduplicate by company name (case-insensitive) before ingest
+- [x] AdminShows: exhibitorListUrl visible and editable in show detail
+
+### v28.3 — Frank Reply Handling (Close the Loop)
+- [x] Update inbound webhook FROM_ADDRESS from hello@onstage.bot to frank@onstage.bot
+- [x] Update reply system prompt to sign as Frank (not "StageGate Team")
+- [x] Update conversation state advancement: inbound reply → "responded" (not "in_conversation")
+- [x] Update scheduling detection: advance to "scheduling" (not "scheduling_sent")
+- [x] Wire inbound matching to also check emailThreads.resendMessageId (In-Reply-To header)
+- [x] Stop auto-sending AI reply immediately — draft-first mode: creates pending draft in draft_emails
+
+### v28 Tests
+- [x] Write server/v28.test.ts: exhibitorListUrl seeding, inbound state transitions, Frank reply-from
+- [x] All 512 tests passing (v28)

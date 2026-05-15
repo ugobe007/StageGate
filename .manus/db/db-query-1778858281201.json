@@ -1,0 +1,130 @@
+{
+  "query": "SELECT id, name, website, exhibitorListUrl FROM trade_shows ORDER BY name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute SELECT id, name, website, exhibitorListUrl FROM trade_shows ORDER BY name;",
+  "rows": [
+    {
+      "id": "5",
+      "name": "Automate 2027",
+      "website": "https://www.automateshow.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30014",
+      "name": "AWS re:Invent 2026",
+      "website": "https://reinvent.awsevents.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30001",
+      "name": "CES 2026",
+      "website": "https://www.ces.tech",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "1",
+      "name": "CES 2027",
+      "website": "https://www.ces.tech",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30006",
+      "name": "CONEXPO-CON/AGG 2026",
+      "website": "https://www.conexpoconagg.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30012",
+      "name": "G2E — Global Gaming Expo 2026",
+      "website": "https://www.globalgamingexpo.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30010",
+      "name": "HDExpo + Conference 2026",
+      "website": "https://www.hdexpo.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30005",
+      "name": "HIMSS 2026",
+      "website": "https://www.himss.org",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "4",
+      "name": "HIMSS 2027",
+      "website": "https://www.himssconference.org",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30009",
+      "name": "Interop 2026",
+      "website": "https://www.interop.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30007",
+      "name": "ISC West 2026",
+      "website": "https://www.iscwest.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30004",
+      "name": "Manifest 2026",
+      "website": "https://manifestvegas.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "2",
+      "name": "Manifest 2027",
+      "website": "https://www.manifestvegas.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "3",
+      "name": "MINExpo 2026",
+      "website": "https://www.minexpo.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30015",
+      "name": "MJBizCon 2026",
+      "website": "https://mjbizconference.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30008",
+      "name": "NAB Show 2026",
+      "website": "https://www.nabshow.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30011",
+      "name": "PACK EXPO Las Vegas 2026",
+      "website": "https://www.packexpolasvegas.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30013",
+      "name": "SEMA Show 2026",
+      "website": "https://www.semashow.com",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30003",
+      "name": "SHOT Show 2026",
+      "website": "https://www.shotshow.org",
+      "exhibitorListUrl": "NULL"
+    },
+    {
+      "id": "30002",
+      "name": "World of Concrete 2026",
+      "website": "https://www.worldofconcrete.com",
+      "exhibitorListUrl": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\twebsite\texhibitorListUrl\n5\tAutomate 2027\thttps://www.automateshow.com\tNULL\n30014\tAWS re:Invent 2026\thttps://reinvent.awsevents.com\tNULL\n30001\tCES 2026\thttps://www.ces.tech\tNULL\n1\tCES 2027\thttps://www.ces.tech\tNULL\n30006\tCONEXPO-CON/AGG 2026\thttps://www.conexpoconagg.com\tNULL\n30012\tG2E — Global Gaming Expo 2026\thttps://www.globalgamingexpo.com\tNULL\n30010\tHDExpo + Conference 2026\thttps://www.hdexpo.com\tNULL\n30005\tHIMSS 2026\thttps://www.himss.org\tNULL\n4\tHIMSS 2027\thttps://www.himssconference.org\tNULL\n30009\tInterop 2026\thttps://www.interop.com\tNULL\n30007\tISC West 2026\thttps://www.iscwest.com\tNULL\n30004\tManifest 2026\thttps://manifestvegas.com\tNULL\n2\tManifest 2027\thttps://www.manifestvegas.com\tNULL\n3\tMINExpo 2026\thttps://www.minexpo.com\tNULL\n30015\tMJBizCon 2026\thttps://mjbizconference.com\tNULL\n30008\tNAB Show 2026\thttps://www.nabshow.com\tNULL\n30011\tPACK EXPO Las Vegas 2026\thttps://www.packexpolasvegas.com\tNULL\n30013\tSEMA Show 2026\thttps://www.semashow.com\tNULL\n30003\tSHOT Show 2026\thttps://www.shotshow.org\tNULL\n30002\tWorld of Concrete 2026\thttps://www.worldofconcrete.com\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 293
+}

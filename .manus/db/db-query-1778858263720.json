@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO sales_agent_conversations (prospectId, state, nextFollowUpAt, lastActivityAt, createdAt, updatedAt) SELECT id, 'discovery', NOW(), NOW(), NOW(), NOW() FROM prospects WHERE id NOT IN (SELECT prospectId FROM sales_agent_conversations);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute INSERT INTO sales_agent_conversations (prospectId, state, nextFollowUpAt, lastActivityAt, createdAt, updatedAt) SELECT id, 'discovery', NOW(), NOW(), NOW(), NOW() FROM prospects WHERE id NOT IN (SELECT prospectId FROM sales_agent_conversations);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 286
+}

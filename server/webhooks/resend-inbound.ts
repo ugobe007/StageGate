@@ -3,19 +3,49 @@
  *
  * Receives inbound emails sent to @onstage.bot addresses via Resend's
  * inbound routing. Parses the email, matches to a prospect, stores the
- * thread, and triggers the AI conversational reply engine.
+ * thread, advances conversation state, and generates a Frank-voice draft
+ * for admin review (draft-first mode — no auto-send).
+ *
+ * State transitions on inbound reply:
+ *   discovery / intro_sent / followup_1 / followup_2 / robot_guild → "responded"
+ *   responded → "scheduling" (if scheduling intent detected)
+ *   scheduling → "scheduling" (stays, admin books the call)
  *
  * Resend inbound webhook payload shape:
  * https://resend.com/docs/api-reference/webhooks/introduction
  */
 import type { Request, Response } from "express";
 import { getDb } from "../db";
-import { emailThreads, salesAgentConversations, prospects, prospectActivities } from "../../drizzle/schema";
+import {
+  emailThreads,
+  salesAgentConversations,
+  prospects,
+  prospectActivities,
+  draftEmails,
+} from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
+import { FRANK_PERSONA, FRANK_SYSTEM_PROMPT } from "../agents/frankPlaybook";
 
-const FROM_ADDRESS = "hello@onstage.bot";
-const ADMIN_BCC = ["bob@onstage.bot", "tom@starsupportinc.com"];
+// Frank replies — consistent with outreach engine
+const FRANK_FROM = `${FRANK_PERSONA.fromName} <${FRANK_PERSONA.fromEmail}>`;
+const ADMIN_BCC = ["bob@starsupportinc.com", "tom@starsupportinc.com"];
+
+// Stages that can be advanced to "responded" on inbound reply
+const OUTREACH_STAGES = new Set([
+  "discovery",
+  "intro_sent",
+  "followup_1",
+  "followup_2",
+  "robot_guild",
+]);
+
+// Keywords that indicate scheduling intent
+const SCHEDULING_KEYWORDS = [
+  "schedule", "call", "meeting", "talk", "chat", "demo",
+  "when can we", "set up a time", "book a time", "calendly",
+  "available", "availability", "speak with", "connect",
+];
 
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
@@ -23,9 +53,8 @@ export async function resendInboundHandler(req: Request, res: Response) {
   try {
     const payload = req.body as ResendInboundPayload;
 
-    // Resend sends inbound as a POST with the parsed email fields
     const fromAddress = extractEmail(payload.from ?? "");
-    const toAddress = payload.to ?? FROM_ADDRESS;
+    const toAddress = payload.to ?? FRANK_PERSONA.fromEmail;
     const subject = payload.subject ?? "(no subject)";
     const bodyText = payload.text ?? "";
     const bodyHtml = payload.html ?? "";
@@ -40,17 +69,37 @@ export async function resendInboundHandler(req: Request, res: Response) {
     const db = await getDb();
     if (!db) return res.status(503).json({ error: "db unavailable" });
 
-    // 1. Find matching prospect by sender email
-    const matchedProspects = await db
+    // ── 1. Match prospect by sender email ─────────────────────────────────────
+    // Primary: match by email address
+    const matchedByEmail = await db
       .select()
       .from(prospects)
       .where(eq(prospects.contactEmail, fromAddress))
       .limit(1);
 
-    const prospect = matchedProspects[0] ?? null;
+    let prospect = matchedByEmail[0] ?? null;
+
+    // Fallback: match by In-Reply-To messageId in email_threads
+    if (!prospect && inReplyTo) {
+      const matchedThread = await db
+        .select({ prospectId: emailThreads.prospectId })
+        .from(emailThreads)
+        .where(eq(emailThreads.resendMessageId, inReplyTo))
+        .limit(1);
+
+      if (matchedThread[0]?.prospectId) {
+        const matchedProspects = await db
+          .select()
+          .from(prospects)
+          .where(eq(prospects.id, matchedThread[0].prospectId))
+          .limit(1);
+        prospect = matchedProspects[0] ?? null;
+      }
+    }
+
     const prospectId = prospect?.id ?? null;
 
-    // 2. Store the inbound email in email_threads
+    // ── 2. Store inbound email in email_threads ───────────────────────────────
     await db.insert(emailThreads).values({
       prospectId: prospectId ?? undefined,
       threadId: inReplyTo ?? messageId ?? `inbound-${Date.now()}`,
@@ -65,63 +114,82 @@ export async function resendInboundHandler(req: Request, res: Response) {
       receivedAt: new Date(),
     });
 
-    // 3. Log activity on prospect timeline
-    if (prospectId) {
-      await db.insert(prospectActivities).values({
-        prospectId,
-        type: "email_replied",
-        title: `Inbound reply: "${subject.slice(0, 80)}"`,
-        description: `Inbound reply from ${fromAddress}`,
-        metadata: { fromAddress, subject },
-        createdAt: new Date(),
-      });
-
-      // 4. Update conversation state to in_conversation
-      const existingConvs = await db
-        .select()
-        .from(salesAgentConversations)
-        .where(eq(salesAgentConversations.prospectId, prospectId))
-        .limit(1);
-
-      if (existingConvs.length > 0) {
-        const conv = existingConvs[0];
-        const newState = conv.state === "awaiting_reply" ? "in_conversation" : conv.state;
-        await db
-          .update(salesAgentConversations)
-          .set({
-            state: newState,
-            lastActivityAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(salesAgentConversations.id, conv.id));
-      }
-
-      // 5. Generate AI reply
-      await generateAndSendReply({
-        prospect,
-        subject,
-        bodyText,
-        inReplyTo,
-        references,
-        threadId: inReplyTo ?? messageId,
-        db,
-        prospectId,
-      });
-    } else {
-      // Unknown sender — forward to admin for manual review
+    if (!prospect || !prospectId) {
+      // Unknown sender — log and return
       console.log(`[Inbound] Unknown sender: ${fromAddress} — no matching prospect`);
+      return res.json({ ok: true, matched: false });
     }
 
-    res.json({ ok: true });
+    // ── 3. Log activity on prospect timeline ──────────────────────────────────
+    await db.insert(prospectActivities).values({
+      prospectId,
+      type: "email_replied",
+      title: `Inbound reply: "${subject.slice(0, 80)}"`,
+      description: `Inbound reply from ${fromAddress}`,
+      metadata: { fromAddress, subject },
+      createdAt: new Date(),
+    });
+
+    // ── 4. Advance conversation state ─────────────────────────────────────────
+    const existingConvs = await db
+      .select()
+      .from(salesAgentConversations)
+      .where(eq(salesAgentConversations.prospectId, prospectId))
+      .limit(1);
+
+    const conv = existingConvs[0] ?? null;
+    const currentState = conv?.state ?? "discovery";
+
+    // Detect scheduling intent
+    const lowerBody = bodyText.toLowerCase();
+    const wantsToSchedule = SCHEDULING_KEYWORDS.some(kw => lowerBody.includes(kw));
+
+    let newState: string;
+    if (wantsToSchedule) {
+      newState = "scheduling";
+    } else if (OUTREACH_STAGES.has(currentState)) {
+      newState = "responded";
+    } else {
+      newState = currentState; // already in responded/scheduling/booked — keep
+    }
+
+    if (conv) {
+      await db
+        .update(salesAgentConversations)
+        .set({
+          state: newState,
+          lastActivityAt: new Date(),
+          updatedAt: new Date(),
+          // Clear nextFollowUpAt — human (or admin) takes over from here
+          nextFollowUpAt: null,
+        })
+        .where(eq(salesAgentConversations.id, conv.id));
+    }
+
+    // ── 5. Generate Frank's reply draft (draft-first — no auto-send) ──────────
+    await generateFrankDraft({
+      prospect,
+      subject,
+      bodyText,
+      inReplyTo,
+      references,
+      threadId: inReplyTo ?? messageId,
+      db,
+      prospectId,
+      convState: newState,
+      wantsToSchedule,
+    });
+
+    res.json({ ok: true, matched: true, newState });
   } catch (err) {
     console.error("[Inbound webhook error]", err);
     res.status(500).json({ error: String(err) });
   }
 }
 
-// ─── AI Reply Generator ───────────────────────────────────────────────────────
+// ─── Frank Draft Generator ────────────────────────────────────────────────────
 
-async function generateAndSendReply({
+async function generateFrankDraft({
   prospect,
   subject,
   bodyText,
@@ -130,6 +198,8 @@ async function generateAndSendReply({
   threadId,
   db,
   prospectId,
+  convState,
+  wantsToSchedule,
 }: {
   prospect: typeof prospects.$inferSelect;
   subject: string;
@@ -139,8 +209,10 @@ async function generateAndSendReply({
   threadId: string | null;
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>;
   prospectId: number;
+  convState: string;
+  wantsToSchedule: boolean;
 }) {
-  // Load full thread history for context
+  // Load thread history for context
   const threadHistory = threadId
     ? await db
         .select()
@@ -150,139 +222,81 @@ async function generateAndSendReply({
     : ([] as (typeof emailThreads.$inferSelect)[]);
 
   const historyText = threadHistory
-    .map(t => `[${t.direction === "outbound" ? "StageGate" : t.fromAddress}]: ${t.body ?? ""}`)
+    .map(t => `[${t.direction === "outbound" ? "Frank (StageGate)" : t.fromAddress}]: ${t.body ?? ""}`)
     .join("\n\n---\n\n");
 
-  // Load conversation strategy if available
-  const convs = await db
-    .select()
-    .from(salesAgentConversations)
-    .where(eq(salesAgentConversations.prospectId, prospectId))
-    .limit(1);
-  const strategy = convs[0]?.strategy ?? "";
-  const convState = convs[0]?.state ?? "in_conversation";
-
-  // Detect scheduling intent
-  const schedulingKeywords = ["call", "meet", "schedule", "talk", "discuss", "demo", "available", "time", "calendar", "book"];
-  const wantsToSchedule = schedulingKeywords.some(kw =>
-    bodyText.toLowerCase().includes(kw)
-  );
-
   const schedulingInstruction = wantsToSchedule
-    ? `The prospect seems interested in scheduling a call. Include a link to our scheduling page: https://onstage.bot/schedule — invite them to pick a time that works for them.`
+    ? `The prospect wants to schedule a call or demo. Include a link to our scheduling page: https://onstage.bot/schedule — invite them to pick a time.`
     : "";
 
-  const systemPrompt = `You are the StageGate Team's AI sales representative. StageGate is the premier robotics activation infrastructure company in Las Vegas — we handle all logistics, warehousing, staging, and trade show activation for robot companies exhibiting at conferences.
+  const userPrompt = `You are Frank from StageGate. You just received a reply from ${prospect.contactName ?? "someone"} at ${prospect.company}.
 
-Your job is to continue a warm, professional email conversation with a prospective robot company. You are NOT a bot — write naturally, conversationally, and helpfully. Never sound scripted or AI-generated.
-
-Company context:
-- Prospect company: ${prospect.company}
-- Contact name: ${prospect.contactName ?? "there"}
-- Robot type: ${prospect.robotType ?? "unknown"}
-- Shows they attend: ${Array.isArray(prospect.shows) ? prospect.shows.join(", ") : "unknown"}
-- Outreach strategy: ${strategy}
-- Conversation state: ${convState}
+Their robot: ${prospect.robotName ?? "unknown"} (${prospect.robotType ?? "robot"})
+Shows they attend: ${Array.isArray(prospect.shows) ? prospect.shows.join(", ") : "unknown"}
+Current conversation state: ${convState}
 
 ${schedulingInstruction}
 
-Sign all emails as:
-"The StageGate Team
-hello@onstage.bot | onstage.bot"
-
-Rules:
-1. Be warm, direct, and helpful — not salesy
-2. Answer any questions they asked in their email
-3. Keep it concise — 3-5 short paragraphs max
-4. If they show interest, naturally guide toward scheduling a call
-5. Never mention you are an AI
-6. Do NOT include a subject line in your reply — just the body`;
-
-  const userPrompt = `Email thread history:
+Email thread history:
 ${historyText || "(no prior history)"}
 
 Their latest message:
 ${bodyText}
 
-Write a natural, helpful reply.`;
+Write Frank's reply. Keep it short, direct, helpful. Sign as:
+${FRANK_PERSONA.signature}`;
 
-  const llmResponse = await invokeLLM({
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-  });
+  let replyBody = "";
+  try {
+    const llmResponse = await invokeLLM({
+      messages: [
+        { role: "system", content: FRANK_SYSTEM_PROMPT },
+        { role: "user", content: userPrompt },
+      ],
+    });
+    const rawContent = llmResponse.choices?.[0]?.message?.content ?? "";
+    replyBody = typeof rawContent === "string" ? rawContent : "";
+  } catch (llmErr) {
+    console.error("[Inbound] LLM draft generation failed:", String(llmErr).slice(0, 200));
+    return;
+  }
 
-  const rawContent = llmResponse.choices?.[0]?.message?.content ?? "";
-  const replyBody = typeof rawContent === "string" ? rawContent : "";
   if (!replyBody) return;
 
-  // Send the reply via Resend fetch API
   const replySubject = subject.startsWith("Re:") ? subject : `Re: ${subject}`;
 
-  const sendRes = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: `StageGate Team <${FROM_ADDRESS}>`,
-      to: [prospect.contactEmail ?? ""],
-      bcc: ADMIN_BCC,
+  // Store as a draft email for admin review (status: "pending")
+  // draftEmails columns: prospectId, subject, body, agentReasoning, status, sentAt, resendMessageId, createdAt, updatedAt
+  const draftReasoning = `Reply to inbound from ${prospect.contactEmail}. State: ${convState}. InReplyTo: ${inReplyTo ?? "none"}. BCC: ${ADMIN_BCC.join(", ")}. Scheduling intent: ${wantsToSchedule}.`;
+  try {
+    await db.insert(draftEmails).values({
+      prospectId,
       subject: replySubject,
-      text: replyBody,
-      headers: {
-        ...(inReplyTo ? { "In-Reply-To": inReplyTo } : {}),
-        ...(references ? { References: references } : {}),
-      },
-    }),
-  });
+      body: replyBody,
+      agentReasoning: draftReasoning,
+      status: "pending",
+      createdAt: new Date(),
+    });
 
-  const sendData = sendRes.ok ? (await sendRes.json() as { id?: string }) : null;
-  const sentMessageId = sendData?.id ?? null;
-
-  // Store the outbound reply in email_threads
-  await db.insert(emailThreads).values({
-    prospectId,
-    threadId: inReplyTo ?? threadId ?? `thread-${prospectId}`,
-    direction: "outbound",
-    fromAddress: FROM_ADDRESS,
-    toAddress: prospect.contactEmail ?? "",
-    subject: replySubject,
-    body: replyBody,
-    resendMessageId: sentMessageId ?? undefined,
-    inReplyTo: inReplyTo ?? undefined,
-    references: references ?? undefined,
-  });
+    console.log(`[Inbound] Draft created for prospect ${prospectId} (${prospect.company})`);
+  } catch (draftErr) {
+    console.error("[Inbound] Failed to save draft:", String(draftErr).slice(0, 200));
+  }
 
   // Log activity
   await db.insert(prospectActivities).values({
     prospectId,
-    type: "email_sent",
-    title: `AI reply sent: "${replySubject.slice(0, 80)}"`,
-    description: `AI reply sent to ${prospect.contactEmail}`,
-    metadata: { resendMessageId: sentMessageId, isAiReply: true },
+    type: "draft_created",
+    title: `Frank draft ready: "${replySubject.slice(0, 80)}"`,
+    description: `AI-generated reply draft ready for admin review`,
+    metadata: { isAiDraft: true, convState },
     createdAt: new Date(),
   });
-
-  // Update conversation state
-  if (convs.length > 0) {
-    await db
-      .update(salesAgentConversations)
-      .set({
-        state: wantsToSchedule ? "scheduling_sent" : "in_conversation",
-        lastActivityAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(salesAgentConversations.id, convs[0].id));
-  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function extractEmail(raw: string): string {
-  // Handle "Name <email@domain.com>" format
   const match = raw.match(/<([^>]+)>/);
   return match ? match[1].trim() : raw.trim();
 }
