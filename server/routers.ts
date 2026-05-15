@@ -10,7 +10,7 @@ import * as db from "./db";
 import * as workflows from "./workflows";
 import * as emailHelpers from "./email";
 import { eq, desc, count, sql, inArray } from "drizzle-orm";
-import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems, schedulingSlots, salesAgentConversations, salesAgentRuns, vendors, emailThreads, logisticsWorkflows, logisticsCheckpoints } from "../drizzle/schema";
+import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems, schedulingSlots, salesAgentConversations, salesAgentRuns, vendors, emailThreads, logisticsWorkflows, logisticsCheckpoints, warehouseBays } from "../drizzle/schema";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 
@@ -2000,6 +2000,17 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           .where(drizzleEq(schedulingSlots.id, input.slotId));
         return { success: true };
       }),
+
+    // Admin: delete a slot
+    deleteSlot: adminProcedure
+      .input(z.object({ slotId: z.number() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const { eq: drizzleEq } = await import("drizzle-orm");
+        await dbConn.delete(schedulingSlots).where(drizzleEq(schedulingSlots.id, input.slotId));
+        return { success: true };
+      }),
   }),
 
   // ─── Sales Agent ───────────────────────────────────────────────────────────
@@ -2473,6 +2484,68 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         });
 
         return { success: true, summary: parsed.summary, nextSteps: parsed.nextSteps, primaryInterest: parsed.primaryInterest };
+      }),
+  }),
+
+  warehouse: router({
+    listBays: adminProcedure.query(async () => {
+      const dbConn = await getDb();
+      if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      return dbConn.select().from(warehouseBays).orderBy(warehouseBays.name);
+    }),
+
+    upsertBay: adminProcedure
+      .input(z.object({
+        id: z.number().optional(),
+        name: z.string().min(1),
+        sqft: z.number().int().positive(),
+        pricePerSqftPerDay: z.string(),
+        isAvailable: z.boolean(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (input.id) {
+          await dbConn.update(warehouseBays)
+            .set({ name: input.name, sqft: input.sqft, pricePerSqftPerDay: input.pricePerSqftPerDay, isAvailable: input.isAvailable, notes: input.notes ?? null })
+            .where(eq(warehouseBays.id, input.id));
+          return { success: true, id: input.id };
+        } else {
+          const [row] = await dbConn.insert(warehouseBays)
+            .values({ name: input.name, sqft: input.sqft, pricePerSqftPerDay: input.pricePerSqftPerDay, isAvailable: input.isAvailable, notes: input.notes ?? null })
+            .returning({ id: warehouseBays.id });
+          return { success: true, id: row.id };
+        }
+      }),
+
+    deleteBay: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        await dbConn.delete(warehouseBays).where(eq(warehouseBays.id, input.id));
+        return { success: true };
+      }),
+
+    matchSpace: adminProcedure
+      .input(z.object({ robotSqft: z.number().positive(), days: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const bays = await dbConn.select().from(warehouseBays)
+          .where(eq(warehouseBays.isAvailable, true))
+          .orderBy(warehouseBays.sqft);
+        // Find smallest bay that fits the robot
+        const match = bays.find((b: typeof warehouseBays.$inferSelect) => b.sqft >= input.robotSqft);
+        if (!match) return { match: null, estimatedTotal: null, message: "No available bay large enough for this robot" };
+        const rate = parseFloat(match.pricePerSqftPerDay);
+        const estimatedTotal = rate * input.robotSqft * input.days;
+        return {
+          match: { id: match.id, name: match.name, sqft: match.sqft, pricePerSqftPerDay: match.pricePerSqftPerDay },
+          estimatedTotal: estimatedTotal.toFixed(2),
+          message: `${match.name} (${match.sqft} sqft) @ $${rate}/sqft/day × ${input.robotSqft} sqft × ${input.days} days = $${estimatedTotal.toFixed(2)}`,
+        };
       }),
   }),
 });

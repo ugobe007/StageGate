@@ -824,3 +824,26 @@
 - [x] Post-show: AI prompts robot company to confirm pickup readiness
 - [x] Return logistics workflow: same checkpoint engine as inbound
 - [x] Full lifecycle marked complete in order record
+
+## v20 — Cron Activation, Warehouse Pricing, Scheduling Self-Service
+
+### v20.1 — Logistics Checkpoint Poller Cron
+- [x] Register logistics-checkpoint-poll heartbeat: cron "0 8 * * *", POST to /api/scheduled/logistics-checkpoint-poll
+- [x] Verify job appears in manus-heartbeat list
+
+### v20.2 — Warehouse Bay + Pricing UI
+- [x] Add warehouseBays table to schema: id, name, sqft, pricePerSqftPerDay, isAvailable, notes
+- [x] Run migration SQL via webdev_execute_sql
+- [x] Add warehouse.listBays, warehouse.upsertBay, warehouse.deleteBay tRPC procedures
+- [x] Add warehouse.matchSpace(robotSqft, days) procedure: finds available bay, returns price estimate
+- [x] Add "Warehouse" tab to AdminVendors page: bay CRUD table with sqft + price fields
+- [x] Wire matchSpace into quote flow: auto-populate storage line item when robot dimensions are known
+- [x] Vitest: test matchSpace pricing logic
+
+### v20.3 — Scheduling Page Self-Service
+- [x] Update AdminScheduling slot creation: date picker + time picker + duration selector + host dropdown (Bob / Tommy / Both)
+- [x] Add slot deletion from AdminScheduling
+- [x] Update public /schedule page: show available slots grouped by date, prospect fills name/email/company, slot booked on submit
+- [x] On booking: send calendar invite email to Bob (bob@starsupportinc.com), Tommy (tom@starsupportinc.com), and prospect
+- [x] Mark slot as booked after confirmed, prevent double-booking
+- [x] Vitest: test slot booking, double-booking prevention, calendar invite email

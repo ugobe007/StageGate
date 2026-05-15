@@ -588,3 +588,16 @@ export const schedulingSlots = pgTable("scheduling_slots", {
 });
 export type SchedulingSlot = typeof schedulingSlots.$inferSelect;
 export type InsertSchedulingSlot = typeof schedulingSlots.$inferInsert;
+
+// ─── Warehouse Bays (space inventory + per-sqft pricing) ─────────────────────
+export const warehouseBays = pgTable("warehouse_bays", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  sqft: integer("sqft").notNull(),
+  pricePerSqftPerDay: decimal("price_per_sqft_per_day", { precision: 10, scale: 4 }).notNull().default("0.50"),
+  isAvailable: boolean("is_available").notNull().default(true),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+});
+export type WarehouseBay = typeof warehouseBays.$inferSelect;
+export type InsertWarehouseBay = typeof warehouseBays.$inferInsert;
