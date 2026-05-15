@@ -1476,3 +1476,17 @@
 - [x] Build /about page with StageGate backstory and LV Robotics connection
 - [x] Add About Us link to Home page nav bar
 - [x] Wire /about route in App.tsx
+
+## v49 — Post-Login Routing, Onboarding, Service Requests
+- [x] Add service_requests table to schema (userId, type, showId, robotType, details, status, createdAt)
+- [ ] Add robots JSON column to company_profiles (name, type, weight, dimensions, powerReq)
+- [ ] Add showsAttending JSON column to company_profiles
+- [ ] Add company.submitServiceRequest tRPC procedure
+- [ ] Add company.getMyServiceRequests tRPC procedure
+- [ ] Add admin.getServiceRequests tRPC procedure
+- [ ] Fix OAuth callback to redirect to /auth-redirect instead of /
+- [ ] Build /auth-redirect page: admin → /admin, user with profile → /dashboard, user without profile → /onboarding
+- [ ] Build /onboarding multi-step wizard (company info → robot details → shows → services needed)
+- [ ] Rebuild ClientDashboard: profile summary, robots, upcoming shows, service requests, submit new request
+- [ ] Add service request section to AdminDashboard sidebar
+- [ ] Update nav Sign In to pass returnPath so user lands back where they were

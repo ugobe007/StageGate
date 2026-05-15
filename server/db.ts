@@ -34,6 +34,9 @@ import {
   agentRuns,
   InsertAgentRun,
   AgentRun,
+  serviceRequests,
+  InsertServiceRequest,
+  ServiceRequest,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -59,10 +62,10 @@ export async function getDb() {
 
 // ─── Users ───────────────────────────────────────────────────────────────────
 
-export async function upsertUser(user: InsertUser): Promise<void> {
+export async function upsertUser(user: InsertUser) {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
-  if (!db) return;
+  if (!db) return null;
 
   const values: InsertUser = { openId: user.openId };
   const updateSet: Record<string, unknown> = {};
@@ -92,7 +95,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
 
-  await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet });
+  const result = await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet }).returning();
+  return result[0] ?? null;
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -128,6 +132,42 @@ export async function getAllCompanyProfiles() {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(companyProfiles).orderBy(desc(companyProfiles.createdAt));
+}
+
+// ─── Service Requests ───────────────────────────────────────────────────────
+
+export async function createServiceRequest(data: InsertServiceRequest): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [inserted] = await db.insert(serviceRequests).values(data).returning({ id: serviceRequests.id });
+  return inserted!.id;
+}
+
+export async function getServiceRequestsByUserId(userId: number): Promise<ServiceRequest[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(serviceRequests)
+    .where(eq(serviceRequests.userId, userId))
+    .orderBy(desc(serviceRequests.createdAt));
+}
+
+export async function getAllServiceRequests(): Promise<ServiceRequest[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(serviceRequests).orderBy(desc(serviceRequests.createdAt));
+}
+
+export async function updateServiceRequestStatus(
+  id: number,
+  status: string,
+  adminNotes?: string,
+  quotedPrice?: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(serviceRequests)
+    .set({ status, adminNotes: adminNotes ?? null, quotedPrice: quotedPrice ?? null, updatedAt: new Date() })
+    .where(eq(serviceRequests.id, id));
 }
 
 // ─── Trade Shows ──────────────────────────────────────────────────────────────

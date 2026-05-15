@@ -59,16 +59,23 @@ export const appRouter = router({
           companyName: z.string().min(1),
           website: z.string().optional(),
           contactName: z.string().optional(),
-          contactEmail: z.string().email().optional(),
+          contactEmail: z.string().email().optional().or(z.literal("")),
           contactPhone: z.string().optional(),
           country: z.string().optional(),
-          robotTypes: z.string().optional(), // JSON array as string
+          robotTypes: z.string().optional(),
           description: z.string().optional(),
+          robots: z.string().optional(),
+          showsAttending: z.string().optional(),
+          servicesNeeded: z.string().optional(),
+          logoUrl: z.string().optional(),
+          linkedinUrl: z.string().optional(),
+          onboardingComplete: z.boolean().optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
         const isNew = !(await db.getCompanyProfileByUserId(ctx.user.id));
-        const id = await db.upsertCompanyProfile({ ...input, userId: ctx.user.id });
+        const profileData = { ...input, userId: ctx.user.id, contactEmail: input.contactEmail || undefined };
+        const id = await db.upsertCompanyProfile(profileData);
         if (isNew) {
           await notifyOwner({
             title: "New Company Registered",
@@ -81,6 +88,54 @@ export const appRouter = router({
     getAllProfiles: adminProcedure.query(async () => {
       return db.getAllCompanyProfiles();
     }),
+
+    submitServiceRequest: protectedProcedure
+      .input(
+        z.object({
+          requestType: z.string().min(1),
+          showName: z.string().optional(),
+          showDate: z.string().optional(),
+          robotName: z.string().optional(),
+          robotType: z.string().optional(),
+          details: z.string().optional(),
+          urgency: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const profile = await db.getCompanyProfileByUserId(ctx.user.id);
+        const id = await db.createServiceRequest({
+          userId: ctx.user.id,
+          companyProfileId: profile?.id ?? null,
+          ...input,
+        });
+        await notifyOwner({
+          title: `New Service Request: ${input.requestType}`,
+          content: `${profile?.companyName ?? ctx.user.name ?? "A company"} submitted a ${input.requestType} request for ${input.showName ?? "an upcoming show"}.\n\nDetails: ${input.details ?? "None"}`,
+        }).catch(() => {});
+        return { id };
+      }),
+
+    getMyServiceRequests: protectedProcedure.query(async ({ ctx }) => {
+      return db.getServiceRequestsByUserId(ctx.user.id);
+    }),
+
+    getAllServiceRequests: adminProcedure.query(async () => {
+      return db.getAllServiceRequests();
+    }),
+
+    updateServiceRequestStatus: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          status: z.string(),
+          adminNotes: z.string().optional(),
+          quotedPrice: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await db.updateServiceRequestStatus(input.id, input.status, input.adminNotes, input.quotedPrice);
+        return { success: true };
+      }),
   }),
 
   // ─── Trade Shows ───────────────────────────────────────────────────────────

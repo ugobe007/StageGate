@@ -40,6 +40,7 @@ import Schedule from "./pages/Schedule";
 import TourBooking from "./pages/TourBooking";
 import DbStatusBanner from "@/components/DbStatusBanner";
 import About from "./pages/About";
+import Onboarding from "./pages/Onboarding";
 
 function Router() {
   return (
@@ -62,6 +63,7 @@ function Router() {
 
       {/* Client */}
       <Route path="/dashboard" component={ClientDashboard} />
+      <Route path="/onboarding" component={Onboarding} />
       <Route path="/order" component={ServiceOrder} />
 
       {/* Admin */}

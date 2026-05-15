@@ -37,12 +37,40 @@ export const companyProfiles = pgTable("company_profiles", {
   country: varchar("country", { length: 100 }),
   robotTypes: text("robotTypes"),
   description: text("description"),
+  robots: text("robots"),                   // JSON: [{name, type, weight, dimensions, powerReq, notes}]
+  showsAttending: text("showsAttending"),    // JSON: [{showId, showName, boothNumber, year}]
+  servicesNeeded: text("servicesNeeded"),    // JSON: string[]
+  logoUrl: text("logoUrl"),
+  linkedinUrl: text("linkedinUrl"),
+  onboardingComplete: boolean("onboardingComplete").default(false).notNull(),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type CompanyProfile = typeof companyProfiles.$inferSelect;
 export type InsertCompanyProfile = typeof companyProfiles.$inferInsert;
+
+// Service requests submitted by client companies
+export const serviceRequests = pgTable("service_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  companyProfileId: integer("companyProfileId"),
+  requestType: varchar("requestType", { length: 100 }).notNull(),
+  showName: varchar("showName", { length: 255 }),
+  showDate: varchar("showDate", { length: 100 }),
+  robotName: varchar("robotName", { length: 255 }),
+  robotType: varchar("robotType", { length: 100 }),
+  details: text("details"),
+  urgency: varchar("urgency", { length: 50 }).default("normal"),
+  status: varchar("status", { length: 50 }).default("new").notNull(),
+  adminNotes: text("adminNotes"),
+  quotedPrice: varchar("quotedPrice", { length: 100 }),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type ServiceRequest = typeof serviceRequests.$inferSelect;
+export type InsertServiceRequest = typeof serviceRequests.$inferInsert;
 
 // Trade shows
 export const tradeShows = pgTable("trade_shows", {
