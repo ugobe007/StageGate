@@ -609,3 +609,17 @@ export const warehouseBays = pgTable("warehouse_bays", {
 });
 export type WarehouseBay = typeof warehouseBays.$inferSelect;
 export type InsertWarehouseBay = typeof warehouseBays.$inferInsert;
+
+export const warehouseBayEvents = pgTable("warehouse_bay_events", {
+  id: serial("id").primaryKey(),
+  bayId: integer("bay_id").notNull(),
+  bayName: varchar("bay_name", { length: 100 }).notNull(),
+  workflowId: integer("workflow_id"),
+  event: varchar("event", { length: 20 }).notNull(), // 'occupied' | 'released' | 'assigned' | 'unassigned'
+  robotCompany: varchar("robot_company", { length: 255 }),
+  showName: varchar("show_name", { length: 255 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+});
+export type WarehouseBayEvent = typeof warehouseBayEvents.$inferSelect;
+export type InsertWarehouseBayEvent = typeof warehouseBayEvents.$inferInsert;

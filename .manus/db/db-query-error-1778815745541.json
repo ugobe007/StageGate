@@ -1,0 +1,9 @@
+{
+  "query": "\nCREATE TABLE IF NOT EXISTS warehouse_bay_events (\n  id SERIAL PRIMARY KEY,\n  bay_id INTEGER NOT NULL,\n  bay_name VARCHAR(100) NOT NULL,\n  workflow_id INTEGER,\n  event VARCHAR(20) NOT NULL,\n  robot_company VARCHAR(255),\n  show_name VARCHAR(255),\n  notes TEXT,\n  \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_warehouse_bay_events_bay_id ON warehouse_bay_events(bay_id);\nCREATE INDEX IF NOT EXISTS idx_warehouse_bay_events_workflow_id ON warehouse_bay_events(workflow_id);\nCREATE INDEX IF NOT EXISTS idx_warehouse_bay_events_created_at ON warehouse_bay_events(\"createdAt\");\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute \nCREATE TABLE IF NOT EXISTS warehouse_bay_events (\n  id SERIAL PRIMARY KEY,\n  bay_id INTEGER NOT NULL,\n  bay_name VARCHAR(100) NOT NULL,\n  workflow_id INTEGER,\n  event VARCHAR(20) NOT NULL,\n  robot_company VARCHAR(255),\n  show_name VARCHAR(255),\n  notes TEXT,\n  \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_warehouse_bay_events_bay_id ON warehouse_bay_events(bay_id);\nCREATE INDEX IF NOT EXISTS idx_warehouse_bay_events_workflow_id ON warehouse_bay_events(workflow_id);\nCREATE INDEX IF NOT EXISTS idx_warehouse_bay_events_created_at ON warehouse_bay_events(\"createdAt\");\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 2: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 10 column 14 near \"\"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL",
+    ")\""
+  ]
+}

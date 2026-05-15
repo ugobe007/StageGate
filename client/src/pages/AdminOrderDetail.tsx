@@ -90,6 +90,16 @@ export default function AdminOrderDetail() {
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<number | null>(null);
   const [problemDesc, setProblemDesc] = useState("");
   const [problemSeverity, setProblemSeverity] = useState<"low" | "medium" | "high" | "critical">("medium");
+  const [selectedBayId, setSelectedBayId] = useState<string>("");  // v23: bay assignment
+
+  // v23: fetch bays for assignment dropdown
+  const { data: baysData } = trpc.warehouse.listBays.useQuery(undefined, { enabled: !!orderId });
+  const bays = baysData ?? [];
+
+  const assignBay = trpc.logistics.assignBay.useMutation({
+    onSuccess: () => { refetchWorkflow(); toast.success("Bay assigned"); setSelectedBayId(""); },
+    onError: (e) => toast.error(e.message),
+  });
 
   const { data: workflowData, refetch: refetchWorkflow } = trpc.logistics.getWorkflowByOrder.useQuery(
     { orderId: orderId! },
@@ -594,6 +604,55 @@ export default function AdminOrderDetail() {
               <div className="flex items-center gap-3 mb-3 text-[12px] text-zinc-400">
                 <span className="flex items-center gap-1"><BarChart3 size={12} /> {workflowData.checkpoints.filter(c => c.status === "completed").length} / {workflowData.checkpoints.length} completed</span>
                 {workflowData.workflow.showName && <span className="flex items-center gap-1"><Calendar size={12} /> {workflowData.workflow.showName}</span>}
+              </div>
+
+              {/* v23: Warehouse Bay Assignment */}
+              <div className="bg-zinc-800/40 border border-zinc-700/50 rounded-lg p-3 mb-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">Warehouse Bay</span>
+                    {workflowData.workflow.warehouseBayId ? (
+                      <span className="text-[11px] bg-amber-900/50 text-amber-300 border border-amber-700/40 px-2 py-0.5 rounded-full">
+                        {bays.find(b => b.id === workflowData.workflow.warehouseBayId)?.name ?? `Bay #${workflowData.workflow.warehouseBayId}`}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-zinc-600 italic">Not assigned</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={selectedBayId}
+                      onChange={e => setSelectedBayId(e.target.value)}
+                      className="text-[11px] bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-zinc-300 outline-none"
+                    >
+                      <option value="">Select bay…</option>
+                      {bays.map(b => (
+                        <option key={b.id} value={String(b.id)}>
+                          {b.name} ({b.sqft} sqft) {b.isAvailable ? "✓" : "✗"}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => {
+                        if (!selectedBayId) return;
+                        assignBay.mutate({ workflowId: workflowData.workflow.id, warehouseBayId: Number(selectedBayId) });
+                      }}
+                      disabled={!selectedBayId || assignBay.isPending}
+                      className="text-[11px] bg-amber-500 hover:bg-amber-400 text-black font-semibold px-2.5 py-1 rounded transition-colors disabled:opacity-40"
+                    >
+                      {assignBay.isPending ? "…" : "Assign"}
+                    </button>
+                    {workflowData.workflow.warehouseBayId && (
+                      <button
+                        onClick={() => assignBay.mutate({ workflowId: workflowData.workflow.id, warehouseBayId: null })}
+                        disabled={assignBay.isPending}
+                        className="text-[11px] text-zinc-500 hover:text-red-400 px-2 py-1 rounded transition-colors"
+                      >
+                        Release
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
               {workflowData.checkpoints.map((cp) => {
                 const statusColors: Record<string, string> = {

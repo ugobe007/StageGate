@@ -10,7 +10,7 @@ import * as db from "./db";
 import * as workflows from "./workflows";
 import * as emailHelpers from "./email";
 import { eq, desc, count, sql, inArray } from "drizzle-orm";
-import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems, schedulingSlots, salesAgentConversations, salesAgentRuns, vendors, emailThreads, logisticsWorkflows, logisticsCheckpoints, warehouseBays } from "../drizzle/schema";
+import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems, schedulingSlots, salesAgentConversations, salesAgentRuns, vendors, emailThreads, logisticsWorkflows, logisticsCheckpoints, warehouseBays, warehouseBayEvents } from "../drizzle/schema";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 
@@ -1916,6 +1916,134 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           .where(eq(bookingRequests.id, input.id));
         return { success: true };
       }),
+
+    // v23: Generate a quote HTML document for a booking (includes warehouse estimate line item)
+    generateQuoteHtml: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const rows = await dbConn.select().from(bookingRequests).where(eq(bookingRequests.id, input.id));
+        const b = rows[0];
+        if (!b) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found" });
+
+        // Fetch bay name if warehouseBayId is set
+        let bayName = "";
+        if (b.warehouseBayId) {
+          const [bay] = await dbConn.select().from(warehouseBays).where(eq(warehouseBays.id, b.warehouseBayId));
+          bayName = bay?.name ?? `Bay #${b.warehouseBayId}`;
+        }
+
+        const services = Array.isArray(b.services) ? b.services as string[] : [];
+        const quoteDate = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        const quoteNumber = `SG-${String(b.id).padStart(5, "0")}`;
+
+        // Build line items
+        const lineItems: { description: string; amount: string }[] = [
+          ...services.map(s => ({ description: s, amount: "TBD" })),
+        ];
+        if (b.warehouseEstimate && bayName) {
+          lineItems.push({
+            description: `Warehouse Storage — ${bayName}${b.robotSqft ? ` (${b.robotSqft} sqft)` : ""}${b.storageDays ? ` × ${b.storageDays} days` : ""}`,
+            amount: `$${b.warehouseEstimate}`,
+          });
+        }
+
+        const lineItemRows = lineItems.map((li, i) => `
+          <tr style="border-bottom:1px solid #f0f0f0">
+            <td style="padding:10px 0;color:#111;font-size:14px">${i + 1}. ${li.description}</td>
+            <td style="padding:10px 0;text-align:right;font-size:14px;font-weight:600;color:${li.amount === "TBD" ? "#888" : "#111"}">${li.amount}</td>
+          </tr>`).join("");
+
+        const warehouseSection = b.warehouseEstimate ? `
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-top:20px">
+            <p style="margin:0;font-size:13px;color:#92400e;font-weight:600">⌂ Warehouse Storage Estimate</p>
+            <p style="margin:4px 0 0;font-size:13px;color:#78350f">
+              ${bayName}${b.robotSqft ? ` &bull; ${b.robotSqft} sqft` : ""}${b.storageDays ? ` &bull; ${b.storageDays} days` : ""}
+              &bull; <strong>$${b.warehouseEstimate}</strong>
+            </p>
+            <p style="margin:4px 0 0;font-size:11px;color:#a16207">Estimate based on best available bay at time of booking. Final pricing confirmed on contract.</p>
+          </div>` : "";
+
+        const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Quote ${quoteNumber} — StageGate</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f9f9f9; margin:0; padding:40px 20px; color:#111; }
+    .card { background:#fff; max-width:720px; margin:0 auto; border-radius:12px; box-shadow:0 2px 16px rgba(0,0,0,0.08); padding:48px; }
+    .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:36px; }
+    .logo { font-size:22px; font-weight:800; letter-spacing:-0.5px; color:#111; }
+    .logo span { color:#f59e0b; }
+    .meta { text-align:right; font-size:13px; color:#666; }
+    .meta strong { display:block; font-size:18px; color:#111; font-weight:700; margin-bottom:4px; }
+    .section-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#999; margin-bottom:8px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:32px; }
+    .field { font-size:13px; }
+    .field .label { color:#888; margin-bottom:2px; }
+    .field .value { color:#111; font-weight:500; }
+    table { width:100%; border-collapse:collapse; }
+    .total-row td { padding:12px 0; font-size:15px; font-weight:700; border-top:2px solid #111; }
+    .footer { margin-top:40px; padding-top:24px; border-top:1px solid #eee; font-size:12px; color:#999; text-align:center; }
+    @media print { body { background:#fff; padding:0; } .card { box-shadow:none; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div>
+        <div class="logo">Stage<span>Gate</span></div>
+        <div style="font-size:12px;color:#888;margin-top:4px">Robotics Activation Infrastructure &bull; Las Vegas, NV</div>
+      </div>
+      <div class="meta">
+        <strong>QUOTE ${quoteNumber}</strong>
+        <div>Date: ${quoteDate}</div>
+        <div>Valid for 30 days</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="section-title">Bill To</div>
+        <div class="field"><div class="value" style="font-size:15px;font-weight:700">${b.company}</div></div>
+        <div class="field" style="margin-top:6px"><div class="value">${b.contactName}</div></div>
+        <div class="field"><div class="value" style="color:#666">${b.contactEmail}</div></div>
+        ${b.contactPhone ? `<div class="field"><div class="value" style="color:#666">${b.contactPhone}</div></div>` : ""}
+      </div>
+      <div>
+        <div class="section-title">Event Details</div>
+        <div class="field"><div class="label">Show</div><div class="value">${b.showName ?? "TBD"}</div></div>
+        <div class="field" style="margin-top:6px"><div class="label">Show Date</div><div class="value">${b.showDate ?? "TBD"}</div></div>
+        <div class="field" style="margin-top:6px"><div class="label">Booth</div><div class="value">${b.boothNumber ?? "TBD"}</div></div>
+        <div class="field" style="margin-top:6px"><div class="label">Robot</div><div class="value">${b.robotName ?? b.robotType ?? "TBD"}</div></div>
+      </div>
+    </div>
+
+    <div class="section-title">Services &amp; Pricing</div>
+    <table>
+      <tbody>
+        ${lineItemRows || "<tr><td style='padding:10px 0;color:#888;font-size:14px'>No services selected</td></tr>"}
+      </tbody>
+      ${b.warehouseEstimate ? `<tfoot><tr class="total-row"><td>Warehouse Storage Subtotal</td><td style="text-align:right">$${b.warehouseEstimate}</td></tr></tfoot>` : ""}
+    </table>
+
+    ${warehouseSection}
+
+    <div class="footer">
+      StageGate &bull; onstage.bot &bull; info@onstage.bot<br>
+      This quote is an estimate only. Final pricing is confirmed upon contract execution.
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:24px">
+    <button onclick="window.print()" style="background:#f59e0b;color:#000;font-weight:700;border:none;padding:10px 28px;border-radius:8px;font-size:14px;cursor:pointer">Print / Save as PDF</button>
+  </div>
+</body>
+</html>`;
+
+        return { html, quoteNumber };
+      }),
   }),
   // ─── Scheduling ────────────────────────────────────────────────────────────
   scheduling: router({
@@ -2259,10 +2387,48 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       .mutation(async ({ input }) => {
         const dbConn = await getDb();
         if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        // Fetch workflow for logging context
+        const [wf] = await dbConn.select().from(logisticsWorkflows).where(eq(logisticsWorkflows.id, input.workflowId));
+        if (!wf) throw new TRPCError({ code: "NOT_FOUND", message: "Workflow not found" });
+
         await dbConn
           .update(logisticsWorkflows)
           .set({ warehouseBayId: input.warehouseBayId, updatedAt: new Date() })
           .where(eq(logisticsWorkflows.id, input.workflowId));
+
+        // Log the event
+        if (input.warehouseBayId) {
+          const [bay] = await dbConn.select().from(warehouseBays).where(eq(warehouseBays.id, input.warehouseBayId));
+          if (bay) {
+            await dbConn.insert(warehouseBayEvents).values({
+              bayId: bay.id,
+              bayName: bay.name,
+              workflowId: input.workflowId,
+              event: "assigned",
+              robotCompany: wf.robotCompany ?? undefined,
+              showName: wf.showName ?? undefined,
+              notes: `Manually assigned via admin`,
+            });
+          }
+        } else {
+          // Unassigning — find the previous bay
+          if (wf.warehouseBayId) {
+            const [prevBay] = await dbConn.select().from(warehouseBays).where(eq(warehouseBays.id, wf.warehouseBayId));
+            if (prevBay) {
+              await dbConn.insert(warehouseBayEvents).values({
+                bayId: prevBay.id,
+                bayName: prevBay.name,
+                workflowId: input.workflowId,
+                event: "unassigned",
+                robotCompany: wf.robotCompany ?? undefined,
+                showName: wf.showName ?? undefined,
+                notes: `Manually unassigned via admin`,
+              });
+            }
+          }
+        }
+
         return { success: true };
       }),
 
@@ -2352,10 +2518,21 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
             const wf = workflows[0];
             if (wf?.warehouseBayId) {
               const isNowAvailable = cp.type === "warehouse_return"; // return = bay free again
+              const [bay] = await dbConn.select().from(warehouseBays).where(eq(warehouseBays.id, wf.warehouseBayId)).limit(1);
               await dbConn
                 .update(warehouseBays)
                 .set({ isAvailable: isNowAvailable, updatedAt: new Date() })
                 .where(eq(warehouseBays.id, wf.warehouseBayId));
+              // Log occupancy event
+              await dbConn.insert(warehouseBayEvents).values({
+                bayId: wf.warehouseBayId,
+                bayName: bay?.name ?? `Bay #${wf.warehouseBayId}`,
+                workflowId: wf.id,
+                event: isNowAvailable ? "released" : "occupied",
+                robotCompany: wf.robotCompany ?? undefined,
+                showName: wf.showName ?? undefined,
+                notes: cp.type === "warehouse_in" ? "Robot checked in (warehouse_in checkpoint completed)" : "Robot returned (warehouse_return checkpoint completed)",
+              });
               await notifyOwner({
                 title: `🏭 Bay ${isNowAvailable ? "freed" : "occupied"}: ${cp.type === "warehouse_in" ? "Robot checked in" : "Robot returned"}`,
                 content: `Workflow #${wf.id} (${wf.robotCompany ?? "unknown"}) — bay #${wf.warehouseBayId} is now ${isNowAvailable ? "available" : "occupied"}.`,
@@ -2650,6 +2827,56 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         await dbConn.delete(warehouseBays).where(eq(warehouseBays.id, input.id));
         return { success: true };
       }),
+
+    getBayHistory: adminProcedure
+      .input(z.object({ bayId: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        return dbConn
+          .select()
+          .from(warehouseBayEvents)
+          .where(eq(warehouseBayEvents.bayId, input.bayId))
+          .orderBy(desc(warehouseBayEvents.createdAt));
+      }),
+
+    getOccupancyReport: adminProcedure.query(async () => {
+      const dbConn = await getDb();
+      if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const events = await dbConn
+        .select()
+        .from(warehouseBayEvents)
+        .orderBy(desc(warehouseBayEvents.createdAt));
+
+      // Compute duration per occupied→released pair per bay
+      const byBay: Record<number, typeof events> = {};
+      events.forEach(e => {
+        if (!byBay[e.bayId]) byBay[e.bayId] = [];
+        byBay[e.bayId].push(e);
+      });
+
+      const report = Object.entries(byBay).map(([bayIdStr, evts]) => {
+        const bayId = Number(bayIdStr);
+        const bayName = evts[0]?.bayName ?? `Bay #${bayId}`;
+        // Pair occupied→released events
+        const sessions: { robotCompany: string | null; showName: string | null; occupiedAt: Date; releasedAt: Date | null; durationHours: number | null }[] = [];
+        const occupiedEvents = evts.filter(e => e.event === "occupied").sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+        occupiedEvents.forEach(occ => {
+          const rel = evts.find(e => e.event === "released" && e.createdAt > occ.createdAt);
+          const durationMs = rel ? rel.createdAt.getTime() - occ.createdAt.getTime() : null;
+          sessions.push({
+            robotCompany: occ.robotCompany ?? null,
+            showName: occ.showName ?? null,
+            occupiedAt: occ.createdAt,
+            releasedAt: rel?.createdAt ?? null,
+            durationHours: durationMs ? Math.round(durationMs / 3600000 * 10) / 10 : null,
+          });
+        });
+        return { bayId, bayName, sessions, totalEvents: evts.length };
+      });
+
+      return { report, allEvents: events };
+    }),
 
     matchSpace: adminProcedure
       .input(z.object({ robotSqft: z.number().positive(), days: z.number().int().positive() }))

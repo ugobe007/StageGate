@@ -95,6 +95,29 @@ function BookingDetailPanel({
   const cfg = STATUS_CONFIG[booking.status as BookingStatus] ?? STATUS_CONFIG.new;
   const services = (booking.services as string[] | null) ?? [];
 
+  const [quoteLoading, setQuoteLoading] = useState(false);
+
+  const generateQuote = trpc.bookings.generateQuoteHtml.useQuery(
+    { id: booking.id },
+    { enabled: false }
+  );
+
+  const handleGenerateQuote = async () => {
+    setQuoteLoading(true);
+    try {
+      const result = await generateQuote.refetch();
+      if (result.data?.html) {
+        const blob = new Blob([result.data.html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+      }
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to generate quote");
+    } finally {
+      setQuoteLoading(false);
+    }
+  };
+
   const convertToOrder = trpc.bookings.convertToOrder.useMutation({
     onSuccess: (data) => {
       toast.success(
@@ -259,6 +282,24 @@ function BookingDetailPanel({
               placeholder="Add internal notes, pricing, follow-up actions…"
             />
           </section>
+        </div>
+
+        {/* v23: Generate Quote button */}
+        <div style={{ padding: "0.75rem 1.5rem", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: "0.5rem" }}>
+          <button
+            onClick={handleGenerateQuote}
+            disabled={quoteLoading}
+            style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
+              padding: "0.5rem 0.75rem", borderRadius: "0.375rem",
+              background: "rgba(167,139,250,0.10)", border: "1px solid rgba(167,139,250,0.40)",
+              color: "#a78bfa", fontSize: "0.8125rem", fontWeight: 600,
+              cursor: quoteLoading ? "not-allowed" : "pointer",
+              opacity: quoteLoading ? 0.7 : 1,
+            }}
+          >
+            {quoteLoading ? <><RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> Generating…</> : <><FileText size={13} /> Generate Quote</>}
+          </button>
         </div>
 
         {/* Convert to Order — only show if not already converted */}

@@ -895,3 +895,30 @@
 - [x] Card shows: matched bay name, sqft, rate, total estimate, or "No bay available" message
 - [x] Card updates live as user changes sqft or days values
 - [x] Vitest: 30 new tests (274 total passing)
+
+## v23 — Bay Assignment from Order Detail, Quote PDF Estimate Line Item, Occupancy History Log
+
+### v23.1 — Bay Assignment from AdminOrderDetail
+- [x] Add "Assign Bay" section to AdminOrderDetail workflow panel
+- [x] Bay selector dropdown (warehouse.listBays) + assign button calls logistics.assignBay
+- [x] Show currently assigned bay name with availability badge
+- [x] Refresh workflow data after successful assignment
+
+### v23.2 — Estimate Line Item in Quote PDF
+- [x] Add bookings.generateQuoteHtml procedure (HTML quote with Print/Save as PDF button)
+- [x] Services listed as TBD line items; warehouse estimate as a priced line item
+- [x] Warehouse estimate amber callout card: bay name, sqft, days, total
+- [x] "Generate Quote" button added to AdminBookings detail panel (opens in new tab)
+
+### v23.3 — Occupancy History Log (warehouseBayEvents)
+- [x] Add warehouse_bay_events table: id, bayId, workflowId, eventType, triggeredBy, notes, createdAt
+- [x] Run migration SQL via webdev_execute_sql
+- [x] Add warehouseBayEvents schema to drizzle/schema.ts
+- [x] Log event on every bay flip in logistics.updateCheckpoint (warehouse_in → occupied, warehouse_return → released)
+- [x] Log event on logistics.assignBay calls (manual assign/release)
+- [x] Add warehouse.getBayHistory(bayId) procedure: returns events sorted desc
+- [x] Add warehouse.getOccupancyReport() procedure: per-bay utilization with duration calc
+
+### v23 Tests
+- [x] Write server/v23.test.ts: 29 new tests
+- [x] All 303 tests passing
