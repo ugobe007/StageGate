@@ -50,6 +50,7 @@ export default function ClientDashboard() {
   const [attachment, setAttachment] = useState<{ url: string; key: string; name: string } | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [expandedRequest, setExpandedRequest] = useState<number | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const utils = trpc.useUtils();
   const { data: profile, isLoading: profileLoading } = trpc.company.getMyProfile.useQuery(undefined, { enabled: isAuthenticated });
@@ -343,6 +344,11 @@ export default function ClientDashboard() {
                         )}
                       </div>
                     </div>
+                    {formError && (
+                      <div style={{ marginTop: "0.75rem", fontSize: "0.8125rem", color: "#ef4444", display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                        <AlertCircle size={13} /> {formError}
+                      </div>
+                    )}
                     <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
                       <button
                         onClick={() => setShowRequestForm(false)}
@@ -351,9 +357,14 @@ export default function ClientDashboard() {
                         Cancel
                       </button>
                       <button
-                        disabled={!requestType || submitRequest.isPending || uploadingFile}
-                        onClick={() => submitRequest.mutate({ requestType, showName: showName || undefined, showDate: showDate || undefined, robotName: robotName || undefined, details: details || undefined, urgency, attachmentUrl: attachment?.url, attachmentKey: attachment?.key, attachmentName: attachment?.name })}
-                        style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: (!requestType || submitRequest.isPending || uploadingFile) ? 0.6 : 1 }}
+                        disabled={submitRequest.isPending || uploadingFile}
+                        onClick={() => {
+                          if (!requestType) { setFormError("Please select a service type."); return; }
+                          if (!details.trim()) { setFormError("Please describe what you need."); return; }
+                          setFormError(null);
+                          submitRequest.mutate({ requestType, showName: showName || undefined, showDate: showDate || undefined, robotName: robotName || undefined, details: details || undefined, urgency, attachmentUrl: attachment?.url, attachmentKey: attachment?.key, attachmentName: attachment?.name });
+                        }}
+                        style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: (submitRequest.isPending || uploadingFile) ? 0.6 : 1 }}
                       >
                         {submitRequest.isPending ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={13} />}
                         Submit Request

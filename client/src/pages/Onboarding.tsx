@@ -192,6 +192,15 @@ export default function Onboarding() {
       </div>
 
       <div style={{ maxWidth: "40rem", margin: "0 auto", padding: "2rem 1.5rem 4rem" }} className="dark-page-inputs">
+        {/* Resume banner — shown when a draft profile was found */}
+        {hydrated && existingProfile && !existingProfile.onboardingComplete && (
+          <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", padding: "0.625rem 0.875rem", marginBottom: "1.5rem", borderRadius: "0.375rem", background: "rgba(0,255,135,0.06)", border: "1px solid rgba(0,255,135,0.18)" }}>
+            <CheckCircle size={14} style={{ color: "#00ff87", flexShrink: 0 }} />
+            <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.65)" }}>
+              <span style={{ color: "#00ff87", fontWeight: 600 }}>Resuming your setup</span> — your progress from last time has been loaded.
+            </span>
+          </div>
+        )}
         {/* Progress */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "2rem" }}>
           {STEPS.map((s, i) => (

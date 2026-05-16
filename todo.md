@@ -1583,3 +1583,9 @@
 - [x] ClientDashboard: dark select/dropdown styling with custom arrow SVG (background #111, color #ececec, border rgba(255,255,255,0.12))
 - [x] Auth flow: admin redirect already correctly implemented in AuthRedirect.tsx; fixed AuthRedirect loading screen to use dark palette
 - [x] Onboarding: persistence added — loads existing draft profile on mount (pre-populates all fields), saves progress on each step advance (onboardingComplete: false), final submit sets onboardingComplete: true; fixed all #64748b and #fff colors in step descriptions and service cards
+
+## v60 — Onboarding Resume Banner, Form Validation, Admin Notification
+
+- [x] Onboarding: "Resuming your setup" emerald banner shown when hydrated draft profile exists and onboardingComplete is false
+- [x] ClientDashboard: required field validation on service request form — serviceType and details both required; inline AlertCircle error message shown below form
+- [x] Server: notifyOwner already called in company.submitServiceRequest — confirmed working, no change needed
