@@ -337,15 +337,30 @@ export async function salesAgentManualSendHandler(req: Request, res: Response) {
 
   const { prospectId } = req.body as { prospectId: number };
   if (!prospectId) return res.status(400).json({ error: "prospectId required" });
+  try {
+    const result = await salesAgentManualSendCore(prospectId);
+    res.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const status = message.includes("not found") ? 404 : message.includes("No contact email") ? 400 : 500;
+    res.status(status).json({ error: message });
+  }
+}
+
+export async function salesAgentManualSendCore(
+  prospectId: number
+): Promise<{ ok: true; subject: string; messageId: string | null; nextStage: ConversationStage }> {
+  const db = await getDb();
+  if (!db) throw new Error("db unavailable");
 
   const [prospect] = await db
     .select()
     .from(prospects)
     .where(eq(prospects.id, prospectId))
     .limit(1);
-  if (!prospect) return res.status(404).json({ error: "Prospect not found" });
+  if (!prospect) throw new Error("Prospect not found");
   const toEmail = selectOutreachEmail(prospect);
-  if (!toEmail) return res.status(400).json({ error: "No contact email" });
+  if (!toEmail) throw new Error("No contact email");
   const emailPolicy = outreachEmailPolicySummary(prospect);
 
   const [conv] = await db
@@ -358,7 +373,7 @@ export async function salesAgentManualSendHandler(req: Request, res: Response) {
   const { subject, body, nextStage } = await generateFrankEmail(prospect, conv ?? null, currentStage);
 
   if (!subject || !body) {
-    return res.status(500).json({ error: "Failed to generate email" });
+    throw new Error("Failed to generate email");
   }
 
   const messageId = await sendFrankEmail(toEmail, prospect.contactName, subject, body);
@@ -419,11 +434,12 @@ export async function salesAgentManualSendHandler(req: Request, res: Response) {
     metadata: { stage: currentStage, nextStage, messageId, manual: true, toEmail, outreachEmailCandidates: emailPolicy.candidates },
   });
 
-  res.json({ ok: true, subject, messageId, nextStage });
+  return { ok: true, subject, messageId, nextStage };
 }
 
 // ─── 3b. Preview Handler (generates email but does NOT send) ────────────────
 export async function salesAgentPreviewHandler(req: Request, res: Response) {
+  // Uses salesAgentPreviewCore, which calls generateFrankEmail without an internal HTTP hop.
   try {
     const authHeader = req.headers.authorization;
     const isCronToken = authHeader === `Bearer ${process.env.BUILT_IN_FORGE_API_KEY}`;
@@ -439,13 +455,29 @@ export async function salesAgentPreviewHandler(req: Request, res: Response) {
 
   const { prospectId, stage } = req.body as { prospectId: number; stage?: ConversationStage };
   if (!prospectId) return res.status(400).json({ error: "prospectId required" });
+  try {
+    const result = await salesAgentPreviewCore(prospectId, stage);
+    res.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const status = message.includes("not found") ? 404 : 500;
+    res.status(status).json({ error: message });
+  }
+}
+
+export async function salesAgentPreviewCore(
+  prospectId: number,
+  stage?: ConversationStage
+): Promise<{ subject: string; body: string; stage: ConversationStage; nextStage: ConversationStage }> {
+  const db = await getDb();
+  if (!db) throw new Error("db unavailable");
 
   const [prospect] = await db
     .select()
     .from(prospects)
     .where(eq(prospects.id, prospectId))
     .limit(1);
-  if (!prospect) return res.status(404).json({ error: "Prospect not found" });
+  if (!prospect) throw new Error("Prospect not found");
 
   const [conv] = await db
     .select()
@@ -456,7 +488,7 @@ export async function salesAgentPreviewHandler(req: Request, res: Response) {
   const currentStage = (stage ?? conv?.state ?? "discovery") as ConversationStage;
   const { subject, body, nextStage } = await generateFrankEmail(prospect, conv ?? null, currentStage);
 
-  res.json({ subject, body, stage: currentStage, nextStage });
+  return { subject, body, stage: currentStage, nextStage };
 }
 
 // ─── 4. Generate Cal's Email ──────────────────────────────────────────────────

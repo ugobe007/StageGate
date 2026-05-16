@@ -16,6 +16,16 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   cancelled:   { label: "Cancelled",   color: "#ef4444" },
 };
 
+function parseServiceIds(value: unknown): number[] {
+  if (typeof value !== "string" || !value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((id): id is number => typeof id === "number") : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function AdminOrders() {
   const { user, isAuthenticated } = useAuth();
   const [filterStatus, setFilterStatus] = useState("all");
@@ -173,9 +183,9 @@ export default function AdminOrders() {
                       </div>
                       <div>
                         <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.30)", marginBottom: "0.5rem" }}>Services Ordered</p>
-                        {(order as any).serviceIds ? (
+                        {parseServiceIds((order as any).serviceIds).length > 0 ? (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
-                            {JSON.parse((order as any).serviceIds).map((svcId: number) => {
+                            {parseServiceIds((order as any).serviceIds).map((svcId: number) => {
                               const svc = (services || []).find(s => s.id === svcId);
                               return svc ? (
                                 <span key={svcId} style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.55)", background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>

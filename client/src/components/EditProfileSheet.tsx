@@ -65,6 +65,16 @@ const TABS = [
 
 type TabId = typeof TABS[number]["id"];
 
+function parseJsonArray<T>(value: string | null | undefined): T[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed as T[] : [];
+  } catch {
+    return [];
+  }
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface EditProfileSheetProps {
@@ -108,9 +118,9 @@ export default function EditProfileSheet({ open, onClose, profile }: EditProfile
     setCountry(profile.country ?? "");
     setDescription(profile.description ?? "");
     setLinkedinUrl(profile.linkedinUrl ?? "");
-    setRobots(profile.robots ? JSON.parse(profile.robots) : []);
-    setShows(profile.showsAttending ? JSON.parse(profile.showsAttending) : []);
-    setServices(profile.servicesNeeded ? JSON.parse(profile.servicesNeeded) : []);
+    setRobots(parseJsonArray<Robot>(profile.robots));
+    setShows(parseJsonArray<ShowEntry>(profile.showsAttending));
+    setServices(parseJsonArray<string>(profile.servicesNeeded));
     setSaved(false);
     setTab("company");
   }, [open, profile]);

@@ -420,9 +420,7 @@ async function runDiscoveryCore(
   }));
 
   // ── POST to ingest endpoint ──────────────────────────────────────────────
-  const baseUrl = process.env.VITE_APP_ID
-    ? `https://onstage.bot`
-    : `http://localhost:${process.env.PORT ?? 3000}`;
+  const baseUrl = (process.env.PUBLIC_BASE_URL ?? process.env.APP_BASE_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")).replace(/\/+$/, "");
   const heartbeatSecret = process.env.BUILT_IN_FORGE_API_KEY ?? "";
 
   const ingestRes = await fetch(`${baseUrl}${INGEST_PATH}`, {

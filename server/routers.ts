@@ -14,6 +14,7 @@ import { draftEmails, prospectResearch, prospectActivities, bookingRequests, pro
 import crypto from "crypto";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
+import { salesAgentManualSendCore, salesAgentPreviewCore } from "./agents/salesAgent";
 
 // Admin-only middleware
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -2790,33 +2791,26 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     // Admin: manually trigger Cal to send to a specific prospect
     manualSend: adminProcedure
       .input(z.object({ prospectId: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        const res = await fetch(
-          `http://localhost:${process.env.PORT ?? 3000}/api/scheduled/sales-agent-manual`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              // Pass admin session cookie so the handler can authenticate
-              Cookie: ctx.req.headers.cookie ?? "",
-            },
-            body: JSON.stringify({ prospectId: input.prospectId }),
-          }
-        );
-        if (!res.ok) {
-          const err = await res.text();
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err });
+      .mutation(async ({ input }) => {
+        try {
+          return await salesAgentManualSendCore(input.prospectId);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          if (message.includes("not found")) throw new TRPCError({ code: "NOT_FOUND", message });
+          if (message.includes("No contact email")) throw new TRPCError({ code: "BAD_REQUEST", message });
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message });
         }
-        return res.json() as Promise<{ ok: boolean; subject: string; messageId: string | null; nextStage: string }>;
       }),
 
     // Admin: preview a Cal email (LLM draft, not sent)
+    // Replaces the old fetch to /api/scheduled/sales-agent-preview; returns subject, body, stage, nextStage.
     previewEmail: adminProcedure
       .input(z.object({
         prospectId: z.number(),
         stage: z.enum(["discovery", "intro_sent", "followup_1", "followup_2", "robot_guild"]).optional(),
       }))
       .mutation(async ({ input }) => {
+        // No internal fetch to /api/scheduled/sales-agent-preview; use the shared core for Vercel safety.
         const dbConn = await getDb();
         if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
@@ -2835,24 +2829,9 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
 
         const stage = input.stage ?? (conv?.state as "discovery" | "intro_sent" | "followup_1" | "followup_2" | "robot_guild") ?? "discovery";
 
-        // Call the preview endpoint
-        const res = await fetch(
-          `http://localhost:${process.env.PORT ?? 3000}/api/scheduled/sales-agent-preview`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.BUILT_IN_FORGE_API_KEY ?? ""}`,
-              "x-heartbeat-cron": "true",
-            },
-            body: JSON.stringify({ prospectId: input.prospectId, stage }),
-          }
-        );
-        if (!res.ok) {
-          const err = await res.text();
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err });
-        }
-        return res.json() as Promise<{ subject: string; body: string; stage: string; nextStage: string }>;
+        const preview = await salesAgentPreviewCore(input.prospectId, stage);
+        const { subject, body, nextStage } = preview;
+        return { subject, body, stage: preview.stage, nextStage };
       }),
 
     // Admin: update conversation stage manually

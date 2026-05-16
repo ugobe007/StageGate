@@ -36,6 +36,16 @@ const URGENCY_OPTIONS = [
   { value: "urgent", label: "Urgent — ASAP" },
 ];
 
+function parseJsonArray<T>(value: string | null | undefined): T[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed as T[] : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function ClientDashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
@@ -137,9 +147,9 @@ export default function ClientDashboard() {
     );
   }
 
-  const robots = profile.robots ? JSON.parse(profile.robots) as Array<{ name: string; type: string; weight: string; dimensions: string; powerReq: string; notes: string }> : [];
-  const showsAttending = profile.showsAttending ? JSON.parse(profile.showsAttending) as Array<{ showName: string; boothNumber: string; year: string }> : [];
-  const servicesNeeded = profile.servicesNeeded ? JSON.parse(profile.servicesNeeded) as string[] : [];
+  const robots = parseJsonArray<{ name: string; type: string; weight: string; dimensions: string; powerReq: string; notes: string }>(profile.robots);
+  const showsAttending = parseJsonArray<{ showName: string; boothNumber: string; year: string }>(profile.showsAttending);
+  const servicesNeeded = parseJsonArray<string>(profile.servicesNeeded);
 
   const inputStyle: React.CSSProperties = {
     width: "100%", height: "2.25rem", borderRadius: "0.375rem",
