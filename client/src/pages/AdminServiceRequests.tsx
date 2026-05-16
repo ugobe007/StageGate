@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { Link } from "wouter";
 import {
   Clock, CheckCircle2, XCircle, Loader2, AlertTriangle,
-  ChevronDown, ChevronUp, Search, Bot, Calendar, Zap, Paperclip, RefreshCw
+  ChevronDown, ChevronUp, Search, Bot, Calendar, Zap, Paperclip, RefreshCw, ExternalLink
 } from "lucide-react";
 
 // ── Supabase light tokens ────────────────────────────────────────────────────
@@ -58,6 +59,8 @@ type ServiceRequest = {
   attachmentName: string | null;
   createdAt: Date;
   userId: number;
+  contactEmail: string | null;
+  companyName: string | null;
 };
 
 // Inline status dot + text
@@ -386,19 +389,32 @@ export default function AdminServiceRequests() {
                         </div>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => {
-                          setEditingId(req.id);
-                          setEditStatus(req.status);
-                          setEditQuote(req.quotedPrice ?? "");
-                          setEditNotes(req.adminNotes ?? "");
-                        }}
-                        style={{ padding: "0.375rem 0.875rem", border: `1px solid ${S.border}`, borderRadius: "0.375rem", background: S.surface, color: S.text2, fontSize: "0.8125rem", cursor: "pointer", transition: "background 0.1s, color 0.1s" }}
-                        onMouseEnter={e => { e.currentTarget.style.background = S.surface2; e.currentTarget.style.color = S.text; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = S.surface; e.currentTarget.style.color = S.text2; }}
-                      >
-                        Update Status / Add Quote
-                      </button>
+                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+                        <button
+                          onClick={() => {
+                            setEditingId(req.id);
+                            setEditStatus(req.status);
+                            setEditQuote(req.quotedPrice ?? "");
+                            setEditNotes(req.adminNotes ?? "");
+                          }}
+                          style={{ padding: "0.375rem 0.875rem", border: `1px solid ${S.border}`, borderRadius: "0.375rem", background: S.surface, color: S.text2, fontSize: "0.8125rem", cursor: "pointer", transition: "background 0.1s, color 0.1s" }}
+                          onMouseEnter={e => { e.currentTarget.style.background = S.surface2; e.currentTarget.style.color = S.text; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = S.surface; e.currentTarget.style.color = S.text2; }}
+                        >
+                          Update Status / Add Quote
+                        </button>
+                        {req.contactEmail && (
+                          <Link
+                            to={`/admin/prospects?highlight=${encodeURIComponent(req.contactEmail)}`}
+                            style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", padding: "0.375rem 0.875rem", border: `1px solid ${S.border}`, borderRadius: "0.375rem", background: S.surface, color: S.text2, fontSize: "0.8125rem", cursor: "pointer", textDecoration: "none", transition: "background 0.1s, color 0.1s" }}
+                            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = S.surface2; e.currentTarget.style.color = S.text; }}
+                            onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = S.surface; e.currentTarget.style.color = S.text2; }}
+                          >
+                            <ExternalLink size={11} />
+                            View Prospect
+                          </Link>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

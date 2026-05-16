@@ -1605,4 +1605,4 @@
 - [x] AdminProspects: DraftReviewModal with subject/body editing, Approve/Discard/Regenerate actions; uses trpc.admin.getDraftsForProspect + createDraft + approveDraft + discardDraft + editDraft + sendDraft
 - [x] DashboardLayout sidebar: live "New Requests" count badge next to Service Requests nav item (trpc.admin.getNewServiceRequestCount, refetch every 60s)
 - [x] ClientDashboard: status progression timeline (Received → Quoted → Approved → In Progress → Complete) with emerald dot indicator inside expanded request detail
-- [ ] AdminServiceRequests: add "View Prospect" quick-link that jumps to that company's row in AdminProspects (deferred to v63)
+- [x] AdminServiceRequests: add "View Prospect" quick-link that jumps to that company's row in AdminProspects (deferred to v63)

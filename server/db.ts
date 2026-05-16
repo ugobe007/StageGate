@@ -151,10 +151,36 @@ export async function getServiceRequestsByUserId(userId: number): Promise<Servic
     .orderBy(desc(serviceRequests.createdAt));
 }
 
-export async function getAllServiceRequests(): Promise<ServiceRequest[]> {
+export async function getAllServiceRequests(): Promise<(ServiceRequest & { contactEmail: string | null; companyName: string | null })[]> {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(serviceRequests).orderBy(desc(serviceRequests.createdAt));
+  const rows = await db
+    .select({
+      id: serviceRequests.id,
+      userId: serviceRequests.userId,
+      companyProfileId: serviceRequests.companyProfileId,
+      requestType: serviceRequests.requestType,
+      showName: serviceRequests.showName,
+      showDate: serviceRequests.showDate,
+      robotName: serviceRequests.robotName,
+      robotType: serviceRequests.robotType,
+      details: serviceRequests.details,
+      urgency: serviceRequests.urgency,
+      status: serviceRequests.status,
+      adminNotes: serviceRequests.adminNotes,
+      quotedPrice: serviceRequests.quotedPrice,
+      attachmentUrl: serviceRequests.attachmentUrl,
+      attachmentKey: serviceRequests.attachmentKey,
+      attachmentName: serviceRequests.attachmentName,
+      createdAt: serviceRequests.createdAt,
+      updatedAt: serviceRequests.updatedAt,
+      contactEmail: companyProfiles.contactEmail,
+      companyName: companyProfiles.companyName,
+    })
+    .from(serviceRequests)
+    .leftJoin(companyProfiles, eq(serviceRequests.companyProfileId, companyProfiles.id))
+    .orderBy(desc(serviceRequests.createdAt));
+  return rows;
 }
 
 export async function getServiceRequestById(id: number): Promise<ServiceRequest | null> {
