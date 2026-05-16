@@ -13,9 +13,9 @@ type DraftEntry = any;
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f59e0b",
-  approved: "#3ecf8e",
+  approved: "#00ff87",
   sent: "#3b82f6",
-  discarded: "#94a3b8",
+  discarded: "rgba(255,255,255,0.30)",
 };
 
 export default function AdminOutreach() {
@@ -124,12 +124,12 @@ export default function AdminOutreach() {
   return (
     <>
       <DbStatusBanner />
-      <div style={{ padding: "2rem", maxWidth: "56rem", margin: "0 auto", color: "#0f172a" }}>
+      <div style={{ padding: "2rem", maxWidth: "56rem", margin: "0 auto", color: "#ececec" }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "2rem" }}>
           <div>
-            <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: "0 0 0.25rem" }}>XBOT / OUTREACH</p>
-            <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>Email Drafts</h1>
+            <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.30)", margin: "0 0 0.25rem" }}>XBOT / OUTREACH</p>
+            <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0 }}>Email Drafts</h1>
             <p style={{ fontSize: "0.875rem", color: "#64748b", margin: "0.25rem 0 0" }}>
               Review AI-generated outreach emails before sending via Resend from outreach@onstage.bot
             </p>
@@ -156,7 +156,7 @@ export default function AdminOutreach() {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", marginBottom: "1.5rem" }}>
+        <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: "1.5rem" }}>
           {(["pending", "approved", "sent"] as const).map((tab) => (
             <button
               key={tab}
@@ -166,7 +166,7 @@ export default function AdminOutreach() {
                 fontSize: "0.875rem", fontWeight: 500,
                 background: "none", border: "none",
                 borderBottom: `2px solid ${activeTab === tab ? "#f59e0b" : "transparent"}`,
-                color: activeTab === tab ? "#0f172a" : "#64748b",
+                color: activeTab === tab ? "#ececec" : "#64748b",
                 cursor: "pointer",
                 textTransform: "capitalize",
                 marginBottom: "-1px",
@@ -174,7 +174,7 @@ export default function AdminOutreach() {
             >
               {tab}
               {activeTab === tab && (
-                <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", background: "#f1f5f9", color: "#64748b", padding: "0.125rem 0.375rem", borderRadius: "0.25rem" }}>
+                <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", background: "#1a1a1a", color: "#64748b", padding: "0.125rem 0.375rem", borderRadius: "0.25rem" }}>
                   {drafts.length}
                 </span>
               )}
@@ -184,7 +184,7 @@ export default function AdminOutreach() {
 
         {/* Bulk toolbar */}
         {activeTab !== "sent" && drafts.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", padding: "0.625rem 0.875rem", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "0.375rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", padding: "0.625rem 0.875rem", background: "#080808", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem" }}>
             <input
               type="checkbox"
               checked={selectedIds.size === drafts.length && drafts.length > 0}
@@ -202,7 +202,7 @@ export default function AdminOutreach() {
                       selectedIds.forEach((id) => approveMutation.mutate({ draftId: id }));
                       setSelectedIds(new Set());
                     }}
-                    style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(62,207,142,0.4)", color: "#3ecf8e", background: "#ffffff", borderRadius: "0.25rem", cursor: "pointer" }}
+                    style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00ff87", background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
                   >
                     ✓ Approve {selectedIds.size}
                   </button>
@@ -217,7 +217,7 @@ export default function AdminOutreach() {
                     >
                       {bulkSendMutation.isPending ? "Sending…" : "Confirm Send"}
                     </button>
-                    <button onClick={() => setConfirmBulkSend(false)} style={{ fontSize: "0.875rem", padding: "0.25rem 0.75rem", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", borderRadius: "0.25rem", cursor: "pointer" }}>
+                    <button onClick={() => setConfirmBulkSend(false)} style={{ fontSize: "0.875rem", padding: "0.25rem 0.75rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "#64748b", borderRadius: "0.25rem", cursor: "pointer" }}>
                       Cancel
                     </button>
                   </div>
@@ -236,12 +236,12 @@ export default function AdminOutreach() {
 
         {/* Draft list */}
         {isLoading ? (
-          <div style={{ textAlign: "center", padding: "4rem 0", color: "#94a3b8", fontSize: "0.875rem" }}>Loading drafts…</div>
+          <div style={{ textAlign: "center", padding: "4rem 0", color: "rgba(255,255,255,0.30)", fontSize: "0.875rem" }}>Loading drafts…</div>
         ) : drafts.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "4rem 0", color: "#94a3b8", fontSize: "0.875rem" }}>
+          <div style={{ textAlign: "center", padding: "4rem 0", color: "rgba(255,255,255,0.30)", fontSize: "0.875rem" }}>
             {activeTab === "pending" ? (
               <div>
-                <p style={{ fontSize: "1rem", color: "#475569", marginBottom: "0.5rem" }}>No pending drafts</p>
+                <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.55)", marginBottom: "0.5rem" }}>No pending drafts</p>
                 <p>Click "⚡ Generate Drafts" to have XBOT write personalized emails for all prospects.</p>
               </div>
             ) : activeTab === "approved" ? (
@@ -255,15 +255,15 @@ export default function AdminOutreach() {
             {(drafts as DraftEntry[]).map((entry) => {
               const isExpanded = expandedId === entry.draft.id;
               const isEditing = editingId === entry.draft.id;
-              const statusColor = STATUS_COLORS[entry.draft.status as DraftStatus] ?? "#94a3b8";
+              const statusColor = STATUS_COLORS[entry.draft.status as DraftStatus] ?? "rgba(255,255,255,0.30)";
 
               return (
                 <div
                   key={entry.draft.id}
                   style={{
-                    border: `1px solid ${isExpanded ? "#f59e0b" : "#e2e8f0"}`,
+                    border: `1px solid ${isExpanded ? "#f59e0b" : "rgba(255,255,255,0.08)"}`,
                     borderRadius: "0.5rem",
-                    background: "#ffffff",
+                    background: "#111111",
                     overflow: "hidden",
                     transition: "border-color 0.1s",
                   }}
@@ -284,19 +284,19 @@ export default function AdminOutreach() {
                       onClick={() => setExpandedId(isExpanded ? null : entry.draft.id)}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                        <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a" }}>{entry.prospect.company}</span>
+                        <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec" }}>{entry.prospect.company}</span>
                         {entry.prospect.contactName && (
                           <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>→ {entry.prospect.contactName}</span>
                         )}
                         {entry.prospect.contactEmail && (
-                          <span style={{ fontSize: "0.8125rem", color: "#94a3b8" }}>{entry.prospect.contactEmail}</span>
+                          <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.30)" }}>{entry.prospect.contactEmail}</span>
                         )}
                         <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: statusColor }}>
                           {entry.draft.status}
                         </span>
                       </div>
                       <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.125rem 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        <span style={{ color: "#475569", fontWeight: 500 }}>Subject:</span> {entry.draft.subject}
+                        <span style={{ color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>Subject:</span> {entry.draft.subject}
                       </p>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
@@ -304,13 +304,13 @@ export default function AdminOutreach() {
                         <>
                           <button
                             onClick={(e) => { e.stopPropagation(); approveMutation.mutate({ draftId: entry.draft.id }); }}
-                            style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: "#3ecf8e", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                            style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00ff87", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
                           >
                             ✓ Approve
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); discardMutation.mutate({ draftId: entry.draft.id }); }}
-                            style={{ fontSize: "0.8125rem", padding: "0.25rem 0.625rem", border: "1px solid #e2e8f0", color: "#94a3b8", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                            style={{ fontSize: "0.8125rem", padding: "0.25rem 0.625rem", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.30)", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
                           >
                             Discard
                           </button>
@@ -330,7 +330,7 @@ export default function AdminOutreach() {
                       )}
                       <button
                         onClick={() => setExpandedId(isExpanded ? null : entry.draft.id)}
-                        style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: "0.25rem", display: "flex", alignItems: "center" }}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.30)", padding: "0.25rem", display: "flex", alignItems: "center" }}
                       >
                         {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </button>
@@ -339,10 +339,10 @@ export default function AdminOutreach() {
 
                   {/* Expanded panel */}
                   {isExpanded && (
-                    <div style={{ borderTop: "1px solid #e2e8f0", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                       {/* Agent reasoning */}
                       {entry.draft.agentReasoning && (
-                        <div style={{ fontSize: "0.8125rem", color: "#64748b", background: "#f8fafc", borderRadius: "0.375rem", padding: "0.625rem 0.875rem", border: "1px solid #e2e8f0" }}>
+                        <div style={{ fontSize: "0.8125rem", color: "#64748b", background: "#080808", borderRadius: "0.375rem", padding: "0.625rem 0.875rem", border: "1px solid rgba(255,255,255,0.08)" }}>
                           <span style={{ color: "#f59e0b", fontWeight: 600 }}>Agent reasoning: </span>
                           {entry.draft.agentReasoning}
                         </div>
@@ -375,7 +375,7 @@ export default function AdminOutreach() {
                             >
                               {editMutation.isPending ? "Saving…" : "Save Changes"}
                             </button>
-                            <button onClick={() => setEditingId(null)} style={{ fontSize: "0.875rem", padding: "0.375rem 0.875rem", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", borderRadius: "0.25rem", cursor: "pointer" }}>
+                            <button onClick={() => setEditingId(null)} style={{ fontSize: "0.875rem", padding: "0.375rem 0.875rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "#64748b", borderRadius: "0.25rem", cursor: "pointer" }}>
                               Cancel
                             </button>
                           </div>
@@ -383,16 +383,16 @@ export default function AdminOutreach() {
                       ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                           <div style={{ fontSize: "0.8125rem", color: "#64748b" }}>
-                            <span style={{ fontWeight: 500, color: "#475569" }}>Subject: </span>
+                            <span style={{ fontWeight: 500, color: "rgba(255,255,255,0.55)" }}>Subject: </span>
                             {entry.draft.subject}
                           </div>
-                          <pre style={{ fontSize: "0.875rem", whiteSpace: "pre-wrap", fontFamily: "inherit", background: "#f8fafc", borderRadius: "0.375rem", padding: "0.875rem", border: "1px solid #e2e8f0", lineHeight: 1.6, color: "#0f172a", margin: 0 }}>
+                          <pre style={{ fontSize: "0.875rem", whiteSpace: "pre-wrap", fontFamily: "inherit", background: "#080808", borderRadius: "0.375rem", padding: "0.875rem", border: "1px solid rgba(255,255,255,0.08)", lineHeight: 1.6, color: "#ececec", margin: 0 }}>
                             {entry.draft.body}
                           </pre>
                           {activeTab !== "sent" && (
                             <button
                               onClick={() => handleEdit(entry)}
-                              style={{ alignSelf: "flex-start", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", borderRadius: "0.25rem", cursor: "pointer" }}
+                              style={{ alignSelf: "flex-start", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.55)", borderRadius: "0.25rem", cursor: "pointer" }}
                             >
                               ✏ Edit Draft
                             </button>

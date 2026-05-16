@@ -1539,3 +1539,23 @@
 - [x] Fix AdminCompose, AdminPipeline, AdminPartners: remove min-h-screen
 - [x] Fix AdminBookings: convert dark (#000) theme to Supabase light (#f8fafc)
 - [x] Fix AdminQuotes: convert dark oklch theme to Supabase light (#f8fafc)
+
+## v54 — Correct Color Palette (Dark Editorial) Across All Admin Pages
+
+- [x] DashboardLayout: rewrite sidebar to dark palette (#080808 bg, #00ff87 emerald, #ececec text)
+- [x] AdminDashboard: rewrite to dark palette
+- [x] AdminProspects: rewrite to dark palette
+- [x] AdminServiceRequests: rewrite to dark palette
+- [x] AdminAgents: rewrite to dark palette
+- [x] AdminOutreach: rewrite to dark palette
+- [x] AdminShows: rewrite to dark palette
+- [x] AdminDemoRequests: rewrite to dark palette
+- [x] AdminLeads: rewrite to dark palette
+- [x] AdminOrders: rewrite to dark palette
+- [x] AdminLogistics: rewrite to dark palette
+- [x] AdminBookings: rewrite to dark palette
+- [x] AdminQuotes: rewrite to dark palette
+- [x] ClientDashboard: rewrite to dark palette
+- [x] Onboarding: rewrite to dark palette
+- [x] Register: rewrite to dark palette
+- [x] index.css sb-admin CSS section: replace all light tokens with dark palette

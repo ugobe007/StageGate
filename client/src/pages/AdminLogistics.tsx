@@ -10,18 +10,18 @@ import {
 } from "lucide-react";
 
 const CHECKPOINT_STATUS_COLORS: Record<string, string> = {
-  pending:     "#94a3b8",
+  pending:     "rgba(255,255,255,0.30)",
   in_progress: "#f59e0b",
-  completed:   "#3ecf8e",
+  completed:   "#00ff87",
   blocked:     "#ef4444",
   escalated:   "#ef4444",
-  skipped:     "#94a3b8",
+  skipped:     "rgba(255,255,255,0.30)",
 };
 
 const WORKFLOW_STATUS_COLORS: Record<string, string> = {
   active:    "#f59e0b",
-  completed: "#3ecf8e",
-  cancelled: "#94a3b8",
+  completed: "#00ff87",
+  cancelled: "rgba(255,255,255,0.30)",
   on_hold:   "#3b82f6",
 };
 
@@ -60,7 +60,7 @@ export default function AdminLogistics() {
   if (authLoading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "16rem" }}>
-        <Loader2 size={24} style={{ color: "#94a3b8", animation: "spin 1s linear infinite" }} />
+        <Loader2 size={24} style={{ color: "rgba(255,255,255,0.30)", animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
@@ -69,7 +69,7 @@ export default function AdminLogistics() {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "16rem", gap: "0.75rem" }}>
         <AlertCircle size={28} style={{ color: "#ef4444" }} />
-        <p style={{ color: "#475569", fontWeight: 600 }}>Admin access required</p>
+        <p style={{ color: "rgba(255,255,255,0.55)", fontWeight: 600 }}>Admin access required</p>
       </div>
     );
   }
@@ -99,19 +99,19 @@ export default function AdminLogistics() {
   const bayMap = new Map(baysData.map(b => [b.id, b]));
 
   return (
-    <div style={{ maxWidth: "56rem", margin: "0 auto", padding: "2rem", color: "#0f172a" }}>
+    <div style={{ maxWidth: "56rem", margin: "0 auto", padding: "2rem", color: "#ececec" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "2rem" }}>
         <div>
-          <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: "0 0 0.25rem" }}>STAGEGATE / LOGISTICS</p>
-          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.30)", margin: "0 0 0.25rem" }}>STAGEGATE / LOGISTICS</p>
+          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <Truck size={18} style={{ color: "#f59e0b" }} /> Logistics
           </h1>
           <p style={{ fontSize: "0.875rem", color: "#64748b", margin: "0.25rem 0 0" }}>Active workflows, checkpoint status, and escalations</p>
         </div>
         <button
           onClick={() => refetch()}
-          style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", color: "#64748b", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "0.375rem", padding: "0.375rem 0.75rem", cursor: "pointer" }}
+          style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", color: "#64748b", background: "#fff", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem", padding: "0.375rem 0.75rem", cursor: "pointer" }}
         >
           <RefreshCw size={12} /> Refresh
         </button>
@@ -120,11 +120,11 @@ export default function AdminLogistics() {
       {/* Stats row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
         {[
-          { label: "Active Workflows", value: totalActive, icon: <BarChart3 size={15} style={{ color: "#f59e0b" }} />, color: "#0f172a" },
-          { label: "Overdue Checkpoints", value: totalOverdue, icon: <Clock size={15} style={{ color: "#f59e0b" }} />, color: totalOverdue > 0 ? "#f59e0b" : "#0f172a" },
-          { label: "Escalated", value: totalEscalated, icon: <AlertTriangle size={15} style={{ color: "#ef4444" }} />, color: totalEscalated > 0 ? "#ef4444" : "#0f172a" },
+          { label: "Active Workflows", value: totalActive, icon: <BarChart3 size={15} style={{ color: "#f59e0b" }} />, color: "#ececec" },
+          { label: "Overdue Checkpoints", value: totalOverdue, icon: <Clock size={15} style={{ color: "#f59e0b" }} />, color: totalOverdue > 0 ? "#f59e0b" : "#ececec" },
+          { label: "Escalated", value: totalEscalated, icon: <AlertTriangle size={15} style={{ color: "#ef4444" }} />, color: totalEscalated > 0 ? "#ef4444" : "#ececec" },
         ].map(stat => (
-          <div key={stat.label} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "0.5rem", padding: "1rem" }}>
+          <div key={stat.label} style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "1rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
               {stat.icon}
               <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{stat.label}</span>
@@ -135,7 +135,7 @@ export default function AdminLogistics() {
       </div>
 
       {/* Filter tabs */}
-      <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", marginBottom: "1.5rem" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: "1.5rem" }}>
         {(["all", "active", "overdue"] as const).map(f => (
           <button
             key={f}
@@ -144,7 +144,7 @@ export default function AdminLogistics() {
               padding: "0.5rem 1rem", fontSize: "0.875rem", fontWeight: 500,
               background: "none", border: "none",
               borderBottom: `2px solid ${filterStatus === f ? "#f59e0b" : "transparent"}`,
-              color: filterStatus === f ? "#0f172a" : "#64748b",
+              color: filterStatus === f ? "#ececec" : "#64748b",
               cursor: "pointer", marginBottom: "-1px",
             }}
           >
@@ -156,12 +156,12 @@ export default function AdminLogistics() {
       {/* Workflow list */}
       {isLoading ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "10rem" }}>
-          <Loader2 size={20} style={{ color: "#94a3b8", animation: "spin 1s linear infinite" }} />
+          <Loader2 size={20} style={{ color: "rgba(255,255,255,0.30)", animation: "spin 1s linear infinite" }} />
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "10rem", gap: "0.75rem" }}>
           <Truck size={28} style={{ color: "#cbd5e1" }} />
-          <p style={{ fontSize: "0.875rem", color: "#94a3b8", textAlign: "center" }}>
+          <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.30)", textAlign: "center" }}>
             {filterStatus === "overdue" ? "No overdue checkpoints — all workflows on track." : "No logistics workflows yet."}
           </p>
         </div>
@@ -174,10 +174,10 @@ export default function AdminLogistics() {
               : 0;
             const assignedBay = w.workflow.warehouseBayId ? bayMap.get(w.workflow.warehouseBayId) : null;
             const isAssigning = assigningBay === w.workflow.id;
-            const wStatusColor = WORKFLOW_STATUS_COLORS[w.workflow.status] ?? "#94a3b8";
+            const wStatusColor = WORKFLOW_STATUS_COLORS[w.workflow.status] ?? "rgba(255,255,255,0.30)";
 
             return (
-              <div key={w.workflow.id} style={{ border: `1px solid ${isExpanded ? "#f59e0b" : "#e2e8f0"}`, borderRadius: "0.5rem", background: "#ffffff", overflow: "hidden", transition: "border-color 0.1s" }}>
+              <div key={w.workflow.id} style={{ border: `1px solid ${isExpanded ? "#f59e0b" : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#111111", overflow: "hidden", transition: "border-color 0.1s" }}>
                 {/* Workflow header */}
                 <button
                   onClick={() => setExpandedWorkflow(isExpanded ? null : w.workflow.id)}
@@ -185,7 +185,7 @@ export default function AdminLogistics() {
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                      <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a" }}>{w.workflow.robotCompany}</span>
+                      <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec" }}>{w.workflow.robotCompany}</span>
                       {w.workflow.robotName && (
                         <span style={{ fontSize: "0.8125rem", color: "#64748b", display: "flex", alignItems: "center", gap: "0.25rem" }}>
                           <Package size={11} /> {w.workflow.robotName}
@@ -203,18 +203,18 @@ export default function AdminLogistics() {
                         </span>
                       )}
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.25rem", fontSize: "0.75rem", color: "#94a3b8", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.25rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", flexWrap: "wrap" }}>
                       {w.workflow.showName && <span style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Calendar size={10} /> {w.workflow.showName}</span>}
                       <span style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><CheckCircle2 size={10} /> {w.completedCount}/{w.checkpoints.length} checkpoints</span>
                       {w.workflow.orderId && (
                         <Link href={`/admin/orders/${w.workflow.orderId}`} onClick={e => e.stopPropagation()}>
-                          <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "#3ecf8e", cursor: "pointer" }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "#00ff87", cursor: "pointer" }}>
                             <ExternalLink size={10} /> Order #{w.workflow.orderId}
                           </span>
                         </Link>
                       )}
                       {assignedBay ? (
-                        <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: assignedBay.isAvailable ? "#3ecf8e" : "#f59e0b" }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: assignedBay.isAvailable ? "#00ff87" : "#f59e0b" }}>
                           <Warehouse size={10} /> {assignedBay.name} · {assignedBay.isAvailable ? "Available" : "Occupied"}
                         </span>
                       ) : (
@@ -226,23 +226,23 @@ export default function AdminLogistics() {
                   </div>
                   {/* Progress bar */}
                   <div style={{ width: "6rem", flexShrink: 0 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.6875rem", color: "#94a3b8", marginBottom: "0.25rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.6875rem", color: "rgba(255,255,255,0.30)", marginBottom: "0.25rem" }}>
                       <span>Progress</span><span>{progress}%</span>
                     </div>
-                    <div style={{ height: "0.375rem", background: "#f1f5f9", borderRadius: "9999px", overflow: "hidden" }}>
+                    <div style={{ height: "0.375rem", background: "#1a1a1a", borderRadius: "9999px", overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${progress}%`, background: "#f59e0b", borderRadius: "9999px", transition: "width 0.3s" }} />
                     </div>
                   </div>
-                  {isExpanded ? <ChevronDown size={14} style={{ color: "#94a3b8", flexShrink: 0 }} /> : <ChevronRight size={14} style={{ color: "#94a3b8", flexShrink: 0 }} />}
+                  {isExpanded ? <ChevronDown size={14} style={{ color: "rgba(255,255,255,0.30)", flexShrink: 0 }} /> : <ChevronRight size={14} style={{ color: "rgba(255,255,255,0.30)", flexShrink: 0 }} />}
                 </button>
 
                 {/* Expanded checkpoints + bay assignment */}
                 {isExpanded && (
-                  <div style={{ borderTop: "1px solid #e2e8f0", padding: "1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
                     {/* Bay Assignment */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem", borderRadius: "0.375rem", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem", borderRadius: "0.375rem", background: "#080808", border: "1px solid rgba(255,255,255,0.08)" }}>
                       <Warehouse size={14} style={{ color: "#f59e0b", flexShrink: 0 }} />
-                      <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#475569" }}>Assigned Bay</span>
+                      <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "rgba(255,255,255,0.55)" }}>Assigned Bay</span>
                       <div style={{ flex: 1 }} />
                       <select
                         value={w.workflow.warehouseBayId ?? ""}
@@ -256,7 +256,7 @@ export default function AdminLogistics() {
                           });
                         }}
                         onClick={e => e.stopPropagation()}
-                        style={{ fontSize: "0.8125rem", background: "#ffffff", border: "1px solid #e2e8f0", color: "#0f172a", borderRadius: "0.25rem", padding: "0.25rem 0.5rem", cursor: "pointer", outline: "none" }}
+                        style={{ fontSize: "0.8125rem", background: "#111111", border: "1px solid rgba(255,255,255,0.08)", color: "#ececec", borderRadius: "0.25rem", padding: "0.25rem 0.5rem", cursor: "pointer", outline: "none" }}
                       >
                         <option value="">— None —</option>
                         {baysData.map(bay => (
@@ -265,27 +265,27 @@ export default function AdminLogistics() {
                           </option>
                         ))}
                       </select>
-                      {isAssigning && <Loader2 size={12} style={{ color: "#94a3b8", animation: "spin 1s linear infinite" }} />}
+                      {isAssigning && <Loader2 size={12} style={{ color: "rgba(255,255,255,0.30)", animation: "spin 1s linear infinite" }} />}
                     </div>
 
                     {/* Checkpoints */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                       {w.checkpoints.map(cp => {
                         const isOverdue = ["pending", "in_progress"].includes(cp.status) && cp.dueAt && new Date(cp.dueAt) < now;
-                        const cpColor = CHECKPOINT_STATUS_COLORS[cp.status] ?? "#94a3b8";
+                        const cpColor = CHECKPOINT_STATUS_COLORS[cp.status] ?? "rgba(255,255,255,0.30)";
                         return (
                           <div
                             key={cp.id}
                             style={{
                               display: "flex", alignItems: "flex-start", gap: "0.75rem", padding: "0.75rem",
                               borderRadius: "0.375rem",
-                              background: isOverdue ? "rgba(245,158,11,0.04)" : "#f8fafc",
-                              border: `1px solid ${isOverdue ? "rgba(245,158,11,0.3)" : "#e2e8f0"}`,
+                              background: isOverdue ? "rgba(245,158,11,0.04)" : "#080808",
+                              border: `1px solid ${isOverdue ? "rgba(245,158,11,0.3)" : "rgba(255,255,255,0.08)"}`,
                             }}
                           >
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                                <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#0f172a" }}>{cp.title}</span>
+                                <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#ececec" }}>{cp.title}</span>
                                 <span style={{ fontSize: "0.75rem", fontWeight: 500, color: cpColor }}>{cp.status.replace("_", " ")}</span>
                                 {isOverdue && (
                                   <span style={{ fontSize: "0.75rem", color: "#f59e0b", display: "flex", alignItems: "center", gap: "0.25rem" }}>
@@ -293,7 +293,7 @@ export default function AdminLogistics() {
                                   </span>
                                 )}
                               </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.25rem", fontSize: "0.75rem", color: "#94a3b8" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.25rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.30)" }}>
                                 {cp.dueAt && <span>Due: {new Date(cp.dueAt).toLocaleDateString()}</span>}
                                 {cp.responsibleParty && <span>Responsible: {cp.responsibleParty.replace("_", " ")}</span>}
                                 {cp.trackingNumber && <span>Tracking: {cp.trackingNumber}</span>}
@@ -308,7 +308,7 @@ export default function AdminLogistics() {
                               <button
                                 onClick={() => updateCheckpoint.mutate({ checkpointId: cp.id, status: "completed" })}
                                 disabled={updateCheckpoint.isPending}
-                                style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", background: "#fff", color: "#3ecf8e", borderRadius: "0.25rem", cursor: "pointer" }}
+                                style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", background: "#fff", color: "#00ff87", borderRadius: "0.25rem", cursor: "pointer" }}
                               >
                                 <CheckCircle2 size={11} /> Done
                               </button>

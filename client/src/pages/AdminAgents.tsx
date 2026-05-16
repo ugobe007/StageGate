@@ -54,9 +54,9 @@ function formatRelative(date: Date | null | undefined): string {
 
 const STATUS_STYLES: Record<string, { color: string; dot: string }> = {
   running: { color: "#f59e0b", dot: "#f59e0b" },
-  success: { color: "#3ecf8e", dot: "#3ecf8e" },
+  success: { color: "#00ff87", dot: "#00ff87" },
   error: { color: "#ef4444", dot: "#ef4444" },
-  idle: { color: "#94a3b8", dot: "#cbd5e1" },
+  idle: { color: "rgba(255,255,255,0.30)", dot: "#cbd5e1" },
 };
 
 function StatusText({ status }: { status: "running" | "success" | "error" | "idle" }) {
@@ -92,30 +92,30 @@ export default function AdminAgents() {
   const overallRate = totalRuns > 0 ? Math.round((successRuns / totalRuns) * 100) : null;
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "72rem", margin: "0 auto", color: "#0f172a" }}>
+    <div style={{ padding: "2rem", maxWidth: "72rem", margin: "0 auto", color: "#ececec" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "2rem" }}>
         <div>
-          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>AI Agents &amp; Workflows</h1>
+          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0 }}>AI Agents &amp; Workflows</h1>
           <p style={{ fontSize: "0.875rem", color: "#64748b", margin: "0.25rem 0 0" }}>Monitor active AI agents, view run history, and track workflow performance.</p>
         </div>
         <button
           onClick={handleRefresh}
-          style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.875rem", border: "1px solid #e2e8f0", background: "#ffffff", color: "#475569", borderRadius: "0.375rem", cursor: "pointer" }}
+          style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.875rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111111", color: "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer" }}
         >
           <RefreshCw size={13} /> Refresh
         </button>
       </div>
 
       {/* Summary bar */}
-      <div style={{ display: "flex", alignItems: "stretch", border: "1px solid #e2e8f0", borderRadius: "0.5rem", overflow: "hidden", background: "#ffffff", marginBottom: "1.5rem" }}>
+      <div style={{ display: "flex", alignItems: "stretch", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", overflow: "hidden", background: "#111111", marginBottom: "1.5rem" }}>
         {[
-          { label: "Total Runs", value: totalRuns, color: "#0f172a" },
-          { label: "Success Rate", value: overallRate !== null ? `${overallRate}%` : "—", color: overallRate !== null ? "#3ecf8e" : "#94a3b8" },
-          { label: "Active Agents", value: ALL_AGENTS.length, color: "#0f172a" },
+          { label: "Total Runs", value: totalRuns, color: "#ececec" },
+          { label: "Success Rate", value: overallRate !== null ? `${overallRate}%` : "—", color: overallRate !== null ? "#00ff87" : "rgba(255,255,255,0.30)" },
+          { label: "Active Agents", value: ALL_AGENTS.length, color: "#ececec" },
         ].map((s, i, arr) => (
-          <div key={s.label} style={{ flex: 1, padding: "0.875rem 1.25rem", borderRight: i < arr.length - 1 ? "1px solid #e2e8f0" : "none" }}>
-            <div style={{ fontSize: "0.6875rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.25rem" }}>{s.label}</div>
+          <div key={s.label} style={{ flex: 1, padding: "0.875rem 1.25rem", borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+            <div style={{ fontSize: "0.6875rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.30)", marginBottom: "0.25rem" }}>{s.label}</div>
             <div style={{ fontSize: "1.5rem", fontWeight: 700, color: s.color }}>{s.value}</div>
           </div>
         ))}
@@ -139,8 +139,8 @@ export default function AdminAgents() {
                 textAlign: "left",
                 padding: "1rem",
                 borderRadius: "0.5rem",
-                border: `1px solid ${isSelected ? "#3ecf8e" : "#e2e8f0"}`,
-                background: isSelected ? "rgba(62,207,142,0.04)" : "#ffffff",
+                border: `1px solid ${isSelected ? "#00ff87" : "rgba(255,255,255,0.08)"}`,
+                background: isSelected ? "rgba(62,207,142,0.04)" : "#111111",
                 cursor: "pointer",
                 transition: "border-color 0.1s, background 0.1s",
               }}
@@ -149,8 +149,8 @@ export default function AdminAgents() {
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <span style={{ fontSize: "1.25rem" }}>{meta.icon}</span>
                   <div>
-                    <div style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#0f172a" }}>{meta.label}</div>
-                    <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{meta.category}</div>
+                    <div style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec" }}>{meta.label}</div>
+                    <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)" }}>{meta.category}</div>
                   </div>
                 </div>
                 <StatusText status={stats ? (stats.errorRuns > 0 && stats.successRuns === 0 ? "error" : "idle") : "idle"} />
@@ -158,13 +158,13 @@ export default function AdminAgents() {
               <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0 0 0.75rem", lineHeight: 1.5 }}>{meta.description}</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
                 {[
-                  { label: "Runs", value: String(stats?.totalRuns ?? 0), color: "#0f172a" },
-                  { label: "Success", value: successRate !== null ? `${successRate}%` : "—", color: successRate !== null ? (successRate >= 80 ? "#3ecf8e" : successRate >= 50 ? "#f59e0b" : "#ef4444") : "#94a3b8" },
+                  { label: "Runs", value: String(stats?.totalRuns ?? 0), color: "#ececec" },
+                  { label: "Success", value: successRate !== null ? `${successRate}%` : "—", color: successRate !== null ? (successRate >= 80 ? "#00ff87" : successRate >= 50 ? "#f59e0b" : "#ef4444") : "rgba(255,255,255,0.30)" },
                   { label: "Last Run", value: formatRelative(stats?.lastRunAt), color: "#64748b" },
                 ].map((stat) => (
-                  <div key={stat.label} style={{ background: "#f8fafc", borderRadius: "0.25rem", padding: "0.5rem", textAlign: "center" }}>
+                  <div key={stat.label} style={{ background: "#080808", borderRadius: "0.25rem", padding: "0.5rem", textAlign: "center" }}>
                     <div style={{ fontSize: "1rem", fontWeight: 700, color: stat.color }}>{stat.value}</div>
-                    <div style={{ fontSize: "0.625rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", marginTop: "0.125rem" }}>{stat.label}</div>
+                    <div style={{ fontSize: "0.625rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "rgba(255,255,255,0.30)", marginTop: "0.125rem" }}>{stat.label}</div>
                   </div>
                 ))}
               </div>
@@ -174,29 +174,29 @@ export default function AdminAgents() {
       </div>
 
       {/* Run History Table */}
-      <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", overflow: "hidden", background: "#ffffff" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+      <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", overflow: "hidden", background: "#111111" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid rgba(255,255,255,0.08)", background: "#080808" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#0f172a", margin: 0 }}>Run History</h2>
+            <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec", margin: 0 }}>Run History</h2>
             {selectedAgent && (
-              <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: "#3ecf8e" }}>
+              <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: "#00ff87" }}>
                 {selectedAgent}
-                <button onClick={() => setSelectedAgent(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", marginLeft: "0.375rem", fontSize: "1rem", lineHeight: 1 }}>×</button>
+                <button onClick={() => setSelectedAgent(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.30)", marginLeft: "0.375rem", fontSize: "1rem", lineHeight: 1 }}>×</button>
               </span>
             )}
           </div>
-          <span style={{ fontSize: "0.8125rem", color: "#94a3b8" }}>{filteredRuns.length} runs</span>
+          <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.30)" }}>{filteredRuns.length} runs</span>
         </div>
 
         {filteredRuns.length === 0 ? (
-          <div style={{ padding: "3rem 1rem", textAlign: "center", color: "#94a3b8", fontSize: "0.875rem" }}>
+          <div style={{ padding: "3rem 1rem", textAlign: "center", color: "rgba(255,255,255,0.30)", fontSize: "0.875rem" }}>
             No runs recorded yet. Trigger an AI agent to see activity here.
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8125rem" }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "#080808" }}>
                   {["Agent", "Status", "Triggered By", "Input", "Output / Error", "Started", "Duration"].map(h => (
                     <th key={h} style={{ textAlign: "left", padding: "0.5rem 1rem", fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b" }}>{h}</th>
                   ))}
@@ -209,11 +209,11 @@ export default function AdminAgents() {
                     ? new Date(run.completedAt).getTime() - new Date(run.startedAt).getTime()
                     : null;
                   return (
-                    <tr key={run.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <tr key={run.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
                       <td style={{ padding: "0.625rem 1rem" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
                           <span>{meta?.icon ?? "🔧"}</span>
-                          <span style={{ fontWeight: 500, color: "#0f172a" }}>{run.agentName}</span>
+                          <span style={{ fontWeight: 500, color: "#ececec" }}>{run.agentName}</span>
                         </div>
                       </td>
                       <td style={{ padding: "0.625rem 1rem" }}>
@@ -223,7 +223,7 @@ export default function AdminAgents() {
                       <td style={{ padding: "0.625rem 1rem", color: "#64748b", maxWidth: "180px" }}>
                         <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={run.inputSummary ?? ""}>{run.inputSummary ?? "—"}</span>
                       </td>
-                      <td style={{ padding: "0.625rem 1rem", maxWidth: "200px", color: run.status === "error" ? "#ef4444" : "#3ecf8e" }}>
+                      <td style={{ padding: "0.625rem 1rem", maxWidth: "200px", color: run.status === "error" ? "#ef4444" : "#00ff87" }}>
                         <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={run.status === "error" ? (run.errorMessage ?? "") : (run.outputSummary ?? "")}>
                           {run.status === "error" ? (run.errorMessage ?? "Error") : (run.outputSummary ?? "—")}
                         </span>

@@ -11,11 +11,11 @@ import {
 } from "lucide-react";
 
 const STATUS_CONFIG = {
-  new:       { label: "New",       color: "#3ecf8e" },
+  new:       { label: "New",       color: "#00ff87" },
   contacted: { label: "Contacted", color: "#f59e0b" },
   scheduled: { label: "Scheduled", color: "#3b82f6" },
-  completed: { label: "Completed", color: "#3ecf8e" },
-  closed:    { label: "Closed",    color: "#94a3b8" },
+  completed: { label: "Completed", color: "#00ff87" },
+  closed:    { label: "Closed",    color: "rgba(255,255,255,0.30)" },
 } as const;
 
 type DemoStatus = keyof typeof STATUS_CONFIG;
@@ -85,7 +85,7 @@ export default function AdminDemoRequests() {
   const currentSortLabel = SORT_OPTIONS.find((o) => o.key === sortKey)?.label ?? "Sort";
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "56rem", margin: "0 auto", color: "#0f172a" }}>
+    <div style={{ padding: "2rem", maxWidth: "56rem", margin: "0 auto", color: "#ececec" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -95,17 +95,17 @@ export default function AdminDemoRequests() {
             </button>
           </Link>
           <div style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(62,207,142,0.1)" }}>
-            <Play size={14} style={{ color: "#3ecf8e" }} />
+            <Play size={14} style={{ color: "#00ff87" }} />
           </div>
           <div>
-            <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>Demo Requests</h1>
+            <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0 }}>Demo Requests</h1>
             <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.125rem 0 0" }}>
               {demos?.length || 0} total · {counts["new"] || 0} new
             </p>
           </div>
         </div>
         {(counts["new"] || 0) > 0 && (
-          <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#3ecf8e" }}>
+          <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#00ff87" }}>
             {counts["new"]} new
           </span>
         )}
@@ -113,7 +113,7 @@ export default function AdminDemoRequests() {
 
       {/* Search */}
       <div style={{ position: "relative", marginBottom: "1rem" }}>
-        <Search size={14} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }} />
+        <Search size={14} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.30)", pointerEvents: "none" }} />
         <input
           type="text"
           value={searchQuery}
@@ -121,12 +121,12 @@ export default function AdminDemoRequests() {
           placeholder="Search by name, company, or robot type…"
           style={{
             width: "100%", paddingLeft: "2.25rem", paddingRight: "2.25rem", paddingTop: "0.5rem", paddingBottom: "0.5rem",
-            fontSize: "0.875rem", border: "1px solid #e2e8f0", borderRadius: "0.375rem",
-            background: "#ffffff", color: "#0f172a", outline: "none", boxSizing: "border-box",
+            fontSize: "0.875rem", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem",
+            background: "#111111", color: "#ececec", outline: "none", boxSizing: "border-box",
           }}
         />
         {searchQuery && (
-          <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94a3b8", display: "flex", alignItems: "center" }}>
+          <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.30)", display: "flex", alignItems: "center" }}>
             <X size={13} />
           </button>
         )}
@@ -145,21 +145,21 @@ export default function AdminDemoRequests() {
               style={{
                 padding: "0.3125rem 0.75rem",
                 fontSize: "0.8125rem", fontWeight: 500,
-                border: `1px solid ${statusFilter === key ? "#3ecf8e" : "#e2e8f0"}`,
-                background: statusFilter === key ? "rgba(62,207,142,0.08)" : "#ffffff",
-                color: statusFilter === key ? "#3ecf8e" : "#64748b",
+                border: `1px solid ${statusFilter === key ? "#00ff87" : "rgba(255,255,255,0.08)"}`,
+                background: statusFilter === key ? "rgba(62,207,142,0.08)" : "#111111",
+                color: statusFilter === key ? "#00ff87" : "#64748b",
                 borderRadius: "0.25rem", cursor: "pointer",
                 display: "flex", alignItems: "center", gap: "0.375rem",
               }}
             >
               {label}
-              <span style={{ fontSize: "0.75rem", background: "#f1f5f9", color: "#64748b", padding: "0.0625rem 0.3125rem", borderRadius: "0.1875rem" }}>{count}</span>
+              <span style={{ fontSize: "0.75rem", background: "#1a1a1a", color: "#64748b", padding: "0.0625rem 0.3125rem", borderRadius: "0.1875rem" }}>{count}</span>
             </button>
           ))}
           {hasActiveFilters && (
             <button
               onClick={() => { setStatusFilter("all"); setSearchQuery(""); }}
-              style={{ padding: "0.3125rem 0.75rem", fontSize: "0.8125rem", border: "1px solid #e2e8f0", background: "#fff", color: "#94a3b8", borderRadius: "0.25rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.25rem" }}
+              style={{ padding: "0.3125rem 0.75rem", fontSize: "0.8125rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.30)", borderRadius: "0.25rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.25rem" }}
             >
               <X size={11} /> Clear
             </button>
@@ -170,19 +170,19 @@ export default function AdminDemoRequests() {
         <div style={{ position: "relative", flexShrink: 0 }}>
           <button
             onClick={() => setSortOpen((v) => !v)}
-            style={{ padding: "0.3125rem 0.75rem", fontSize: "0.8125rem", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", borderRadius: "0.25rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.375rem" }}
+            style={{ padding: "0.3125rem 0.75rem", fontSize: "0.8125rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "#64748b", borderRadius: "0.25rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.375rem" }}
           >
             <ArrowUpDown size={12} />
             {currentSortLabel}
             <ChevronDown size={12} style={{ transform: sortOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
           </button>
           {sortOpen && (
-            <div style={{ position: "absolute", right: 0, top: "calc(100% + 0.25rem)", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "0.375rem", overflow: "hidden", zIndex: 20, minWidth: "11rem", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+            <div style={{ position: "absolute", right: 0, top: "calc(100% + 0.25rem)", background: "#111111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem", overflow: "hidden", zIndex: 20, minWidth: "11rem", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
               {SORT_OPTIONS.map((opt) => (
                 <button
                   key={opt.key}
                   onClick={() => { setSortKey(opt.key); setSortOpen(false); }}
-                  style={{ width: "100%", padding: "0.5rem 0.875rem", textAlign: "left", fontSize: "0.8125rem", background: sortKey === opt.key ? "rgba(62,207,142,0.06)" : "transparent", color: sortKey === opt.key ? "#3ecf8e" : "#475569", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}
+                  style={{ width: "100%", padding: "0.5rem 0.875rem", textAlign: "left", fontSize: "0.8125rem", background: sortKey === opt.key ? "rgba(62,207,142,0.06)" : "transparent", color: sortKey === opt.key ? "#00ff87" : "rgba(255,255,255,0.55)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}
                 >
                   {opt.label}
                   {sortKey === opt.key && <CheckCircle2 size={12} />}
@@ -195,10 +195,10 @@ export default function AdminDemoRequests() {
 
       {/* Result count */}
       {!isLoading && demos && (
-        <p style={{ fontSize: "0.8125rem", color: "#94a3b8", marginBottom: "1rem" }}>
+        <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.30)", marginBottom: "1rem" }}>
           Showing {processed.length} of {demos.length} request{demos.length !== 1 ? "s" : ""}
-          {statusFilter !== "all" && <> · status: <span style={{ color: "#3ecf8e" }}>{STATUS_CONFIG[statusFilter as DemoStatus]?.label}</span></>}
-          {searchQuery.trim() && <> · search: <span style={{ color: "#3ecf8e" }}>"{searchQuery.trim()}"</span></>}
+          {statusFilter !== "all" && <> · status: <span style={{ color: "#00ff87" }}>{STATUS_CONFIG[statusFilter as DemoStatus]?.label}</span></>}
+          {searchQuery.trim() && <> · search: <span style={{ color: "#00ff87" }}>"{searchQuery.trim()}"</span></>}
           {" · "}sorted by {currentSortLabel.toLowerCase()}
         </p>
       )}
@@ -206,23 +206,23 @@ export default function AdminDemoRequests() {
       {/* Loading */}
       {isLoading && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "4rem 0", gap: "0.75rem" }}>
-          <Loader2 size={20} style={{ color: "#3ecf8e", animation: "spin 1s linear infinite" }} />
+          <Loader2 size={20} style={{ color: "#00ff87", animation: "spin 1s linear infinite" }} />
           <span style={{ color: "#64748b" }}>Loading demo requests…</span>
         </div>
       )}
 
       {/* Empty state */}
       {!isLoading && processed.length === 0 && (
-        <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", padding: "4rem 1rem", textAlign: "center", background: "#ffffff" }}>
+        <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "4rem 1rem", textAlign: "center", background: "#111111" }}>
           <Play size={28} style={{ color: "#cbd5e1", margin: "0 auto 0.75rem" }} />
-          <p style={{ fontWeight: 600, color: "#475569" }}>
+          <p style={{ fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
             {searchQuery.trim() ? `No results for "${searchQuery.trim()}"` : statusFilter === "all" ? "No demo requests yet" : `No ${STATUS_CONFIG[statusFilter as DemoStatus]?.label.toLowerCase()} requests`}
           </p>
-          <p style={{ fontSize: "0.875rem", color: "#94a3b8", marginTop: "0.25rem" }}>
+          <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.30)", marginTop: "0.25rem" }}>
             {hasActiveFilters ? "Try adjusting your search or clearing the filters." : "Demo requests submitted via the website will appear here."}
           </p>
           {hasActiveFilters && (
-            <button onClick={() => { setStatusFilter("all"); setSearchQuery(""); }} style={{ marginTop: "1rem", padding: "0.5rem 1rem", fontSize: "0.875rem", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", borderRadius: "0.375rem", cursor: "pointer" }}>
+            <button onClick={() => { setStatusFilter("all"); setSearchQuery(""); }} style={{ marginTop: "1rem", padding: "0.5rem 1rem", fontSize: "0.875rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "#64748b", borderRadius: "0.375rem", cursor: "pointer" }}>
               Clear all filters
             </button>
           )}
@@ -242,7 +242,7 @@ export default function AdminDemoRequests() {
             return (
               <div
                 key={d.id}
-                style={{ border: `1px solid ${isExpanded ? "#3ecf8e" : "#e2e8f0"}`, borderRadius: "0.5rem", background: "#ffffff", overflow: "hidden", transition: "border-color 0.1s" }}
+                style={{ border: `1px solid ${isExpanded ? "#00ff87" : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#111111", overflow: "hidden", transition: "border-color 0.1s" }}
               >
                 {/* Row summary */}
                 <button
@@ -250,54 +250,54 @@ export default function AdminDemoRequests() {
                   onClick={() => setExpandedId(isExpanded ? null : d.id)}
                 >
                   <div style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(62,207,142,0.1)", flexShrink: 0 }}>
-                    <Bot size={14} style={{ color: "#3ecf8e" }} />
+                    <Bot size={14} style={{ color: "#00ff87" }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</p>
+                    <p style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</p>
                     <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.125rem 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.company}</p>
                   </div>
                   <div style={{ flex: 1, minWidth: 0, display: "none" }} className="md:block">
                     <p style={{ fontSize: "0.8125rem", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.robotType}</p>
                   </div>
                   <div style={{ flexShrink: 0 }}>
-                    <p style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{createdDate}</p>
+                    <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)" }}>{createdDate}</p>
                   </div>
                   <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: cfg.color, flexShrink: 0 }}>{cfg.label}</span>
-                  <div style={{ flexShrink: 0, color: "#94a3b8" }}>
+                  <div style={{ flexShrink: 0, color: "rgba(255,255,255,0.30)" }}>
                     {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                   </div>
                 </button>
 
                 {/* Expanded detail */}
                 {isExpanded && (
-                  <div style={{ padding: "1rem", borderTop: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  <div style={{ padding: "1rem", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", gap: "1rem" }}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                       {/* Contact */}
                       <div>
-                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>Contact</p>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.30)", marginBottom: "0.5rem" }}>Contact</p>
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", fontSize: "0.875rem" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                            <Mail size={13} style={{ color: "#94a3b8" }} />
-                            <a href={`mailto:${d.email}`} style={{ color: "#3ecf8e", textDecoration: "none" }}>{d.email}</a>
+                            <Mail size={13} style={{ color: "rgba(255,255,255,0.30)" }} />
+                            <a href={`mailto:${d.email}`} style={{ color: "#00ff87", textDecoration: "none" }}>{d.email}</a>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                            <Building2 size={13} style={{ color: "#94a3b8" }} />
-                            <span style={{ color: "#475569" }}>{d.company}</span>
+                            <Building2 size={13} style={{ color: "rgba(255,255,255,0.30)" }} />
+                            <span style={{ color: "rgba(255,255,255,0.55)" }}>{d.company}</span>
                           </div>
                         </div>
                       </div>
                       {/* Robot */}
                       <div>
-                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>Robot Details</p>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.30)", marginBottom: "0.5rem" }}>Robot Details</p>
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", fontSize: "0.875rem" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                            <Bot size={13} style={{ color: "#94a3b8" }} />
-                            <span style={{ color: "#475569" }}>{d.robotType}</span>
+                            <Bot size={13} style={{ color: "rgba(255,255,255,0.30)" }} />
+                            <span style={{ color: "rgba(255,255,255,0.55)" }}>{d.robotType}</span>
                           </div>
                           {d.preferredShowName && (
                             <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                              <Calendar size={13} style={{ color: "#94a3b8" }} />
-                              <span style={{ color: "#475569" }}>{d.preferredShowName}</span>
+                              <Calendar size={13} style={{ color: "rgba(255,255,255,0.30)" }} />
+                              <span style={{ color: "rgba(255,255,255,0.55)" }}>{d.preferredShowName}</span>
                             </div>
                           )}
                         </div>
@@ -307,17 +307,17 @@ export default function AdminDemoRequests() {
                     {/* Message */}
                     {d.message && (
                       <div>
-                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>Message</p>
-                        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "0.375rem", padding: "0.75rem", fontSize: "0.875rem", color: "#475569", lineHeight: 1.6 }}>
-                          <MessageSquare size={13} style={{ display: "inline", marginRight: "0.375rem", color: "#94a3b8", verticalAlign: "middle" }} />
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.30)", marginBottom: "0.5rem" }}>Message</p>
+                        <div style={{ background: "#080808", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem", padding: "0.75rem", fontSize: "0.875rem", color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
+                          <MessageSquare size={13} style={{ display: "inline", marginRight: "0.375rem", color: "rgba(255,255,255,0.30)", verticalAlign: "middle" }} />
                           {d.message}
                         </div>
                       </div>
                     )}
 
                     {/* Status actions */}
-                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "0.875rem" }}>
-                      <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginBottom: "0.5rem" }}>Update Status</p>
+                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "0.875rem" }}>
+                      <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.30)", marginBottom: "0.5rem" }}>Update Status</p>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
                         {(["new", "contacted", "scheduled", "completed", "closed"] as DemoStatus[]).map((s) => {
                           const scfg = STATUS_CONFIG[s];
@@ -329,8 +329,8 @@ export default function AdminDemoRequests() {
                               onClick={() => updateStatus.mutate({ id: d.id, status: s })}
                               style={{
                                 padding: "0.3125rem 0.75rem", fontSize: "0.8125rem", fontWeight: 500,
-                                border: `1px solid ${isCurrent ? scfg.color : "#e2e8f0"}`,
-                                background: isCurrent ? `${scfg.color}15` : "#ffffff",
+                                border: `1px solid ${isCurrent ? scfg.color : "rgba(255,255,255,0.08)"}`,
+                                background: isCurrent ? `${scfg.color}15` : "#111111",
                                 color: isCurrent ? scfg.color : "#64748b",
                                 borderRadius: "0.25rem", cursor: isCurrent ? "default" : "pointer",
                                 display: "flex", alignItems: "center", gap: "0.375rem",

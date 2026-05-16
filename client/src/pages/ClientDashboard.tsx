@@ -17,9 +17,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   new:         { label: "New",         color: "#3b82f6", icon: Clock },
   reviewing:   { label: "Reviewing",   color: "#f59e0b", icon: AlertCircle },
   quoted:      { label: "Quoted",      color: "#8b5cf6", icon: FileText },
-  approved:    { label: "Approved",    color: "#3ecf8e", icon: CheckCircle },
+  approved:    { label: "Approved",    color: "#00ff87", icon: CheckCircle },
   in_progress: { label: "In Progress", color: "#f97316", icon: Zap },
-  completed:   { label: "Completed",   color: "#3ecf8e", icon: CheckCircle },
+  completed:   { label: "Completed",   color: "#00ff87", icon: CheckCircle },
   cancelled:   { label: "Cancelled",   color: "#ef4444", icon: XCircle },
 };
 
@@ -87,7 +87,7 @@ export default function ClientDashboard() {
   if (loading || profileLoading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
-        <Loader2 size={28} style={{ color: "#3ecf8e", animation: "spin 1s linear infinite" }} />
+        <Loader2 size={28} style={{ color: "#00ff87", animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
@@ -97,10 +97,10 @@ export default function ClientDashboard() {
       <div style={{ minHeight: "100vh", background: "#fff" }}>
         <Navbar />
         <div style={{ paddingTop: "8rem", paddingBottom: "4rem", maxWidth: "28rem", margin: "0 auto", padding: "8rem 1rem 4rem", textAlign: "center" }}>
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.75rem", padding: "3rem 2rem" }}>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.75rem" }}>Sign In Required</h1>
+          <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem" }}>
+            <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#ececec", marginBottom: "0.75rem" }}>Sign In Required</h1>
             <p style={{ color: "#64748b", marginBottom: "2rem" }}>Please sign in to access your dashboard.</p>
-            <a href={getLoginUrl()} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#3ecf8e", color: "#fff", fontWeight: 700, fontSize: "1rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+            <a href={getLoginUrl()} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#00ff87", color: "#fff", fontWeight: 700, fontSize: "1rem", borderRadius: "0.375rem", textDecoration: "none" }}>
               Sign In <ArrowRight size={16} />
             </a>
           </div>
@@ -114,14 +114,14 @@ export default function ClientDashboard() {
       <div style={{ minHeight: "100vh", background: "#fff" }}>
         <Navbar />
         <div style={{ paddingTop: "8rem", paddingBottom: "4rem", maxWidth: "28rem", margin: "0 auto", padding: "8rem 1rem 4rem", textAlign: "center" }}>
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.75rem", padding: "3rem 2rem" }}>
-            <Bot size={40} style={{ color: "#3ecf8e", margin: "0 auto 1rem" }} />
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.75rem" }}>Set Up Your Profile</h1>
+          <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem" }}>
+            <Bot size={40} style={{ color: "#00ff87", margin: "0 auto 1rem" }} />
+            <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#ececec", marginBottom: "0.75rem" }}>Set Up Your Profile</h1>
             <p style={{ color: "#64748b", marginBottom: "2rem" }}>
               Complete your company profile so StageGate can prepare the right logistics for your robots.
             </p>
             <Link href="/onboarding">
-              <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#3ecf8e", color: "#fff", fontWeight: 700, fontSize: "1rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+              <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#00ff87", color: "#fff", fontWeight: 700, fontSize: "1rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                 Start Setup <ArrowRight size={16} />
               </a>
             </Link>
@@ -137,12 +137,12 @@ export default function ClientDashboard() {
 
   const inputStyle = {
     width: "100%", height: "2.25rem", borderRadius: "0.375rem",
-    border: "1px solid #e2e8f0", background: "#fff",
-    padding: "0 0.75rem", fontSize: "0.875rem", color: "#0f172a", outline: "none",
+    border: "1px solid rgba(255,255,255,0.08)", background: "#fff",
+    padding: "0 0.75rem", fontSize: "0.875rem", color: "#ececec", outline: "none",
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
+    <div style={{ minHeight: "100vh", background: "#080808" }}>
       <Navbar />
       <div style={{ paddingTop: "5rem", paddingBottom: "4rem" }}>
         <div style={{ maxWidth: "56rem", margin: "0 auto", padding: "2rem 1rem" }}>
@@ -150,14 +150,14 @@ export default function ClientDashboard() {
           {/* Welcome header */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "2rem" }}>
             <div>
-              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#0f172a", margin: "0 0 0.25rem" }}>
+              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#ececec", margin: "0 0 0.25rem" }}>
                 Welcome back, {profile.contactName?.split(" ")[0] ?? user?.name ?? "there"}
               </h1>
               <p style={{ fontSize: "0.875rem", color: "#64748b", margin: 0 }}>{profile.companyName} · StageGate Client Portal</p>
             </div>
             <button
               onClick={() => setEditProfileOpen(true)}
-              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.75rem", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", borderRadius: "0.375rem", cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.75rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer" }}
             >
               <User size={12} /> Edit Profile
             </button>
@@ -169,14 +169,14 @@ export default function ClientDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
 
               {/* Company card */}
-              <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
+              <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
                   <div style={{ width: "2.25rem", height: "2.25rem", borderRadius: "0.375rem", background: "rgba(62,207,142,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Building2 size={16} style={{ color: "#3ecf8e" }} />
+                    <Building2 size={16} style={{ color: "#00ff87" }} />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a" }}>{profile.companyName}</div>
-                    <div style={{ fontSize: "0.8125rem", color: "#94a3b8" }}>{profile.country ?? "—"}</div>
+                    <div style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec" }}>{profile.companyName}</div>
+                    <div style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.30)" }}>{profile.country ?? "—"}</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.875rem" }}>
@@ -193,7 +193,7 @@ export default function ClientDashboard() {
                   {profile.website && (
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#64748b" }}>
                       <Globe size={12} />
-                      <a href={profile.website} target="_blank" rel="noreferrer" style={{ color: "#3ecf8e", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <a href={profile.website} target="_blank" rel="noreferrer" style={{ color: "#00ff87", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {profile.website.replace(/^https?:\/\//, "")}
                       </a>
                     </div>
@@ -203,18 +203,18 @@ export default function ClientDashboard() {
 
               {/* Robots */}
               {robots.length > 0 && (
-                <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
+                <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                    <Bot size={13} style={{ color: "#3ecf8e" }} />
-                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>Your Robots</span>
+                    <Bot size={13} style={{ color: "#00ff87" }} />
+                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec" }}>Your Robots</span>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                     {robots.map((r, i) => (
-                      <div key={i} style={{ padding: "0.625rem 0.75rem", borderRadius: "0.375rem", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                        <div style={{ fontWeight: 500, fontSize: "0.875rem", color: "#0f172a" }}>{r.name || "Unnamed Robot"}</div>
+                      <div key={i} style={{ padding: "0.625rem 0.75rem", borderRadius: "0.375rem", background: "#080808", border: "1px solid rgba(255,255,255,0.08)" }}>
+                        <div style={{ fontWeight: 500, fontSize: "0.875rem", color: "#ececec" }}>{r.name || "Unnamed Robot"}</div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.25rem" }}>
                           {r.type && <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{r.type}</span>}
-                          {r.weight && <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{r.weight}</span>}
+                          {r.weight && <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)" }}>{r.weight}</span>}
                         </div>
                       </div>
                     ))}
@@ -224,17 +224,17 @@ export default function ClientDashboard() {
 
               {/* Shows */}
               {showsAttending.length > 0 && (
-                <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
+                <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                    <Calendar size={13} style={{ color: "#3ecf8e" }} />
-                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>Upcoming Shows</span>
+                    <Calendar size={13} style={{ color: "#00ff87" }} />
+                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec" }}>Upcoming Shows</span>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                     {showsAttending.map((s, i) => (
                       <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <div>
-                          <div style={{ fontSize: "0.875rem", fontWeight: 500, color: "#0f172a" }}>{s.showName}</div>
-                          {s.boothNumber && <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{s.boothNumber}</div>}
+                          <div style={{ fontSize: "0.875rem", fontWeight: 500, color: "#ececec" }}>{s.showName}</div>
+                          {s.boothNumber && <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)" }}>{s.boothNumber}</div>}
                         </div>
                         <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{s.year}</span>
                       </div>
@@ -245,14 +245,14 @@ export default function ClientDashboard() {
 
               {/* Services needed */}
               {servicesNeeded.length > 0 && (
-                <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
+                <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                    <Star size={13} style={{ color: "#3ecf8e" }} />
-                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>Services Requested</span>
+                    <Star size={13} style={{ color: "#00ff87" }} />
+                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec" }}>Services Requested</span>
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
                     {servicesNeeded.map(s => (
-                      <span key={s} style={{ fontSize: "0.8125rem", color: "#3ecf8e", background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>
+                      <span key={s} style={{ fontSize: "0.8125rem", color: "#00ff87", background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>
                         {s}
                       </span>
                     ))}
@@ -265,25 +265,25 @@ export default function ClientDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
 
               {/* Submit new request */}
-              <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", background: "#fff", overflow: "hidden" }}>
+              <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#fff", overflow: "hidden" }}>
                 <button
                   onClick={() => setShowRequestForm(v => !v)}
                   style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.125rem 1.25rem", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                    <div style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", background: "#3ecf8e", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", background: "#00ff87", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <Plus size={15} style={{ color: "#fff" }} />
                     </div>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a" }}>Submit a Service Request</div>
+                      <div style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec" }}>Submit a Service Request</div>
                       <div style={{ fontSize: "0.8125rem", color: "#64748b" }}>Request logistics, staging, or support for your next show</div>
                     </div>
                   </div>
-                  {showRequestForm ? <ChevronUp size={15} style={{ color: "#94a3b8" }} /> : <ChevronDown size={15} style={{ color: "#94a3b8" }} />}
+                  {showRequestForm ? <ChevronUp size={15} style={{ color: "rgba(255,255,255,0.30)" }} /> : <ChevronDown size={15} style={{ color: "rgba(255,255,255,0.30)" }} />}
                 </button>
 
                 {showRequestForm && (
-                  <div style={{ padding: "0 1.25rem 1.25rem", borderTop: "1px solid #e2e8f0", paddingTop: "1rem" }}>
+                  <div style={{ padding: "0 1.25rem 1.25rem", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "1rem" }}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.875rem" }}>
                       <div style={{ gridColumn: "1 / -1" }}>
                         <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>Service Type *</label>
@@ -318,15 +318,15 @@ export default function ClientDashboard() {
                       </div>
                       <div style={{ gridColumn: "1 / -1" }}>
                         <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>
-                          Attachment <span style={{ fontWeight: 400, color: "#94a3b8" }}>(optional — spec sheet, crate dims, robot manual · PDF/image · max 16MB)</span>
+                          Attachment <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.30)" }}>(optional — spec sheet, crate dims, robot manual · PDF/image · max 16MB)</span>
                         </label>
                         {attachment ? (
                           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem" }}>
-                            <a href={attachment.url} target="_blank" rel="noopener noreferrer" style={{ color: "#3ecf8e", textDecoration: "underline", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "18rem" }}>{attachment.name}</a>
-                            <button type="button" onClick={() => setAttachment(null)} style={{ fontSize: "0.75rem", color: "#94a3b8", background: "none", border: "none", cursor: "pointer", marginLeft: "0.25rem" }}>Remove</button>
+                            <a href={attachment.url} target="_blank" rel="noopener noreferrer" style={{ color: "#00ff87", textDecoration: "underline", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "18rem" }}>{attachment.name}</a>
+                            <button type="button" onClick={() => setAttachment(null)} style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", background: "none", border: "none", cursor: "pointer", marginLeft: "0.25rem" }}>Remove</button>
                           </div>
                         ) : (
-                          <label style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", color: "#64748b", border: "1px dashed #e2e8f0", borderRadius: "0.375rem", padding: "0.5rem 0.875rem" }}>
+                          <label style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", color: "#64748b", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "0.375rem", padding: "0.5rem 0.875rem" }}>
                             {uploadingFile ? <><Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> Uploading…</> : <span>Choose file</span>}
                             <input type="file" style={{ display: "none" }} accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.xlsx,.csv" onChange={handleFileUpload} disabled={uploadingFile} />
                           </label>
@@ -336,14 +336,14 @@ export default function ClientDashboard() {
                     <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
                       <button
                         onClick={() => setShowRequestForm(false)}
-                        style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", borderRadius: "0.375rem", cursor: "pointer" }}
+                        style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer" }}
                       >
                         Cancel
                       </button>
                       <button
                         disabled={!requestType || submitRequest.isPending || uploadingFile}
                         onClick={() => submitRequest.mutate({ requestType, showName: showName || undefined, showDate: showDate || undefined, robotName: robotName || undefined, details: details || undefined, urgency, attachmentUrl: attachment?.url, attachmentKey: attachment?.key, attachmentName: attachment?.name })}
-                        style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#3ecf8e", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: (!requestType || submitRequest.isPending || uploadingFile) ? 0.6 : 1 }}
+                        style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: (!requestType || submitRequest.isPending || uploadingFile) ? 0.6 : 1 }}
                       >
                         {submitRequest.isPending ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={13} />}
                         Submit Request
@@ -358,19 +358,19 @@ export default function ClientDashboard() {
                 <h2 style={{ fontSize: "0.875rem", fontWeight: 600, color: "#64748b", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <FileText size={13} /> Your Service Requests
                   {serviceReqs && serviceReqs.length > 0 && (
-                    <span style={{ fontSize: "0.75rem", background: "#f1f5f9", color: "#64748b", padding: "0.0625rem 0.4375rem", borderRadius: "0.25rem" }}>{serviceReqs.length}</span>
+                    <span style={{ fontSize: "0.75rem", background: "#1a1a1a", color: "#64748b", padding: "0.0625rem 0.4375rem", borderRadius: "0.25rem" }}>{serviceReqs.length}</span>
                   )}
                 </h2>
 
                 {reqsLoading ? (
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem 0" }}>
-                    <Loader2 size={20} style={{ color: "#94a3b8", animation: "spin 1s linear infinite" }} />
+                    <Loader2 size={20} style={{ color: "rgba(255,255,255,0.30)", animation: "spin 1s linear infinite" }} />
                   </div>
                 ) : !serviceReqs || serviceReqs.length === 0 ? (
-                  <div style={{ border: "1px dashed #e2e8f0", borderRadius: "0.5rem", padding: "2.5rem 1rem", textAlign: "center" }}>
+                  <div style={{ border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "2.5rem 1rem", textAlign: "center" }}>
                     <Package size={28} style={{ color: "#cbd5e1", margin: "0 auto 0.75rem" }} />
-                    <p style={{ fontSize: "0.875rem", color: "#94a3b8" }}>No service requests yet.</p>
-                    <p style={{ fontSize: "0.8125rem", color: "#94a3b8", marginTop: "0.25rem" }}>Submit your first request above to get started.</p>
+                    <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.30)" }}>No service requests yet.</p>
+                    <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.30)", marginTop: "0.25rem" }}>Submit your first request above to get started.</p>
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -379,7 +379,7 @@ export default function ClientDashboard() {
                       const Icon = cfg.icon;
                       const isExpanded = expandedRequest === req.id;
                       return (
-                        <div key={req.id} style={{ border: `1px solid ${isExpanded ? "#3ecf8e" : "#e2e8f0"}`, borderRadius: "0.5rem", background: "#fff", overflow: "hidden", transition: "border-color 0.1s" }}>
+                        <div key={req.id} style={{ border: `1px solid ${isExpanded ? "#00ff87" : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#fff", overflow: "hidden", transition: "border-color 0.1s" }}>
                           <button
                             onClick={() => setExpandedRequest(isExpanded ? null : req.id)}
                             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.875rem 1rem", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}
@@ -389,8 +389,8 @@ export default function ClientDashboard() {
                                 <Icon size={13} />
                               </div>
                               <div style={{ minWidth: 0 }}>
-                                <div style={{ fontWeight: 500, fontSize: "0.9375rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{req.requestType}</div>
-                                <div style={{ fontSize: "0.8125rem", color: "#94a3b8" }}>
+                                <div style={{ fontWeight: 500, fontSize: "0.9375rem", color: "#ececec", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{req.requestType}</div>
+                                <div style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.30)" }}>
                                   {req.showName && <span>{req.showName} · </span>}
                                   {new Date(req.createdAt).toLocaleDateString()}
                                 </div>
@@ -398,35 +398,35 @@ export default function ClientDashboard() {
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
                               <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: cfg.color }}>{cfg.label}</span>
-                              {isExpanded ? <ChevronUp size={13} style={{ color: "#94a3b8" }} /> : <ChevronDown size={13} style={{ color: "#94a3b8" }} />}
+                              {isExpanded ? <ChevronUp size={13} style={{ color: "rgba(255,255,255,0.30)" }} /> : <ChevronDown size={13} style={{ color: "rgba(255,255,255,0.30)" }} />}
                             </div>
                           </button>
                           {isExpanded && (
-                            <div style={{ padding: "0.875rem 1rem", borderTop: "1px solid #e2e8f0", background: "#f8fafc", display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.875rem" }}>
-                              {req.robotName && <div style={{ color: "#475569" }}><span style={{ color: "#94a3b8" }}>Robot: </span>{req.robotName}</div>}
-                              {req.showDate && <div style={{ color: "#475569" }}><span style={{ color: "#94a3b8" }}>Date: </span>{req.showDate}</div>}
+                            <div style={{ padding: "0.875rem 1rem", borderTop: "1px solid rgba(255,255,255,0.08)", background: "#080808", display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.875rem" }}>
+                              {req.robotName && <div style={{ color: "rgba(255,255,255,0.55)" }}><span style={{ color: "rgba(255,255,255,0.30)" }}>Robot: </span>{req.robotName}</div>}
+                              {req.showDate && <div style={{ color: "rgba(255,255,255,0.55)" }}><span style={{ color: "rgba(255,255,255,0.30)" }}>Date: </span>{req.showDate}</div>}
                               {req.urgency && req.urgency !== "normal" && (
-                                <div style={{ color: "#475569" }}><span style={{ color: "#94a3b8" }}>Urgency: </span><span style={{ textTransform: "capitalize" }}>{req.urgency}</span></div>
+                                <div style={{ color: "rgba(255,255,255,0.55)" }}><span style={{ color: "rgba(255,255,255,0.30)" }}>Urgency: </span><span style={{ textTransform: "capitalize" }}>{req.urgency}</span></div>
                               )}
                               {req.details && <div style={{ color: "#64748b" }}>{req.details}</div>}
                               {(req as any).attachmentUrl && (
                                 <div>
-                                  <span style={{ color: "#94a3b8" }}>Attachment: </span>
-                                  <a href={(req as any).attachmentUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#3ecf8e", textDecoration: "underline" }}>
+                                  <span style={{ color: "rgba(255,255,255,0.30)" }}>Attachment: </span>
+                                  <a href={(req as any).attachmentUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#00ff87", textDecoration: "underline" }}>
                                     {(req as any).attachmentName ?? "View file"}
                                   </a>
                                 </div>
                               )}
                               {req.quotedPrice && (
                                 <div style={{ marginTop: "0.5rem", padding: "0.75rem", borderRadius: "0.375rem", background: "rgba(62,207,142,0.06)", border: "1px solid rgba(62,207,142,0.2)" }}>
-                                  <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "0.25rem" }}>Quoted Price</div>
-                                  <div style={{ fontWeight: 700, fontSize: "1.125rem", color: "#3ecf8e" }}>{req.quotedPrice}</div>
+                                  <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", marginBottom: "0.25rem" }}>Quoted Price</div>
+                                  <div style={{ fontWeight: 700, fontSize: "1.125rem", color: "#00ff87" }}>{req.quotedPrice}</div>
                                 </div>
                               )}
                               {req.adminNotes && (
-                                <div style={{ marginTop: "0.5rem", padding: "0.75rem", borderRadius: "0.375rem", background: "#f1f5f9", border: "1px solid #e2e8f0" }}>
-                                  <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "0.25rem" }}>StageGate Note</div>
-                                  <div style={{ fontSize: "0.875rem", color: "#475569" }}>{req.adminNotes}</div>
+                                <div style={{ marginTop: "0.5rem", padding: "0.75rem", borderRadius: "0.375rem", background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                  <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", marginBottom: "0.25rem" }}>StageGate Note</div>
+                                  <div style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.55)" }}>{req.adminNotes}</div>
                                 </div>
                               )}
                             </div>

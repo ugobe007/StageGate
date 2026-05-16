@@ -32,8 +32,8 @@ const EMPTY_FORM: ShowForm = {
 
 const STATUS_COLORS: Record<string, string> = {
   upcoming: "#f59e0b",
-  active: "#3ecf8e",
-  completed: "#94a3b8",
+  active: "#00ff87",
+  completed: "rgba(255,255,255,0.30)",
 };
 
 export default function AdminShows() {
@@ -101,7 +101,7 @@ export default function AdminShows() {
   }
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "72rem", margin: "0 auto", color: "#0f172a" }}>
+    <div style={{ padding: "2rem", maxWidth: "72rem", margin: "0 auto", color: "#ececec" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem" }}>
         <Link href="/admin">
@@ -110,13 +110,13 @@ export default function AdminShows() {
           </button>
         </Link>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Calendar size={18} style={{ color: "#3ecf8e" }} /> Trade Shows
+          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Calendar size={18} style={{ color: "#00ff87" }} /> Trade Shows
           </h1>
         </div>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setForm(EMPTY_FORM); } }}>
           <DialogTrigger asChild>
-            <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#3ecf8e", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}>
+            <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}>
               <Plus size={14} /> Add Show
             </button>
           </DialogTrigger>
@@ -170,11 +170,11 @@ export default function AdminShows() {
               </div>
               <div style={{ display: "flex", gap: "0.75rem", paddingTop: "0.5rem" }}>
                 <button type="submit" disabled={createShow.isPending || updateShow.isPending}
-                  style={{ flex: 1, fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#3ecf8e", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}>
+                  style={{ flex: 1, fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}>
                   {(createShow.isPending || updateShow.isPending) ? <Loader2 size={14} className="animate-spin" /> : editId ? "Update Show" : "Create Show"}
                 </button>
                 <button type="button" onClick={() => { setOpen(false); setEditId(null); setForm(EMPTY_FORM); }}
-                  style={{ fontSize: "0.875rem", padding: "0.5rem 1rem", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", borderRadius: "0.375rem", cursor: "pointer" }}>
+                  style={{ fontSize: "0.875rem", padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "#64748b", borderRadius: "0.375rem", cursor: "pointer" }}>
                   Cancel
                 </button>
               </div>
@@ -185,19 +185,19 @@ export default function AdminShows() {
 
       {isLoading ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "5rem 0" }}>
-          <Loader2 size={28} style={{ color: "#3ecf8e", animation: "spin 1s linear infinite" }} />
+          <Loader2 size={28} style={{ color: "#00ff87", animation: "spin 1s linear infinite" }} />
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" }}>
           {(shows || []).map((show) => {
-            const statusColor = STATUS_COLORS[show.status] ?? "#94a3b8";
+            const statusColor = STATUS_COLORS[show.status] ?? "rgba(255,255,255,0.30)";
             const notifCount = (allNotifs || []).filter((n: any) => n.showId === show.id).length;
             const showingNotifs = selectedShowForNotifs === show.id;
 
             return (
-              <div key={show.id} style={{ padding: "1.25rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "#ffffff" }}>
+              <div key={show.id} style={{ padding: "1.25rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111111" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                  <h3 style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a", lineHeight: 1.3, margin: 0 }}>{show.name}</h3>
+                  <h3 style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec", lineHeight: 1.3, margin: 0 }}>{show.name}</h3>
                   <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: statusColor, flexShrink: 0 }}>{show.status}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.8125rem", color: "#64748b", marginBottom: "1rem" }}>
@@ -209,18 +209,18 @@ export default function AdminShows() {
                     </div>
                   )}
                   {show.website && (
-                    <a href={show.website} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "#3ecf8e", textDecoration: "none" }}>
+                    <a href={show.website} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "#00ff87", textDecoration: "none" }}>
                       <Globe size={11} /> Website
                     </a>
                   )}
                 </div>
                 <div style={{ display: "flex", gap: "0.5rem" }}>
                   <button onClick={() => openEdit(show)}
-                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", borderRadius: "0.25rem", cursor: "pointer" }}>
+                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.55)", borderRadius: "0.25rem", cursor: "pointer" }}>
                     <Edit size={12} /> Edit
                   </button>
                   <Link href={`/admin/leads?showId=${show.id}`} style={{ flex: 1 }}>
-                    <button style={{ width: "100%", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", background: "#fff", color: "#3ecf8e", borderRadius: "0.25rem", cursor: "pointer" }}>
+                    <button style={{ width: "100%", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", background: "#fff", color: "#00ff87", borderRadius: "0.25rem", cursor: "pointer" }}>
                       Leads
                     </button>
                   </Link>
@@ -234,7 +234,7 @@ export default function AdminShows() {
                 {notifCount > 0 && (
                   <button
                     onClick={() => setSelectedShowForNotifs(showingNotifs ? null : show.id)}
-                    style={{ marginTop: "0.625rem", width: "100%", display: "flex", alignItems: "center", gap: "0.375rem", padding: "0.375rem 0.625rem", borderRadius: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, border: "1px solid rgba(62,207,142,0.3)", color: "#3ecf8e", background: "rgba(62,207,142,0.04)", cursor: "pointer" }}
+                    style={{ marginTop: "0.625rem", width: "100%", display: "flex", alignItems: "center", gap: "0.375rem", padding: "0.375rem 0.625rem", borderRadius: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, border: "1px solid rgba(62,207,142,0.3)", color: "#00ff87", background: "rgba(62,207,142,0.04)", cursor: "pointer" }}
                   >
                     <Bell size={12} />
                     {notifCount} notification request{notifCount !== 1 ? "s" : ""}
@@ -244,15 +244,15 @@ export default function AdminShows() {
 
                 {/* Notification list */}
                 {showingNotifs && (
-                  <div style={{ marginTop: "0.5rem", border: "1px solid #e2e8f0", borderRadius: "0.375rem", overflow: "hidden" }}>
-                    <div style={{ padding: "0.375rem 0.75rem", background: "#f8fafc", fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b" }}>
+                  <div style={{ marginTop: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem", overflow: "hidden" }}>
+                    <div style={{ padding: "0.375rem 0.75rem", background: "#080808", fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b" }}>
                       Notification Requests
                     </div>
                     <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
                       {(showNotifs || []).map((n: any) => (
-                        <li key={n.id} style={{ padding: "0.5rem 0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", borderTop: "1px solid #f1f5f9" }}>
-                          <span style={{ fontSize: "0.8125rem", color: "#475569", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.email}</span>
-                          <span style={{ fontSize: "0.75rem", color: "#94a3b8", flexShrink: 0 }}>
+                        <li key={n.id} style={{ padding: "0.5rem 0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", borderTop: "1px solid #1a1a1a" }}>
+                          <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.email}</span>
+                          <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", flexShrink: 0 }}>
                             {new Date(n.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                           </span>
                         </li>

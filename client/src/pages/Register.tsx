@@ -20,7 +20,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 const sectionStyle: React.CSSProperties = {
-  padding: "1.5rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "#fff",
+  padding: "1.5rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff",
 };
 
 export default function Register() {
@@ -66,30 +66,30 @@ export default function Register() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc" }}>
-        <Loader2 size={28} style={{ color: "#3ecf8e", animation: "spin 1s linear infinite" }} />
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#080808" }}>
+        <Loader2 size={28} style={{ color: "#00ff87", animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
+      <div style={{ minHeight: "100vh", background: "#080808" }}>
         <Navbar />
         <div style={{ paddingTop: "8rem", paddingBottom: "4rem" }}>
           <div style={{ maxWidth: "28rem", margin: "0 auto", padding: "0 1rem", textAlign: "center" }}>
-            <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#fff" }}>
+            <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#fff" }}>
               <div style={{ width: "3rem", height: "3rem", borderRadius: "0.5rem", background: "rgba(62,207,142,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem" }}>
-                <Bot size={22} style={{ color: "#3ecf8e" }} />
+                <Bot size={22} style={{ color: "#00ff87" }} />
               </div>
-              <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.625rem" }}>Register Your Company</h1>
+              <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#ececec", marginBottom: "0.625rem" }}>Register Your Company</h1>
               <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "2rem" }}>
                 Create a free StageGate account to register your company and access our full service catalog.
               </p>
-              <a href={getLoginUrl()} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#3ecf8e", color: "#fff", fontWeight: 700, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+              <a href={getLoginUrl()} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#00ff87", color: "#fff", fontWeight: 700, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                 Sign In to Continue <ArrowRight size={16} />
               </a>
-              <p style={{ marginTop: "1rem", fontSize: "0.75rem", color: "#94a3b8" }}>Free forever · No credit card required</p>
+              <p style={{ marginTop: "1rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.30)" }}>Free forever · No credit card required</p>
             </div>
           </div>
         </div>
@@ -99,29 +99,29 @@ export default function Register() {
 
   if (existingProfile) {
     return (
-      <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
+      <div style={{ minHeight: "100vh", background: "#080808" }}>
         <Navbar />
         <div style={{ paddingTop: "8rem", paddingBottom: "4rem" }}>
           <div style={{ maxWidth: "28rem", margin: "0 auto", padding: "0 1rem", textAlign: "center" }}>
-            <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#fff" }}>
+            <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#fff" }}>
               <div style={{ width: "3rem", height: "3rem", borderRadius: "9999px", background: "rgba(62,207,142,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem" }}>
-                <CheckCircle size={22} style={{ color: "#3ecf8e" }} />
+                <CheckCircle size={22} style={{ color: "#00ff87" }} />
               </div>
-              <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.5rem" }}>Already Registered</h1>
+              <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#ececec", marginBottom: "0.5rem" }}>Already Registered</h1>
               <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "0.375rem" }}>
-                <strong style={{ color: "#0f172a" }}>{existingProfile.companyName}</strong> is registered on StageGate.
+                <strong style={{ color: "#ececec" }}>{existingProfile.companyName}</strong> is registered on StageGate.
               </p>
               <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "2rem" }}>
                 Head to your dashboard to view orders, book services, or update your profile.
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 <Link href="/dashboard">
-                  <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", background: "#3ecf8e", color: "#fff", fontWeight: 700, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+                  <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", background: "#00ff87", color: "#fff", fontWeight: 700, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                     Go to My Dashboard <ArrowRight size={15} />
                   </a>
                 </Link>
                 <Link href="/order">
-                  <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+                  <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.55)", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                     Book Services
                   </a>
                 </Link>
@@ -134,15 +134,15 @@ export default function Register() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
+    <div style={{ minHeight: "100vh", background: "#080808" }}>
       <Navbar />
       <div style={{ paddingTop: "6rem", paddingBottom: "4rem" }}>
         <div style={{ maxWidth: "42rem", margin: "0 auto", padding: "0 1rem" }}>
           <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, color: "#3ecf8e", background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.25rem 0.75rem", marginBottom: "1rem" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, color: "#00ff87", background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.25rem 0.75rem", marginBottom: "1rem" }}>
               Free Registration
             </div>
-            <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.5rem" }}>Register Your Company</h1>
+            <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "#ececec", marginBottom: "0.5rem" }}>Register Your Company</h1>
             <p style={{ fontSize: "0.9375rem", color: "#64748b" }}>Tell us about your company and robots. This takes about 3 minutes.</p>
           </div>
 
@@ -150,8 +150,8 @@ export default function Register() {
             {/* Company Info */}
             <div style={sectionStyle}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>
-                <Building2 size={15} style={{ color: "#3ecf8e" }} />
-                <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#0f172a", margin: 0 }}>Company Information</h2>
+                <Building2 size={15} style={{ color: "#00ff87" }} />
+                <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec", margin: 0 }}>Company Information</h2>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.875rem" }}>
                 <div style={{ gridColumn: "1 / -1" }}>
@@ -178,7 +178,7 @@ export default function Register() {
             {/* Contact Info */}
             <div style={sectionStyle}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>
-                <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#0f172a", margin: 0 }}>Primary Contact</h2>
+                <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec", margin: 0 }}>Primary Contact</h2>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.875rem" }}>
                 <div>
@@ -199,10 +199,10 @@ export default function Register() {
             {/* Robot Types */}
             <div style={sectionStyle}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                <Bot size={15} style={{ color: "#3ecf8e" }} />
-                <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#0f172a", margin: 0 }}>Robot Types</h2>
+                <Bot size={15} style={{ color: "#00ff87" }} />
+                <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec", margin: 0 }}>Robot Types</h2>
               </div>
-              <p style={{ fontSize: "0.8125rem", color: "#94a3b8", marginBottom: "1rem" }}>Select all robot types your company makes or sells.</p>
+              <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.30)", marginBottom: "1rem" }}>Select all robot types your company makes or sells.</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
                 {ROBOT_TYPES.map(type => {
                   const selected = form.robotTypes.includes(type);
@@ -215,10 +215,10 @@ export default function Register() {
                         padding: "0.3125rem 0.75rem",
                         fontSize: "0.8125rem",
                         fontWeight: selected ? 500 : 400,
-                        border: `1px solid ${selected ? "#3ecf8e" : "#e2e8f0"}`,
+                        border: `1px solid ${selected ? "#00ff87" : "rgba(255,255,255,0.08)"}`,
                         borderRadius: "0.25rem",
                         background: selected ? "rgba(62,207,142,0.08)" : "#fff",
-                        color: selected ? "#3ecf8e" : "#64748b",
+                        color: selected ? "#00ff87" : "#64748b",
                         cursor: "pointer",
                         transition: "all 0.1s",
                       }}
@@ -235,17 +235,17 @@ export default function Register() {
               <button
                 type="submit"
                 disabled={upsertProfile.isPending}
-                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", background: "#3ecf8e", color: "#fff", fontWeight: 700, fontSize: "0.9375rem", borderRadius: "0.375rem", border: "none", cursor: "pointer", opacity: upsertProfile.isPending ? 0.7 : 1 }}
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", background: "#00ff87", color: "#fff", fontWeight: 700, fontSize: "0.9375rem", borderRadius: "0.375rem", border: "none", cursor: "pointer", opacity: upsertProfile.isPending ? 0.7 : 1 }}
               >
                 {upsertProfile.isPending ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Saving…</> : <>Complete Registration <ArrowRight size={15} /></>}
               </button>
               <Link href="/">
-                <a style={{ display: "flex", alignItems: "center", padding: "0.75rem 1.25rem", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+                <a style={{ display: "flex", alignItems: "center", padding: "0.75rem 1.25rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "#64748b", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                   Cancel
                 </a>
               </Link>
             </div>
-            <p style={{ fontSize: "0.75rem", textAlign: "center", color: "#94a3b8" }}>
+            <p style={{ fontSize: "0.75rem", textAlign: "center", color: "rgba(255,255,255,0.30)" }}>
               Free forever · No credit card required · You can update your profile anytime
             </p>
           </form>

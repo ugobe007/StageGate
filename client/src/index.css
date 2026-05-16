@@ -330,35 +330,35 @@
   }
 }
 
-/* ── Supabase Admin Design System ─────────────────────────────────────── */
+/* ── Admin Design System — Dark Editorial Palette ─────────────────────── */
 /* Applied via .sb-admin wrapper on DashboardLayout */
 .sb-admin {
-  /* Light base */
-  --sb-bg:            #f8fafc;
-  --sb-surface:       #ffffff;
-  --sb-surface-2:     #f1f5f9;
-  --sb-border:        #e2e8f0;
-  --sb-border-strong: #cbd5e1;
+  /* Dark base */
+  --sb-bg:            #080808;
+  --sb-surface:       #111111;
+  --sb-surface-2:     #1a1a1a;
+  --sb-border:        rgba(255,255,255,0.08);
+  --sb-border-strong: rgba(255,255,255,0.16);
 
   /* Text */
-  --sb-text:          #0f172a;
-  --sb-text-2:        #475569;
-  --sb-text-3:        #94a3b8;
+  --sb-text:          #ececec;
+  --sb-text-2:        rgba(255,255,255,0.55);
+  --sb-text-3:        rgba(255,255,255,0.28);
 
-  /* Accent — Supabase green */
-  --sb-green:         #3ecf8e;
-  --sb-green-dim:     rgba(62,207,142,0.12);
+  /* Accent — site emerald */
+  --sb-green:         #00ff87;
+  --sb-green-dim:     rgba(0,255,135,0.10);
 
   /* Status colors — inline text only, no backgrounds */
-  --sb-status-new:        #3b82f6;   /* blue */
-  --sb-status-active:     #3ecf8e;   /* green */
+  --sb-status-new:        #60a5fa;   /* blue */
+  --sb-status-active:     #00ff87;   /* emerald */
   --sb-status-pending:    #f59e0b;   /* amber */
-  --sb-status-done:       #64748b;   /* slate */
+  --sb-status-done:       rgba(255,255,255,0.30);   /* muted */
   --sb-status-error:      #ef4444;   /* red */
 
   background-color: var(--sb-bg);
   color: var(--sb-text);
-  font-family: "Inter", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  font-family: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Supabase table */
@@ -469,8 +469,8 @@
 .sb-btn-primary {
   background: var(--sb-green);
   border-color: var(--sb-green);
-  color: #0f172a;
-  font-weight: 600;
+  color: #080808;
+  font-weight: 700;
 }
 .sb-btn-primary:hover { filter: brightness(1.08); }
 .sb-btn-ghost {
@@ -509,34 +509,34 @@
   color: var(--sb-text);
 }
 
-/* Force light theme inside admin panel — override dark Tailwind utilities */
-.sb-admin .bg-background  { background-color: #f8fafc !important; }
-.sb-admin .bg-card        { background-color: #ffffff !important; }
-.sb-admin .bg-muted       { background-color: #f1f5f9 !important; }
-.sb-admin .bg-secondary   { background-color: #f1f5f9 !important; }
-.sb-admin .bg-accent      { background-color: #f1f5f9 !important; }
-.sb-admin .text-foreground      { color: #0f172a !important; }
-.sb-admin .text-card-foreground { color: #0f172a !important; }
-.sb-admin .text-muted-foreground { color: #475569 !important; }
-.sb-admin .text-secondary-foreground { color: #475569 !important; }
-.sb-admin .border-border  { border-color: #e2e8f0 !important; }
-.sb-admin .border         { border-color: #e2e8f0 !important; }
+/* Dark palette overrides for admin panel — Tailwind utilities */
+.sb-admin .bg-background  { background-color: #080808 !important; }
+.sb-admin .bg-card        { background-color: #111111 !important; }
+.sb-admin .bg-muted       { background-color: #1a1a1a !important; }
+.sb-admin .bg-secondary   { background-color: #1a1a1a !important; }
+.sb-admin .bg-accent      { background-color: #1a1a1a !important; }
+.sb-admin .text-foreground      { color: #ececec !important; }
+.sb-admin .text-card-foreground { color: #ececec !important; }
+.sb-admin .text-muted-foreground { color: rgba(255,255,255,0.55) !important; }
+.sb-admin .text-secondary-foreground { color: rgba(255,255,255,0.55) !important; }
+.sb-admin .border-border  { border-color: rgba(255,255,255,0.08) !important; }
+.sb-admin .border         { border-color: rgba(255,255,255,0.08) !important; }
 .sb-admin input, .sb-admin textarea, .sb-admin select {
-  background-color: #ffffff;
-  color: #0f172a;
-  border-color: #e2e8f0;
+  background-color: #111111;
+  color: #ececec;
+  border-color: rgba(255,255,255,0.12);
 }
-.sb-admin input::placeholder, .sb-admin textarea::placeholder { color: #94a3b8; }
+.sb-admin input::placeholder, .sb-admin textarea::placeholder { color: rgba(255,255,255,0.30); }
 /* shadcn/ui card override inside admin */
-.sb-admin [data-slot="card"] { background: #ffffff; border-color: #e2e8f0; color: #0f172a; }
-.sb-admin [data-slot="card-header"] { color: #0f172a; }
-.sb-admin [data-slot="card-content"] { color: #0f172a; }
-.sb-admin [data-slot="card-title"] { color: #0f172a; }
-.sb-admin [data-slot="card-description"] { color: #475569; }
+.sb-admin [data-slot="card"] { background: #111111; border-color: rgba(255,255,255,0.08); color: #ececec; }
+.sb-admin [data-slot="card-header"] { color: #ececec; }
+.sb-admin [data-slot="card-content"] { color: #ececec; }
+.sb-admin [data-slot="card-title"] { color: #ececec; }
+.sb-admin [data-slot="card-description"] { color: rgba(255,255,255,0.55); }
 /* shadcn/ui table override */
-.sb-admin [data-slot="table"] th { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
-.sb-admin [data-slot="table"] td { color: #0f172a; border-color: #e2e8f0; }
-.sb-admin [data-slot="table"] tr:hover td { background: #f1f5f9; }
+.sb-admin [data-slot="table"] th { background: #111111; color: rgba(255,255,255,0.35); border-color: rgba(255,255,255,0.08); }
+.sb-admin [data-slot="table"] td { color: #ececec; border-color: rgba(255,255,255,0.08); }
+.sb-admin [data-slot="table"] tr:hover td { background: #1a1a1a; }
 /* shadcn/ui badge override — flatten to inline text */
 .sb-admin [data-slot="badge"] {
   background: transparent !important;
@@ -548,12 +548,12 @@
 }
 /* shadcn/ui button override */
 .sb-admin button[data-slot="button"][data-variant="outline"] {
-  background: #ffffff;
-  border-color: #e2e8f0;
-  color: #0f172a;
+  background: transparent;
+  border-color: rgba(255,255,255,0.12);
+  color: #ececec;
 }
 .sb-admin button[data-slot="button"][data-variant="outline"]:hover {
-  background: #f1f5f9;
+  background: #1a1a1a;
 }
 
 /* Supabase count chip — inline, no pill */

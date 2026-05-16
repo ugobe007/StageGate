@@ -25,10 +25,10 @@ function formatRelativeTime(date: Date): string {
 const STATUS_CONFIG: Record<ProspectStatus, { label: string; color: string; icon: React.ReactNode }> = {
   new:            { label: "New",           color: "#3b82f6",  icon: <AlertCircle size={11} /> },
   contacted:      { label: "Contacted",     color: "#f59e0b",  icon: <Mail size={11} /> },
-  responded:      { label: "Responded",     color: "#3ecf8e",  icon: <Check size={11} /> },
+  responded:      { label: "Responded",     color: "#00ff87",  icon: <Check size={11} /> },
   scheduled:      { label: "Scheduled",     color: "#8b5cf6",  icon: <Phone size={11} /> },
-  converted:      { label: "Converted",     color: "#3ecf8e",  icon: <Check size={11} /> },
-  not_interested: { label: "Not Interested",color: "#94a3b8",  icon: <X size={11} /> },
+  converted:      { label: "Converted",     color: "#00ff87",  icon: <Check size={11} /> },
+  not_interested: { label: "Not Interested",color: "rgba(255,255,255,0.30)",  icon: <X size={11} /> },
 };
 
 const ROBOT_TYPE_LABELS: Record<string, string> = {
@@ -42,17 +42,17 @@ const ROBOT_TYPE_LABELS: Record<string, string> = {
 };
 
 const CONFIDENCE_COLORS: Record<string, string> = {
-  verified: "#3ecf8e",
+  verified: "#00ff87",
   high: "rgba(62,207,142,0.80)",
   medium: "#f59e0b",
-  low: "#94a3b8",
+  low: "rgba(255,255,255,0.30)",
 };
 
 const CONFIDENCE_BORDERS: Record<string, string> = {
   verified: "rgba(62,207,142,0.35)",
   high: "rgba(62,207,142,0.20)",
   medium: "rgba(245,158,11,0.30)",
-  low: "#e2e8f0",
+  low: "rgba(255,255,255,0.08)",
 };
 
 export default function AdminProspects() {
@@ -325,10 +325,10 @@ export default function AdminProspects() {
 
   if (!user) {
     return (
-      <div style={{ background: "#f8fafc" }}>
+      <div style={{ background: "#080808" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", gap: "1.5rem" }}>
-          <p style={{ color: "#475569", fontSize: "0.875rem" }}>Admin access required</p>
-          <a href={getLoginUrl()} style={{ padding: "0.5rem 1rem", background: "#3ecf8e", color: "#0f172a", fontWeight: 600, borderRadius: "0.375rem", textDecoration: "none", fontSize: "0.875rem" }}>Sign In</a>
+          <p style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.875rem" }}>Admin access required</p>
+          <a href={getLoginUrl()} style={{ padding: "0.5rem 1rem", background: "#00ff87", color: "#ececec", fontWeight: 600, borderRadius: "0.375rem", textDecoration: "none", fontSize: "0.875rem" }}>Sign In</a>
         </div>
       </div>
     );
@@ -336,9 +336,9 @@ export default function AdminProspects() {
 
   if (user.role !== "admin") {
     return (
-      <div style={{ background: "#f8fafc" }}>
+      <div style={{ background: "#080808" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
-          <p style={{ color: "#475569", fontSize: "0.875rem" }}>Forbidden — admin only</p>
+          <p style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.875rem" }}>Forbidden — admin only</p>
         </div>
       </div>
     );
@@ -431,19 +431,19 @@ export default function AdminProspects() {
   };
 
   return (
-    <div style={{ background: "#f8fafc", color: "#0f172a", fontFamily: "'Inter','Space Grotesk',ui-sans-serif,system-ui,sans-serif" }}>
+    <div style={{ background: "#080808", color: "#ececec", fontFamily: "'Inter','Space Grotesk',ui-sans-serif,system-ui,sans-serif" }}>
       <div className="container" style={{ paddingTop: "2rem", paddingBottom: "4rem" }}>
         {/* Header */}
-        <div style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "1.25rem", marginBottom: "1.5rem" }}>
-          <p style={{ fontSize: "0.6875rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "0.375rem", fontWeight: 500 }}>
+        <div style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "1.25rem", marginBottom: "1.5rem" }}>
+          <p style={{ fontSize: "0.6875rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", marginBottom: "0.375rem", fontWeight: 500 }}>
             XBOT / OUTREACH
           </p>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-            <h1 style={{ fontSize: "1.125rem", fontWeight: 700, letterSpacing: "-0.01em", color: "#0f172a", margin: 0 }}>
+            <h1 style={{ fontSize: "1.125rem", fontWeight: 700, letterSpacing: "-0.01em", color: "#ececec", margin: 0 }}>
               Prospect Database
             </h1>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <span style={{ fontSize: "0.8125rem", color: "#475569" }}>
+              <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.55)" }}>
                 {prospects.length}{hideContacted && statusFilter === "" ? ` of ${(allData?.prospects ?? []).length}` : ""} prospects{hideContacted && statusFilter === "" ? " (contacted hidden)" : ""}
               </span>
               <button
@@ -453,9 +453,9 @@ export default function AdminProspects() {
                   display: "flex", alignItems: "center", gap: "0.3rem",
                   fontSize: "0.8125rem", fontWeight: 500,
                   padding: "0.375rem 0.75rem",
-                  border: "1px solid #e2e8f0",
-                  color: "#475569",
-                  background: "#ffffff", cursor: "pointer", borderRadius: "0.375rem",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "rgba(255,255,255,0.55)",
+                  background: "#111111", cursor: "pointer", borderRadius: "0.375rem",
                   transition: "all 0.1s",
                 }}
               >
@@ -476,39 +476,39 @@ export default function AdminProspects() {
                   display: "flex", alignItems: "center", gap: "0.3rem",
                   fontSize: "0.8125rem", fontWeight: 500,
                   padding: "0.375rem 0.75rem",
-                  border: "1px solid #e2e8f0",
-                  color: "#475569",
-                  background: "#ffffff", cursor: "pointer", borderRadius: "0.375rem",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "rgba(255,255,255,0.55)",
+                  background: "#111111", cursor: "pointer", borderRadius: "0.375rem",
                   transition: "all 0.1s",
                 }}
               >
                 <Upload size={12} /> Import
               </button>
               {/* View toggle */}
-              <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: "0.375rem", overflow: "hidden" }}>
+              <div style={{ display: "flex", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem", overflow: "hidden" }}>
                 <button
                   onClick={() => setViewMode("table")}
                   title="Table view"
-                  style={{ padding: "0.375rem 0.5rem", background: viewMode === "table" ? "#f1f5f9" : "#ffffff", border: "none", cursor: "pointer", color: viewMode === "table" ? "#0f172a" : "#94a3b8", borderRight: "1px solid #e2e8f0" }}
+                  style={{ padding: "0.375rem 0.5rem", background: viewMode === "table" ? "#1a1a1a" : "#111111", border: "none", cursor: "pointer", color: viewMode === "table" ? "#ececec" : "rgba(255,255,255,0.30)", borderRight: "1px solid rgba(255,255,255,0.08)" }}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
                 </button>
                 <button
                   onClick={() => setViewMode("kanban")}
                   title="Kanban view"
-                  style={{ padding: "0.375rem 0.5rem", background: viewMode === "kanban" ? "#f1f5f9" : "#ffffff", border: "none", cursor: "pointer", color: viewMode === "kanban" ? "#0f172a" : "#94a3b8", borderRight: "1px solid #e2e8f0" }}
+                  style={{ padding: "0.375rem 0.5rem", background: viewMode === "kanban" ? "#1a1a1a" : "#111111", border: "none", cursor: "pointer", color: viewMode === "kanban" ? "#ececec" : "rgba(255,255,255,0.30)", borderRight: "1px solid rgba(255,255,255,0.08)" }}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>
                 </button>
                 <button
                   onClick={() => setViewMode("byshow")}
                   title="By Show view"
-                  style={{ padding: "0.375rem 0.5rem", background: viewMode === "byshow" ? "#f1f5f9" : "#ffffff", border: "none", cursor: "pointer", color: viewMode === "byshow" ? "#3ecf8e" : "#94a3b8" }}
+                  style={{ padding: "0.375rem 0.5rem", background: viewMode === "byshow" ? "#1a1a1a" : "#111111", border: "none", cursor: "pointer", color: viewMode === "byshow" ? "#00ff87" : "rgba(255,255,255,0.30)" }}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
                 </button>
               </div>
-              <button onClick={() => refetch()} style={{ background: "#ffffff", border: "1px solid #e2e8f0", cursor: "pointer", color: "#94a3b8", padding: "0.375rem", borderRadius: "0.375rem", display: "flex", alignItems: "center" }}>
+              <button onClick={() => refetch()} style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer", color: "rgba(255,255,255,0.30)", padding: "0.375rem", borderRadius: "0.375rem", display: "flex", alignItems: "center" }}>
                 <RefreshCw size={13} />
               </button>
             </div>
@@ -525,12 +525,12 @@ export default function AdminProspects() {
           const responseRate = contacted > 0 ? Math.round((responded / contacted) * 100) : 0;
           const conversionRate = responded > 0 ? Math.round((converted / responded) * 100) : 0;
           const stats = [
-            { label: "Total", value: total, color: "#0f172a" },
+            { label: "Total", value: total, color: "#ececec" },
             { label: "Contacted", value: contacted, color: "#f59e0b" },
-            { label: "Responded", value: responded, color: "#3ecf8e" },
+            { label: "Responded", value: responded, color: "#00ff87" },
             { label: "Converted", value: converted, color: "#8b5cf6" },
-            { label: "Response Rate", value: `${responseRate}%`, color: responded > 0 ? "#3ecf8e" : "#94a3b8" },
-            { label: "Conv. Rate", value: `${conversionRate}%`, color: converted > 0 ? "#8b5cf6" : "#94a3b8" },
+            { label: "Response Rate", value: `${responseRate}%`, color: responded > 0 ? "#00ff87" : "rgba(255,255,255,0.30)" },
+            { label: "Conv. Rate", value: `${conversionRate}%`, color: converted > 0 ? "#8b5cf6" : "rgba(255,255,255,0.30)" },
           ];
           return (
             <div style={{
@@ -538,21 +538,21 @@ export default function AdminProspects() {
               alignItems: "stretch",
               gap: 0,
               marginBottom: "1.5rem",
-              border: "1px solid #e2e8f0",
+              border: "1px solid rgba(255,255,255,0.08)",
               borderRadius: "0.5rem",
               overflow: "hidden",
-              background: "#ffffff",
+              background: "#111111",
             }}>
               {stats.map((s, i) => (
                 <div key={s.label} style={{
                   flex: 1,
                   padding: "0.875rem 1rem",
-                  borderRight: i < stats.length - 1 ? "1px solid #e2e8f0" : "none",
+                  borderRight: i < stats.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none",
                   display: "flex",
                   flexDirection: "column",
                   gap: "0.25rem",
                 }}>
-                  <span style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", color: "#94a3b8" }}>
+                  <span style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)" }}>
                     {s.label}
                   </span>
                   <span style={{ fontSize: "1.25rem", fontWeight: 700, color: s.color, lineHeight: 1 }}>
@@ -575,9 +575,9 @@ export default function AdminProspects() {
             style={{
               width: "100%",
               fontSize: "0.8125rem",
-              background: "#ffffff",
-              border: `1px solid ${searchQuery ? "#3ecf8e" : "#e2e8f0"}`,
-              color: "#0f172a",
+              background: "#111111",
+              border: `1px solid ${searchQuery ? "#00ff87" : "rgba(255,255,255,0.08)"}`,
+              color: "#ececec",
               padding: "0.4375rem 2.25rem 0.4375rem 0.75rem",
               borderRadius: "0.375rem",
               outline: "none",
@@ -591,25 +591,25 @@ export default function AdminProspects() {
               style={{
                 position: "absolute", right: "0.6rem", top: "50%", transform: "translateY(-50%)",
                 background: "none", border: "none", cursor: "pointer",
-                color: "#94a3b8", padding: 0, lineHeight: 1,
+                color: "rgba(255,255,255,0.30)", padding: 0, lineHeight: 1,
               }}
             >
               <X size={13} />
             </button>
           ) : (
-            <span style={{ position: "absolute", right: "0.7rem", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none", lineHeight: 1 }}>
+            <span style={{ position: "absolute", right: "0.7rem", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.30)", pointerEvents: "none", lineHeight: 1 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             </span>
           )}
         </div>
 
         {/* Status filter tabs — Supabase underline style */}
-        <div style={{ display: "flex", alignItems: "center", gap: 0, borderBottom: "1px solid #e2e8f0", marginBottom: "1.25rem", overflowX: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 0, borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: "1.25rem", overflowX: "auto" }}>
           {["", "new", "contacted", "responded", "scheduled", "converted", "not_interested"].map(s => {
             const count = s === "" ? (allData?.prospects ?? []).length : (statusCounts[s] ?? 0);
             const isActive = statusFilter === s;
             const cfg = STATUS_CONFIG[s as ProspectStatus];
-            const accentColor = s === "" ? "#0f172a" : (cfg?.color ?? "#475569");
+            const accentColor = s === "" ? "#ececec" : (cfg?.color ?? "rgba(255,255,255,0.55)");
             return (
               <button
                 key={s}
@@ -621,7 +621,7 @@ export default function AdminProspects() {
                   border: "none",
                   borderBottom: isActive ? `2px solid ${accentColor}` : "2px solid transparent",
                   background: "transparent",
-                  color: isActive ? accentColor : "#475569",
+                  color: isActive ? accentColor : "rgba(255,255,255,0.55)",
                   cursor: "pointer",
                   whiteSpace: "nowrap" as const,
                   transition: "color 0.1s, border-color 0.1s",
@@ -633,7 +633,7 @@ export default function AdminProspects() {
               >
                 {s === "" ? "All" : STATUS_CONFIG[s as ProspectStatus]?.label ?? s}
                 {count > 0 && (
-                  <span style={{ fontSize: "0.6875rem", color: isActive ? accentColor : "#94a3b8", fontVariantNumeric: "tabular-nums" }}>{count}</span>
+                  <span style={{ fontSize: "0.6875rem", color: isActive ? accentColor : "rgba(255,255,255,0.30)", fontVariantNumeric: "tabular-nums" }}>{count}</span>
                 )}
               </button>
             );
@@ -648,7 +648,7 @@ export default function AdminProspects() {
               border: "none",
               borderBottom: hotFilter ? "2px solid #f59e0b" : "2px solid transparent",
               background: "transparent",
-              color: hotFilter ? "#f59e0b" : "#475569",
+              color: hotFilter ? "#f59e0b" : "rgba(255,255,255,0.55)",
               cursor: "pointer",
               whiteSpace: "nowrap" as const,
               transition: "color 0.1s, border-color 0.1s",
@@ -661,7 +661,7 @@ export default function AdminProspects() {
           >
             🔥 Hot
             {hotCount > 0 && (
-              <span style={{ fontSize: "0.6875rem", color: hotFilter ? "#f59e0b" : "#94a3b8", fontVariantNumeric: "tabular-nums" }}>{hotCount}</span>
+              <span style={{ fontSize: "0.6875rem", color: hotFilter ? "#f59e0b" : "rgba(255,255,255,0.30)", fontVariantNumeric: "tabular-nums" }}>{hotCount}</span>
             )}
           </button>
 
@@ -673,9 +673,9 @@ export default function AdminProspects() {
               fontSize: "0.8125rem",
               fontWeight: 500,
               padding: "0.375rem 0.75rem",
-              border: "1px solid #e2e8f0",
-              background: "#ffffff",
-              color: enrichingPartners ? "#94a3b8" : "#475569",
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "#111111",
+              color: enrichingPartners ? "rgba(255,255,255,0.30)" : "rgba(255,255,255,0.55)",
               cursor: enrichingPartners ? "not-allowed" : "pointer",
               borderRadius: "0.375rem",
               transition: "all 0.1s",
@@ -690,8 +690,8 @@ export default function AdminProspects() {
           </button>
 
           {/* Vendor Type filter pills */}
-          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginLeft: "0.5rem", paddingLeft: "0.75rem", borderLeft: "1px solid #e2e8f0" }}>
-            <span style={{ fontSize: "0.6875rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", marginRight: "0.1rem" }}>Type:</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginLeft: "0.5rem", paddingLeft: "0.75rem", borderLeft: "1px solid rgba(255,255,255,0.08)" }}>
+            <span style={{ fontSize: "0.6875rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.30)", marginRight: "0.1rem" }}>Type:</span>
             {Object.entries(VENDOR_TYPE_CONFIG).map(([key, cfg]) => {
               const count = (allData?.prospects ?? []).filter(p => String((p as Record<string, unknown>).vendorType ?? "robot_oem") === key).length;
               if (count === 0) return null;
@@ -704,9 +704,9 @@ export default function AdminProspects() {
                     fontSize: "0.75rem",
                     fontWeight: isActive ? 500 : 400,
                     padding: "0.25rem 0.625rem",
-                    border: `1px solid ${isActive ? cfg.color : "#e2e8f0"}`,
-                    background: isActive ? `${cfg.color}15` : "#ffffff",
-                    color: isActive ? cfg.color : "#475569",
+                    border: `1px solid ${isActive ? cfg.color : "rgba(255,255,255,0.08)"}`,
+                    background: isActive ? `${cfg.color}15` : "#111111",
+                    color: isActive ? cfg.color : "rgba(255,255,255,0.55)",
                     cursor: "pointer",
                     borderRadius: "0.25rem",
                     transition: "all 0.1s",
@@ -716,7 +716,7 @@ export default function AdminProspects() {
                   }}
                 >
                   {cfg.label}
-                  <span style={{ fontSize: "0.6875rem", color: isActive ? cfg.color : "#94a3b8", fontVariantNumeric: "tabular-nums" }}>{count}</span>
+                  <span style={{ fontSize: "0.6875rem", color: isActive ? cfg.color : "rgba(255,255,255,0.30)", fontVariantNumeric: "tabular-nums" }}>{count}</span>
                 </button>
               );
             })}
@@ -730,9 +730,9 @@ export default function AdminProspects() {
                 fontSize: "0.75rem",
                 fontWeight: 500,
                 padding: "0.25rem 0.625rem",
-                border: `1px solid ${hideContacted ? "rgba(239,68,68,0.40)" : "#e2e8f0"}`,
-                background: hideContacted ? "rgba(239,68,68,0.06)" : "#ffffff",
-                color: hideContacted ? "#ef4444" : "#475569",
+                border: `1px solid ${hideContacted ? "rgba(239,68,68,0.40)" : "rgba(255,255,255,0.08)"}`,
+                background: hideContacted ? "rgba(239,68,68,0.06)" : "#111111",
+                color: hideContacted ? "#ef4444" : "rgba(255,255,255,0.55)",
                 cursor: "pointer",
                 borderRadius: "0.25rem",
                 transition: "all 0.1s",
@@ -757,13 +757,13 @@ export default function AdminProspects() {
             gap: "0.75rem",
             flexWrap: "wrap",
             padding: "0.625rem 1rem",
-            background: "#ffffff",
-            border: "1px solid #e2e8f0",
+            background: "#111111",
+            border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: "0.5rem",
             marginBottom: "1rem",
             boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
           }}>
-            <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#0f172a" }}>
+            <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#ececec" }}>
               {selectedIds.size} selected
             </span>
 
@@ -787,9 +787,9 @@ export default function AdminProspects() {
                 display: "flex", alignItems: "center", gap: "0.3rem",
                 fontSize: "0.8125rem", fontWeight: 500,
                 padding: "0.25rem 0.625rem",
-                border: "1px solid #e2e8f0",
-                color: "#475569",
-                background: "#ffffff", cursor: "pointer", borderRadius: "0.25rem",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "rgba(255,255,255,0.55)",
+                background: "#111111", cursor: "pointer", borderRadius: "0.25rem",
               }}
             >
               <X size={12} /> Clear
@@ -805,9 +805,9 @@ export default function AdminProspects() {
                   display: "flex", alignItems: "center", gap: "0.35rem",
                   fontSize: "0.8125rem", fontWeight: 500,
                   padding: "0.375rem 0.75rem",
-                  background: "#f1f5f9",
+                  background: "#1a1a1a",
                   color: STATUS_CONFIG[bulkStatusTarget].color,
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid rgba(255,255,255,0.08)",
                   borderRight: "none",
                   cursor: bulkUpdating ? "not-allowed" : "pointer",
                   borderRadius: "0.375rem 0 0 0.375rem",
@@ -836,7 +836,7 @@ export default function AdminProspects() {
                     style={{ display: "flex", alignItems: "center", gap: "0.25rem",
                       fontSize: "0.8125rem", fontWeight: 600,
                       padding: "0.25rem 0.625rem",
-                      background: "#ef4444", color: "#ffffff",
+                      background: "#ef4444", color: "#111111",
                       border: "none",
                       cursor: "pointer", borderRadius: "0.25rem",
                     }}
@@ -848,8 +848,8 @@ export default function AdminProspects() {
                     style={{ display: "flex", alignItems: "center", gap: "0.25rem",
                       fontSize: "0.8125rem",
                       padding: "0.25rem 0.5rem",
-                      background: "transparent", color: "#475569",
-                      border: "1px solid #e2e8f0",
+                      background: "transparent", color: "rgba(255,255,255,0.55)",
+                      border: "1px solid rgba(255,255,255,0.08)",
                       cursor: "pointer", borderRadius: "0.25rem",
                     }}
                   >
@@ -864,8 +864,8 @@ export default function AdminProspects() {
                     display: "flex", alignItems: "center", gap: "0.4rem",
                     fontSize: "0.8125rem", fontWeight: 600,
                     padding: "0.375rem 0.75rem",
-                    background: bulkUpdating ? "#f1f5f9" : "#8b5cf6",
-                    color: bulkUpdating ? "#94a3b8" : "#ffffff",
+                    background: bulkUpdating ? "#1a1a1a" : "#8b5cf6",
+                    color: bulkUpdating ? "rgba(255,255,255,0.30)" : "#111111",
                     border: "1px solid transparent",
                     cursor: bulkUpdating ? "wait" : "pointer",
                     borderRadius: "0 0.375rem 0.375rem 0",
@@ -885,7 +885,7 @@ export default function AdminProspects() {
                 <div
                   style={{
                     position: "absolute", top: "calc(100% + 4px)", left: 0,
-                    background: "#ffffff", border: "1px solid #e2e8f0",
+                    background: "#111111", border: "1px solid rgba(255,255,255,0.08)",
                     borderRadius: "0.375rem", zIndex: 100, minWidth: "10rem",
                     boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
                     overflow: "hidden",
@@ -900,7 +900,7 @@ export default function AdminProspects() {
                         width: "100%", padding: "0.5rem 0.75rem",
                         fontSize: "0.8125rem", fontWeight: 500,
                         color: cfg.color,
-                        background: bulkStatusTarget === key ? "#f1f5f9" : "transparent",
+                        background: bulkStatusTarget === key ? "#1a1a1a" : "transparent",
                         border: "none", cursor: "pointer", textAlign: "left",
                         borderLeft: bulkStatusTarget === key ? `2px solid ${cfg.color}` : "2px solid transparent",
                         transition: "background 0.1s",
@@ -918,7 +918,7 @@ export default function AdminProspects() {
 
             {/* Bulk progress indicator */}
             {bulkProgress && (
-              <span style={{ fontSize: "0.8125rem", color: bulkProgress.failed > 0 ? "#f59e0b" : "#3ecf8e" }}>
+              <span style={{ fontSize: "0.8125rem", color: bulkProgress.failed > 0 ? "#f59e0b" : "#00ff87" }}>
                 {bulkSending ? (
                   <><RefreshCw size={12} style={{ display: "inline", marginRight: 4, animation: "spin 1s linear infinite" }} />Sending...</>
                 ) : (
@@ -934,8 +934,8 @@ export default function AdminProspects() {
                 display: "flex", alignItems: "center", gap: "0.4rem",
                 fontSize: "0.8125rem", fontWeight: 600,
                 padding: "0.375rem 1rem",
-                background: bulkSending ? "rgba(62,207,142,0.15)" : "#3ecf8e",
-                color: bulkSending ? "#3ecf8e" : "#0f172a",
+                background: bulkSending ? "rgba(62,207,142,0.15)" : "#00ff87",
+                color: bulkSending ? "#00ff87" : "#ececec",
                 border: "none",
                 cursor: bulkSending ? "wait" : "pointer",
                 borderRadius: "0.375rem",
@@ -957,16 +957,16 @@ export default function AdminProspects() {
         {!bulkSending && bulkResults.length > 0 && (
           <div style={{
             padding: "0.875rem 1rem",
-            border: "1px solid #e2e8f0",
+            border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: "0.5rem",
             marginBottom: "1rem",
-            background: "#ffffff",
+            background: "#111111",
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-              <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#0f172a", margin: 0 }}>
-                Bulk Send Complete — <span style={{ color: "#3ecf8e" }}>{bulkResults.filter(r => r.success).length} sent</span> · <span style={{ color: "#ef4444" }}>{bulkResults.filter(r => !r.success).length} failed</span>
+              <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#ececec", margin: 0 }}>
+                Bulk Send Complete — <span style={{ color: "#00ff87" }}>{bulkResults.filter(r => r.success).length} sent</span> · <span style={{ color: "#ef4444" }}>{bulkResults.filter(r => !r.success).length} failed</span>
               </p>
-              <button onClick={() => setBulkResults([])} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 0 }}>
+              <button onClick={() => setBulkResults([])} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.30)", padding: 0 }}>
                 <X size={13} />
               </button>
             </div>
@@ -976,7 +976,7 @@ export default function AdminProspects() {
                   fontSize: "0.75rem",
                   padding: "0.2rem 0.5rem", borderRadius: "0.25rem",
                   border: `1px solid ${r.success ? "rgba(62,207,142,0.30)" : "rgba(239,68,68,0.30)"}`,
-                  color: r.success ? "#3ecf8e" : "#ef4444",
+                  color: r.success ? "#00ff87" : "#ef4444",
                 }}
                 title={r.error}>
                   {r.success ? "✓" : "✗"} {r.company}
@@ -1160,7 +1160,7 @@ export default function AdminProspects() {
                       )}
                     </div>
                     {/* Prospect rows for this show */}
-                    <div style={{ border: '1px solid #e2e8f0', borderRadius: "0 0 0.25rem 0.25rem", overflow: "hidden" }}>
+                    <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: "0 0 0.25rem 0.25rem", overflow: "hidden" }}>
                       {showProspects.map((p, idx) => {
                         const statusCfg = STATUS_CONFIG[p.status as ProspectStatus] ?? STATUS_CONFIG.new;
                         const conf = String((p as Record<string, unknown>).emailConfidence ?? "");
@@ -1257,15 +1257,15 @@ export default function AdminProspects() {
 
         {/* Table */}
         {viewMode === "kanban" || viewMode === "byshow" ? null : isLoading ? (
-          <div style={{ textAlign: "center", padding: "4rem 0", color: "#94a3b8", fontSize: "0.875rem" }}>
+          <div style={{ textAlign: "center", padding: "4rem 0", color: "rgba(255,255,255,0.30)", fontSize: "0.875rem" }}>
             Loading prospects...
           </div>
         ) : prospects.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "4rem 0", color: "#94a3b8", fontSize: "0.875rem" }}>
+          <div style={{ textAlign: "center", padding: "4rem 0", color: "rgba(255,255,255,0.30)", fontSize: "0.875rem" }}>
             No prospects found.
           </div>
         ) : (
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: "0.5rem", overflow: "hidden", background: "#ffffff" }}>
+          <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", overflow: "hidden", background: "#111111" }}>
             {/* Table header row with Select All */}
             <div style={{
               display: "grid",
@@ -1273,27 +1273,27 @@ export default function AdminProspects() {
               gap: "1.5rem",
               alignItems: "center",
               padding: "0.625rem 1rem",
-              borderBottom: "1px solid #e2e8f0",
-              background: "#f8fafc",
+              borderBottom: "1px solid rgba(255,255,255,0.08)",
+              background: "#080808",
             }}>
               <button
                 onClick={toggleAll}
-                style={{ background: "none", border: "none", cursor: "pointer", color: allSelected ? "#3ecf8e" : "#94a3b8", padding: 0, display: "flex", alignItems: "center" }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: allSelected ? "#00ff87" : "rgba(255,255,255,0.30)", padding: 0, display: "flex", alignItems: "center" }}
                 title={allSelected ? "Deselect all" : "Select all"}
               >
                 {allSelected ? <CheckSquare size={14} /> : <Square size={14} />}
               </button>
-              <button onClick={() => toggleSort("company")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: sortKey === "company" ? "#0f172a" : "#64748b", padding: 0 }}>
+              <button onClick={() => toggleSort("company")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: sortKey === "company" ? "#ececec" : "#64748b", padding: 0 }}>
                 Company / Robot
                 {sortKey === "company" ? (sortDir === "asc" ? <ArrowUp size={10} /> : <ArrowDown size={10} />) : <ArrowUpDown size={10} style={{ opacity: 0.4 }} />}
               </button>
               <span style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "#64748b" }}>Shows</span>
               <span style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "#64748b" }}>LV</span>
-              <button onClick={() => toggleSort("status")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: sortKey === "status" ? "#0f172a" : "#64748b", padding: 0 }}>
+              <button onClick={() => toggleSort("status")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: sortKey === "status" ? "#ececec" : "#64748b", padding: 0 }}>
                 Status
                 {sortKey === "status" ? (sortDir === "asc" ? <ArrowUp size={10} /> : <ArrowDown size={10} />) : <ArrowUpDown size={10} style={{ opacity: 0.4 }} />}
               </button>
-              <button onClick={() => toggleSort("followUpDate")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: sortKey === "followUpDate" ? "#0f172a" : "#64748b", padding: 0 }}>
+              <button onClick={() => toggleSort("followUpDate")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: sortKey === "followUpDate" ? "#ececec" : "#64748b", padding: 0 }}>
                 Follow-up
                 {sortKey === "followUpDate" ? (sortDir === "asc" ? <ArrowUp size={10} /> : <ArrowDown size={10} />) : <ArrowUpDown size={10} style={{ opacity: 0.4 }} />}
               </button>
@@ -1318,7 +1318,7 @@ export default function AdminProspects() {
                 <div
                   key={p.id}
                   style={{
-                    borderBottom: "1px solid #e2e8f0",
+                    borderBottom: "1px solid rgba(255,255,255,0.08)",
                     background: isSent && bulkResults.some(r => r.id === p.id && r.success)
                       ? "rgba(62,207,142,0.04)"
                       : isFailed && bulkResults.some(r => r.id === p.id && !r.success)
@@ -1344,7 +1344,7 @@ export default function AdminProspects() {
                     {/* Checkbox */}
                     <div onClick={e => { e.stopPropagation(); toggleRow(p.id); }} style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
                       {isSelected
-                        ? <CheckSquare size={14} style={{ color: "#3ecf8e" }} />
+                        ? <CheckSquare size={14} style={{ color: "#00ff87" }} />
                         : <Square size={14} style={{ color: "#cbd5e1" }} />
                       }
                     </div>
@@ -1352,12 +1352,12 @@ export default function AdminProspects() {
                     {/* Company + robot */}
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span style={{ fontSize: "0.6875rem", color: "#94a3b8", minWidth: "1.5rem" }}>
+                        <span style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.30)", minWidth: "1.5rem" }}>
                           {String(i + 1).padStart(2, "0")}
                         </span>
-                        <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#0f172a" }}>{p.company}</span>
+                        <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec" }}>{p.company}</span>
                         {Boolean((p as { hasClientProfile?: boolean }).hasClientProfile) && (
-                          <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#3ecf8e" }} title="Company has signed up as a StageGate client">✓ Client</span>
+                          <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#00ff87" }} title="Company has signed up as a StageGate client">✓ Client</span>
                         )}
                         {urgency && (
                           <span style={{
@@ -1369,14 +1369,14 @@ export default function AdminProspects() {
                         )}
                         {p.website && (
                           <a href={p.website} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                            style={{ color: "#94a3b8", lineHeight: 1 }}>
+                            style={{ color: "rgba(255,255,255,0.30)", lineHeight: 1 }}>
                             <ExternalLink size={11} />
                           </a>
                         )}
                         {p.contactEmail && conf && (
                           <span style={{
                             fontSize: "0.6875rem", fontWeight: 500,
-                            color: CONFIDENCE_COLORS[conf] ?? "#94a3b8",
+                            color: CONFIDENCE_COLORS[conf] ?? "rgba(255,255,255,0.30)",
                           }}>
                             {conf}
                           </span>
@@ -1385,7 +1385,7 @@ export default function AdminProspects() {
                       {p.robotName && (
                         <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.15rem 0 0 2rem" }}>
                           {p.robotName}
-                          {p.robotType && <span style={{ color: "#94a3b8", marginLeft: "0.5rem" }}>· {ROBOT_TYPE_LABELS[p.robotType] ?? p.robotType}</span>}
+                          {p.robotType && <span style={{ color: "rgba(255,255,255,0.30)", marginLeft: "0.5rem" }}>· {ROBOT_TYPE_LABELS[p.robotType] ?? p.robotType}</span>}
                         </p>
                       )}
                       {/* Vendor type for ecosystem partners */}
@@ -1416,7 +1416,7 @@ export default function AdminProspects() {
                     </div>
 
                     {/* LV status */}
-                    <div style={{ fontSize: "0.8125rem", color: p.attendsLasVegas === "yes" ? "#3ecf8e" : "#94a3b8" }}>
+                    <div style={{ fontSize: "0.8125rem", color: p.attendsLasVegas === "yes" ? "#00ff87" : "rgba(255,255,255,0.30)" }}>
                       {p.attendsLasVegas === "yes" ? "LV ✓" : p.attendsLasVegas === "no" ? "LV ✗" : "LV ?"}
                     </div>
 
@@ -1427,7 +1427,7 @@ export default function AdminProspects() {
                         {cfg.label}
                       </div>
                       {p.status === "responded" && (p as Record<string, unknown>).repliedAt != null && (
-                        <span style={{ fontSize: "0.75rem", color: "#3ecf8e" }}>
+                        <span style={{ fontSize: "0.75rem", color: "#00ff87" }}>
                           {formatRelativeTime(new Date(String((p as Record<string, unknown>).repliedAt)))}
                         </span>
                       )}
@@ -1447,7 +1447,7 @@ export default function AdminProspects() {
                           onKeyDown={e => { if (e.key === "Escape") setEditingFollowUpId(null); }}
                           style={{
                             fontFamily: "var(--font-mono)", fontSize: "0.5625rem",
-                            background: '#f1f5f9', border: "1px solid rgba(255,255,255,0.20)",
+                            background: '#1a1a1a', border: "1px solid rgba(255,255,255,0.20)",
                             color: "#fff", padding: "0.25rem 0.4rem", borderRadius: "0.125rem",
                             outline: "none", width: "8rem",
                           }}
@@ -1470,7 +1470,7 @@ export default function AdminProspects() {
                           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: "0.2rem" }}
                         >
                           <Calendar size={12} style={{ color: "#cbd5e1" }} />
-                          <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Set</span>
+                          <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)" }}>Set</span>
                         </button>
                       )}
                     </div>
@@ -1481,11 +1481,11 @@ export default function AdminProspects() {
                         const score = Number((p as Record<string, unknown>).engagementScore ?? 0);
                         const opens = Number((p as Record<string, unknown>).opens ?? 0);
                         const clicks = Number((p as Record<string, unknown>).clicks ?? 0);
-                        if (score === 0) return <span style={{ fontSize: "0.8125rem", color: "#94a3b8" }}>—</span>;
+                        if (score === 0) return <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.30)" }}>—</span>;
                         return (
                           <span title={`${opens} open${opens !== 1 ? 's' : ''}, ${clicks} click${clicks !== 1 ? 's' : ''}`} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
                             <span style={{ fontSize: "0.75rem" }}>🔥</span>
-                            <span style={{ fontSize: "0.875rem", fontWeight: 600, color: score >= 5 ? "#f59e0b" : score >= 2 ? "#fbbf24" : "#94a3b8" }}>{score}</span>
+                            <span style={{ fontSize: "0.875rem", fontWeight: 600, color: score >= 5 ? "#f59e0b" : score >= 2 ? "#fbbf24" : "rgba(255,255,255,0.30)" }}>{score}</span>
                           </span>
                         );
                       })()}
@@ -1504,9 +1504,9 @@ export default function AdminProspects() {
                           display: "flex", alignItems: "center", gap: "0.3rem",
                           fontSize: "0.8125rem", fontWeight: 500,
                           padding: "0.25rem 0.625rem",
-                          border: `1px solid ${isSent || p.status === "contacted" ? "rgba(62,207,142,0.40)" : isFailed ? "rgba(239,68,68,0.40)" : "#e2e8f0"}`,
-                          color: isSent || p.status === "contacted" ? "#3ecf8e" : isFailed ? "#ef4444" : "#475569",
-                          background: "#ffffff", cursor: sendingId === p.id ? "wait" : "pointer",
+                          border: `1px solid ${isSent || p.status === "contacted" ? "rgba(62,207,142,0.40)" : isFailed ? "rgba(239,68,68,0.40)" : "rgba(255,255,255,0.08)"}`,
+                          color: isSent || p.status === "contacted" ? "#00ff87" : isFailed ? "#ef4444" : "rgba(255,255,255,0.55)",
+                          background: "#111111", cursor: sendingId === p.id ? "wait" : "pointer",
                           borderRadius: "0.25rem", opacity: sendingId === p.id ? 0.6 : 1,
                           transition: "all 0.1s",
                         }}
@@ -1532,8 +1532,8 @@ export default function AdminProspects() {
                             fontSize: "0.8125rem", fontWeight: 500,
                             padding: "0.25rem 0.625rem",
                             border: "1px solid rgba(62,207,142,0.40)",
-                            color: "#3ecf8e",
-                            background: "#ffffff",
+                            color: "#00ff87",
+                            background: "#111111",
                             cursor: replyingId === p.id ? "wait" : "pointer",
                             borderRadius: "0.25rem",
                             opacity: replyingId === p.id ? 0.5 : 1,
@@ -1561,20 +1561,20 @@ export default function AdminProspects() {
                             }}
                             style={{
                               fontSize: "0.8125rem",
-                              background: "#f8fafc", border: "1px solid #e2e8f0",
-                              color: "#0f172a", padding: "0.3rem 0.5rem", borderRadius: "0.25rem",
+                              background: "#080808", border: "1px solid rgba(255,255,255,0.08)",
+                              color: "#ececec", padding: "0.3rem 0.5rem", borderRadius: "0.25rem",
                               outline: "none", width: "14rem",
                             }}
                           />
-                          <button onClick={() => saveReplyNote(p.id)} title="Save note" style={{ background: "none", border: "none", cursor: "pointer", color: "#3ecf8e", padding: "0.2rem", lineHeight: 1 }}>
+                          <button onClick={() => saveReplyNote(p.id)} title="Save note" style={{ background: "none", border: "none", cursor: "pointer", color: "#00ff87", padding: "0.2rem", lineHeight: 1 }}>
                             <Check size={13} />
                           </button>
-                          <button onClick={() => dismissReplyNote(p.id)} title="Dismiss" style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: "0.2rem", lineHeight: 1 }}>
+                          <button onClick={() => dismissReplyNote(p.id)} title="Dismiss" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.30)", padding: "0.2rem", lineHeight: 1 }}>
                             <X size={13} />
                           </button>
                         </div>
                       )}
-                      <ChevronDown size={14} style={{ color: "#94a3b8", transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+                      <ChevronDown size={14} style={{ color: "rgba(255,255,255,0.30)", transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
                     </div>
                   </div>
 
@@ -1602,7 +1602,7 @@ export default function AdminProspects() {
           display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
         }} onClick={() => setCsvPreview(null)}>
           <div style={{
-            background: 'transparent', border: '1px solid #e2e8f0', borderRadius: "0.5rem",
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: "0.5rem",
             padding: "2rem", maxWidth: "48rem", width: "100%", maxHeight: "80vh", overflow: "auto",
           }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
@@ -1639,7 +1639,7 @@ export default function AdminProspects() {
                 onClick={() => setCsvPreview(null)}
                 style={{
                   fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.08em", textTransform: "uppercase",
-                  padding: "0.5rem 1.25rem", border: '1px solid #e2e8f0',
+                  padding: "0.5rem 1.25rem", border: '1px solid rgba(255,255,255,0.08)',
                   color: "rgba(255,255,255,0.50)", background: "transparent", cursor: "pointer", borderRadius: "0.25rem",
                 }}
               >

@@ -165,10 +165,10 @@ function BookingDetailPanel({
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem" }}>
+        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
-              <span style={{ fontWeight: 700, fontSize: "1.125rem", color: "#0f172a" }}>{booking.company}</span>
+              <span style={{ fontWeight: 700, fontSize: "1.125rem", color: "#ececec" }}>{booking.company}</span>
               <span style={{
                 display: "inline-flex", alignItems: "center", gap: "0.3rem",
                 padding: "0.15rem 0.45rem", borderRadius: "0.25rem",
@@ -188,11 +188,11 @@ function BookingDetailPanel({
         {/* Body */}
         <div style={{ flex: 1, overflowY: "auto" }}>
           {/* Contact */}
-          <section style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #e2e8f0" }}>
+          <section style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
             <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(15,23,42,0.30)", margin: "0 0 0.75rem" }}>Contact</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>{booking.contactName}</span>
+                <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec" }}>{booking.contactName}</span>
                 {booking.country && <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.45rem", color: "rgba(15,23,42,0.30)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{booking.country}</span>}
               </div>
               <a href={`mailto:${booking.contactEmail}`} style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8125rem", color: "rgba(15,23,42,0.65)", textDecoration: "none" }}>
@@ -212,7 +212,7 @@ function BookingDetailPanel({
           </section>
 
           {/* Robot */}
-          <section style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #e2e8f0" }}>
+          <section style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
             <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(15,23,42,0.30)", margin: "0 0 0.75rem" }}>Robot Details</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
               {[
@@ -237,7 +237,7 @@ function BookingDetailPanel({
           </section>
 
           {/* Show */}
-          <section style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #e2e8f0" }}>
+          <section style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
             <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(15,23,42,0.30)", margin: "0 0 0.75rem" }}>Show Info</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
               {[
@@ -255,14 +255,14 @@ function BookingDetailPanel({
 
           {/* Services */}
           {services.length > 0 && (
-            <section style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #e2e8f0" }}>
+            <section style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
               <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(15,23,42,0.30)", margin: "0 0 0.75rem" }}>Requested Services</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
                 {services.map(s => (
                   <span key={s} style={{
                     fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.06em", textTransform: "uppercase",
                     padding: "0.2rem 0.5rem", borderRadius: "0.25rem",
-                    border: '1px solid #e2e8f0', color: "rgba(15,23,42,0.65)",
+                    border: '1px solid rgba(255,255,255,0.08)', color: "rgba(15,23,42,0.65)",
                   }}>
                     {SERVICE_LABELS[s] ?? s}
                   </span>
@@ -272,7 +272,7 @@ function BookingDetailPanel({
           )}
 
           {/* Admin Notes */}
-          <section style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #e2e8f0" }}>
+          <section style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
             <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(15,23,42,0.30)", margin: "0 0 0.5rem", display: "flex", alignItems: "center", gap: "0.35rem" }}>
               <StickyNote size={10} /> Admin Notes
             </p>
@@ -281,7 +281,7 @@ function BookingDetailPanel({
               onChange={e => setNotes(e.target.value)}
               rows={3}
               style={{
-                width: "100%", background: '#f8fafc', border: "1px solid rgba(255,255,255,0.10)",
+                width: "100%", background: '#080808', border: "1px solid rgba(255,255,255,0.10)",
                 borderRadius: "0.375rem", padding: "0.5rem 0.75rem",
                 color: "rgba(15,23,42,0.80)", fontSize: "0.8125rem",
                 resize: "vertical", outline: "none",
@@ -420,8 +420,8 @@ export default function AdminBookings() {
 
   if (authLoading) {
     return (
-      <div style={{ minHeight: "auto", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: "#3ecf8e", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <div style={{ minHeight: "auto", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: "#00ff87", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       </div>
     );
   }
@@ -441,18 +441,18 @@ export default function AdminBookings() {
   const selectedBooking = selectedId != null ? bookings.find(b => b.id === selectedId) ?? null : null;
 
   return (
-    <div style={{ minHeight: "auto", background: "#f8fafc", color: "#0f172a" }}>
+    <div style={{ minHeight: "auto", background: "#080808", color: "#ececec" }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       {/* Page header */}
-      <div style={{ borderBottom: "1px solid #e2e8f0", padding: "1.5rem 2rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", padding: "1.5rem 2rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <ClipboardList size={18} style={{ color: "rgba(15,23,42,0.50)" }} />
           <div>
             <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(15,23,42,0.35)", margin: "0 0 0.15rem" }}>Admin / Bookings</p>
-            <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>Intake Requests</h1>
+            <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0 }}>Intake Requests</h1>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -461,7 +461,7 @@ export default function AdminBookings() {
           </span>
           <button
             onClick={() => refetch()}
-            style={{ background: "none", border: '1px solid #e2e8f0', borderRadius: "0.375rem", padding: "0.35rem 0.6rem", color: "rgba(15,23,42,0.50)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem" }}
+            style={{ background: "none", border: '1px solid rgba(255,255,255,0.08)', borderRadius: "0.375rem", padding: "0.35rem 0.6rem", color: "rgba(15,23,42,0.50)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem" }}
           >
             <RefreshCw size={12} /> Refresh
           </button>
@@ -469,7 +469,7 @@ export default function AdminBookings() {
       </div>
 
       {/* Stats bar */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", borderBottom: "1px solid #e2e8f0" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         {(["new", "reviewed", "quoted", "confirmed", "cancelled", "converted"] as BookingStatus[]).map(s => {
           const cfg = STATUS_CONFIG[s];
           const n = counts[s] ?? 0;
@@ -495,7 +495,7 @@ export default function AdminBookings() {
       <div style={{ padding: "1.5rem 2rem" }}>
         {bookingsLoading ? (
           <div style={{ display: "flex", justifyContent: "center", padding: "4rem 0" }}>
-            <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: "#3ecf8e", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+            <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: "#00ff87", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
           </div>
         ) : bookings.length === 0 ? (
           <div style={{ textAlign: "center", padding: "5rem 0" }}>
@@ -515,7 +515,7 @@ export default function AdminBookings() {
               gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr auto",
               gap: "1rem",
               padding: "0.5rem 0",
-              borderBottom: "1px solid #e2e8f0",
+              borderBottom: "1px solid rgba(255,255,255,0.08)",
               marginBottom: "0.25rem",
             }}>
               {["Company / Contact", "Robot", "Show", "Services", "Status", ""].map(h => (
@@ -535,7 +535,7 @@ export default function AdminBookings() {
                     gap: "1rem",
                     alignItems: "center",
                     padding: "0.875rem 0",
-                    borderBottom: "1px solid #f1f5f9",
+                    borderBottom: "1px solid #1a1a1a",
                     cursor: "pointer",
                     transition: "background 0.12s",
                   }}
@@ -546,7 +546,7 @@ export default function AdminBookings() {
                   {/* Company */}
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <span style={{ fontWeight: 700, fontSize: "0.9375rem", color: "#0f172a" }}>{b.company}</span>
+                      <span style={{ fontWeight: 700, fontSize: "0.9375rem", color: "#ececec" }}>{b.company}</span>
                       {b.country && <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.45rem", color: "rgba(15,23,42,0.30)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{b.country}</span>}
                     </div>
                     <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: "rgba(15,23,42,0.45)" }}>
@@ -561,7 +561,7 @@ export default function AdminBookings() {
                   <div>
                     {b.robotName ? (
                       <>
-                        <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: '#0f172a' }}>{b.robotName}</p>
+                        <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: '#ececec' }}>{b.robotName}</p>
                         {b.robotType && <p style={{ margin: "0.1rem 0 0", fontSize: "0.75rem", color: "rgba(15,23,42,0.40)" }}>{b.robotType}</p>}
                         {b.robotCount && b.robotCount > 1 && <p style={{ margin: "0.1rem 0 0", fontSize: "0.75rem", color: "rgba(15,23,42,0.40)" }}>{b.robotCount} units</p>}
                       </>
@@ -574,7 +574,7 @@ export default function AdminBookings() {
                   <div>
                     {b.showName ? (
                       <>
-                        <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: '#0f172a' }}>{b.showName}</p>
+                        <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: '#ececec' }}>{b.showName}</p>
                         {b.showDate && <p style={{ margin: "0.1rem 0 0", fontSize: "0.75rem", color: "rgba(15,23,42,0.40)" }}>{b.showDate}</p>}
                       </>
                     ) : (
@@ -588,7 +588,7 @@ export default function AdminBookings() {
                       <span key={s} style={{
                         fontFamily: "var(--font-mono)", fontSize: "0.45rem", letterSpacing: "0.06em", textTransform: "uppercase",
                         padding: "0.1rem 0.35rem", borderRadius: "0.2rem",
-                        border: '1px solid #e2e8f0', color: "rgba(15,23,42,0.50)",
+                        border: '1px solid rgba(255,255,255,0.08)', color: "rgba(15,23,42,0.50)",
                       }}>
                         {SERVICE_LABELS[s] ?? s}
                       </span>

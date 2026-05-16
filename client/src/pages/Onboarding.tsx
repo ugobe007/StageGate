@@ -42,8 +42,8 @@ interface ShowEntry {
 
 const inputStyle: React.CSSProperties = {
   width: "100%", height: "2.25rem", borderRadius: "0.375rem",
-  border: "1px solid #e2e8f0", background: "#fff",
-  padding: "0 0.75rem", fontSize: "0.875rem", color: "#0f172a", outline: "none",
+  border: "1px solid rgba(255,255,255,0.08)", background: "#fff",
+  padding: "0 0.75rem", fontSize: "0.875rem", color: "#ececec", outline: "none",
   boxSizing: "border-box",
 };
 
@@ -111,7 +111,7 @@ export default function Onboarding() {
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
-        <Loader2 size={28} style={{ color: "#3ecf8e", animation: "spin 1s linear infinite" }} />
+        <Loader2 size={28} style={{ color: "#00ff87", animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
@@ -119,17 +119,17 @@ export default function Onboarding() {
   if (!isAuthenticated) { navigate("/"); return null; }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
+    <div style={{ minHeight: "100vh", background: "#080808" }}>
       {/* Header */}
-      <div style={{ borderBottom: "1px solid #e2e8f0", background: "#fff", position: "sticky", top: 0, zIndex: 10 }}>
+      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "#fff", position: "sticky", top: 0, zIndex: 10 }}>
         <div style={{ maxWidth: "40rem", margin: "0 auto", padding: "1rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
-            <div style={{ width: "1.875rem", height: "1.875rem", borderRadius: "0.375rem", background: "#3ecf8e", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "1.875rem", height: "1.875rem", borderRadius: "0.375rem", background: "#00ff87", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Zap size={14} style={{ color: "#fff" }} />
             </div>
-            <span style={{ fontWeight: 700, fontSize: "1.0625rem", color: "#0f172a" }}>StageGate</span>
+            <span style={{ fontWeight: 700, fontSize: "1.0625rem", color: "#ececec" }}>StageGate</span>
           </div>
-          <span style={{ fontSize: "0.875rem", color: "#94a3b8" }}>Company Setup</span>
+          <span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.30)" }}>Company Setup</span>
         </div>
       </div>
 
@@ -143,17 +143,17 @@ export default function Onboarding() {
                   width: "1.875rem", height: "1.875rem", borderRadius: "9999px",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: "0.8125rem", fontWeight: 700,
-                  border: `2px solid ${step > s.id ? "#3ecf8e" : step === s.id ? "#3ecf8e" : "#e2e8f0"}`,
-                  background: step > s.id ? "#3ecf8e" : "transparent",
-                  color: step > s.id ? "#fff" : step === s.id ? "#3ecf8e" : "#94a3b8",
+                  border: `2px solid ${step > s.id ? "#00ff87" : step === s.id ? "#00ff87" : "rgba(255,255,255,0.08)"}`,
+                  background: step > s.id ? "#00ff87" : "transparent",
+                  color: step > s.id ? "#fff" : step === s.id ? "#00ff87" : "rgba(255,255,255,0.30)",
                   transition: "all 0.15s",
                 }}>
                   {step > s.id ? <CheckCircle size={13} /> : s.id}
                 </div>
-                <span style={{ fontSize: "0.875rem", fontWeight: 500, color: step >= s.id ? "#0f172a" : "#94a3b8", display: "none" }} className="sm:inline">{s.label}</span>
+                <span style={{ fontSize: "0.875rem", fontWeight: 500, color: step >= s.id ? "#ececec" : "rgba(255,255,255,0.30)", display: "none" }} className="sm:inline">{s.label}</span>
               </div>
               {i < STEPS.length - 1 && (
-                <div style={{ flex: 1, height: "2px", background: step > s.id ? "#3ecf8e" : "#e2e8f0", margin: "0 0.5rem", transition: "background 0.15s" }} />
+                <div style={{ flex: 1, height: "2px", background: step > s.id ? "#00ff87" : "rgba(255,255,255,0.08)", margin: "0 0.5rem", transition: "background 0.15s" }} />
               )}
             </div>
           ))}
@@ -163,7 +163,7 @@ export default function Onboarding() {
         {step === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
             <div>
-              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#0f172a", margin: "0 0 0.25rem" }}>Tell us about your company</h1>
+              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#ececec", margin: "0 0 0.25rem" }}>Tell us about your company</h1>
               <p style={{ fontSize: "0.875rem", color: "#64748b", margin: 0 }}>This helps us prepare the right logistics for your robots.</p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -175,7 +175,7 @@ export default function Onboarding() {
                 <div>
                   <label style={labelStyle}>Website</label>
                   <div style={{ position: "relative" }}>
-                    <Globe size={13} style={{ position: "absolute", left: "0.75rem", top: "0.625rem", color: "#94a3b8" }} />
+                    <Globe size={13} style={{ position: "absolute", left: "0.75rem", top: "0.625rem", color: "rgba(255,255,255,0.30)" }} />
                     <Input value={website} onChange={e => setWebsite(e.target.value)} placeholder="https://..." className="pl-8" />
                   </div>
                 </div>
@@ -192,7 +192,7 @@ export default function Onboarding() {
                 <div>
                   <label style={labelStyle}>Phone</label>
                   <div style={{ position: "relative" }}>
-                    <Phone size={13} style={{ position: "absolute", left: "0.75rem", top: "0.625rem", color: "#94a3b8" }} />
+                    <Phone size={13} style={{ position: "absolute", left: "0.75rem", top: "0.625rem", color: "rgba(255,255,255,0.30)" }} />
                     <Input value={contactPhone} onChange={e => setContactPhone(e.target.value)} placeholder="+1 (555) 000-0000" className="pl-8" />
                   </div>
                 </div>
@@ -200,7 +200,7 @@ export default function Onboarding() {
               <div>
                 <label style={labelStyle}>Contact Email</label>
                 <div style={{ position: "relative" }}>
-                  <Mail size={13} style={{ position: "absolute", left: "0.75rem", top: "0.625rem", color: "#94a3b8" }} />
+                  <Mail size={13} style={{ position: "absolute", left: "0.75rem", top: "0.625rem", color: "rgba(255,255,255,0.30)" }} />
                   <Input value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@company.com" className="pl-8" />
                 </div>
               </div>
@@ -222,11 +222,11 @@ export default function Onboarding() {
         {step === 2 && (
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
             <div>
-              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#0f172a", margin: "0 0 0.25rem" }}>Tell us about your robot(s)</h1>
+              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#ececec", margin: "0 0 0.25rem" }}>Tell us about your robot(s)</h1>
               <p style={{ fontSize: "0.875rem", color: "#64748b", margin: 0 }}>We need this to plan handling, staging, and logistics.</p>
             </div>
             {robots.map((robot, idx) => (
-              <div key={idx} style={{ padding: "1.125rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "#fff", display: "flex", flexDirection: "column", gap: "0.875rem" }}>
+              <div key={idx} style={{ padding: "1.125rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", display: "flex", flexDirection: "column", gap: "0.875rem" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#64748b" }}>Robot {idx + 1}</span>
                   {robots.length > 1 && (
@@ -267,7 +267,7 @@ export default function Onboarding() {
             ))}
             <button
               onClick={() => setRobots(prev => [...prev, { name: "", type: "", weight: "", dimensions: "", powerReq: "", notes: "" }])}
-              style={{ width: "100%", padding: "0.625rem", fontSize: "0.875rem", fontWeight: 500, color: "#64748b", background: "#fff", border: "1px dashed #e2e8f0", borderRadius: "0.375rem", cursor: "pointer" }}
+              style={{ width: "100%", padding: "0.625rem", fontSize: "0.875rem", fontWeight: 500, color: "#64748b", background: "#fff", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "0.375rem", cursor: "pointer" }}
             >
               + Add Another Robot
             </button>
@@ -278,11 +278,11 @@ export default function Onboarding() {
         {step === 3 && (
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
             <div>
-              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#0f172a", margin: "0 0 0.25rem" }}>Which shows are you attending?</h1>
+              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#ececec", margin: "0 0 0.25rem" }}>Which shows are you attending?</h1>
               <p style={{ fontSize: "0.875rem", color: "#64748b", margin: 0 }}>We'll prepare logistics for each event in advance.</p>
             </div>
             {shows.map((show, idx) => (
-              <div key={idx} style={{ padding: "1.125rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "#fff", display: "flex", flexDirection: "column", gap: "0.875rem" }}>
+              <div key={idx} style={{ padding: "1.125rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", display: "flex", flexDirection: "column", gap: "0.875rem" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#64748b" }}>Show {idx + 1}</span>
                   {shows.length > 1 && (
@@ -308,7 +308,7 @@ export default function Onboarding() {
             ))}
             <button
               onClick={() => setShows(prev => [...prev, { showName: "", boothNumber: "", year: new Date().getFullYear().toString() }])}
-              style={{ width: "100%", padding: "0.625rem", fontSize: "0.875rem", fontWeight: 500, color: "#64748b", background: "#fff", border: "1px dashed #e2e8f0", borderRadius: "0.375rem", cursor: "pointer" }}
+              style={{ width: "100%", padding: "0.625rem", fontSize: "0.875rem", fontWeight: 500, color: "#64748b", background: "#fff", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "0.375rem", cursor: "pointer" }}
             >
               + Add Another Show
             </button>
@@ -319,7 +319,7 @@ export default function Onboarding() {
         {step === 4 && (
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
             <div>
-              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#0f172a", margin: "0 0 0.25rem" }}>What services do you need?</h1>
+              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#ececec", margin: "0 0 0.25rem" }}>What services do you need?</h1>
               <p style={{ fontSize: "0.875rem", color: "#64748b", margin: 0 }}>Select all that apply — we'll tailor your quote accordingly.</p>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
@@ -330,15 +330,15 @@ export default function Onboarding() {
                   <button key={svc.id} onClick={() => toggleService(svc.id)}
                     style={{
                       padding: "1rem", borderRadius: "0.5rem", textAlign: "left", cursor: "pointer",
-                      border: `1px solid ${selected ? "#3ecf8e" : "#e2e8f0"}`,
+                      border: `1px solid ${selected ? "#00ff87" : "rgba(255,255,255,0.08)"}`,
                       background: selected ? "rgba(62,207,142,0.06)" : "#fff",
                       transition: "all 0.1s",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
-                      <Icon size={16} style={{ color: selected ? "#3ecf8e" : "#94a3b8", marginTop: "0.125rem", flexShrink: 0 }} />
+                      <Icon size={16} style={{ color: selected ? "#00ff87" : "rgba(255,255,255,0.30)", marginTop: "0.125rem", flexShrink: 0 }} />
                       <div>
-                        <div style={{ fontSize: "0.875rem", fontWeight: 600, color: selected ? "#0f172a" : "#0f172a" }}>{svc.label}</div>
+                        <div style={{ fontSize: "0.875rem", fontWeight: 600, color: selected ? "#ececec" : "#ececec" }}>{svc.label}</div>
                         <div style={{ fontSize: "0.8125rem", color: "#64748b", marginTop: "0.125rem" }}>{svc.desc}</div>
                       </div>
                     </div>
@@ -351,7 +351,7 @@ export default function Onboarding() {
                 {selectedServices.map(id => {
                   const svc = SERVICES_NEEDED.find(s => s.id === id);
                   return svc ? (
-                    <span key={id} style={{ fontSize: "0.8125rem", color: "#3ecf8e", background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>
+                    <span key={id} style={{ fontSize: "0.8125rem", color: "#00ff87", background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>
                       {svc.label}
                     </span>
                   ) : null;
@@ -366,7 +366,7 @@ export default function Onboarding() {
           {step > 1 ? (
             <button
               onClick={() => setStep(s => s - 1)}
-              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", borderRadius: "0.375rem", cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer" }}
             >
               <ArrowLeft size={14} /> Back
             </button>
@@ -376,7 +376,7 @@ export default function Onboarding() {
             <button
               onClick={() => setStep(s => s + 1)}
               disabled={step === 1 && !companyName.trim()}
-              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "none", background: "#3ecf8e", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: (step === 1 && !companyName.trim()) ? 0.5 : 1 }}
+              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: (step === 1 && !companyName.trim()) ? 0.5 : 1 }}
             >
               Continue <ArrowRight size={14} />
             </button>
@@ -384,7 +384,7 @@ export default function Onboarding() {
             <button
               onClick={handleSubmit}
               disabled={upsertProfile.isPending}
-              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "none", background: "#3ecf8e", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: upsertProfile.isPending ? 0.7 : 1 }}
+              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: upsertProfile.isPending ? 0.7 : 1 }}
             >
               {upsertProfile.isPending ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Saving…</> : <>Complete Setup <CheckCircle size={14} /></>}
             </button>
