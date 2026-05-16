@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useSearch } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -58,6 +59,13 @@ const CONFIDENCE_BORDERS: Record<string, string> = {
 export default function AdminProspects() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
+
+  // ?highlight=email — deep-link from AdminServiceRequests
+  const search = useSearch();
+  const highlightEmail = new URLSearchParams(search).get("highlight") ?? "";
+  const [highlightedId, setHighlightedId] = useState<number | null>(null);
+  const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [hideContacted, setHideContacted] = useState(false);
   const [hotFilter, setHotFilter] = useState(false);
@@ -143,6 +151,24 @@ export default function AdminProspects() {
     { status: statusFilter || undefined },
     { enabled: !!user && user.role === "admin" }
   );
+
+  // Scroll to and highlight the row matching ?highlight=email
+  useEffect(() => {
+    if (!highlightEmail || !data?.prospects) return;
+    const match = data.prospects.find(
+      p => (p.contactEmail ?? "").toLowerCase() === highlightEmail.toLowerCase()
+    );
+    if (!match) return;
+    setHighlightedId(match.id);
+    // Give the DOM a tick to render
+    requestAnimationFrame(() => {
+      const el = rowRefs.current.get(match.id);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    // Remove the highlight ring after 3 s
+    const timer = setTimeout(() => setHighlightedId(null), 3000);
+    return () => clearTimeout(timer);
+  }, [highlightEmail, data?.prospects]);
 
   // Fetch shows for urgency calculation
   const { data: showsData } = trpc.shows.list.useQuery(undefined, { enabled: !!user && user.role === "admin" });
@@ -1392,10 +1418,15 @@ export default function AdminProspects() {
               const isFailed = failedIds.has(p.id);
               const conf = String((p as Record<string, unknown>).emailConfidence ?? "");
               const urgency = getUrgency(shows);
+              const isHighlighted = highlightedId === p.id;
 
               return (
                 <div
                   key={p.id}
+                  ref={el => {
+                    if (el) rowRefs.current.set(p.id, el);
+                    else rowRefs.current.delete(p.id);
+                  }}
                   style={{
                     borderBottom: "1px solid rgba(255,255,255,0.08)",
                     background: isSent && bulkResults.some(r => r.id === p.id && r.success)
@@ -1404,8 +1435,13 @@ export default function AdminProspects() {
                       ? "rgba(239,68,68,0.04)"
                       : isSelected
                       ? "rgba(62,207,142,0.05)"
+                      : isHighlighted
+                      ? "rgba(0,255,135,0.06)"
                       : "transparent",
-                    transition: "background 0.15s",
+                    outline: isHighlighted ? "2px solid rgba(0,255,135,0.55)" : "none",
+                    outlineOffset: "-2px",
+                    borderRadius: isHighlighted ? "0.25rem" : undefined,
+                    transition: "background 0.15s, outline 0.15s",
                   }}
                 >
                   {/* Main row */}

@@ -1606,3 +1606,7 @@
 - [x] DashboardLayout sidebar: live "New Requests" count badge next to Service Requests nav item (trpc.admin.getNewServiceRequestCount, refetch every 60s)
 - [x] ClientDashboard: status progression timeline (Received → Quoted → Approved → In Progress → Complete) with emerald dot indicator inside expanded request detail
 - [x] AdminServiceRequests: add "View Prospect" quick-link that jumps to that company's row in AdminProspects (deferred to v63)
+
+## v64 — Service Requests + Prospects Cross-Link Polish
+- [x] AdminServiceRequests: add "Company" column to the requests table (between request type and status), showing companyName from the LEFT JOIN
+- [x] AdminProspects: read ?highlight=email URL param on mount, scroll to and apply emerald highlight border to the matching prospect row

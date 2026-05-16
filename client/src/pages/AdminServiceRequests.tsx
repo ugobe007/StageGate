@@ -197,13 +197,13 @@ export default function AdminServiceRequests() {
           {/* Table header */}
           <div style={{
             display: "grid",
-            gridTemplateColumns: "2fr 1fr 1fr 1fr auto",
+            gridTemplateColumns: "2fr 1.25fr 1fr 1fr 1fr auto",
             gap: "1rem",
             padding: "0.5rem 1rem",
             background: S.bg,
             borderBottom: `1px solid ${S.border}`,
           }}>
-            {["Request", "Show / Robot", "Urgency", "Status", ""].map((h, i) => (
+            {["Request", "Company", "Show / Robot", "Urgency", "Status", ""].map((h, i) => (
               <span key={i} style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", color: S.text3 }}>{h}</span>
             ))}
           </div>
@@ -221,7 +221,7 @@ export default function AdminServiceRequests() {
                   onClick={() => setExpandedId(isExpanded ? null : req.id)}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr 1fr auto",
+                    gridTemplateColumns: "2fr 1.25fr 1fr 1fr 1fr auto",
                     gap: "1rem",
                     padding: "0.75rem 1rem",
                     alignItems: "center",
@@ -237,6 +237,11 @@ export default function AdminServiceRequests() {
                     <div style={{ fontSize: "0.75rem", color: S.text3, marginTop: "0.125rem" }}>
                       #{req.id} · {new Date(req.createdAt).toLocaleDateString()}
                     </div>
+                  </div>
+
+                  {/* Company */}
+                  <div style={{ fontSize: "0.8125rem", color: S.text2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {req.companyName ?? <span style={{ color: S.text3 }}>—</span>}
                   </div>
 
                   {/* Show / Robot */}
