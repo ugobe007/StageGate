@@ -133,7 +133,7 @@ export default function Onboarding() {
         </div>
       </div>
 
-      <div style={{ maxWidth: "40rem", margin: "0 auto", padding: "2rem 1.5rem 4rem" }}>
+      <div style={{ maxWidth: "40rem", margin: "0 auto", padding: "2rem 1.5rem 4rem" }} className="dark-page-inputs">
         {/* Progress */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "2rem" }}>
           {STEPS.map((s, i) => (

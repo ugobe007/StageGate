@@ -583,6 +583,25 @@
   to   { opacity: 0; transform: translateX(28px); }
 }
 
+/* ── Dark-page Input Overrides (Onboarding, Register) ───────────────────── */
+/* Shadcn Input/Textarea inside a dark-bg page: dark fill, emerald focus ring */
+.dark-page-inputs [data-slot="input"],
+.dark-page-inputs [data-slot="textarea"] {
+  background-color: #111111 !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  color: #ececec !important;
+}
+.dark-page-inputs [data-slot="input"]::placeholder,
+.dark-page-inputs [data-slot="textarea"]::placeholder {
+  color: rgba(255,255,255,0.30) !important;
+}
+.dark-page-inputs [data-slot="input"]:focus-visible,
+.dark-page-inputs [data-slot="textarea"]:focus-visible {
+  border-color: #00ff87 !important;
+  box-shadow: 0 0 0 2px rgba(0,255,135,0.18) !important;
+  outline: none !important;
+}
+
 /* ── Utilities ──────────────────────────────────────────────────────────── */
 @layer utilities {
   .flex { min-width: 0; min-height: 0; }

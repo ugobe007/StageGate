@@ -75,7 +75,7 @@ export default function Register() {
   if (!isAuthenticated) {
     return (
       <div style={{ minHeight: "100vh", background: "#080808" }}>
-        <Navbar />
+        <Navbar darkBg />
         <div style={{ paddingTop: "8rem", paddingBottom: "4rem" }}>
           <div style={{ maxWidth: "28rem", margin: "0 auto", padding: "0 1rem", textAlign: "center" }}>
             <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#111" }}>
@@ -100,7 +100,7 @@ export default function Register() {
   if (existingProfile) {
     return (
       <div style={{ minHeight: "100vh", background: "#080808" }}>
-        <Navbar />
+        <Navbar darkBg />
         <div style={{ paddingTop: "8rem", paddingBottom: "4rem" }}>
           <div style={{ maxWidth: "28rem", margin: "0 auto", padding: "0 1rem", textAlign: "center" }}>
             <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#111" }}>
@@ -135,7 +135,7 @@ export default function Register() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#080808" }}>
-      <Navbar />
+      <Navbar darkBg />
       <div style={{ paddingTop: "6rem", paddingBottom: "4rem" }}>
         <div style={{ maxWidth: "42rem", margin: "0 auto", padding: "0 1rem" }}>
           <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
@@ -143,10 +143,10 @@ export default function Register() {
               Free Registration
             </div>
             <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "#ececec", marginBottom: "0.5rem" }}>Register Your Company</h1>
-            <p style={{ fontSize: "0.9375rem", color: "#64748b" }}>Tell us about your company and robots. This takes about 3 minutes.</p>
+            <p style={{ fontSize: "0.9375rem", color: "rgba(255,255,255,0.45)" }}>Tell us about your company and robots. This takes about 3 minutes.</p>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }} className="dark-page-inputs">
             {/* Company Info */}
             <div style={sectionStyle}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>

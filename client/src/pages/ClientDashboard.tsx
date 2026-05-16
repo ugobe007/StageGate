@@ -86,7 +86,7 @@ export default function ClientDashboard() {
 
   if (loading || profileLoading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#080808" }}>
         <Loader2 size={28} style={{ color: "#00ff87", animation: "spin 1s linear infinite" }} />
       </div>
     );
@@ -142,13 +142,13 @@ export default function ClientDashboard() {
 
   const inputStyle = {
     width: "100%", height: "2.25rem", borderRadius: "0.375rem",
-    border: "1px solid rgba(255,255,255,0.08)", background: "#fff",
+    border: "1px solid rgba(255,255,255,0.08)", background: "#111",
     padding: "0 0.75rem", fontSize: "0.875rem", color: "#ececec", outline: "none",
   };
 
   return (
     <div style={{ minHeight: "100vh", background: "#080808" }}>
-      <Navbar />
+      <Navbar darkBg />
       <div style={{ paddingTop: "5rem", paddingBottom: "4rem" }}>
         <div style={{ maxWidth: "56rem", margin: "0 auto", padding: "2rem 1rem" }}>
 
@@ -158,11 +158,11 @@ export default function ClientDashboard() {
               <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#ececec", margin: "0 0 0.25rem" }}>
                 Welcome back, {profile.contactName?.split(" ")[0] ?? user?.name ?? "there"}
               </h1>
-              <p style={{ fontSize: "0.875rem", color: "#64748b", margin: 0 }}>{profile.companyName} · StageGate Client Portal</p>
+              <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.45)", margin: 0 }}>{profile.companyName} · StageGate Client Portal</p>
             </div>
             <button
               onClick={() => setEditProfileOpen(true)}
-              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.75rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.75rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111", color: "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer" }}
             >
               <User size={12} /> Edit Profile
             </button>
@@ -174,7 +174,7 @@ export default function ClientDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
 
               {/* Company card */}
-              <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
+              <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#111", padding: "1.25rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
                   <div style={{ width: "2.25rem", height: "2.25rem", borderRadius: "0.375rem", background: "rgba(62,207,142,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Building2 size={16} style={{ color: "#00ff87" }} />
@@ -186,17 +186,17 @@ export default function ClientDashboard() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.875rem" }}>
                   {profile.contactEmail && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#64748b" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "rgba(255,255,255,0.45)" }}>
                       <Mail size={12} /> <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.contactEmail}</span>
                     </div>
                   )}
                   {profile.contactPhone && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#64748b" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "rgba(255,255,255,0.45)" }}>
                       <Phone size={12} /> {profile.contactPhone}
                     </div>
                   )}
                   {profile.website && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#64748b" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "rgba(255,255,255,0.45)" }}>
                       <Globe size={12} />
                       <a href={profile.website} target="_blank" rel="noreferrer" style={{ color: "#00ff87", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {profile.website.replace(/^https?:\/\//, "")}
@@ -208,7 +208,7 @@ export default function ClientDashboard() {
 
               {/* Robots */}
               {robots.length > 0 && (
-                <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
+                <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#111", padding: "1.25rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
                     <Bot size={13} style={{ color: "#00ff87" }} />
                     <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec" }}>Your Robots</span>
@@ -218,7 +218,7 @@ export default function ClientDashboard() {
                       <div key={i} style={{ padding: "0.625rem 0.75rem", borderRadius: "0.375rem", background: "#080808", border: "1px solid rgba(255,255,255,0.08)" }}>
                         <div style={{ fontWeight: 500, fontSize: "0.875rem", color: "#ececec" }}>{r.name || "Unnamed Robot"}</div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.25rem" }}>
-                          {r.type && <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{r.type}</span>}
+                          {r.type && <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.45)" }}>{r.type}</span>}
                           {r.weight && <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)" }}>{r.weight}</span>}
                         </div>
                       </div>
@@ -229,7 +229,7 @@ export default function ClientDashboard() {
 
               {/* Shows */}
               {showsAttending.length > 0 && (
-                <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
+                <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#111", padding: "1.25rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
                     <Calendar size={13} style={{ color: "#00ff87" }} />
                     <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec" }}>Upcoming Shows</span>
@@ -241,7 +241,7 @@ export default function ClientDashboard() {
                           <div style={{ fontSize: "0.875rem", fontWeight: 500, color: "#ececec" }}>{s.showName}</div>
                           {s.boothNumber && <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)" }}>{s.boothNumber}</div>}
                         </div>
-                        <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{s.year}</span>
+                        <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.45)" }}>{s.year}</span>
                       </div>
                     ))}
                   </div>
@@ -250,7 +250,7 @@ export default function ClientDashboard() {
 
               {/* Services needed */}
               {servicesNeeded.length > 0 && (
-                <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#fff", padding: "1.25rem" }}>
+                <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#111", padding: "1.25rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
                     <Star size={13} style={{ color: "#00ff87" }} />
                     <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec" }}>Services Requested</span>
@@ -270,7 +270,7 @@ export default function ClientDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
 
               {/* Submit new request */}
-              <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#fff", overflow: "hidden" }}>
+              <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#111", overflow: "hidden" }}>
                 <button
                   onClick={() => setShowRequestForm(v => !v)}
                   style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.125rem 1.25rem", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}
@@ -281,48 +281,48 @@ export default function ClientDashboard() {
                     </div>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec" }}>Submit a Service Request</div>
-                      <div style={{ fontSize: "0.8125rem", color: "#64748b" }}>Request logistics, staging, or support for your next show</div>
+                      <div style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.45)" }}>Request logistics, staging, or support for your next show</div>
                     </div>
                   </div>
                   {showRequestForm ? <ChevronUp size={15} style={{ color: "rgba(255,255,255,0.30)" }} /> : <ChevronDown size={15} style={{ color: "rgba(255,255,255,0.30)" }} />}
                 </button>
 
                 {showRequestForm && (
-                  <div style={{ padding: "0 1.25rem 1.25rem", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "1rem" }}>
+                  <div style={{ padding: "0 1.25rem 1.25rem", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "1rem" }} className="dark-page-inputs">
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.875rem" }}>
                       <div style={{ gridColumn: "1 / -1" }}>
-                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>Service Type *</label>
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "rgba(255,255,255,0.45)", display: "block", marginBottom: "0.375rem" }}>Service Type *</label>
                         <select value={requestType} onChange={e => setRequestType(e.target.value)} style={inputStyle}>
                           <option value="">Select service...</option>
                           {REQUEST_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>Show Name</label>
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "rgba(255,255,255,0.45)", display: "block", marginBottom: "0.375rem" }}>Show Name</label>
                         <Input value={showName} onChange={e => setShowName(e.target.value)} placeholder="e.g. CES 2026" className="text-sm" />
                       </div>
                       <div>
-                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>Show Date</label>
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "rgba(255,255,255,0.45)", display: "block", marginBottom: "0.375rem" }}>Show Date</label>
                         <Input value={showDate} onChange={e => setShowDate(e.target.value)} placeholder="e.g. Jan 7–10, 2026" className="text-sm" />
                       </div>
                       <div>
-                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>Robot Name</label>
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "rgba(255,255,255,0.45)", display: "block", marginBottom: "0.375rem" }}>Robot Name</label>
                         <Input value={robotName} onChange={e => setRobotName(e.target.value)} placeholder="e.g. Spot" className="text-sm" />
                       </div>
                       <div>
-                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>Urgency</label>
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "rgba(255,255,255,0.45)", display: "block", marginBottom: "0.375rem" }}>Urgency</label>
                         <select value={urgency} onChange={e => setUrgency(e.target.value as "low" | "normal" | "high" | "urgent")} style={inputStyle}>
                           {URGENCY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
                       </div>
                       <div style={{ gridColumn: "1 / -1" }}>
-                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>Details</label>
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "rgba(255,255,255,0.45)", display: "block", marginBottom: "0.375rem" }}>Details</label>
                         <Textarea value={details} onChange={e => setDetails(e.target.value)}
                           placeholder="Describe what you need, timeline, any special requirements..."
                           className="resize-none text-sm" rows={3} />
                       </div>
                       <div style={{ gridColumn: "1 / -1" }}>
-                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem" }}>
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "rgba(255,255,255,0.45)", display: "block", marginBottom: "0.375rem" }}>
                           Attachment <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.30)" }}>(optional — spec sheet, crate dims, robot manual · PDF/image · max 16MB)</span>
                         </label>
                         {attachment ? (
@@ -331,7 +331,7 @@ export default function ClientDashboard() {
                             <button type="button" onClick={() => setAttachment(null)} style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", background: "none", border: "none", cursor: "pointer", marginLeft: "0.25rem" }}>Remove</button>
                           </div>
                         ) : (
-                          <label style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", color: "#64748b", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "0.375rem", padding: "0.5rem 0.875rem" }}>
+                          <label style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", color: "rgba(255,255,255,0.45)", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "0.375rem", padding: "0.5rem 0.875rem" }}>
                             {uploadingFile ? <><Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> Uploading…</> : <span>Choose file</span>}
                             <input type="file" style={{ display: "none" }} accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.xlsx,.csv" onChange={handleFileUpload} disabled={uploadingFile} />
                           </label>
@@ -341,7 +341,7 @@ export default function ClientDashboard() {
                     <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
                       <button
                         onClick={() => setShowRequestForm(false)}
-                        style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer" }}
+                        style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111", color: "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer" }}
                       >
                         Cancel
                       </button>
@@ -360,10 +360,10 @@ export default function ClientDashboard() {
 
               {/* Service request list */}
               <div>
-                <h2 style={{ fontSize: "0.875rem", fontWeight: 600, color: "#64748b", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <h2 style={{ fontSize: "0.875rem", fontWeight: 600, color: "rgba(255,255,255,0.45)", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <FileText size={13} /> Your Service Requests
                   {serviceReqs && serviceReqs.length > 0 && (
-                    <span style={{ fontSize: "0.75rem", background: "#1a1a1a", color: "#64748b", padding: "0.0625rem 0.4375rem", borderRadius: "0.25rem" }}>{serviceReqs.length}</span>
+                    <span style={{ fontSize: "0.75rem", background: "#1a1a1a", color: "rgba(255,255,255,0.45)", padding: "0.0625rem 0.4375rem", borderRadius: "0.25rem" }}>{serviceReqs.length}</span>
                   )}
                 </h2>
 
@@ -384,7 +384,7 @@ export default function ClientDashboard() {
                       const Icon = cfg.icon;
                       const isExpanded = expandedRequest === req.id;
                       return (
-                        <div key={req.id} style={{ border: `1px solid ${isExpanded ? "#00ff87" : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#fff", overflow: "hidden", transition: "border-color 0.1s" }}>
+                        <div key={req.id} style={{ border: `1px solid ${isExpanded ? "#00ff87" : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#111", overflow: "hidden", transition: "border-color 0.1s" }}>
                           <button
                             onClick={() => setExpandedRequest(isExpanded ? null : req.id)}
                             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.875rem 1rem", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}
@@ -413,7 +413,7 @@ export default function ClientDashboard() {
                               {req.urgency && req.urgency !== "normal" && (
                                 <div style={{ color: "rgba(255,255,255,0.55)" }}><span style={{ color: "rgba(255,255,255,0.30)" }}>Urgency: </span><span style={{ textTransform: "capitalize" }}>{req.urgency}</span></div>
                               )}
-                              {req.details && <div style={{ color: "#64748b" }}>{req.details}</div>}
+                              {req.details && <div style={{ color: "rgba(255,255,255,0.45)" }}>{req.details}</div>}
                               {(req as any).attachmentUrl && (
                                 <div>
                                   <span style={{ color: "rgba(255,255,255,0.30)" }}>Attachment: </span>

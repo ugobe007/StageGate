@@ -1571,3 +1571,9 @@
 - [x] Navbar: add darkBg prop so it shows solid dark bg on dark-background pages (no transparent bleed)
 - [x] Onboarding: fix header bg (#080808), input bg (#111), label color, card bg, loading bg
 - [x] Register: fix all card/button backgrounds from #fff to #111
+
+## v58 — Input Focus States, Register Navbar, ClientDashboard My Requests
+
+- [x] Onboarding: dark focus ring on all Input/Textarea components via .dark-page-inputs CSS wrapper
+- [x] Register: all three Navbar usages now pass darkBg prop
+- [x] ClientDashboard: My Requests section already existed; fixed all #fff card backgrounds to #111 and #64748b text to rgba(255,255,255,0.45); added dark-page-inputs wrapper to service request form; added Navbar darkBg prop
