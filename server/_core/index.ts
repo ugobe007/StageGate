@@ -29,7 +29,7 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
-  const app = await createStageGateApp({ serveClient: false });
+  const app = await createStageGateApp();
   const server = createServer(app);
 
   // development mode uses Vite, production mode uses static files

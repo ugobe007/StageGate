@@ -20,7 +20,7 @@ import { runCheckpointPoller } from "../agents/checkpointPoller";
 import { quoteFollowupHandler } from "../scheduled/quoteFollowup";
 import { runCalendarReminderPoller } from "../agents/calendarReminderPoller";
 
-export async function createStageGateApp(options: { serveClient?: boolean } = {}): Promise<Express> {
+export async function createStageGateApp(): Promise<Express> {
   const app = express();
   const rawJsonBody = express.json({
     limit: "50mb",
@@ -113,11 +113,6 @@ export async function createStageGateApp(options: { serveClient?: boolean } = {}
 
   app.post("/api/webhooks/resend", resendWebhookHandler);
   app.post("/api/webhooks/resend-inbound", resendInboundHandler);
-
-  if (options.serveClient) {
-    const { serveStatic } = await import("./vite");
-    serveStatic(app);
-  }
 
   return app;
 }

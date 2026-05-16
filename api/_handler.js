@@ -3,7 +3,7 @@ import { createStageGateApp } from "../dist/app.js";
 let appPromise = null;
 
 function getApp() {
-  appPromise ??= createStageGateApp({ serveClient: false });
+  appPromise ??= createStageGateApp();
   return appPromise;
 }
 
