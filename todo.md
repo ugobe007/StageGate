@@ -1660,3 +1660,17 @@
 - [x] AdminSalesAgent: add "Meetings" tab showing next 8 upcoming calendar events with type/status color coding
 - [x] AdminSalesAgent: add "Schedule Meeting" quick-action modal (title, date, time, type, duration, notes) calling calendar.create
 - [x] Vitest: 1024 tests passing (34 test files)
+
+## v67 — Mark Confirmed + Reschedule + 24h Reminder Heartbeat
+
+- [x] calendar.confirm adminProcedure: flip status scheduled → confirmed, return updated event
+- [x] calendar.reschedule adminProcedure: update startAt/endAt, reset status to scheduled, re-send confirmation emails to prospect + Tommy + owner
+- [x] AdminCalendar: "Confirm" button on scheduled event cards (one-click, no modal)
+- [x] AdminCalendar: "Reschedule" button on event cards that opens a date/time modal
+- [x] AdminSalesAgent Meetings tab: "Confirm" button on scheduled event cards
+- [x] AdminSalesAgent Meetings tab: "Reschedule" button on event cards
+- [x] calendar_events table: add reminder_sent_at column (nullable timestamp) for idempotent reminder tracking
+- [x] /api/scheduled/calendar-reminder heartbeat handler: query events where startAt is 22-26h from now and reminderSentAt is null, send reminder emails to prospect + Tommy + owner, stamp reminderSentAt
+- [x] Mount /api/scheduled/calendar-reminder in server/_core/index.ts
+- [ ] PENDING AFTER DEPLOY: manus-heartbeat create --name calendar-reminder --cron "0 0 * * * *" --path /api/scheduled/calendar-reminder --description "Hourly 24h-ahead meeting reminder emails"
+- [x] Vitest: 1024 tests passing (34 test files), calendar.confirm + calendar.reschedule covered via calendar.test.ts

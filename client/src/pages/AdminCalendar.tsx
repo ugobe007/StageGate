@@ -5,7 +5,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import {
   Calendar, Plus, Edit2, Trash2, Copy, ExternalLink,
-  Clock, User, Building2, Phone, Video, Star, ChevronDown, ChevronUp, X, Check
+  Clock, User, Building2, Phone, Video, Star, ChevronDown, ChevronUp, X, Check, CheckCircle, RefreshCw
 } from "lucide-react";
 
 type EventType = "meeting" | "demo" | "call" | "event" | "follow_up";
@@ -92,6 +92,9 @@ export default function AdminCalendar() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  const [reschedulingEvent, setReschedulingEvent] = useState<CalendarEvent | null>(null);
+  const [rescheduleForm, setRescheduleForm] = useState({ startAt: "", endAt: "", notes: "" });
 
   const { data, isLoading, refetch } = trpc.calendar.list.useQuery(
     { type: typeFilter || undefined },
@@ -111,6 +114,16 @@ export default function AdminCalendar() {
   const deleteMutation = trpc.calendar.delete.useMutation({
     onSuccess: () => { toast.success("Event deleted"); utils.calendar.list.invalidate(); setDeletingId(null); },
     onError: (e) => { toast.error(e.message); setDeletingId(null); },
+  });
+
+  const confirmMutation = trpc.calendar.confirm.useMutation({
+    onSuccess: () => { toast.success("Event confirmed"); utils.calendar.list.invalidate(); utils.calendar.upcomingCount.invalidate(); setConfirmingId(null); },
+    onError: (e) => { toast.error(e.message); setConfirmingId(null); },
+  });
+
+  const rescheduleMutation = trpc.calendar.reschedule.useMutation({
+    onSuccess: () => { toast.success("Event rescheduled — emails sent"); utils.calendar.list.invalidate(); utils.calendar.upcomingCount.invalidate(); setReschedulingEvent(null); },
+    onError: (e) => { toast.error(e.message); },
   });
 
   const events: CalendarEvent[] = (data?.events ?? []) as CalendarEvent[];
@@ -319,6 +332,28 @@ export default function AdminCalendar() {
                               {copiedToken === ev.shareToken ? <Check size={12} /> : <Copy size={12} />}
                             </button>
                           )}
+                          {ev.status === "scheduled" && (
+                            <button
+                              onClick={() => { setConfirmingId(ev.id); confirmMutation.mutate({ id: ev.id }); }}
+                              title="Mark Confirmed"
+                              style={{ background: "transparent", border: "1px solid rgba(0,255,135,0.3)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: confirmingId === ev.id ? "#00ff87" : "#4ade80", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.5625rem" }}>
+                              <CheckCircle size={11} /> Confirm
+                            </button>
+                          )}
+                          {(ev.status === "scheduled" || ev.status === "confirmed") && (
+                            <button
+                              onClick={() => {
+                                setReschedulingEvent(ev);
+                                const s = new Date(ev.startAt);
+                                const e2 = new Date(ev.endAt);
+                                const toLocal = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                                setRescheduleForm({ startAt: toLocal(s), endAt: toLocal(e2), notes: ev.notes ?? "" });
+                              }}
+                              title="Reschedule"
+                              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: "#94a3b8", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.5625rem" }}>
+                              <RefreshCw size={11} /> Reschedule
+                            </button>
+                          )}
                           <button onClick={() => openEdit(ev)}
                             title="Edit"
                             style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}>
@@ -495,6 +530,64 @@ export default function AdminCalendar() {
               <button onClick={handleSave} disabled={saving}
                 style={{ background: saving ? "rgba(0,255,135,0.4)" : "#00ff87", color: "#0a0a0a", border: "none", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: saving ? "not-allowed" : "pointer" }}>
                 {saving ? "Saving…" : editingEvent ? "Save Changes" : "Create Event"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reschedule Modal */}
+      {reschedulingEvent && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60 }}
+          onClick={() => setReschedulingEvent(null)}>
+          <div style={{ background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.75rem", width: "100%", maxWidth: "420px", margin: "1rem" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "0.25rem" }}>Reschedule Meeting</div>
+                <div style={{ fontSize: "0.875rem", fontWeight: 700, color: "#e2e8f0" }}>{reschedulingEvent.title}</div>
+              </div>
+              <button onClick={() => setReschedulingEvent(null)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#64748b", padding: "0.25rem" }}><X size={16} /></button>
+            </div>
+            <div style={{ padding: "1.25rem 1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.5625rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginBottom: "0.375rem" }}>New Start Time</label>
+                <input type="datetime-local" value={rescheduleForm.startAt}
+                  onChange={e => setRescheduleForm(f => ({ ...f, startAt: e.target.value }))}
+                  style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.375rem", padding: "0.5rem 0.75rem", color: "#e2e8f0", fontSize: "0.75rem", outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "0.5625rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginBottom: "0.375rem" }}>New End Time</label>
+                <input type="datetime-local" value={rescheduleForm.endAt}
+                  onChange={e => setRescheduleForm(f => ({ ...f, endAt: e.target.value }))}
+                  style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.375rem", padding: "0.5rem 0.75rem", color: "#e2e8f0", fontSize: "0.75rem", outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "0.5625rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginBottom: "0.375rem" }}>Notes (optional)</label>
+                <textarea value={rescheduleForm.notes} onChange={e => setRescheduleForm(f => ({ ...f, notes: e.target.value }))}
+                  rows={2} placeholder="Reason for reschedule or updated agenda…"
+                  style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.375rem", padding: "0.5rem 0.75rem", color: "#e2e8f0", fontSize: "0.75rem", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
+              </div>
+              <p style={{ fontSize: "0.625rem", color: "#64748b", margin: 0 }}>Confirmation emails will be sent to the prospect, Tommy, and the owner with the updated time.</p>
+            </div>
+            <div style={{ padding: "1rem 1.5rem", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
+              <button onClick={() => setReschedulingEvent(null)}
+                style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.375rem", padding: "0.5rem 1rem", color: "#64748b", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (!rescheduleForm.startAt || !rescheduleForm.endAt) { toast.error("Please set both start and end times"); return; }
+                  rescheduleMutation.mutate({
+                    id: reschedulingEvent.id,
+                    startAt: new Date(rescheduleForm.startAt).toISOString(),
+                    endAt: new Date(rescheduleForm.endAt).toISOString(),
+                    notes: rescheduleForm.notes || undefined,
+                  });
+                }}
+                disabled={rescheduleMutation.isPending}
+                style={{ background: rescheduleMutation.isPending ? "rgba(0,255,135,0.4)" : "#00ff87", color: "#0a0a0a", border: "none", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: rescheduleMutation.isPending ? "not-allowed" : "pointer" }}>
+                {rescheduleMutation.isPending ? "Sending…" : "Reschedule & Notify"}
               </button>
             </div>
           </div>

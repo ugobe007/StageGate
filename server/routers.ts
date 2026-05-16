@@ -4031,6 +4031,113 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return { events };
       }),
 
+    // Admin: confirm event (scheduled → confirmed)
+    confirm: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const event = await db.updateCalendarEvent(input.id, { status: "confirmed" });
+        if (!event) throw new TRPCError({ code: "NOT_FOUND" });
+        return { event };
+      }),
+
+    // Admin: reschedule event — update times, reset status, re-send emails
+    reschedule: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        startAt: z.string(), // ISO datetime
+        endAt: z.string(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const existing = await db.getCalendarEventById(input.id);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+
+        const startAt = new Date(input.startAt);
+        const endAt = new Date(input.endAt);
+        const event = await db.updateCalendarEvent(input.id, {
+          startAt,
+          endAt,
+          status: "scheduled",
+          ...(input.notes !== undefined ? { notes: input.notes } : {}),
+        });
+        if (!event) throw new TRPCError({ code: "NOT_FOUND" });
+
+        const startDisplay = startAt.toLocaleString("en-US", {
+          timeZone: "America/Los_Angeles",
+          dateStyle: "full",
+          timeStyle: "short",
+        });
+        const shareUrl = event.shareToken
+          ? `https://onstage.bot/calendar/${event.shareToken}`
+          : "https://onstage.bot";
+
+        const rescheduleHtml = `
+<div style="font-family:sans-serif;max-width:600px;">
+  <h2 style="color:#00ff87;">Meeting Rescheduled — ${event.companyName ?? event.title}</h2>
+  <p>Your meeting has been rescheduled to a new time:</p>
+  <table style="border-collapse:collapse;width:100%;margin:1rem 0;">
+    <tr><td style="padding:0.5rem 0;color:#555;width:120px;"><strong>New Date &amp; Time</strong></td><td style="padding:0.5rem 0;">${startDisplay} (Pacific Time)</td></tr>
+    <tr><td style="padding:0.5rem 0;color:#555;"><strong>Title</strong></td><td style="padding:0.5rem 0;">${event.title}</td></tr>
+    ${event.notes ? `<tr><td style="padding:0.5rem 0;color:#555;"><strong>Notes</strong></td><td style="padding:0.5rem 0;">${event.notes}</td></tr>` : ""}
+  </table>
+  <p><a href="${shareUrl}" style="display:inline-block;background:#00ff87;color:#000;padding:0.6rem 1.2rem;border-radius:0.25rem;text-decoration:none;font-weight:600;">View Updated Event →</a></p>
+  <p style="color:#555;">Questions? Reply to this email or reach us at <a href="mailto:hello@onstage.bot">hello@onstage.bot</a>.</p>
+  <hr style="border-color:#eee;">
+  <p style="color:#999;font-size:12px;">StageGate — Robotics Activation Infrastructure • <a href="https://onstage.bot" style="color:#999;">onstage.bot</a></p>
+</div>`;
+
+        const subject = `[StageGate] Meeting Rescheduled: ${event.title} — ${startDisplay} PT`;
+        const textBody = `Your meeting "${event.title}" has been rescheduled to ${startDisplay} PT.\n\nView updated event: ${shareUrl}\n\n— StageGate Team`;
+
+        // Email Tommy
+        try {
+          await emailHelpers.sendEmail({
+            to: "tom@starsupportinc.com",
+            subject,
+            body: textBody,
+            htmlBody: rescheduleHtml,
+          });
+        } catch (e) { console.warn("[Calendar] Reschedule email to Tommy failed:", e); }
+
+        // Email owner
+        try {
+          await emailHelpers.sendEmail({
+            to: "ugobe07@gmail.com",
+            subject,
+            body: textBody,
+            htmlBody: rescheduleHtml,
+          });
+        } catch (e) { console.warn("[Calendar] Reschedule email to owner failed:", e); }
+
+        // Email prospect if we have their address
+        if (event.prospectEmail) {
+          const prospectRescheduleHtml = `
+<div style="font-family:sans-serif;max-width:600px;">
+  <h2 style="color:#1a1a1a;">Your Meeting Has Been Rescheduled</h2>
+  <p>Hi ${event.prospectName ?? "there"},</p>
+  <p>We've updated your meeting with the StageGate team to a new time:</p>
+  <table style="border-collapse:collapse;width:100%;margin:1rem 0;">
+    <tr><td style="padding:0.5rem 0;color:#555;width:120px;"><strong>New Date &amp; Time</strong></td><td style="padding:0.5rem 0;">${startDisplay} (Pacific Time)</td></tr>
+    ${event.notes ? `<tr><td style="padding:0.5rem 0;color:#555;"><strong>Notes</strong></td><td style="padding:0.5rem 0;">${event.notes}</td></tr>` : ""}
+  </table>
+  <p><a href="${shareUrl}" style="display:inline-block;background:#00ff87;color:#000;padding:0.6rem 1.2rem;border-radius:0.25rem;text-decoration:none;font-weight:600;">View Updated Event →</a></p>
+  <p style="color:#555;">If this time no longer works, reply to this email or reach us at <a href="mailto:hello@onstage.bot">hello@onstage.bot</a>.</p>
+  <hr style="border-color:#eee;">
+  <p style="color:#999;font-size:12px;">StageGate — Robotics Activation Infrastructure • <a href="https://onstage.bot" style="color:#999;">onstage.bot</a></p>
+</div>`;
+          try {
+            await emailHelpers.sendEmail({
+              to: event.prospectEmail,
+              subject: `Your Meeting with StageGate Has Been Rescheduled — ${startDisplay} PT`,
+              body: `Hi ${event.prospectName ?? "there"},\n\nYour meeting with StageGate has been rescheduled to ${startDisplay} PT.\n\nView updated event: ${shareUrl}\n\n— StageGate Team\nhello@onstage.bot`,
+              htmlBody: prospectRescheduleHtml,
+            });
+          } catch (e) { console.warn("[Calendar] Reschedule email to prospect failed:", e); }
+        }
+
+        return { event };
+      }),
+
     // Admin: count of upcoming scheduled/confirmed events (for sidebar badge)
     upcomingCount: adminProcedure
       .query(async () => {

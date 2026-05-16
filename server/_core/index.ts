@@ -21,6 +21,7 @@ import { salesAgentDiscoveryHandler } from "../agents/salesAgentDiscovery";
 import { vendorScraperHandler } from "../agents/vendorScraper";
 import { runCheckpointPoller } from "../agents/checkpointPoller";
 import { quoteFollowupHandler } from "../scheduled/quoteFollowup";
+import { runCalendarReminderPoller } from "../agents/calendarReminderPoller";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -71,6 +72,21 @@ async function startServer() {
 
   // Quote follow-up nudge — daily 09:00 UTC
   app.post("/api/scheduled/quote-followup", quoteFollowupHandler);
+
+  // Calendar reminder poller — hourly, sends 24h-ahead reminder emails
+  app.post("/api/scheduled/calendar-reminder", async (req, res) => {
+    try {
+      const { sdk } = await import("../_core/sdk");
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron) return res.status(403).json({ error: "cron-only" });
+      const result = await runCalendarReminderPoller();
+      res.json({ ok: true, ...result });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[calendarReminder] Error:", msg);
+      res.status(500).json({ ok: false, error: msg, timestamp: new Date().toISOString() });
+    }
+  });
 
   // Logistics checkpoint poller — daily
   app.post("/api/scheduled/logistics-checkpoint-poll", async (req, res) => {

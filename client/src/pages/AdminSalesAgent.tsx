@@ -471,6 +471,11 @@ export default function AdminSalesAgent() {
   const [scheduleDuration, setScheduleDuration] = useState(30);
   const [scheduleNotes, setScheduleNotes] = useState("");
   const [scheduleType, setScheduleType] = useState<"meeting" | "call" | "demo">("call");
+  // v67: confirm + reschedule state
+  const [confirmingCalId, setConfirmingCalId] = useState<number | null>(null);
+  const [reschedulingCalEvt, setReschedulingCalEvt] = useState<typeof upcomingEvents[0] | null>(null);
+  const [rescheduleStartAt, setRescheduleStartAt] = useState("");
+  const [rescheduleEndAt, setRescheduleEndAt] = useState("");
 
   const utils = trpc.useUtils();
 
@@ -640,6 +645,16 @@ export default function AdminSalesAgent() {
       refetchCalendar();
     },
     onError: (err) => toast.error(`Failed to schedule: ${err.message}`),
+  });
+
+  const calendarConfirm = trpc.calendar.confirm.useMutation({
+    onSuccess: () => { toast.success("Event confirmed"); refetchCalendar(); setConfirmingCalId(null); },
+    onError: (e) => { toast.error(e.message); setConfirmingCalId(null); },
+  });
+
+  const calendarReschedule = trpc.calendar.reschedule.useMutation({
+    onSuccess: () => { toast.success("Rescheduled — emails sent"); refetchCalendar(); setReschedulingCalEvt(null); },
+    onError: (e) => toast.error(e.message),
   });
 
   const stats = {
@@ -1307,6 +1322,34 @@ export default function AdminSalesAgent() {
                         {evt.notes && (
                           <p className="text-xs text-zinc-600 mt-2 border-t border-zinc-800 pt-2">{evt.notes}</p>
                         )}
+                        {/* Confirm / Reschedule actions */}
+                        {(evt.status === "scheduled" || evt.status === "confirmed") && (
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-zinc-800">
+                            {evt.status === "scheduled" && (
+                              <Button size="sm" variant="outline"
+                                className="border-emerald-700 text-emerald-400 hover:bg-emerald-950 gap-1 text-xs h-7"
+                                onClick={() => { setConfirmingCalId(evt.id); calendarConfirm.mutate({ id: evt.id }); }}
+                                disabled={confirmingCalId === evt.id}>
+                                {confirmingCalId === evt.id
+                                  ? <><RefreshCw className="w-3 h-3 animate-spin" /> Confirming…</>
+                                  : <><CheckCircle className="w-3 h-3" /> Confirm</>
+                                }
+                              </Button>
+                            )}
+                            <Button size="sm" variant="outline"
+                              className="border-zinc-600 text-zinc-300 hover:bg-zinc-800 gap-1 text-xs h-7"
+                              onClick={() => {
+                                const s = new Date(evt.startAt);
+                                const e2 = new Date(evt.endAt);
+                                const toLocal = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                                setRescheduleStartAt(toLocal(s));
+                                setRescheduleEndAt(toLocal(e2));
+                                setReschedulingCalEvt(evt);
+                              }}>
+                              <RefreshCw className="w-3 h-3" /> Reschedule
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1671,6 +1714,53 @@ export default function AdminSalesAgent() {
                 </Button>
                 <Button size="sm" variant="outline" className="border-zinc-700 text-zinc-400"
                   onClick={() => setCsvModalOpen(false)}>Cancel</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* v67: Reschedule modal */}
+      <Dialog open={!!reschedulingCalEvt} onOpenChange={(open) => { if (!open) setReschedulingCalEvt(null); }}>
+        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <RefreshCw className="w-4 h-4 text-zinc-400" /> Reschedule Meeting
+            </DialogTitle>
+          </DialogHeader>
+          {reschedulingCalEvt && (
+            <div className="space-y-4">
+              <p className="text-xs text-zinc-400">{reschedulingCalEvt.title}</p>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">New Start Time</label>
+                <input type="datetime-local" value={rescheduleStartAt}
+                  onChange={e => setRescheduleStartAt(e.target.value)}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">New End Time</label>
+                <input type="datetime-local" value={rescheduleEndAt}
+                  onChange={e => setRescheduleEndAt(e.target.value)}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white outline-none" />
+              </div>
+              <p className="text-xs text-zinc-600">Emails will be sent to the prospect, Tommy, and the owner.</p>
+              <div className="flex gap-2 pt-2">
+                <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={() => {
+                    if (!rescheduleStartAt || !rescheduleEndAt) { toast.error("Set both times"); return; }
+                    calendarReschedule.mutate({
+                      id: reschedulingCalEvt.id,
+                      startAt: new Date(rescheduleStartAt).toISOString(),
+                      endAt: new Date(rescheduleEndAt).toISOString(),
+                    });
+                  }}
+                  disabled={calendarReschedule.isPending}>
+                  {calendarReschedule.isPending
+                    ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Sending…</>
+                    : "Reschedule & Notify"}
+                </Button>
+                <Button variant="outline" className="border-zinc-700 text-zinc-400"
+                  onClick={() => setReschedulingCalEvt(null)}>Cancel</Button>
               </div>
             </div>
           )}

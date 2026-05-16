@@ -696,6 +696,8 @@ export const calendarEvents = pgTable("calendar_events", {
   createdBy: integer("createdBy"),
   // Notification tracking
   notificationSentAt: timestamp("notificationSentAt", { withTimezone: true }),
+  // Reminder tracking — set when 24h-before reminder email is sent (idempotent)
+  reminderSentAt: timestamp("reminderSentAt", { withTimezone: true }),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
