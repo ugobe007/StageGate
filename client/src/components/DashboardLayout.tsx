@@ -28,7 +28,7 @@ const menuItems = [
   { icon: ClipboardList,   label: "Demo Requests",    path: "/admin/demos" },
   { icon: FileText,        label: "Quotes",           path: "/admin/quotes" },
   { icon: Users,           label: "Partners",         path: "/admin/partners" },
-  { icon: Zap,             label: "Sales Agent",      path: "/admin/sales-agent" },
+  { icon: Zap,             label: "Cal",              path: "/admin/sales-agent" },
   { icon: Truck,           label: "Vendors",          path: "/admin/vendors" },
   { icon: Calendar,        label: "Scheduling",       path: "/admin/scheduling" },
   { icon: Truck,           label: "Logistics",        path: "/admin/logistics" },

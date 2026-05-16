@@ -9,6 +9,7 @@ import { Pool } from "pg";
 import { eq } from "drizzle-orm";
 import { prospects, prospectResearch } from "../drizzle/schema";
 import { invokeLLM } from "./_core/llm";
+import { isDeprecatedRoleInbox, roleBasedOutreachEmails } from "./outreachContacts";
 
 // ─── DB helper ────────────────────────────────────────────────────────────────
 
@@ -67,9 +68,10 @@ async function apolloSearchPeople(orgId: string, orgName: string): Promise<Apoll
       body: JSON.stringify({
         organization_ids: [orgId],
         person_titles: [
-          "CEO", "CTO", "COO", "VP", "Director", "Head of",
-          "Chief", "President", "Founder", "Co-Founder",
-          "Business Development", "Sales", "Marketing",
+          "VP Sales", "Head of Sales", "Sales Director",
+          "Head of Events", "Event Marketing", "Events Director",
+          "VP Marketing", "Head of Marketing", "Marketing Director",
+          "CEO", "COO", "Founder", "Co-Founder", "Business Development",
         ],
         page: 1,
         per_page: 5,
@@ -239,6 +241,34 @@ export async function researchProspect(prospectId: number): Promise<void> {
         emailConfidence: prospect.emailConfidence ?? "low",
         linkedIn: prospect.contactLinkedIn ?? undefined,
       }];
+    }
+
+    // Every prospect should have its own company-domain outreach candidates.
+    // Preferred order replaces unreliable partnerships/info/support/hello guesses.
+    const existingEmails = new Set(
+      decisionMakers
+        .map(person => person.email?.toLowerCase())
+        .filter((email): email is string => Boolean(email))
+    );
+    for (const email of roleBasedOutreachEmails(prospect)) {
+      if (existingEmails.has(email.toLowerCase())) continue;
+      const localPart = email.split("@")[0] ?? "sales";
+      decisionMakers.push({
+        name: `${localPart[0]?.toUpperCase() ?? "S"}${localPart.slice(1)} team`,
+        title: `${localPart} inbox`,
+        email,
+        emailConfidence: "medium",
+        department: localPart,
+      });
+      existingEmails.add(email.toLowerCase());
+    }
+
+    const preferredRoleEmail = roleBasedOutreachEmails(prospect)[0];
+    if (preferredRoleEmail && (!prospect.contactEmail || isDeprecatedRoleInbox(prospect.contactEmail))) {
+      await db
+        .update(prospects)
+        .set({ contactEmail: preferredRoleEmail, emailConfidence: "medium", updatedAt: new Date() })
+        .where(eq(prospects.id, prospectId));
     }
 
     // Save results

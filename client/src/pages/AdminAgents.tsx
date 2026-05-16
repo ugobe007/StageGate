@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { RefreshCw } from "lucide-react";
+import { Play, RefreshCw } from "lucide-react";
 
 // ─── Agent metadata registry ──────────────────────────────────────────────────
 const AGENT_REGISTRY: Record<string, { label: string; description: string; icon: string; category: string }> = {
@@ -52,11 +52,11 @@ function formatRelative(date: Date | null | undefined): string {
   return `${days}d ago`;
 }
 
-const STATUS_STYLES: Record<string, { color: string; dot: string }> = {
+const STATUS_STYLES: Record<string, { color: string; dot: string; label?: string }> = {
   running: { color: "#f59e0b", dot: "#f59e0b" },
   success: { color: "#00ff87", dot: "#00ff87" },
   error: { color: "#ef4444", dot: "#ef4444" },
-  idle: { color: "rgba(255,255,255,0.30)", dot: "#cbd5e1" },
+  idle: { color: "#00ff87", dot: "#00ff87", label: "ready" },
 };
 
 function StatusText({ status }: { status: "running" | "success" | "error" | "idle" }) {
@@ -64,7 +64,7 @@ function StatusText({ status }: { status: "running" | "success" | "error" | "idl
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, color: s.color }}>
       <span style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: s.dot, display: "inline-block", animation: status === "running" ? "pulse 1.5s ease-in-out infinite" : "none" }} />
-      {status}
+      {s.label ?? status}
     </span>
   );
 }
@@ -74,6 +74,19 @@ export default function AdminAgents() {
 
   const { data: agentStats, refetch: refetchStats } = trpc.admin.getAgentStats.useQuery(undefined, { refetchInterval: 10000 });
   const { data: agentRuns, refetch: refetchRuns } = trpc.admin.getAgentRuns.useQuery({ limit: 50 }, { refetchInterval: 10000 });
+  const triggerDiscovery = trpc.salesAgent.triggerDiscovery.useMutation({
+    onSuccess: (data) => { toast.success(data.message); refetchRuns(); refetchStats(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const generateDrafts = trpc.admin.generateDrafts.useMutation({
+    onSuccess: (data) => {
+      const generated = data.result?.generated ?? 0;
+      toast.success(`Generated ${generated} draft${generated === 1 ? "" : "s"}`);
+      refetchRuns();
+      refetchStats();
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const statsMap = new Map((agentStats ?? []).map((s) => [s.agentName, s]));
 
@@ -81,6 +94,25 @@ export default function AdminAgents() {
     refetchStats();
     refetchRuns();
     toast.success("Agent stats and run history updated.");
+  };
+
+  const activateAgent = (agentName: string) => {
+    if (agentName === "Lead Discovery") {
+      triggerDiscovery.mutate();
+      return;
+    }
+    if (agentName === "Lead Email Generator") {
+      generateDrafts.mutate({});
+      return;
+    }
+    if (agentName === "XBOT Outreach" || agentName === "XBOT Bulk Outreach") {
+      window.location.href = "/admin/prospects";
+      return;
+    }
+    if (agentName === "Logistics Brief") {
+      window.location.href = "/xbot";
+      return;
+    }
   };
 
   const filteredRuns = selectedAgent
@@ -130,6 +162,9 @@ export default function AdminAgents() {
             ? Math.round((stats.successRuns / stats.totalRuns) * 100)
             : null;
           const isSelected = selectedAgent === agentName;
+          const isActivating =
+            (agentName === "Lead Discovery" && triggerDiscovery.isPending) ||
+            (agentName === "Lead Email Generator" && generateDrafts.isPending);
 
           return (
             <button
@@ -156,6 +191,24 @@ export default function AdminAgents() {
                 <StatusText status={stats ? (stats.errorRuns > 0 && stats.successRuns === 0 ? "error" : "idle") : "idle"} />
               </div>
               <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0 0 0.75rem", lineHeight: 1.5 }}>{meta.description}</p>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  activateAgent(agentName);
+                }}
+                disabled={isActivating}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: "0.35rem",
+                  marginBottom: "0.75rem", padding: "0.35rem 0.65rem",
+                  borderRadius: "0.25rem", border: "1px solid rgba(0,255,135,0.35)",
+                  background: "rgba(0,255,135,0.08)", color: "#00ff87",
+                  fontSize: "0.75rem", fontWeight: 700, cursor: isActivating ? "wait" : "pointer",
+                  opacity: isActivating ? 0.7 : 1,
+                }}
+              >
+                {isActivating ? <RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={12} />}
+                {agentName === "XBOT Outreach" || agentName === "XBOT Bulk Outreach" || agentName === "Logistics Brief" ? "Open Workflow" : "Activate Agent"}
+              </button>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
                 {[
                   { label: "Runs", value: String(stats?.totalRuns ?? 0), color: "#ececec" },

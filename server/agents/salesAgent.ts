@@ -1,11 +1,11 @@
 /**
  * server/agents/salesAgent.ts
  *
- * Frank — StageGate's Sales Agent
- * Frank is a logistics guy who knows robots. He's been on the show floor. He gets it.
+ * Cal — StageGate's Sales Agent
+ * Cal is a logistics guy who knows robots. He's been on the show floor. He gets it.
  *
  * 4-stage conversation playbook:
- *   Stage 1 (discovery → intro_sent):     Cold intro — who Frank is, what StageGate does
+ *   Stage 1 (discovery → intro_sent):     Cold intro — who Cal is, what StageGate does
  *   Stage 2 (intro_sent → followup_1):    Breakpoints — 2 specific logistics pain points
  *   Stage 3 (followup_1 → followup_2):    Demo venue offer — off-floor private space options
  *   Stage 4 (followup_2 → robot_guild):   Robot Guild handoff — brand deals, activations, press
@@ -40,6 +40,7 @@ import {
   ROBOT_GUILD_PITCH,
   type ConversationStage,
 } from "./frankPlaybook.js";
+import { outreachEmailPolicySummary, selectOutreachEmail } from "../outreachContacts.js";
 
 const OUTREACH_BATCH_SIZE = 8;
 const RESEND_API = "https://api.resend.com/emails";
@@ -111,7 +112,9 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
       .limit(OUTREACH_BATCH_SIZE);
 
     for (const { conv, prospect } of readyConvs) {
-      if (!prospect.contactEmail) continue;
+      const toEmail = selectOutreachEmail(prospect);
+      if (!toEmail) continue;
+      const emailPolicy = outreachEmailPolicySummary(prospect);
 
       try {
         const currentStage = conv.state as ConversationStage;
@@ -123,7 +126,7 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
         if (!subject || !body) continue;
 
         const messageId = await sendFrankEmail(
-          prospect.contactEmail,
+          toEmail,
           prospect.contactName,
           subject,
           body
@@ -135,7 +138,7 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
           threadId: `frank-${prospect.id}`,
           direction: "outbound",
           fromAddress: FRANK_PERSONA.fromEmail,
-          toAddress: prospect.contactEmail,
+          toAddress: toEmail,
           subject,
           body,
           resendMessageId: messageId ?? undefined,
@@ -146,7 +149,7 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
           prospectId: prospect.id,
           subject,
           body,
-          agentReasoning: `Frank stage: ${currentStage} → ${nextStage}`,
+          agentReasoning: `Cal stage: ${currentStage} → ${nextStage}`,
           status: "sent",
           sentAt: now,
           resendMessageId: messageId ?? undefined,
@@ -177,16 +180,16 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
         await db.insert(prospectActivities).values({
           prospectId: prospect.id,
           type: "email_sent",
-          title: `Frank: ${subject}`,
+          title: `Cal: ${subject}`,
           description: `Stage ${currentStage} → ${nextStage}`,
-          metadata: { stage: currentStage, nextStage, messageId },
+          metadata: { stage: currentStage, nextStage, messageId, toEmail, outreachEmailCandidates: emailPolicy.candidates },
         });
 
         emailsSent++;
       } catch (err) {
         const msg = `Prospect ${prospect.id}: ${String(err)}`;
         errors.push(msg);
-        console.error("[Frank outreach]", msg);
+        console.error("[Cal outreach]", msg);
       }
     }
 
@@ -204,7 +207,7 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
 
     res.json({ ok: true, emailsSent, errors: errors.length, runId });
   } catch (err) {
-    console.error("[Frank outreach fatal]", err);
+    console.error("[Cal outreach fatal]", err);
     if (runId) {
       await db
         .update(salesAgentRuns)
@@ -341,7 +344,9 @@ export async function salesAgentManualSendHandler(req: Request, res: Response) {
     .where(eq(prospects.id, prospectId))
     .limit(1);
   if (!prospect) return res.status(404).json({ error: "Prospect not found" });
-  if (!prospect.contactEmail) return res.status(400).json({ error: "No contact email" });
+  const toEmail = selectOutreachEmail(prospect);
+  if (!toEmail) return res.status(400).json({ error: "No contact email" });
+  const emailPolicy = outreachEmailPolicySummary(prospect);
 
   const [conv] = await db
     .select()
@@ -356,7 +361,7 @@ export async function salesAgentManualSendHandler(req: Request, res: Response) {
     return res.status(500).json({ error: "Failed to generate email" });
   }
 
-  const messageId = await sendFrankEmail(prospect.contactEmail, prospect.contactName, subject, body);
+  const messageId = await sendFrankEmail(toEmail, prospect.contactName, subject, body);
   const now = new Date();
 
   await db.insert(emailThreads).values({
@@ -364,7 +369,7 @@ export async function salesAgentManualSendHandler(req: Request, res: Response) {
     threadId: `frank-${prospectId}`,
     direction: "outbound",
     fromAddress: FRANK_PERSONA.fromEmail,
-    toAddress: prospect.contactEmail,
+    toAddress: toEmail,
     subject,
     body,
     resendMessageId: messageId ?? undefined,
@@ -409,9 +414,9 @@ export async function salesAgentManualSendHandler(req: Request, res: Response) {
   await db.insert(prospectActivities).values({
     prospectId,
     type: "email_sent",
-    title: `Frank (manual): ${subject}`,
+    title: `Cal (manual): ${subject}`,
     description: `Stage ${currentStage} → ${nextStage}`,
-    metadata: { stage: currentStage, nextStage, messageId, manual: true },
+    metadata: { stage: currentStage, nextStage, messageId, manual: true, toEmail, outreachEmailCandidates: emailPolicy.candidates },
   });
 
   res.json({ ok: true, subject, messageId, nextStage });
@@ -454,7 +459,7 @@ export async function salesAgentPreviewHandler(req: Request, res: Response) {
   res.json({ subject, body, stage: currentStage, nextStage });
 }
 
-// ─── 4. Generate Frank's Email ────────────────────────────────────────────────
+// ─── 4. Generate Cal's Email ──────────────────────────────────────────────────
 async function generateFrankEmail(
   prospect: typeof prospects.$inferSelect,
   conv: typeof salesAgentConversations.$inferSelect | null,
@@ -500,7 +505,7 @@ async function generateFrankEmail(
           type: "object",
           properties: {
             subject: { type: "string", description: "Short specific subject line, no clickbait" },
-            body: { type: "string", description: "Email body only, no subject line, Frank's voice, under 150 words" },
+            body: { type: "string", description: "Email body only, no subject line, Cal's voice, under 150 words" },
           },
           required: ["subject", "body"],
           additionalProperties: false,
@@ -522,7 +527,7 @@ async function generateFrankEmail(
   }
 
   const signature = `\n\n${FRANK_PERSONA.signature}`;
-  const body = (parsed.body ?? "").replace(/\n*Frank\s*$/, "").trimEnd() + signature;
+  const body = (parsed.body ?? "").replace(/\n*(Cal|Frank)\s*$/, "").trimEnd() + signature;
 
   return {
     subject: parsed.subject ?? `${prospect.company} — a note from StageGate`,
@@ -552,12 +557,14 @@ async function sendFrankEmail(
       bcc: [ADMIN_BCC],
       subject,
       text: body,
+      open_tracking: true,
+      click_tracking: true,
     }),
   });
 
   if (!res.ok) {
     const err = await res.text();
-    console.error("[Frank] Resend error:", err);
+    console.error("[Cal] Resend error:", err);
     return null;
   }
 

@@ -414,8 +414,8 @@ Answer these questions:
 
 4. Best contact person for StageGate outreach:
    - contactName: full name (or best guess)
-   - contactEmail: best guess email (firstname@company.com, info@company.com, etc.)
-   - contactTitle: their likely title (VP Marketing, Head of Events, CEO for small companies)
+   - contactEmail: best outreach email. Prefer role inboxes in this order: sales@company-domain, events@company-domain, marketing@company-domain. Do not use partnerships@, info@, support@, or hello@ as outreach guesses.
+   - contactTitle: their likely title (VP Sales, Head of Events, VP Marketing, CEO for small companies)
    - emailConfidence: high | medium | low
 
 Return ONLY valid JSON matching the schema. No markdown.`;

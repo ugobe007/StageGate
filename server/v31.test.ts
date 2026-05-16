@@ -53,10 +53,10 @@ describe("v31.1 — /tour CTA in Navbar and Home", () => {
     expect(src).toContain("bookings.create");
   });
 
-  it("TourBooking.tsx shows frank@onstage.bot contact", () => {
+  it("TourBooking.tsx shows cal@onstage.bot contact", () => {
     const tourPath = path.join(ROOT, "client/src/pages/TourBooking.tsx");
     const src = fs.readFileSync(tourPath, "utf-8");
-    expect(src).toContain("frank@onstage.bot");
+    expect(src).toContain("cal@onstage.bot");
   });
 
   it("TourBooking.tsx lists at least 3 venue options", () => {
@@ -135,7 +135,7 @@ describe("v31.2 — Pending Drafts tab in AdminSalesAgent", () => {
     expect(src).toContain("PendingDraftsTab");
   });
 
-  it("AdminSalesAgent shows Frank's Reasoning field from agentReasoning", () => {
+  it("AdminSalesAgent shows Cal's Reasoning field from agentReasoning", () => {
     const src = fs.readFileSync(adminSalesAgentPath, "utf-8");
     expect(src).toContain("agentReasoning");
   });

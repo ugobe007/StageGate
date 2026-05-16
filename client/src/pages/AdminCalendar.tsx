@@ -5,11 +5,12 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import {
   Calendar, Plus, Edit2, Trash2, Copy, ExternalLink,
-  Clock, User, Building2, Phone, Video, Star, ChevronDown, ChevronUp, X, Check, CheckCircle, RefreshCw, XCircle
+  Clock, User, Building2, Phone, Video, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, Check, CheckCircle, RefreshCw, XCircle
 } from "lucide-react";
 
 type EventType = "meeting" | "demo" | "call" | "event" | "follow_up";
 type EventStatus = "scheduled" | "confirmed" | "cancelled" | "completed";
+type CalendarView = "day" | "week" | "month";
 
 interface CalendarEvent {
   id: number;
@@ -79,6 +80,68 @@ const EMPTY_FORM = {
   notes: "",
 };
 
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_HOURS = Array.from({ length: 13 }, (_, i) => i + 7);
+
+function startOfDay(date: Date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function addDays(date: Date, days: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function addMonths(date: Date, months: number) {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
+
+function startOfWeek(date: Date) {
+  const d = startOfDay(date);
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function sameDay(a: Date | string, b: Date | string) {
+  return startOfDay(new Date(a)).getTime() === startOfDay(new Date(b)).getTime();
+}
+
+function isSameMonth(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
+function calendarMonthDays(date: Date) {
+  const firstGridDay = startOfWeek(startOfMonth(date));
+  return Array.from({ length: 42 }, (_, i) => addDays(firstGridDay, i));
+}
+
+function eventTimeRange(event: CalendarEvent) {
+  const start = new Date(event.startAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Los_Angeles" });
+  const end = new Date(event.endAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Los_Angeles" });
+  return `${start} - ${end}`;
+}
+
+function calendarTitle(view: CalendarView, date: Date) {
+  if (view === "month") {
+    return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  }
+  if (view === "week") {
+    const start = startOfWeek(date);
+    const end = addDays(start, 6);
+    return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+  }
+  return date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+}
+
 export default function AdminCalendar() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
@@ -97,6 +160,8 @@ export default function AdminCalendar() {
   const [rescheduleForm, setRescheduleForm] = useState({ startAt: "", endAt: "", notes: "" });
   const [cancellingEvent, setCancellingEvent] = useState<CalendarEvent | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+  const [view, setView] = useState<CalendarView>("month");
+  const [cursorDate, setCursorDate] = useState(() => new Date());
 
   const { data, isLoading, refetch } = trpc.calendar.list.useQuery(
     { type: typeFilter || undefined },
@@ -143,20 +208,28 @@ export default function AdminCalendar() {
     });
   }, [events, typeFilter, statusFilter]);
 
-  // Group by month
-  const grouped = useMemo(() => {
-    const map = new Map<string, CalendarEvent[]>();
-    for (const e of filtered) {
-      const key = new Date(e.startAt).toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "America/Los_Angeles" });
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(e);
-    }
-    return map;
-  }, [filtered]);
-
   const upcomingCount = events.filter(e =>
     new Date(e.startAt) >= new Date() && e.status !== "cancelled" && e.status !== "completed"
   ).length;
+
+  const monthDays = useMemo(() => calendarMonthDays(cursorDate), [cursorDate]);
+  const weekDays = useMemo(() => {
+    const start = startOfWeek(cursorDate);
+    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+  }, [cursorDate]);
+  const agendaEvents = useMemo(() => {
+    return [...filtered].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+  }, [filtered]);
+
+  function eventsForDay(day: Date) {
+    return agendaEvents.filter(e => sameDay(e.startAt, day));
+  }
+
+  function moveCalendar(direction: -1 | 1) {
+    if (view === "month") setCursorDate(d => addMonths(d, direction));
+    if (view === "week") setCursorDate(d => addDays(d, direction * 7));
+    if (view === "day") setCursorDate(d => addDays(d, direction));
+  }
 
   function openCreate() {
     setEditingEvent(null);
@@ -215,6 +288,116 @@ export default function AdminCalendar() {
     });
   }
 
+  function renderEventChip(ev: CalendarEvent, compact = false) {
+    const typeCfg = TYPE_CONFIG[ev.type as EventType] ?? TYPE_CONFIG.meeting;
+    const statusCfg = STATUS_CONFIG[ev.status as EventStatus] ?? STATUS_CONFIG.scheduled;
+    return (
+      <button
+        key={ev.id}
+        onClick={() => setExpandedId(expandedId === ev.id ? null : ev.id)}
+        title={`${ev.title} · ${eventTimeRange(ev)}`}
+        style={{
+          width: "100%",
+          textAlign: "left",
+          border: `1px solid ${typeCfg.color}55`,
+          borderLeft: `3px solid ${typeCfg.color}`,
+          borderRadius: "0.375rem",
+          background: ev.status === "cancelled" ? "rgba(239,68,68,0.05)" : `${typeCfg.color}12`,
+          color: ev.status === "cancelled" ? "#64748b" : "#e2e8f0",
+          padding: compact ? "0.25rem 0.375rem" : "0.45rem 0.55rem",
+          cursor: "pointer",
+          opacity: ev.status === "cancelled" ? 0.55 : 1,
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", minWidth: 0 }}>
+          <span style={{ color: typeCfg.color, flexShrink: 0 }}>{typeCfg.icon}</span>
+          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: compact ? "0.5625rem" : "0.625rem", fontWeight: 800 }}>
+            {ev.title}
+          </span>
+        </div>
+        {!compact && (
+          <div style={{ marginTop: "0.2rem", fontSize: "0.525rem", color: statusCfg.color }}>
+            {eventTimeRange(ev)} · {statusCfg.label}
+          </div>
+        )}
+      </button>
+    );
+  }
+
+  function renderExpandedEventDetail(ev: CalendarEvent) {
+    const typeCfg = TYPE_CONFIG[ev.type as EventType] ?? TYPE_CONFIG.meeting;
+    const statusCfg = STATUS_CONFIG[ev.status as EventStatus] ?? STATUS_CONFIG.scheduled;
+    const isExpanded = expandedId === ev.id;
+    if (!isExpanded) return null;
+
+    return (
+      <div style={{ marginTop: "0.75rem", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.625rem", background: "rgba(255,255,255,0.025)", overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "1rem", padding: "1rem", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
+              <span style={{ background: `${typeCfg.color}22`, color: typeCfg.color, fontSize: "0.5rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "3px" }}>
+                {typeCfg.icon} {typeCfg.label}
+              </span>
+              <span style={{ background: `${statusCfg.color}22`, color: statusCfg.color, fontSize: "0.5rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                {statusCfg.label}
+              </span>
+            </div>
+            <div style={{ fontSize: "0.9rem", fontWeight: 800, color: "#e2e8f0", overflow: "hidden", textOverflow: "ellipsis" }}>{ev.title}</div>
+            <div style={{ fontSize: "0.625rem", color: "#94a3b8", marginTop: "0.3rem" }}>
+              {formatDateTime(ev.startAt)} - {new Date(ev.endAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Los_Angeles" })} PT
+            </div>
+            {ev.companyName && <div style={{ fontSize: "0.625rem", color: "#64748b", marginTop: "0.3rem", display: "flex", alignItems: "center", gap: "0.25rem" }}><Building2 size={10} /> {ev.companyName}</div>}
+          </div>
+          <div style={{ display: "flex", gap: "0.375rem", alignItems: "flex-start", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            {ev.shareToken && (
+              <button onClick={() => copyShareLink(ev.shareToken!)} title="Copy share link" style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: copiedToken === ev.shareToken ? "#00ff87" : "#64748b", display: "flex", alignItems: "center" }}>
+                {copiedToken === ev.shareToken ? <Check size={12} /> : <Copy size={12} />}
+              </button>
+            )}
+            {ev.status === "scheduled" && (
+              <button onClick={() => { setConfirmingId(ev.id); confirmMutation.mutate({ id: ev.id }); }} title="Mark Confirmed" style={{ background: "transparent", border: "1px solid rgba(0,255,135,0.3)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: confirmingId === ev.id ? "#00ff87" : "#4ade80", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.5625rem" }}>
+                <CheckCircle size={11} /> Confirm
+              </button>
+            )}
+            {(ev.status === "scheduled" || ev.status === "confirmed") && (
+              <button onClick={() => {
+                setReschedulingEvent(ev);
+                const s = new Date(ev.startAt);
+                const e2 = new Date(ev.endAt);
+                const toLocal = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                setRescheduleForm({ startAt: toLocal(s), endAt: toLocal(e2), notes: ev.notes ?? "" });
+              }} title="Reschedule" style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: "#94a3b8", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.5625rem" }}>
+                <RefreshCw size={11} /> Reschedule
+              </button>
+            )}
+            {(ev.status === "scheduled" || ev.status === "confirmed") && (
+              <button onClick={() => { setCancellingEvent(ev); setCancelReason(""); }} title="Cancel Event" style={{ background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: "#ef4444", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.5625rem" }}>
+                <XCircle size={11} /> Cancel
+              </button>
+            )}
+            <button onClick={() => openEdit(ev)} title="Edit" style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}>
+              <Edit2 size={12} />
+            </button>
+            <button onClick={() => { setDeletingId(ev.id); deleteMutation.mutate({ id: ev.id }); }} title="Delete" style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: deletingId === ev.id ? "#ef4444" : "#64748b", display: "flex", alignItems: "center" }}>
+              <Trash2 size={12} />
+            </button>
+          </div>
+        </div>
+        <div style={{ padding: "1rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div>
+            {ev.description && <div style={{ marginBottom: "0.75rem" }}><div style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", marginBottom: "0.25rem" }}>Description</div><div style={{ fontSize: "0.6875rem", color: "#94a3b8", lineHeight: 1.5 }}>{ev.description}</div></div>}
+            {ev.notes && <div style={{ marginBottom: "0.75rem" }}><div style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", marginBottom: "0.25rem" }}>Internal Notes</div><div style={{ fontSize: "0.6875rem", color: "#94a3b8", lineHeight: 1.5 }}>{ev.notes}</div></div>}
+          </div>
+          <div>
+            {ev.prospectName && <div style={{ marginBottom: "0.5rem" }}><div style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", marginBottom: "0.25rem" }}>Contact</div><div style={{ fontSize: "0.6875rem", color: "#94a3b8" }}>{ev.prospectName}</div>{ev.prospectEmail && <div style={{ fontSize: "0.625rem", color: "#60a5fa" }}>{ev.prospectEmail}</div>}</div>}
+            {ev.shareToken && <div><div style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", marginBottom: "0.25rem" }}>Share Link</div><div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}><span style={{ fontSize: "0.5625rem", color: "#64748b", fontFamily: "monospace", background: "rgba(255,255,255,0.04)", padding: "3px 6px", borderRadius: "4px", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>/calendar/{ev.shareToken.slice(0, 12)}...</span><button onClick={() => copyShareLink(ev.shareToken!)} style={{ background: "rgba(0,255,135,0.1)", color: "#00ff87", border: "1px solid rgba(0,255,135,0.2)", borderRadius: "4px", padding: "3px 8px", fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}><Copy size={10} /> Copy</button><a href={`/calendar/${ev.shareToken}`} target="_blank" rel="noreferrer" style={{ color: "#60a5fa", display: "flex", alignItems: "center" }}><ExternalLink size={12} /></a></div></div>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#0a0a0a" }}>
@@ -252,7 +435,7 @@ export default function AdminCalendar() {
       </div>
 
       {/* Filters */}
-      <div style={{ padding: "0.875rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+      <div style={{ padding: "0.875rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
         {["", "meeting", "demo", "call", "event", "follow_up"].map(t => (
           <button key={t} onClick={() => setTypeFilter(t)}
             style={{ padding: "0.25rem 0.75rem", borderRadius: "999px", border: `1px solid ${typeFilter === t ? "#00ff87" : "rgba(255,255,255,0.12)"}`, background: typeFilter === t ? "rgba(0,255,135,0.1)" : "transparent", color: typeFilter === t ? "#00ff87" : "#94a3b8", fontSize: "0.5625rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
@@ -268,177 +451,102 @@ export default function AdminCalendar() {
         ))}
       </div>
 
-      {/* Event List */}
+      {/* Calendar controls */}
+      <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <button onClick={() => moveCalendar(-1)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.375rem", color: "#94a3b8", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><ChevronLeft size={15} /></button>
+          <button onClick={() => setCursorDate(new Date())} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.375rem", color: "#e2e8f0", height: 32, padding: "0 0.75rem", fontSize: "0.625rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>Today</button>
+          <button onClick={() => moveCalendar(1)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.375rem", color: "#94a3b8", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><ChevronRight size={15} /></button>
+          <div style={{ marginLeft: "0.5rem", fontSize: "0.875rem", color: "#e2e8f0", fontWeight: 800 }}>{calendarTitle(view, cursorDate)}</div>
+        </div>
+        <div style={{ display: "flex", gap: "0.375rem", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem", padding: "0.25rem", background: "rgba(255,255,255,0.025)" }}>
+          {(["day", "week", "month"] as CalendarView[]).map(v => (
+            <button key={v} onClick={() => setView(v)}
+              style={{ border: "none", borderRadius: "0.35rem", background: view === v ? "rgba(0,255,135,0.15)" : "transparent", color: view === v ? "#00ff87" : "#94a3b8", padding: "0.35rem 0.75rem", fontSize: "0.5625rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+              {v}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Calendar grid */}
       <div style={{ padding: "1.5rem" }}>
         {isLoading ? (
           <div style={{ color: "#64748b", fontSize: "0.75rem", textAlign: "center", padding: "3rem" }}>Loading events…</div>
-        ) : filtered.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "4rem 2rem" }}>
-            <Calendar size={32} color="#1e293b" style={{ margin: "0 auto 1rem" }} />
-            <div style={{ color: "#475569", fontSize: "0.75rem", marginBottom: "1rem" }}>No events yet</div>
-            <button onClick={openCreate} style={{ background: "rgba(0,255,135,0.1)", color: "#00ff87", border: "1px solid rgba(0,255,135,0.3)", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
-              + Create First Event
-            </button>
-          </div>
         ) : (
-          Array.from(grouped.entries()).map(([month, monthEvents]) => (
-            <div key={month} style={{ marginBottom: "2rem" }}>
-              <div style={{ fontSize: "0.5625rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#475569", marginBottom: "0.75rem", paddingBottom: "0.5rem", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                {month}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                {monthEvents.map(ev => {
-                  const typeCfg = TYPE_CONFIG[ev.type as EventType] ?? TYPE_CONFIG.meeting;
-                  const statusCfg = STATUS_CONFIG[ev.status as EventStatus] ?? STATUS_CONFIG.scheduled;
-                  const isExpanded = expandedId === ev.id;
-                  const isPast = new Date(ev.endAt) < new Date();
-
-                  return (
-                    <div key={ev.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: isPast ? "rgba(255,255,255,0.01)" : "rgba(255,255,255,0.02)", overflow: "hidden", opacity: ev.status === "cancelled" ? 0.5 : 1 }}>
-                      {/* Row */}
-                      <div
-                        onClick={() => setExpandedId(isExpanded ? null : ev.id)}
-                        style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: "1rem", alignItems: "center", padding: "0.875rem 1rem", cursor: "pointer" }}
-                      >
-                        {/* Left: title + meta */}
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
-                            <span style={{ background: `${typeCfg.color}22`, color: typeCfg.color, fontSize: "0.5rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "3px" }}>
-                              {typeCfg.icon} {typeCfg.label}
-                            </span>
-                            <span style={{ background: `${statusCfg.color}22`, color: statusCfg.color, fontSize: "0.5rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                              {statusCfg.label}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#e2e8f0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            {ev.title}
-                          </div>
-                          {ev.companyName && (
-                            <div style={{ fontSize: "0.625rem", color: "#64748b", marginTop: "0.125rem", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                              <Building2 size={10} /> {ev.companyName}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Date/time */}
-                        <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                          <div style={{ fontSize: "0.625rem", color: "#94a3b8" }}>{formatDate(ev.startAt)}</div>
-                          <div style={{ fontSize: "0.5625rem", color: "#64748b" }}>
-                            {new Date(ev.startAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Los_Angeles" })}
-                            {" – "}
-                            {new Date(ev.endAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Los_Angeles" })} PT
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div style={{ display: "flex", gap: "0.375rem" }} onClick={e => e.stopPropagation()}>
-                          {ev.shareToken && (
-                            <button onClick={() => copyShareLink(ev.shareToken!)}
-                              title="Copy share link"
-                              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: copiedToken === ev.shareToken ? "#00ff87" : "#64748b", display: "flex", alignItems: "center" }}>
-                              {copiedToken === ev.shareToken ? <Check size={12} /> : <Copy size={12} />}
-                            </button>
-                          )}
-                          {ev.status === "scheduled" && (
-                            <button
-                              onClick={() => { setConfirmingId(ev.id); confirmMutation.mutate({ id: ev.id }); }}
-                              title="Mark Confirmed"
-                              style={{ background: "transparent", border: "1px solid rgba(0,255,135,0.3)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: confirmingId === ev.id ? "#00ff87" : "#4ade80", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.5625rem" }}>
-                              <CheckCircle size={11} /> Confirm
-                            </button>
-                          )}
-                          {(ev.status === "scheduled" || ev.status === "confirmed") && (
-                            <button
-                              onClick={() => {
-                                setReschedulingEvent(ev);
-                                const s = new Date(ev.startAt);
-                                const e2 = new Date(ev.endAt);
-                                const toLocal = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-                                setRescheduleForm({ startAt: toLocal(s), endAt: toLocal(e2), notes: ev.notes ?? "" });
-                              }}
-                              title="Reschedule"
-                              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: "#94a3b8", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.5625rem" }}>
-                              <RefreshCw size={11} /> Reschedule
-                            </button>
-                          )}
-                          {(ev.status === "scheduled" || ev.status === "confirmed") && (
-                            <button
-                              onClick={() => { setCancellingEvent(ev); setCancelReason(""); }}
-                              title="Cancel Event"
-                              style={{ background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: "#ef4444", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.5625rem" }}>
-                              <XCircle size={11} /> Cancel
-                            </button>
-                          )}
-                          <button onClick={() => openEdit(ev)}
-                            title="Edit"
-                            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}>
-                            <Edit2 size={12} />
-                          </button>
-                          <button onClick={() => { setDeletingId(ev.id); deleteMutation.mutate({ id: ev.id }); }}
-                            title="Delete"
-                            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: deletingId === ev.id ? "#ef4444" : "#64748b", display: "flex", alignItems: "center" }}>
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-
-                        {/* Expand toggle */}
-                        <div style={{ color: "#475569" }}>
-                          {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          <>
+            {view === "month" && (
+              <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", overflow: "hidden", background: "rgba(255,255,255,0.015)" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", background: "rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                  {DAY_LABELS.map(day => <div key={day} style={{ padding: "0.65rem", color: "#64748b", fontSize: "0.5625rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", textAlign: "center" }}>{day}</div>)}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}>
+                  {monthDays.map(day => {
+                    const dayEvents = eventsForDay(day);
+                    const activeMonth = isSameMonth(day, cursorDate);
+                    const today = sameDay(day, new Date());
+                    return (
+                      <div key={day.toISOString()} style={{ minHeight: 132, padding: "0.6rem", borderRight: day.getDay() === 6 ? "none" : "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", background: today ? "rgba(0,255,135,0.045)" : "transparent", opacity: activeMonth ? 1 : 0.35 }}>
+                        <button onClick={() => { setCursorDate(day); setView("day"); }} style={{ background: today ? "#00ff87" : "transparent", color: today ? "#0a0a0a" : "#94a3b8", border: "none", borderRadius: "999px", width: 24, height: 24, fontSize: "0.625rem", fontWeight: 800, cursor: "pointer", marginBottom: "0.4rem" }}>{day.getDate()}</button>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                          {dayEvents.slice(0, 3).map(ev => renderEventChip(ev, true))}
+                          {dayEvents.length > 3 && <button onClick={() => { setCursorDate(day); setView("day"); }} style={{ background: "transparent", border: "none", color: "#64748b", fontSize: "0.55rem", textAlign: "left", cursor: "pointer" }}>+{dayEvents.length - 3} more</button>}
                         </div>
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-                      {/* Expanded detail */}
-                      {isExpanded && (
-                        <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "1rem", background: "rgba(0,0,0,0.2)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                          <div>
-                            {ev.description && (
-                              <div style={{ marginBottom: "0.75rem" }}>
-                                <div style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", marginBottom: "0.25rem" }}>Description</div>
-                                <div style={{ fontSize: "0.6875rem", color: "#94a3b8", lineHeight: 1.5 }}>{ev.description}</div>
-                              </div>
-                            )}
-                            {ev.notes && (
-                              <div style={{ marginBottom: "0.75rem" }}>
-                                <div style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", marginBottom: "0.25rem" }}>Internal Notes</div>
-                                <div style={{ fontSize: "0.6875rem", color: "#94a3b8", lineHeight: 1.5 }}>{ev.notes}</div>
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            {ev.prospectName && (
-                              <div style={{ marginBottom: "0.5rem" }}>
-                                <div style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", marginBottom: "0.25rem" }}>Contact</div>
-                                <div style={{ fontSize: "0.6875rem", color: "#94a3b8" }}>{ev.prospectName}</div>
-                                {ev.prospectEmail && <div style={{ fontSize: "0.625rem", color: "#60a5fa" }}>{ev.prospectEmail}</div>}
-                              </div>
-                            )}
-                            {ev.shareToken && (
-                              <div>
-                                <div style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", marginBottom: "0.25rem" }}>Share Link</div>
-                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                  <span style={{ fontSize: "0.5625rem", color: "#64748b", fontFamily: "monospace", background: "rgba(255,255,255,0.04)", padding: "3px 6px", borderRadius: "4px", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                    /calendar/{ev.shareToken.slice(0, 12)}…
-                                  </span>
-                                  <button onClick={() => copyShareLink(ev.shareToken!)}
-                                    style={{ background: "rgba(0,255,135,0.1)", color: "#00ff87", border: "1px solid rgba(0,255,135,0.2)", borderRadius: "4px", padding: "3px 8px", fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
-                                    <Copy size={10} /> Copy
-                                  </button>
-                                  <a href={`/calendar/${ev.shareToken}`} target="_blank" rel="noreferrer"
-                                    style={{ color: "#60a5fa", display: "flex", alignItems: "center" }}>
-                                    <ExternalLink size={12} />
-                                  </a>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+            {view === "week" && (
+              <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", overflow: "hidden", background: "rgba(255,255,255,0.015)" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "56px repeat(7, minmax(0, 1fr))", background: "rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div />
+                  {weekDays.map(day => <div key={day.toISOString()} style={{ padding: "0.65rem", textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.06)" }}><div style={{ color: "#64748b", fontSize: "0.55rem", fontWeight: 800, textTransform: "uppercase" }}>{DAY_LABELS[day.getDay()]}</div><button onClick={() => { setCursorDate(day); setView("day"); }} style={{ marginTop: "0.25rem", background: sameDay(day, new Date()) ? "#00ff87" : "transparent", color: sameDay(day, new Date()) ? "#0a0a0a" : "#e2e8f0", border: "none", borderRadius: "999px", width: 26, height: 26, fontWeight: 800, cursor: "pointer" }}>{day.getDate()}</button></div>)}
+                </div>
+                {DAY_HOURS.map(hour => (
+                  <div key={hour} style={{ display: "grid", gridTemplateColumns: "56px repeat(7, minmax(0, 1fr))", minHeight: 86, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div style={{ padding: "0.5rem", color: "#475569", fontSize: "0.55rem", textAlign: "right" }}>{hour > 12 ? hour - 12 : hour}:00 {hour >= 12 ? "PM" : "AM"}</div>
+                    {weekDays.map(day => {
+                      const hourEvents = eventsForDay(day).filter(ev => new Date(ev.startAt).getHours() === hour);
+                      return <div key={`${day.toISOString()}-${hour}`} style={{ borderLeft: "1px solid rgba(255,255,255,0.05)", padding: "0.35rem", display: "flex", flexDirection: "column", gap: "0.25rem" }}>{hourEvents.map(ev => renderEventChip(ev, true))}</div>;
+                    })}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {view === "day" && (
+              <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", overflow: "hidden", background: "rgba(255,255,255,0.015)" }}>
+                {DAY_HOURS.map(hour => {
+                  const hourEvents = eventsForDay(cursorDate).filter(ev => new Date(ev.startAt).getHours() === hour);
+                  return (
+                    <div key={hour} style={{ display: "grid", gridTemplateColumns: "72px 1fr", minHeight: 92, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                      <div style={{ padding: "0.75rem", color: "#475569", fontSize: "0.5625rem", textAlign: "right" }}>{hour > 12 ? hour - 12 : hour}:00 {hour >= 12 ? "PM" : "AM"}</div>
+                      <div style={{ borderLeft: "1px solid rgba(255,255,255,0.05)", padding: "0.5rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                        {hourEvents.length > 0 ? hourEvents.map(ev => renderEventChip(ev)) : <button onClick={openCreate} style={{ height: "100%", minHeight: 44, background: "transparent", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "0.5rem", color: "#334155", fontSize: "0.625rem", cursor: "pointer" }}>Add event</button>}
+                      </div>
                     </div>
                   );
                 })}
               </div>
-            </div>
-          ))
+            )}
+
+            {filtered.length === 0 && (
+              <div style={{ marginTop: "1rem", border: "1px dashed rgba(255,255,255,0.12)", borderRadius: "0.75rem", padding: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", background: "rgba(255,255,255,0.015)" }}>
+                <div>
+                  <div style={{ color: "#94a3b8", fontSize: "0.75rem", fontWeight: 800 }}>No events match this view yet.</div>
+                  <div style={{ color: "#475569", fontSize: "0.625rem", marginTop: "0.25rem" }}>The calendar grid stays visible so you can plan before the first booking lands.</div>
+                </div>
+                <button onClick={openCreate} style={{ background: "rgba(0,255,135,0.1)", color: "#00ff87", border: "1px solid rgba(0,255,135,0.3)", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap" }}>
+                  + Create Event
+                </button>
+              </div>
+            )}
+
+            {expandedId && agendaEvents.map(ev => renderExpandedEventDetail(ev))}
+          </>
         )}
       </div>
 

@@ -202,7 +202,7 @@ export default function AdminDashboard() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <MessageSquare size={14} style={{ color: D.emerald }} />
-              <SectionTitle>Sales Agent Pipeline</SectionTitle>
+              <SectionTitle>Cal Pipeline</SectionTitle>
             </div>
             <Btn href="/admin/sales-agent">View All <ArrowRight size={11} /></Btn>
           </div>
@@ -279,7 +279,7 @@ export default function AdminDashboard() {
               <Send size={16} style={{ color: D.amber, flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: "0.875rem", fontWeight: 600, color: D.text }}>
-                  Frank's Outreach
+                  Cal's Outreach
                   {draftCount.pending > 0 && (
                     <span style={{ marginLeft: "0.5rem", fontSize: "0.6875rem", fontWeight: 700, color: D.amber }}>{draftCount.pending} pending</span>
                   )}

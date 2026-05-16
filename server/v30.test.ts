@@ -180,9 +180,9 @@ describe("v30.5 — /tour showroom booking page", () => {
     expect(page).toContain("trpc.bookings.create.useMutation");
   });
 
-  it("success state shows frank@onstage.bot contact", () => {
+  it("success state shows cal@onstage.bot contact", () => {
     const page = readFile("client/src/pages/TourBooking.tsx");
-    expect(page).toContain("frank@onstage.bot");
+    expect(page).toContain("cal@onstage.bot");
   });
 
   it("page includes robot type selector with heavy industrial option", () => {
@@ -207,9 +207,9 @@ describe("v30.6 — AdminSalesAgent preview modal", () => {
     expect(page).toContain("DialogContent");
   });
 
-  it("AdminSalesAgent has Preview Frank's Email button", () => {
+  it("AdminSalesAgent has Preview Cal's Email button", () => {
     const page = readFile("client/src/pages/AdminSalesAgent.tsx");
-    expect(page).toContain("Preview Frank's Email");
+    expect(page).toContain("Preview Cal's Email");
   });
 
   it("PreviewEmailModal calls salesAgent.previewEmail mutation", () => {

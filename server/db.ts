@@ -88,10 +88,11 @@ export async function upsertUser(user: InsertUser) {
     values.lastSignedIn = user.lastSignedIn;
     updateSet.lastSignedIn = user.lastSignedIn;
   }
+  const userEmail = user.email?.toLowerCase();
   if (user.role !== undefined) {
     values.role = user.role;
     updateSet.role = user.role;
-  } else if (user.openId === ENV.ownerOpenId) {
+  } else if (user.openId === ENV.ownerOpenId || (userEmail && ENV.adminEmails.includes(userEmail))) {
     values.role = "admin";
     updateSet.role = "admin";
   }

@@ -665,7 +665,7 @@ export default function AdminVendors() {
               <CardContent className="py-12 text-center">
                 <p className="text-muted-foreground text-sm">
                   {allVendors.length === 0
-                    ? "No vendors yet — add your first vendor or run the vendor scraper from the Sales Agent page."
+                    ? "No vendors yet — add your first vendor or run the vendor scraper from Cal's page."
                     : "No vendors match your filter."}
                 </p>
               </CardContent>

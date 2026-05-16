@@ -1040,15 +1040,20 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         // Subquery: count opens and clicks per prospect from email_tracking_events
         const items = await db.listProspects(input.status);
         if (items.length === 0) return { prospects: [] };
-        // Fetch engagement counts for all prospects in one query
-        const engagementRows = await dbConn
+        // Fetch engagement and outbound send signals for all prospects in one query each.
+        const [engagementRows, sentDraftRows, campaignRows, outboundThreadRows] = await Promise.all([
+          dbConn
           .select({
             prospectId: emailTrackingEvents.prospectId,
             opens: sql<number>`SUM(CASE WHEN ${emailTrackingEvents.eventType} = 'email.opened' THEN 1 ELSE 0 END)`.as('opens'),
             clicks: sql<number>`SUM(CASE WHEN ${emailTrackingEvents.eventType} = 'email.clicked' THEN 1 ELSE 0 END)`.as('clicks'),
           })
           .from(emailTrackingEvents)
-          .groupBy(emailTrackingEvents.prospectId);
+            .groupBy(emailTrackingEvents.prospectId),
+          dbConn.select({ prospectId: draftEmails.prospectId }).from(draftEmails).where(eq(draftEmails.status, "sent")),
+          dbConn.select({ prospectId: outreachCampaigns.prospectId }).from(outreachCampaigns).where(eq(outreachCampaigns.emailStatus, "sent")),
+          dbConn.select({ prospectId: emailThreads.prospectId }).from(emailThreads).where(eq(emailThreads.direction, "outbound")),
+        ]);
         // Build a lookup map
         const engMap = new Map<number, { opens: number; clicks: number }>();
         for (const row of engagementRows) {
@@ -1056,10 +1061,19 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
             engMap.set(row.prospectId, { opens: Number(row.opens), clicks: Number(row.clicks) });
           }
         }
-        // Merge engagement score into each prospect
+        const contactedIds = new Set<number>();
+        for (const row of sentDraftRows) contactedIds.add(row.prospectId);
+        for (const row of campaignRows) contactedIds.add(row.prospectId);
+        for (const row of outboundThreadRows) {
+          if (row.prospectId !== null) contactedIds.add(row.prospectId);
+        }
+
+        // Merge engagement score into each prospect, and keep the pipeline honest
+        // when older send paths recorded email history but missed the status update.
         const withScore = items.map(p => {
           const eng = engMap.get(p.id) ?? { opens: 0, clicks: 0 };
-          return { ...p, engagementScore: eng.opens * 1 + eng.clicks * 2, opens: eng.opens, clicks: eng.clicks };
+          const status = p.status === "new" && contactedIds.has(p.id) ? "contacted" : p.status;
+          return { ...p, status, engagementScore: eng.opens * 1 + eng.clicks * 2, opens: eng.opens, clicks: eng.clicks };
         });
         return { prospects: withScore };
       }),
@@ -1367,6 +1381,8 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       .mutation(async ({ input, ctx }) => {
         const prospect = await db.getProspectById(input.prospectId);
         if (!prospect) throw new TRPCError({ code: "NOT_FOUND" });
+        const toEmail = emailHelpers.getProspectOutreachEmail(prospect);
+        if (!toEmail) throw new TRPCError({ code: "BAD_REQUEST", message: "Prospect has no email address" });
         const { result: outreachResult } = await workflows.withAgentRun(
           { agentName: "XBOT Outreach", triggeredBy: ctx.user?.name ?? "admin", inputSummary: `Prospect: ${prospect.company}` },
           async () => {
@@ -1423,7 +1439,8 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           try {
             const prospect = await db.getProspectById(prospectId);
             if (!prospect) { results.push({ id: prospectId, success: false, company: "Unknown", error: "Not found" }); continue; }
-            if (!prospect.contactEmail) { results.push({ id: prospectId, success: false, company: prospect.company, error: "No email address" }); continue; }
+            const toEmail = emailHelpers.getProspectOutreachEmail(prospect);
+            if (!toEmail) { results.push({ id: prospectId, success: false, company: prospect.company, error: "No email address" }); continue; }
             // Generate personalized email via LLM
             const llmRes = await invokeLLM({
               messages: [
@@ -1562,6 +1579,8 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
         const prospect = await db.getProspectById(input.prospectId);
         if (!prospect) throw new TRPCError({ code: "NOT_FOUND" });
+        const toEmail = emailHelpers.getProspectOutreachEmail(prospect);
+        if (!toEmail) throw new TRPCError({ code: "BAD_REQUEST", message: "Prospect has no email address" });
 
         // 1. Save draft email record
         await dbConn.insert(draftEmails).values({
@@ -1572,13 +1591,12 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           sentAt: new Date(),
         });
 
-        // 2. Log activity
-        await dbConn.insert(prospectActivities).values({
-          prospectId: input.prospectId,
-          type: "email_sent",
-          title: `Email sent: ${input.subject}`,
-          description: input.body.slice(0, 200) + (input.body.length > 200 ? "..." : ""),
-          metadata: { subject: input.subject, sentBy: ctx.user?.name ?? "admin" },
+        // 2. Log communication in the unified thread/timeline tables.
+        await emailHelpers.recordOutboundCommunication({
+          prospect,
+          subject: input.subject,
+          body: input.body,
+          source: "workflow_send",
         });
 
         // 3. Advance stage to 'contacted' if requested
@@ -1608,7 +1626,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         // 5. Notify owner
         await notifyOwner({
           title: `📧 Outreach sent: ${prospect.company}`,
-          content: `Email sent to ${prospect.company} (${prospect.contactName ?? prospect.contactEmail ?? "no contact"}).\n\nSubject: ${input.subject}\n\nFollow-up scheduled in ${input.followUpDays} days.`,
+          content: `Email sent to ${prospect.company} (${prospect.contactName ?? toEmail}).\n\nSubject: ${input.subject}\n\nFollow-up scheduled in ${input.followUpDays} days.`,
         });
 
         return { success: true };
@@ -1795,7 +1813,8 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
 
             let generated = 0;
             for (const prospect of targets as Array<{ id: number; company: string; contactName: string | null; contactEmail: string | null; robotName: string | null; robotType: string | null; shows: string[] | null; notes: string | null; outreachAngle?: string | null; vendorType?: string | null }>) {
-              if (!prospect.contactEmail) continue;
+              const toEmail = emailHelpers.getProspectOutreachEmail(prospect);
+              if (!toEmail) continue;
 
               // Check if a pending/approved draft already exists
               const existing = await emailHelpers.getDraftsForProspect(prospect.id);
@@ -1891,18 +1910,26 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         const drafts = await emailHelpers.getDraftsWithProspects(["pending", "approved"]);
         const entry = drafts.find((d: { draft: { id: number } }) => d.draft.id === input.draftId);
         if (!entry) throw new TRPCError({ code: "NOT_FOUND", message: "Draft not found" });
-        if (!entry.prospect.contactEmail) throw new TRPCError({ code: "BAD_REQUEST", message: "Prospect has no email address" });
+        const toEmail = emailHelpers.getProspectOutreachEmail(entry.prospect);
+        if (!toEmail) throw new TRPCError({ code: "BAD_REQUEST", message: "Prospect has no email address" });
 
         const sendResult = await emailHelpers.sendEmail({
-          to: entry.prospect.contactEmail,
+          to: toEmail,
           subject: entry.draft.subject,
           body: entry.draft.body,
         });
 
         await emailHelpers.markDraftSent(entry.draft.id, sendResult?.id);
+        await emailHelpers.recordOutboundCommunication({
+          prospect: entry.prospect,
+          subject: entry.draft.subject,
+          body: entry.draft.body,
+          resendMessageId: sendResult?.id,
+          source: "draft_send",
+        });
         await db.updateProspectStatus(entry.prospect.id, "contacted");
 
-        return { success: true, sentTo: entry.prospect.contactEmail, messageId: sendResult?.id };
+        return { success: true, sentTo: toEmail, messageId: sendResult?.id };
       }),
 
     // Bulk send multiple approved drafts
@@ -1917,14 +1944,22 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         const errors: string[] = [];
 
         for (const entry of targets) {
-          if (!entry.prospect.contactEmail) { failed++; continue; }
+          const toEmail = emailHelpers.getProspectOutreachEmail(entry.prospect);
+          if (!toEmail) { failed++; continue; }
           try {
             const sendResult = await emailHelpers.sendEmail({
-              to: entry.prospect.contactEmail,
+              to: toEmail,
               subject: entry.draft.subject,
               body: entry.draft.body,
             });
             await emailHelpers.markDraftSent(entry.draft.id, sendResult?.id);
+            await emailHelpers.recordOutboundCommunication({
+              prospect: entry.prospect,
+              subject: entry.draft.subject,
+              body: entry.draft.body,
+              resendMessageId: sendResult?.id,
+              source: "bulk_draft_send",
+            });
             await db.updateProspectStatus(entry.prospect.id, "contacted");
             sent++;
           } catch (e: unknown) {
@@ -2752,7 +2787,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           .limit(50);
       }),
 
-    // Admin: manually trigger Frank to send to a specific prospect
+    // Admin: manually trigger Cal to send to a specific prospect
     manualSend: adminProcedure
       .input(z.object({ prospectId: z.number() }))
       .mutation(async ({ input, ctx }) => {
@@ -2775,7 +2810,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return res.json() as Promise<{ ok: boolean; subject: string; messageId: string | null; nextStage: string }>;
       }),
 
-    // Admin: preview a Frank email (LLM draft, not sent)
+    // Admin: preview a Cal email (LLM draft, not sent)
     previewEmail: adminProcedure
       .input(z.object({
         prospectId: z.number(),
@@ -2879,7 +2914,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
               headers: { "x-api-key": apolloKey, "Content-Type": "application/json" },
               body: JSON.stringify({
                 organization_ids: [orgId],
-                person_titles: ["CEO", "CTO", "COO", "VP", "Director", "Head of", "Chief", "President", "Founder", "Co-Founder", "Business Development", "Sales"],
+                person_titles: ["VP Sales", "Head of Sales", "Sales Director", "Head of Events", "Event Marketing", "Events Director", "VP Marketing", "Head of Marketing", "Marketing Director", "CEO", "COO", "Founder", "Co-Founder", "Business Development"],
                 page: 1, per_page: 5,
               }),
             });
@@ -2904,7 +2939,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           const domain = prospect.website
             ? prospect.website.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]
             : prospect.company.toLowerCase().replace(/[^a-z0-9]/g, "") + ".com";
-          suggestions.push(`support@${domain}`, `info@${domain}`, `hello@${domain}`);
+          suggestions.push(`sales@${domain}`, `events@${domain}`, `marketing@${domain}`);
           if (bestName) {
             const parts = bestName.toLowerCase().split(" ");
             const first = parts[0] ?? "";
@@ -2915,11 +2950,14 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           }
         }
 
-        // Step 4: Update prospect if we found a better email
-        if (bestEmail && bestEmail !== prospect.contactEmail) {
+        const fallbackRoleEmail = suggestions[0] ?? null;
+        const selectedEmail = bestEmail ?? fallbackRoleEmail;
+
+        // Step 4: Update prospect if Apollo found a person or we can derive a company-domain role inbox.
+        if (selectedEmail && selectedEmail !== prospect.contactEmail) {
           await dbConn.update(prospectsTable).set({
-            contactEmail: bestEmail,
-            emailConfidence: bestConfidence,
+            contactEmail: selectedEmail,
+            emailConfidence: bestEmail ? bestConfidence : "medium",
             contactName: bestName ?? prospect.contactName,
             contactTitle: bestTitle ?? prospect.contactTitle,
             contactLinkedIn: bestLinkedIn ?? prospect.contactLinkedIn,
@@ -2928,9 +2966,9 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         }
 
         return {
-          found: !!bestEmail,
-          email: bestEmail,
-          confidence: bestConfidence,
+          found: !!selectedEmail,
+          email: selectedEmail,
+          confidence: bestEmail ? bestConfidence : "medium",
           name: bestName,
           title: bestTitle,
           linkedIn: bestLinkedIn,
@@ -3029,8 +3067,8 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
                       headers: { "x-api-key": apolloKey, "Content-Type": "application/json" },
                       body: JSON.stringify({
                         organization_ids: [orgId],
-                        person_titles: ["CEO", "CTO", "COO", "VP", "Director", "Head of", "Chief", "President", "Founder", "Co-Founder", "Business Development", "Sales"],
-                        page: 1, per_page: 3,
+                        person_titles: ["VP Sales", "Head of Sales", "Sales Director", "Head of Events", "Event Marketing", "Events Director", "VP Marketing", "Head of Marketing", "Marketing Director", "CEO", "COO", "Founder", "Co-Founder", "Business Development"],
+                        page: 1, per_page: 5,
                       }),
                     });
                     const peopleData = await peopleRes.json() as { people?: Array<{ id: string; name: string; title?: string; email?: string; email_status?: string; linkedin_url?: string }> };
@@ -3046,10 +3084,11 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
                   } catch { /* ignore */ }
                 }
 
-                if (bestEmail && bestEmail !== prospect.contactEmail) {
+                const selectedEmail = bestEmail ?? emailHelpers.getProspectOutreachEmail(prospect);
+                if (selectedEmail && selectedEmail !== prospect.contactEmail) {
                   await dbConn.update(prospectsTable).set({
-                    contactEmail: bestEmail,
-                    emailConfidence: bestConfidence,
+                    contactEmail: selectedEmail,
+                    emailConfidence: bestEmail ? bestConfidence : "medium",
                     contactName: bestName ?? prospect.contactName,
                     contactTitle: bestTitle ?? prospect.contactTitle,
                     contactLinkedIn: bestLinkedIn ?? prospect.contactLinkedIn,

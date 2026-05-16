@@ -3,7 +3,7 @@
  *
  * Receives inbound emails sent to @onstage.bot addresses via Resend's
  * inbound routing. Parses the email, matches to a prospect, stores the
- * thread, advances conversation state, and generates a Frank-voice draft
+ * thread, advances conversation state, and generates a Cal-voice draft
  * for admin review (draft-first mode — no auto-send).
  *
  * State transitions on inbound reply:
@@ -27,7 +27,7 @@ import { eq } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
 import { FRANK_PERSONA, FRANK_SYSTEM_PROMPT } from "../agents/frankPlaybook";
 
-// Frank replies — consistent with outreach engine
+// Cal replies — consistent with outreach engine
 const FRANK_FROM = `${FRANK_PERSONA.fromName} <${FRANK_PERSONA.fromEmail}>`;
 const ADMIN_BCC = ["bob@starsupportinc.com", "tom@starsupportinc.com"];
 
@@ -176,7 +176,7 @@ export async function resendInboundHandler(req: Request, res: Response) {
         .where(eq(salesAgentConversations.id, conv.id));
     }
 
-    // ── 5. Generate Frank's reply draft (draft-first — no auto-send) ──────────
+    // ── 5. Generate Cal's reply draft (draft-first — no auto-send) ────────────
     await generateFrankDraft({
       prospect,
       subject,
@@ -197,7 +197,7 @@ export async function resendInboundHandler(req: Request, res: Response) {
   }
 }
 
-// ─── Frank Draft Generator ────────────────────────────────────────────────────
+// ─── Cal Draft Generator ──────────────────────────────────────────────────────
 
 async function generateFrankDraft({
   prospect,
@@ -232,14 +232,14 @@ async function generateFrankDraft({
     : ([] as (typeof emailThreads.$inferSelect)[]);
 
   const historyText = threadHistory
-    .map(t => `[${t.direction === "outbound" ? "Frank (StageGate)" : t.fromAddress}]: ${t.body ?? ""}`)
+    .map(t => `[${t.direction === "outbound" ? "Cal (StageGate)" : t.fromAddress}]: ${t.body ?? ""}`)
     .join("\n\n---\n\n");
 
   const schedulingInstruction = wantsToSchedule
     ? `The prospect wants to schedule a call or demo. Include a link to our scheduling page: https://onstage.bot/schedule — invite them to pick a time.`
     : "";
 
-  const userPrompt = `You are Frank from StageGate. You just received a reply from ${prospect.contactName ?? "someone"} at ${prospect.company}.
+  const userPrompt = `You are Cal from StageGate. You just received a reply from ${prospect.contactName ?? "someone"} at ${prospect.company}.
 
 Their robot: ${prospect.robotName ?? "unknown"} (${prospect.robotType ?? "robot"})
 Shows they attend: ${Array.isArray(prospect.shows) ? prospect.shows.join(", ") : "unknown"}
@@ -253,7 +253,7 @@ ${historyText || "(no prior history)"}
 Their latest message:
 ${bodyText}
 
-Write Frank's reply. Keep it short, direct, helpful. Sign as:
+Write Cal's reply. Keep it short, direct, helpful. Sign as:
 ${FRANK_PERSONA.signature}`;
 
   let replyBody = "";
@@ -297,7 +297,7 @@ ${FRANK_PERSONA.signature}`;
   await db.insert(prospectActivities).values({
     prospectId,
     type: "draft_created",
-    title: `Frank draft ready: "${replySubject.slice(0, 80)}"`,
+    title: `Cal draft ready: "${replySubject.slice(0, 80)}"`,
     description: `AI-generated reply draft ready for admin review`,
     metadata: { isAiDraft: true, convState },
     createdAt: new Date(),

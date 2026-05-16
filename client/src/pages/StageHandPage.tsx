@@ -36,7 +36,7 @@ const TIERS = [
       "24/7 remote & on-site support",
       "4-hour emergency response SLA",
       "Unlimited robots",
-      "Dedicated technician",
+      "Dedicated technician: Max",
       "Priority parts sourcing",
       "Quarterly on-site inspections",
     ],
@@ -45,7 +45,7 @@ const TIERS = [
 ];
 
 const USE_CASES = [
-  { icon: AlertCircle, title: "Emergency Repair",       desc: "Robot breaks down mid-demo at a trade show. StageHand™ dispatches a technician within hours." },
+  { icon: AlertCircle, title: "Emergency Repair",       desc: "Robot breaks down mid-demo at a trade show. Max coordinates a technician within hours." },
   { icon: Activity,    title: "Deployment Monitoring",  desc: "Robots deployed in hotels, airports, or retail locations monitored 24/7 with proactive alerts." },
   { icon: Wrench,      title: "Scheduled Maintenance",  desc: "Quarterly on-site inspections, firmware updates, and preventive maintenance to avoid failures." },
   { icon: Phone,       title: "Remote Diagnostics",     desc: "Most issues resolved remotely in under 30 minutes via secure connection to your robot's systems." },
@@ -83,7 +83,7 @@ export default function StageHandPage() {
             StageHand<sup className="text-xl font-normal align-super">™</sup>
           </h1>
           <p className="text-base max-w-2xl mx-auto mb-8 leading-relaxed" style={{ color: TEXT_MID }}>
-            Ongoing remote and on-site technical support for robots in the field.
+            Ongoing remote and on-site technical support for robots in the field, led by Max.
             When your robot needs help, we're already there.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">

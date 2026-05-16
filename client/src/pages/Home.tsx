@@ -49,7 +49,7 @@ const SERVICES = [
   { num: "01", title: "Warehousing", desc: "Climate-controlled Las Vegas storage, year-round. Your robots stay ready between shows." },
   { num: "02", title: "Shipping & Receiving", desc: "End-to-end freight, customs clearance, and white-glove crate handling." },
   { num: "03", title: "Staging & Activation", desc: "Full booth setup, robot positioning, power, connectivity, and pre-show testing." },
-  { num: "04", title: "Technical Support", desc: "Certified technicians on the floor during show hours. Zero dark demos." },
+  { num: "04", title: "Technical Support", desc: "Max leads certified technicians on the floor during show hours. Zero dark demos." },
   { num: "05", title: "Promotion", desc: "Showroom events, media days, and buyer introductions via The Robot Guild." },
 ];
 
@@ -268,7 +268,7 @@ export default function Home() {
                 Robotics companies spend months preparing for trade shows — and then scramble at the last minute with freight, storage, setup, and support. StageGate eliminates that chaos.
               </p>
               <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.75, marginBottom: "2.5rem", maxWidth: "52ch" }}>
-                We warehouse your robots in Las Vegas year-round, stage them for each show, activate them on the floor, and provide certified technical support throughout. One partner. Zero surprises.
+                We warehouse your robots in Las Vegas year-round, stage them for each show, activate them on the floor, and Max leads certified technical support throughout. One partner. Zero surprises.
               </p>
               <Link href="/register">
                 <button className="btn-primary">Get Started <ArrowRight size={14} /></button>

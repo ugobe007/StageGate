@@ -12,7 +12,7 @@ const SERVICES = [
   { id: "port-receiving", label: "Port Receiving & Customs Clearance", desc: "US port arrival, ATA Carnet, customs broker coordination" },
   { id: "warehousing", label: "Warehousing & Staging", desc: "Secure Las Vegas warehouse, pre-show testing, activation" },
   { id: "delivery", label: "Booth Delivery & Setup", desc: "Last-mile delivery to convention center, booth setup support" },
-  { id: "onsite", label: "On-Site Support", desc: "Dedicated StageGate technician during show hours" },
+  { id: "onsite", label: "On-Site Support", desc: "Max coordinates dedicated StageGate technicians during show hours" },
   { id: "return", label: "Return Shipping", desc: "Post-show breakdown, re-crating, and return logistics" },
   { id: "full-service", label: "Full-Service Package (Recommended)", desc: "Everything above — end-to-end robot logistics management" },
 ];

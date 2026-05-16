@@ -1,7 +1,7 @@
 /**
  * client/src/pages/TourBooking.tsx
  *
- * Showroom Tour Booking — Frank's first CTA landing page.
+ * Showroom Tour Booking — Cal's first CTA landing page.
  * Visitors can request a showroom tour or off-floor demo consultation.
  * Form submits via the existing bookingRequest tRPC procedure and
  * sends a notification to the owner.
@@ -82,7 +82,7 @@ export default function TourBooking() {
   const bookTour = trpc.bookings.create.useMutation({
     onSuccess: () => {
       setSubmitted(true);
-      toast.success("Request sent! Frank will be in touch shortly.");
+      toast.success("Request sent! Cal will be in touch shortly.");
     },
     onError: (err: { message: string }) => {
       toast.error(`Something went wrong: ${err.message}`);
@@ -116,11 +116,11 @@ export default function TourBooking() {
           <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-8 h-8 text-emerald-400" />
           </div>
-          <h1 className="text-2xl font-bold text-white">You're on Frank's list.</h1>
+          <h1 className="text-2xl font-bold text-white">You're on Cal's list.</h1>
           <p className="text-zinc-400 leading-relaxed">
-            Frank will reach out within 24 hours to confirm your showroom tour or off-floor demo space.
+            Cal will reach out within 24 hours to confirm your showroom tour or off-floor demo space.
             In the meantime, if you have questions, email{" "}
-            <a href="mailto:frank@onstage.bot" className="text-amber-400 hover:underline">frank@onstage.bot</a>.
+            <a href="mailto:cal@onstage.bot" className="text-amber-400 hover:underline">cal@onstage.bot</a>.
           </p>
           <a
             href="/"
@@ -299,15 +299,15 @@ export default function TourBooking() {
                 disabled={bookTour.isPending}
               >
                 {bookTour.isPending ? (
-                  "Sending to Frank…"
+                  "Sending to Cal…"
                 ) : (
                   <>Request Tour <ArrowRight className="w-4 h-4" /></>
                 )}
               </Button>
               <p className="text-xs text-zinc-600 text-center">
-                Frank will follow up within 24 hours at{" "}
-                <a href="mailto:frank@onstage.bot" className="text-zinc-500 hover:text-zinc-400">
-                  frank@onstage.bot
+                Cal will follow up within 24 hours at{" "}
+                <a href="mailto:cal@onstage.bot" className="text-zinc-500 hover:text-zinc-400">
+                  cal@onstage.bot
                 </a>
               </p>
             </form>

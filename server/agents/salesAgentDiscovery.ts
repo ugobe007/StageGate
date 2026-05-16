@@ -186,7 +186,7 @@ From this content, identify up to 15 robot companies — companies that make rob
 For each company found, return:
 - company: exact company name
 - contactName: best guess for the event/marketing decision maker (VP Marketing, Head of Events, CEO for small companies)
-- contactEmail: best guess email using common patterns (firstname@company.com, info@company.com)
+- contactEmail: best outreach email. Prefer role inboxes in this order: sales@company-domain, events@company-domain, marketing@company-domain. Do not use partnerships@, info@, support@, or hello@ as outreach guesses.
 - contactTitle: their likely title
 - website: company website URL
 - robotName: their flagship product name if known

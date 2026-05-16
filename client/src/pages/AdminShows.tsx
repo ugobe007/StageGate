@@ -116,7 +116,7 @@ export default function AdminShows() {
         </div>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setForm(EMPTY_FORM); } }}>
           <DialogTrigger asChild>
-            <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}>
+            <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid #00ff87", background: "transparent", color: "#00ff87", borderRadius: "0.375rem", cursor: "pointer" }}>
               <Plus size={14} /> Add Show
             </button>
           </DialogTrigger>
@@ -170,11 +170,11 @@ export default function AdminShows() {
               </div>
               <div style={{ display: "flex", gap: "0.75rem", paddingTop: "0.5rem" }}>
                 <button type="submit" disabled={createShow.isPending || updateShow.isPending}
-                  style={{ flex: 1, fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}>
+                  style={{ flex: 1, fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid #00ff87", background: "transparent", color: "#00ff87", borderRadius: "0.375rem", cursor: "pointer" }}>
                   {(createShow.isPending || updateShow.isPending) ? <Loader2 size={14} className="animate-spin" /> : editId ? "Update Show" : "Create Show"}
                 </button>
                 <button type="button" onClick={() => { setOpen(false); setEditId(null); setForm(EMPTY_FORM); }}
-                  style={{ fontSize: "0.875rem", padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "#64748b", borderRadius: "0.375rem", cursor: "pointer" }}>
+                  style={{ fontSize: "0.875rem", padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.12)", background: "#0b0b0b", color: "#cbd5e1", borderRadius: "0.375rem", cursor: "pointer" }}>
                   Cancel
                 </button>
               </div>
@@ -216,16 +216,16 @@ export default function AdminShows() {
                 </div>
                 <div style={{ display: "flex", gap: "0.5rem" }}>
                   <button onClick={() => openEdit(show)}
-                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.55)", borderRadius: "0.25rem", cursor: "pointer" }}>
+                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: "1px solid rgba(255,255,255,0.12)", background: "#0b0b0b", color: "#cbd5e1", borderRadius: "0.25rem", cursor: "pointer" }}>
                     <Edit size={12} /> Edit
                   </button>
                   <Link href={`/admin/leads?showId=${show.id}`} style={{ flex: 1 }}>
-                    <button style={{ width: "100%", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", background: "#fff", color: "#00ff87", borderRadius: "0.25rem", cursor: "pointer" }}>
+                    <button style={{ width: "100%", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: "1px solid rgba(62,207,142,0.45)", background: "#0b0b0b", color: "#00ff87", borderRadius: "0.25rem", cursor: "pointer" }}>
                       Leads
                     </button>
                   </Link>
                   <button onClick={() => { if (confirm("Delete this show?")) deleteShow.mutate({ id: show.id }); }}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "0.375rem 0.625rem", border: "1px solid rgba(239,68,68,0.3)", background: "#fff", color: "#ef4444", borderRadius: "0.25rem", cursor: "pointer" }}>
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "0.375rem 0.625rem", border: "1px solid rgba(239,68,68,0.45)", background: "#0b0b0b", color: "#f87171", borderRadius: "0.25rem", cursor: "pointer" }}>
                     <Trash2 size={13} />
                   </button>
                 </div>

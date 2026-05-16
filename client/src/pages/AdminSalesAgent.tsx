@@ -1,7 +1,7 @@
 /**
  * client/src/pages/AdminSalesAgent.tsx
  *
- * Frank's Mission Control — Pipeline board + Pending Drafts review queue
+ * Cal's Mission Control — Pipeline board + Pending Drafts review queue
  */
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
@@ -116,7 +116,7 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <Eye className="w-4 h-4 text-amber-400" />
-            Frank Email Preview — {companyName}
+            Cal Email Preview — {companyName}
           </DialogTitle>
           <DialogDescription className="text-zinc-500">
             Generate a live LLM draft for any stage. This does not send anything.
@@ -167,7 +167,7 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
           {previewMutation.isPending && (
             <div className="flex flex-col items-center justify-center py-12 text-zinc-500 gap-3">
               <RefreshCw className="w-6 h-6 animate-spin text-amber-400" />
-              <p className="text-sm">Frank is thinking…</p>
+              <p className="text-sm">Cal is thinking…</p>
             </div>
           )}
           {preview && !previewMutation.isPending && (
@@ -188,14 +188,14 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
                 <pre className="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap font-sans">{preview.body}</pre>
               </div>
               <p className="text-xs text-zinc-600 text-center">
-                This is a live LLM draft. Use "Send Frank's Next Email" in the detail panel to actually send.
+                This is a live LLM draft. Use "Send Cal's Next Email" in the detail panel to actually send.
               </p>
             </div>
           )}
           {!preview && !previewMutation.isPending && (
             <div className="flex flex-col items-center justify-center py-12 text-zinc-600 gap-3">
               <Bot className="w-8 h-8" />
-              <p className="text-sm">Select a stage and click Generate to see Frank's draft</p>
+              <p className="text-sm">Select a stage and click Generate to see Cal's draft</p>
             </div>
           )}
         </div>
@@ -267,7 +267,7 @@ function PendingDraftsTab() {
         <Inbox className="w-10 h-10" />
         <p className="text-sm font-medium text-zinc-500">No pending drafts</p>
         <p className="text-xs text-center max-w-xs">
-          When a prospect replies to Frank, an AI-generated response will appear here for your review before it goes out.
+          When a prospect replies to Cal, an AI-generated response will appear here for your review before it goes out.
         </p>
       </div>
     );
@@ -346,7 +346,7 @@ function PendingDraftsTab() {
                 </div>
                 {draft.agentReasoning && (
                   <div className="bg-zinc-800/50 rounded-lg p-3">
-                    <span className="text-xs text-zinc-600 uppercase tracking-wide block mb-1">Frank's Reasoning</span>
+                    <span className="text-xs text-zinc-600 uppercase tracking-wide block mb-1">Cal's Reasoning</span>
                     <p className="text-xs text-zinc-500 leading-relaxed">{draft.agentReasoning}</p>
                   </div>
                 )}
@@ -506,7 +506,7 @@ export default function AdminSalesAgent() {
 
   const manualSend = trpc.salesAgent.manualSend.useMutation({
     onSuccess: (data, vars) => {
-      toast.success(`Frank sent: ${data.subject}`);
+      toast.success(`Cal sent: ${data.subject}`);
       setSendingId(null);
       refetchConvs();
       if (selectedProspectId === vars.prospectId) {
@@ -762,11 +762,10 @@ export default function AdminSalesAgent() {
                       <Bot className="w-5 h-5 text-amber-400" />
                     </div>
                     <div>
-                      <h1 className="text-lg font-semibold text-white">Frank — Sales Agent</h1>
+                      <h1 className="text-lg font-semibold text-white">Cal</h1>
                       <p className="text-xs text-zinc-500">
-                        {lastRun
-                          ? `Last run ${timeAgo(lastRun.startedAt)} · ${lastRun.emailsSent ?? 0} emails sent`
-                          : "No runs yet"}
+                        Sales agent. Cool, concise, politely confident.
+                        {lastRun ? ` Last run ${timeAgo(lastRun.startedAt)} · ${lastRun.emailsSent ?? 0} emails sent.` : ""}
                       </p>
                     </div>
                   </div>
@@ -1028,7 +1027,7 @@ export default function AdminSalesAgent() {
                       >
                         {sendingId === selectedConv.prospect.id
                           ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Sending…</>
-                          : <><Send className="w-3.5 h-3.5" /> Send Frank's Next Email</>
+                          : <><Send className="w-3.5 h-3.5" /> Send Cal's Next Email</>
                         }
                       </Button>
                     )}
@@ -1052,7 +1051,7 @@ export default function AdminSalesAgent() {
                       className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 gap-1.5"
                       onClick={() => setPreviewOpen(true)}
                     >
-                      <Eye className="w-3.5 h-3.5" /> Preview Frank's Email
+                      <Eye className="w-3.5 h-3.5" /> Preview Cal's Email
                     </Button>
                     <Button
                       size="sm"
@@ -1128,7 +1127,7 @@ export default function AdminSalesAgent() {
                       <div className="text-xs text-zinc-600 flex flex-col items-center py-6 gap-2">
                         <Mail className="w-6 h-6" />
                         <p>No emails yet</p>
-                        <p className="text-zinc-700">Use "Send Frank's Next Email" to start</p>
+                        <p className="text-zinc-700">Use "Send Cal's Next Email" to start</p>
                       </div>
                     ) : (
                       thread.map((email) => (
@@ -1142,7 +1141,7 @@ export default function AdminSalesAgent() {
                         >
                           <div className="flex items-center justify-between">
                             <span className={`font-medium ${email.direction === "outbound" ? "text-amber-400" : "text-emerald-400"}`}>
-                              {email.direction === "outbound" ? "Frank →" : "← Reply"}
+                              {email.direction === "outbound" ? "Cal →" : "← Reply"}
                             </span>
                             <span className="text-zinc-600">{timeAgo(email.receivedAt)}</span>
                           </div>
@@ -1230,7 +1229,7 @@ export default function AdminSalesAgent() {
                 <div className="flex-1 flex flex-col items-center justify-center text-zinc-700 gap-3 px-8 text-center">
                   <Eye className="w-10 h-10" />
                   <p className="text-sm font-medium text-zinc-500">Select a prospect</p>
-                  <p className="text-xs">Click any row to see Frank's conversation thread and send controls</p>
+                  <p className="text-xs">Click any row to see Cal's conversation thread and send controls</p>
                 </div>
               )}
             </div>

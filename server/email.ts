@@ -3,12 +3,20 @@
  * Resend email sending helper + draft_emails DB helpers
  */
 import { getDb } from "./db";
-import { draftEmails, prospects } from "../drizzle/schema";
+import { draftEmails, emailThreads, prospectActivities, prospects } from "../drizzle/schema";
 import { eq, inArray } from "drizzle-orm";
+import { selectOutreachEmail } from "./outreachContacts";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;
 const FROM_ADDRESS = "outreach@onstage.bot";
 const FROM_NAME = "StageGate";
+
+type ProspectEmailTarget = {
+  id: number;
+  company?: string | null;
+  website?: string | null;
+  contactEmail?: string | null;
+};
 
 // ─── Resend send helper ───────────────────────────────────────────────────────
 
@@ -117,4 +125,47 @@ export async function markDraftSent(id: number, resendMessageId?: string) {
     .where(eq(draftEmails.id, id))
     .returning();
   return row;
+}
+
+export function getProspectOutreachEmail(prospect: ProspectEmailTarget): string | null {
+  return selectOutreachEmail(prospect);
+}
+
+export async function recordOutboundCommunication({
+  prospect,
+  subject,
+  body,
+  resendMessageId,
+  source = "draft",
+}: {
+  prospect: ProspectEmailTarget;
+  subject: string;
+  body: string;
+  resendMessageId?: string;
+  source?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const toEmail = getProspectOutreachEmail(prospect);
+  if (!toEmail) return;
+
+  await db.insert(emailThreads).values({
+    prospectId: prospect.id,
+    threadId: `stagegate-${prospect.id}`,
+    direction: "outbound",
+    fromAddress: FROM_ADDRESS,
+    toAddress: toEmail,
+    subject,
+    body,
+    resendMessageId,
+  });
+
+  await db.insert(prospectActivities).values({
+    prospectId: prospect.id,
+    type: "email_sent",
+    title: subject,
+    description: `Outbound email sent to ${toEmail}`,
+    metadata: { source, messageId: resendMessageId, toEmail },
+  });
 }

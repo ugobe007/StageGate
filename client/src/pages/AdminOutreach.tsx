@@ -73,6 +73,7 @@ export default function AdminOutreach() {
     onSuccess: (res) => {
       toast.success(`Email sent to ${res.sentTo}`);
       utils.admin.getDrafts.invalidate();
+      utils.prospects.listWithEngagement.invalidate();
       setExpandedId(null);
     },
     onError: (e) => toast.error(e.message),
@@ -85,6 +86,7 @@ export default function AdminOutreach() {
       setSelectedIds(new Set());
       setConfirmBulkSend(false);
       utils.admin.getDrafts.invalidate();
+      utils.prospects.listWithEngagement.invalidate();
     },
     onError: (e) => { toast.error(e.message); setConfirmBulkSend(false); },
   });
@@ -217,7 +219,7 @@ export default function AdminOutreach() {
                     >
                       {bulkSendMutation.isPending ? "Sending…" : "Confirm Send"}
                     </button>
-                    <button onClick={() => setConfirmBulkSend(false)} style={{ fontSize: "0.875rem", padding: "0.25rem 0.75rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "#64748b", borderRadius: "0.25rem", cursor: "pointer" }}>
+                    <button onClick={() => setConfirmBulkSend(false)} style={{ fontSize: "0.875rem", padding: "0.25rem 0.75rem", border: "1px solid rgba(255,255,255,0.12)", background: "#111111", color: "#cbd5e1", borderRadius: "0.25rem", cursor: "pointer" }}>
                       Cancel
                     </button>
                   </div>
@@ -304,13 +306,13 @@ export default function AdminOutreach() {
                         <>
                           <button
                             onClick={(e) => { e.stopPropagation(); approveMutation.mutate({ draftId: entry.draft.id }); }}
-                            style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00ff87", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                            style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.45)", color: "#00ff87", background: "#0b0b0b", borderRadius: "0.25rem", cursor: "pointer" }}
                           >
                             ✓ Approve
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); discardMutation.mutate({ draftId: entry.draft.id }); }}
-                            style={{ fontSize: "0.8125rem", padding: "0.25rem 0.625rem", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.30)", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                            style={{ fontSize: "0.8125rem", padding: "0.25rem 0.625rem", border: "1px solid rgba(255,255,255,0.12)", color: "#cbd5e1", background: "#0b0b0b", borderRadius: "0.25rem", cursor: "pointer" }}
                           >
                             Discard
                           </button>
@@ -375,7 +377,7 @@ export default function AdminOutreach() {
                             >
                               {editMutation.isPending ? "Saving…" : "Save Changes"}
                             </button>
-                            <button onClick={() => setEditingId(null)} style={{ fontSize: "0.875rem", padding: "0.375rem 0.875rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "#64748b", borderRadius: "0.25rem", cursor: "pointer" }}>
+                            <button onClick={() => setEditingId(null)} style={{ fontSize: "0.875rem", padding: "0.375rem 0.875rem", border: "1px solid rgba(255,255,255,0.12)", background: "#111111", color: "#cbd5e1", borderRadius: "0.25rem", cursor: "pointer" }}>
                               Cancel
                             </button>
                           </div>
@@ -392,7 +394,7 @@ export default function AdminOutreach() {
                           {activeTab !== "sent" && (
                             <button
                               onClick={() => handleEdit(entry)}
-                              style={{ alignSelf: "flex-start", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.55)", borderRadius: "0.25rem", cursor: "pointer" }}
+                              style={{ alignSelf: "flex-start", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(255,255,255,0.12)", background: "#111111", color: "#cbd5e1", borderRadius: "0.25rem", cursor: "pointer" }}
                             >
                               ✏ Edit Draft
                             </button>
