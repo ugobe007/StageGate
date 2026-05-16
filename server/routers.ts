@@ -10,7 +10,7 @@ import * as db from "./db";
 import * as workflows from "./workflows";
 import * as emailHelpers from "./email";
 import { eq, desc, count, sql, inArray } from "drizzle-orm";
-import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems, schedulingSlots, salesAgentConversations, salesAgentRuns, vendors, emailThreads, logisticsWorkflows, logisticsCheckpoints, warehouseBays, warehouseBayEvents, tradeShows, services as servicesTable, logisticsPartners, xbotProjects, agentRuns, outreachCampaigns } from "../drizzle/schema";
+import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems, schedulingSlots, salesAgentConversations, salesAgentRuns, vendors, emailThreads, logisticsWorkflows, logisticsCheckpoints, warehouseBays, warehouseBayEvents, tradeShows, services as servicesTable, logisticsPartners, xbotProjects, agentRuns, outreachCampaigns, serviceRequests } from "../drizzle/schema";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 
@@ -1874,7 +1874,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     getSiteStats: adminProcedure.query(async () => {
       const dbConn = await getDb();
       if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-      const [users, orders, demos, quotes, leads, prospects, tradeShowRows, serviceRows, logisticsPartnerRows, xbotRows, agentRunRows, outreachRows, convRows] = await Promise.all([
+      const [users, orders, demos, quotes, leads, prospects, tradeShowRows, serviceRows, logisticsPartnerRows, xbotRows, agentRunRows, outreachRows, convRows, serviceRequestRows] = await Promise.all([
         db.getAllUsers(),
         db.getAllOrders(),
         db.getAllDemoRequests(),
@@ -1888,6 +1888,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         dbConn.select({ id: agentRuns.id }).from(agentRuns),
         dbConn.select({ id: outreachCampaigns.id }).from(outreachCampaigns),
         dbConn.select({ id: salesAgentConversations.id, state: salesAgentConversations.state }).from(salesAgentConversations),
+        dbConn.select({ id: serviceRequests.id, status: serviceRequests.status }).from(serviceRequests),
       ]);
       const prospectsByStatus = prospects.reduce((acc: Record<string, number>, p: { status: string }) => {
         acc[p.status] = (acc[p.status] ?? 0) + 1;
@@ -1917,6 +1918,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         agentRuns: { total: agentRunRows.length },
         outreachCampaigns: { total: outreachRows.length },
         conversations: { total: convRows.length, byState: convsByState, awaiting: convsByState["awaiting_reply"] ?? 0, active: (convsByState["in_conversation"] ?? 0) + (convsByState["awaiting_reply"] ?? 0) },
+        serviceRequests: { total: serviceRequestRows.length, newCount: serviceRequestRows.filter((r: { status: string | null }) => r.status === "new").length },
       };
     }),
   }),

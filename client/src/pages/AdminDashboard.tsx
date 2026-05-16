@@ -175,6 +175,7 @@ export default function AdminDashboard() {
             { label: "Trade Shows",  value: siteStats.tradeShows?.upcoming ?? 0,  sub: "upcoming",                                          color: D.blue,    href: "/admin/shows" },
             { label: "Services",     value: siteStats.services?.active ?? 0,      sub: "active",                                            color: D.amber,   href: "/admin/orders" },
             { label: "Log. Partners",value: siteStats.logisticsPartners?.total ?? 0, sub: "vendors",                                        color: "#f97316", href: "/admin/vendors" },
+            { label: "New Requests",  value: siteStats.serviceRequests?.newCount ?? 0, sub: `${siteStats.serviceRequests?.total ?? 0} total`,   color: D.amber,   href: "/admin/service-requests" },
             { label: "XBOT Projects",value: siteStats.xbotProjects?.total ?? 0,   sub: "active",                                            color: "#a78bfa", href: "/admin/agents" },
             { label: "Agent Runs",   value: siteStats.agentRuns?.total ?? 0,      sub: "all time",                                          color: D.emerald, href: "/admin/agents" },
             { label: "Conversations",value: siteStats.conversations?.total ?? 0,  sub: `${siteStats.conversations?.awaiting ?? 0} awaiting`,color: "#22d3ee", href: "/admin/sales-agent" },

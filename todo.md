@@ -1589,3 +1589,11 @@
 - [x] Onboarding: "Resuming your setup" emerald banner shown when hydrated draft profile exists and onboardingComplete is false
 - [x] ClientDashboard: required field validation on service request form — serviceType and details both required; inline AlertCircle error message shown below form
 - [x] Server: notifyOwner already called in company.submitServiceRequest — confirmed working, no change needed
+
+## v61 — Edit Profile Button, Admin New Requests Card, Resend Email Verification
+
+- [x] ClientDashboard: Edit Profile button already present in welcome header (User icon, calls setEditProfileOpen)
+- [x] AdminDashboard: added "New Requests" mini stat card (amber, links to /admin/service-requests) showing newCount from getSiteStats
+- [x] getSiteStats: added serviceRequests query to Promise.all, returns { total, newCount } for new status
+- [x] Resend email verified: sendEmail called from updateServiceRequestStatus on quoted/approved, from outreach@onstage.bot, RESEND_API_KEY wired correctly
+- [x] GitHub: pushed 45 commits to ugobe007/StageGate main
