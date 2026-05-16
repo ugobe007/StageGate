@@ -5,7 +5,6 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { serveStatic } from "./vite";
 import { followupDigestHandler, nightlyResearchHandler } from "../scheduledHandlers";
 import { resendWebhookHandler } from "../webhooks/resend";
 import { resendInboundHandler } from "../webhooks/resend-inbound";
@@ -116,6 +115,7 @@ export async function createStageGateApp(options: { serveClient?: boolean } = {}
   app.post("/api/webhooks/resend-inbound", resendInboundHandler);
 
   if (options.serveClient) {
+    const { serveStatic } = await import("./vite");
     serveStatic(app);
   }
 
