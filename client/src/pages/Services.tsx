@@ -37,6 +37,20 @@ const FEATURES: Record<string, string[]> = {
   "robot-sales-marketing":   ["US market distribution partnerships", "The Robot Guild™ brand activation", "StageGate Ready™ certification", "Trade show booth marketing", "Commission-based sales model"],
 };
 
+const SERVICE_WORKFLOW = [
+  { step: "01", title: "Intake", desc: "XBOT or a service form captures robot specs, show details, deadlines, contacts, and required support." },
+  { step: "02", title: "Plan", desc: "StageGate translates the request into a service scope, timeline, quote, risk notes, and owner assignments." },
+  { step: "03", title: "Move", desc: "Logistics, receiving, storage, booth delivery, and activation are coordinated against the show calendar." },
+  { step: "04", title: "Support", desc: "Max and the technician network handle demo readiness, troubleshooting, repair, and post-show handoff." },
+];
+
+const SERVICE_GROUPS = [
+  { title: "Move the robot", desc: "Inbound logistics, customs coordination, ground transport, warehousing, and show delivery." },
+  { title: "Make it demo-ready", desc: "Unpack, inspect, stage, power, calibrate, activate, and support live demonstrations." },
+  { title: "Keep it working", desc: "StageHand™ remote support, emergency dispatch, maintenance, and field escalation." },
+  { title: "Build capability", desc: "StagePro™ training, showroom demos, market support, and sales enablement." },
+];
+
 function ServiceCard({ svc, phase }: { svc: any; phase: "phase1" | "phase2" }) {
   const cfg = SVC_CONFIG[svc.slug] || { icon: Package, accent: GREEN };
   const Icon = cfg.icon;
@@ -179,13 +193,65 @@ export default function Services() {
             maxWidth: "38rem",
             margin: "0 auto",
           }}>
-            From the moment your robot ships to the moment it's back in storage,
-            StageGate covers every step of the trade show lifecycle.
+            StageGate is the operating layer for robot trade shows: logistics,
+            staging, technical support, training, showroom demos, and sales activation
+            connected through one workflow.
           </p>
         </div>
       </div>
 
       <div className="container" style={{ paddingTop: "3.5rem", paddingBottom: "4rem" }}>
+
+        {/* ── Definition ── */}
+        <div style={{ marginBottom: "3.5rem", display: "grid", gridTemplateColumns: "0.85fr 1.15fr", gap: "3rem", alignItems: "start" }}>
+          <div>
+            <p style={{
+              fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.12em",
+              textTransform: "uppercase", color: GREEN,
+              fontFamily: "'JetBrains Mono', monospace",
+              marginBottom: "0.875rem",
+            }}>
+              Definition
+            </p>
+            <h2 style={{ fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 800, letterSpacing: "-0.035em", lineHeight: 1.08, color: "#ffffff" }}>
+              Services organized around the robot's journey.
+            </h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1rem" }}>
+            {SERVICE_GROUPS.map(group => (
+              <div key={group.title} style={{ borderTop: `1px solid ${BORDER}`, paddingTop: "1rem" }}>
+                <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, color: TEXT_HI, marginBottom: "0.4rem" }}>{group.title}</h3>
+                <p style={{ fontSize: "0.8125rem", lineHeight: 1.6, color: TEXT_MID, margin: 0 }}>{group.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Workflow ── */}
+        <div style={{ marginBottom: "3.5rem", padding: "1.5rem", borderRadius: "0.75rem", border: `1px solid ${BORDER}`, background: CARD }}>
+          <div style={{ marginBottom: "1.5rem" }}>
+            <p style={{
+              fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.12em",
+              textTransform: "uppercase", color: GREEN,
+              fontFamily: "'JetBrains Mono', monospace",
+              marginBottom: "0.625rem",
+            }}>
+              Workflow Design
+            </p>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.025em", color: TEXT_HI }}>
+              One request becomes an operating plan.
+            </h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0 }}>
+            {SERVICE_WORKFLOW.map((item, index) => (
+              <div key={item.step} style={{ padding: "1rem", borderLeft: index === 0 ? "none" : `1px solid ${BORDER}` }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "1.5rem", fontWeight: 700, color: `${GREEN}66`, marginBottom: "0.75rem" }}>{item.step}</div>
+                <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, color: TEXT_HI, marginBottom: "0.4rem" }}>{item.title}</h3>
+                <p style={{ fontSize: "0.8125rem", color: TEXT_MID, lineHeight: 1.55, margin: 0 }}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* ── Phase 1 ── */}
         <div style={{ marginBottom: "3.5rem" }}>

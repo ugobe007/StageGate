@@ -60,6 +60,14 @@ const DIFFERENTIATORS = [
   { icon: BookOpen,  title: "Curriculum That Evolves",        desc: "As new robots enter the market, our curriculum updates. Your certification stays current." },
 ];
 
+const WORKFLOW = [
+  { step: "01", title: "Assess the learner", desc: "We capture role, current skill level, robot exposure, safety requirements, and target outcomes." },
+  { step: "02", title: "Select the track", desc: "Choose workshop, certification, apprentice, or custom cohort based on the team's operating needs." },
+  { step: "03", title: "Train hands-on", desc: "Students work through diagnostics, teardown, repair, calibration, and customer-ready handoff." },
+  { step: "04", title: "Validate skills", desc: "Each learner is evaluated on repeatable tasks, documentation, safety, and troubleshooting discipline." },
+  { step: "05", title: "Support after class", desc: "Graduates can connect into StageHand™ support workflows for ongoing field escalation." },
+];
+
 export default function StageProPage() {
   return (
     <div className="min-h-screen" style={{ background: BG, color: TEXT_HI }}>
@@ -92,8 +100,9 @@ export default function StageProPage() {
             StagePro<sup className="text-xl font-normal align-super">™</sup>
           </h1>
           <p className="text-base max-w-2xl mx-auto mb-8 leading-relaxed" style={{ color: TEXT_MID }}>
-            The world's first hands-on robot technician training program.
-            Learn by repairing real robots under master technician supervision.
+            StagePro™ is the workforce training path for robot technicians, operators,
+            and field teams. Students learn on real robots, document real fixes, and
+            graduate into a repeatable support workflow.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/register">
@@ -104,6 +113,31 @@ export default function StageProPage() {
             <Link href="/order">
               <span className="btn-default">Request corporate quote</span>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Definition ─────────────────────────────────────────────────────── */}
+      <section className="py-16 border-b" style={{ borderColor: BORDER }}>
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-[0.8fr_1.2fr] gap-10">
+            <div>
+              <p className="section-label mb-3" style={{ color: PURPLE }}>Definition</p>
+              <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
+                A practical school for robot support work.
+              </h2>
+            </div>
+            <div className="space-y-4 text-sm leading-relaxed" style={{ color: TEXT_MID }}>
+              <p>
+                StagePro™ turns robot support into a trainable operating discipline:
+                safety, diagnostics, repair workflow, parts handling, software checks,
+                customer communication, and post-repair documentation.
+              </p>
+              <p>
+                It is built for robot manufacturers, service companies, venue operators,
+                logistics teams, and sales engineers who need confident technical fluency.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -156,6 +190,31 @@ export default function StageProPage() {
                   <h3 className="font-semibold text-sm mb-1" style={{ color: TEXT_HI }}>{title}</h3>
                   <p className="text-xs leading-relaxed" style={{ color: TEXT_DIM }}>{desc}</p>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Workflow ───────────────────────────────────────────────────────── */}
+      <section className="py-20 border-b" style={{ borderColor: BORDER }}>
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="mb-10">
+            <p className="section-label mb-2" style={{ color: PURPLE }}>Workflow</p>
+            <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
+              Training that maps to field reality.
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-0">
+            {WORKFLOW.map((item, index) => (
+              <div
+                key={item.step}
+                className="p-5 border-t md:border-t-0"
+                style={{ borderColor: BORDER, borderLeft: index === 0 ? "none" : `1px solid ${BORDER}` }}
+              >
+                <div className="font-mono text-2xl font-bold mb-4" style={{ color: `${PURPLE}66` }}>{item.step}</div>
+                <h3 className="font-semibold text-sm mb-2" style={{ color: TEXT_HI }}>{item.title}</h3>
+                <p className="text-xs leading-relaxed" style={{ color: TEXT_DIM }}>{item.desc}</p>
               </div>
             ))}
           </div>

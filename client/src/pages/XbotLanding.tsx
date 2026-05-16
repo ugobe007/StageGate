@@ -21,6 +21,13 @@ const OUTPUTS = [
   { num: "D", title: "Ground Transport Options", desc: "Vetted Las Vegas carriers with rate estimates and StageGate-managed drayage options." },
 ];
 
+const WORKFLOW = [
+  { label: "Input", title: "Robot and show details", desc: "XBOT captures dimensions, batteries, power, origin, deadlines, venue, booth, and special handling." },
+  { label: "Reason", title: "Logistics constraints", desc: "It checks customs risk, ETA buffers, storage needs, handling complexity, and show setup windows." },
+  { label: "Recommend", title: "StageGate service plan", desc: "It maps the project to transport, warehousing, staging, activation, support, and promotional options." },
+  { label: "Submit", title: "Human handoff", desc: "The completed brief becomes a service request for the StageGate operations team to review and execute." },
+];
+
 const STATUS_LABELS: Record<string, string> = {
   draft: "Draft",
   brief_generated: "Brief Ready",
@@ -151,7 +158,9 @@ export default function XbotLanding() {
                 The show opens in 72 hours. Your freight broker has never handled a humanoid. The ATA Carnet is in the wrong format. Ground transport hasn't confirmed.
               </p>
               <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.45)", lineHeight: 1.7, marginBottom: "2.5rem", maxWidth: "46ch" }}>
-                XBOT fixes this. Tell it about your robot and your route. In under 60 seconds it generates a complete logistics brief — customs checklist, timeline, service package, and ground transport options — tailored to your specific hardware.
+                XBOT fixes this. It is StageGate's logistics intake engine for robot exhibitors:
+                a structured workflow that turns robot specs, route details, and show deadlines
+                into an actionable logistics brief.
               </p>
 
               <Link href="/xbot/new">
@@ -184,6 +193,54 @@ export default function XbotLanding() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── DEFINITION ─────────────────────────────────────────────────────── */}
+      <section style={{ padding: "5rem 0", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "#0b0b0b" }}>
+        <div className="container">
+          <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1.2fr", gap: "5rem" }}>
+            <div>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#00ff87", marginBottom: "1rem" }}>
+                Definition
+              </p>
+              <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em" }}>
+                XBOT is the pre-show logistics brain.
+              </h2>
+            </div>
+            <div style={{ display: "grid", gap: "1rem", fontSize: "1rem", color: "rgba(255,255,255,0.42)", lineHeight: 1.75 }}>
+              <p>
+                Before a robot can demo, sell, or train, it has to arrive safely, clear customs,
+                get staged, power on, and be ready for a live audience. XBOT collects the exact
+                information StageGate needs to make that happen.
+              </p>
+              <p>
+                The output is not a generic quote form. It is a working brief for operations:
+                timing, documents, risk flags, services, and next actions.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── WORKFLOW ───────────────────────────────────────────────────────── */}
+      <section style={{ padding: "6rem 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="container">
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: "1rem" }}>
+            Workflow Design
+          </p>
+          <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: "3rem", maxWidth: "24ch" }}>
+            From incomplete details to an executable plan.
+          </h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+            {WORKFLOW.map((item, i) => (
+              <div key={item.label} style={{ padding: "1.75rem", borderLeft: i === 0 ? "none" : "1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#00ff87", marginBottom: "1rem" }}>{item.label}</div>
+                <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.5rem" }}>{item.title}</h3>
+                <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.65 }}>{item.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

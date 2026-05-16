@@ -51,6 +51,14 @@ const USE_CASES = [
   { icon: Phone,       title: "Remote Diagnostics",     desc: "Most issues resolved remotely in under 30 minutes via secure connection to your robot's systems." },
 ];
 
+const WORKFLOW = [
+  { step: "01", title: "Capture the issue", desc: "Submit the robot model, location, error state, urgency, and any photos or logs from the field." },
+  { step: "02", title: "Max triages", desc: "Max separates software, operator, hardware, and show-floor problems so the right response starts fast." },
+  { step: "03", title: "Remote first", desc: "StageGate attempts diagnostics, reset guidance, firmware review, and operator coaching before dispatching." },
+  { step: "04", title: "Dispatch if needed", desc: "If the robot needs hands-on support, a technician is coordinated for show-floor or customer-site service." },
+  { step: "05", title: "Close the loop", desc: "You receive the fix summary, parts notes, next maintenance recommendation, and follow-up schedule." },
+];
+
 export default function StageHandPage() {
   return (
     <div className="min-h-screen" style={{ background: BG, color: TEXT_HI }}>
@@ -83,8 +91,9 @@ export default function StageHandPage() {
             StageHand<sup className="text-xl font-normal align-super">™</sup>
           </h1>
           <p className="text-base max-w-2xl mx-auto mb-8 leading-relaxed" style={{ color: TEXT_MID }}>
-            Ongoing remote and on-site technical support for robots in the field, led by Max.
-            When your robot needs help, we're already there.
+            StageHand™ is the support layer for robots already in the field: remote diagnostics,
+            show-floor triage, emergency dispatch, and maintenance planning led by Max.
+            When your robot needs help, the workflow is already defined.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/register">
@@ -93,6 +102,56 @@ export default function StageHandPage() {
             <Link href="/order">
               <span className="btn-default">Book support now</span>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Definition ─────────────────────────────────────────────────────── */}
+      <section className="py-16 border-b" style={{ borderColor: BORDER }}>
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-[0.8fr_1.2fr] gap-10">
+            <div>
+              <p className="section-label mb-3" style={{ color: AMBER }}>Definition</p>
+              <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
+                Technical support after the sale.
+              </h2>
+            </div>
+            <div className="space-y-4 text-sm leading-relaxed" style={{ color: TEXT_MID }}>
+              <p>
+                StageHand™ gives robot companies and operators a named service path when something breaks,
+                stalls, or needs expert attention. It is designed for trade shows, showroom demos, pilots,
+                and deployed customer environments where downtime is expensive.
+              </p>
+              <p>
+                Max handles the technical question first: what failed, who needs to act, what can be solved
+                remotely, and when a technician needs to be on site.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Workflow ───────────────────────────────────────────────────────── */}
+      <section className="py-20 border-b" style={{ borderColor: BORDER, background: CARD }}>
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="mb-10">
+            <p className="section-label mb-2" style={{ color: AMBER }}>Workflow</p>
+            <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
+              From issue report to resolution record.
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-0">
+            {WORKFLOW.map((item, index) => (
+              <div
+                key={item.step}
+                className="p-5 border-t md:border-t-0"
+                style={{ borderColor: BORDER, borderLeft: index === 0 ? "none" : `1px solid ${BORDER}` }}
+              >
+                <div className="font-mono text-2xl font-bold mb-4" style={{ color: `${AMBER}66` }}>{item.step}</div>
+                <h3 className="font-semibold text-sm mb-2" style={{ color: TEXT_HI }}>{item.title}</h3>
+                <p className="text-xs leading-relaxed" style={{ color: TEXT_DIM }}>{item.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
