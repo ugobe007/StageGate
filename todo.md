@@ -1651,3 +1651,12 @@
 - [x] calendar.update admin allowed
 - [x] calendar.delete admin allowed
 - [x] 10 calendar tests passing
+
+## v66 — Calendar Badge + Prospect Email + Sales Agent Calendar
+
+- [x] DashboardLayout: add upcoming calendar event count badge to Calendar sidebar item (query calendar.upcomingCount)
+- [x] server/routers.ts: add calendar.upcomingCount adminProcedure returning count of upcoming events
+- [x] markReplied auto-schedule: send third Resend email to prospectEmail with event details + public share link (/calendar/:token)
+- [x] AdminSalesAgent: add "Meetings" tab showing next 8 upcoming calendar events with type/status color coding
+- [x] AdminSalesAgent: add "Schedule Meeting" quick-action modal (title, date, time, type, duration, notes) calling calendar.create
+- [x] Vitest: 1024 tests passing (34 test files)

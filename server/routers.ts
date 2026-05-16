@@ -1294,6 +1294,35 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           } catch (e) {
             console.warn("[Calendar] Failed to notify owner:", e);
           }
+
+          // Send confirmation email to the prospect
+          if (prospect.contactEmail) {
+            const prospectHtml = `
+<div style="font-family:sans-serif;max-width:600px;">
+  <h2 style="color:#1a1a1a;">Your Meeting with StageGate is Confirmed</h2>
+  <p>Hi ${prospect.contactName ?? "there"},</p>
+  <p>We've confirmed your intro call with the StageGate team. Here are the details:</p>
+  <table style="border-collapse:collapse;width:100%;margin:1rem 0;">
+    <tr><td style="padding:0.5rem 0;color:#555;width:120px;"><strong>Date &amp; Time</strong></td><td style="padding:0.5rem 0;">${startDisplay} (Pacific Time)</td></tr>
+    <tr><td style="padding:0.5rem 0;color:#555;"><strong>Duration</strong></td><td style="padding:0.5rem 0;">${input.meetingDurationMinutes ?? 30} minutes</td></tr>
+    ${input.meetingNotes ? `<tr><td style="padding:0.5rem 0;color:#555;"><strong>Notes</strong></td><td style="padding:0.5rem 0;">${input.meetingNotes}</td></tr>` : ""}
+  </table>
+  <p><a href="${shareUrl}" style="display:inline-block;background:#00ff87;color:#000;padding:0.6rem 1.2rem;border-radius:0.25rem;text-decoration:none;font-weight:600;">View Event Details →</a></p>
+  <p style="color:#555;">We look forward to speaking with you. If you need to reschedule, reply to this email or reach us at <a href="mailto:hello@onstage.bot">hello@onstage.bot</a>.</p>
+  <hr style="border-color:#eee;">
+  <p style="color:#999;font-size:12px;">StageGate — Robotics Activation Infrastructure • <a href="https://onstage.bot" style="color:#999;">onstage.bot</a></p>
+</div>`;
+            try {
+              await emailHelpers.sendEmail({
+                to: prospect.contactEmail,
+                subject: `Meeting Confirmed: Intro Call with StageGate — ${startDisplay} PT`,
+                body: `Hi ${prospect.contactName ?? "there"},\n\nYour intro call with StageGate is confirmed for ${startDisplay} PT (${input.meetingDurationMinutes ?? 30} min).\n\nView event details: ${shareUrl}\n\nLooking forward to speaking with you.\n\n— StageGate Team\nhello@onstage.bot`,
+                htmlBody: prospectHtml,
+              });
+            } catch (e) {
+              console.warn("[Calendar] Failed to email prospect:", e);
+            }
+          }
         }
 
         return { success: true, calendarEvent };
@@ -4000,6 +4029,15 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           to: input.to ? new Date(input.to) : undefined,
         });
         return { events };
+      }),
+
+    // Admin: count of upcoming scheduled/confirmed events (for sidebar badge)
+    upcomingCount: adminProcedure
+      .query(async () => {
+        const now = new Date();
+        const events = await db.listCalendarEvents({ from: now });
+        const count = events.filter(e => e.status === "scheduled" || e.status === "confirmed").length;
+        return { count };
       }),
 
     // Agent write access (cron-auth or admin)

@@ -132,6 +132,11 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
+  const { data: calendarUpcomingCount } = trpc.calendar.upcomingCount.useQuery(undefined, {
+    enabled: user?.role === "admin",
+    refetchInterval: 120_000,
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
     localStorage.setItem("sg-sidebar-collapsed", String(collapsed));
@@ -217,7 +222,8 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
           const pendingDrafts = item.path === "/admin/outreach" ? (draftCount?.pending ?? 0) : 0;
           const pendingBookings = item.path === "/admin/bookings" ? (bookingNewCount?.count ?? 0) : 0;
           const pendingServiceRequests = item.path === "/admin/service-requests" ? (serviceRequestNewCount?.count ?? 0) : 0;
-          const count = pendingDrafts + pendingBookings + pendingServiceRequests;
+          const upcomingCalendar = item.path === "/admin/calendar" ? (calendarUpcomingCount?.count ?? 0) : 0;
+          const count = pendingDrafts + pendingBookings + pendingServiceRequests + upcomingCalendar;
           return (
             <button
               key={item.path}

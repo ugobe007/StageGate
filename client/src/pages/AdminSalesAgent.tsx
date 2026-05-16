@@ -462,6 +462,15 @@ export default function AdminSalesAgent() {
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+  // v66: calendar panel state
+  const [calendarTab, setCalendarTab] = useState<"pipeline" | "calendar">("pipeline");
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [scheduleTitle, setScheduleTitle] = useState("");
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("10:00");
+  const [scheduleDuration, setScheduleDuration] = useState(30);
+  const [scheduleNotes, setScheduleNotes] = useState("");
+  const [scheduleType, setScheduleType] = useState<"meeting" | "call" | "demo">("call");
 
   const utils = trpc.useUtils();
 
@@ -609,6 +618,30 @@ export default function AdminSalesAgent() {
     },
   });
 
+  // v66: calendar data — stabilize `from` reference to avoid infinite re-fetches
+  const [calendarFrom] = useState(() => new Date().toISOString());
+  const { data: upcomingEventsData, refetch: refetchCalendar } = trpc.calendar.list.useQuery(
+    { from: calendarFrom },
+    { staleTime: 60_000, refetchInterval: 120_000 }
+  );
+  const upcomingEvents = (upcomingEventsData?.events ?? []).filter(
+    e => e.status === "scheduled" || e.status === "confirmed"
+  ).slice(0, 8);
+
+  const agentCreateEvent = trpc.calendar.create.useMutation({
+    onSuccess: () => {
+      toast.success("Meeting scheduled and added to calendar");
+      setScheduleModalOpen(false);
+      setScheduleTitle("");
+      setScheduleDate("");
+      setScheduleTime("10:00");
+      setScheduleDuration(30);
+      setScheduleNotes("");
+      refetchCalendar();
+    },
+    onError: (err) => toast.error(`Failed to schedule: ${err.message}`),
+  });
+
   const stats = {
     total: conversations.length,
     readyNow: conversations.filter(c => {
@@ -674,6 +707,21 @@ export default function AdminSalesAgent() {
             {pendingCount > 0 && (
               <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-black">
                 {pendingCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("calendar" as "pipeline" | "drafts")}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border-b-2 -mb-px ${
+              activeTab === ("calendar" as string)
+                ? "border-emerald-500 text-white"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            <Calendar className="w-4 h-4" /> Meetings
+            {upcomingEvents.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-700">
+                {upcomingEvents.length}
               </span>
             )}
           </button>
@@ -1173,7 +1221,210 @@ export default function AdminSalesAgent() {
             <PendingDraftsTab />
           </div>
         )}
+
+        {/* ── Meetings / Calendar tab ── */}
+        {activeTab === ("calendar" as string) && (
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-emerald-400" />
+                    Upcoming Meetings
+                  </h2>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    {upcomingEvents.length} scheduled or confirmed
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                  onClick={() => setScheduleModalOpen(true)}
+                >
+                  <Calendar className="w-3.5 h-3.5" /> Schedule Meeting
+                </Button>
+              </div>
+
+              {upcomingEvents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-zinc-600">
+                  <Calendar className="w-10 h-10 mb-3" />
+                  <p className="text-sm font-medium text-zinc-500">No upcoming meetings</p>
+                  <p className="text-xs mt-1">Schedule a meeting to see it here</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {upcomingEvents.map(evt => {
+                    const start = new Date(evt.startAt);
+                    const end = new Date(evt.endAt);
+                    const typeColors: Record<string, string> = {
+                      meeting: "bg-blue-500/20 text-blue-400 border-blue-800",
+                      call: "bg-emerald-500/20 text-emerald-400 border-emerald-800",
+                      demo: "bg-amber-500/20 text-amber-400 border-amber-800",
+                      event: "bg-purple-500/20 text-purple-400 border-purple-800",
+                      follow_up: "bg-zinc-500/20 text-zinc-400 border-zinc-700",
+                    };
+                    const typeColor = typeColors[evt.type] ?? typeColors.meeting;
+                    const statusColors: Record<string, string> = {
+                      scheduled: "bg-zinc-700 text-zinc-300",
+                      confirmed: "bg-emerald-600/30 text-emerald-300",
+                      completed: "bg-zinc-800 text-zinc-500",
+                      cancelled: "bg-red-900/30 text-red-400",
+                    };
+                    const statusColor = statusColors[evt.status] ?? statusColors.scheduled;
+                    return (
+                      <div key={evt.id} className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border uppercase tracking-wide ${typeColor}`}>
+                                {evt.type.replace("_", " ")}
+                              </span>
+                              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusColor}`}>
+                                {evt.status}
+                              </span>
+                            </div>
+                            <h3 className="font-medium text-white text-sm truncate">{evt.title}</h3>
+                            {evt.companyName && (
+                              <p className="text-xs text-zinc-400 mt-0.5">{evt.companyName}</p>
+                            )}
+                            {evt.prospectEmail && (
+                              <p className="text-xs text-zinc-600 mt-0.5 flex items-center gap-1">
+                                <Mail className="w-3 h-3" />{evt.prospectEmail}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-xs font-medium text-white">
+                              {start.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                            </p>
+                            <p className="text-xs text-zinc-500">
+                              {start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
+                              {" – "}
+                              {end.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
+                            </p>
+                          </div>
+                        </div>
+                        {evt.notes && (
+                          <p className="text-xs text-zinc-600 mt-2 border-t border-zinc-800 pt-2">{evt.notes}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ── Schedule Meeting Modal (v66) ── */}
+      <Dialog open={scheduleModalOpen} onOpenChange={setScheduleModalOpen}>
+        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <Calendar className="w-4 h-4 text-emerald-400" />
+              Schedule a Meeting
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500">
+              Create a calendar event and optionally link it to a prospect.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-xs text-zinc-400 mb-1 block">Title *</label>
+              <input
+                type="text"
+                value={scheduleTitle}
+                onChange={e => setScheduleTitle(e.target.value)}
+                placeholder="e.g. Intro Call — Unitree Robotics"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-600"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">Date *</label>
+                <input
+                  type="date"
+                  value={scheduleDate}
+                  onChange={e => setScheduleDate(e.target.value)}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-600"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">Time (PT)</label>
+                <input
+                  type="time"
+                  value={scheduleTime}
+                  onChange={e => setScheduleTime(e.target.value)}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-600"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">Type</label>
+                <Select value={scheduleType} onValueChange={v => setScheduleType(v as "meeting" | "call" | "demo")}>
+                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-800 border-zinc-700">
+                    <SelectItem value="call">Call</SelectItem>
+                    <SelectItem value="meeting">Meeting</SelectItem>
+                    <SelectItem value="demo">Demo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">Duration</label>
+                <Select value={String(scheduleDuration)} onValueChange={v => setScheduleDuration(Number(v))}>
+                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-800 border-zinc-700">
+                    <SelectItem value="15">15 min</SelectItem>
+                    <SelectItem value="30">30 min</SelectItem>
+                    <SelectItem value="45">45 min</SelectItem>
+                    <SelectItem value="60">60 min</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-zinc-400 mb-1 block">Notes</label>
+              <Textarea
+                value={scheduleNotes}
+                onChange={e => setScheduleNotes(e.target.value)}
+                placeholder="Optional context for the meeting"
+                className="bg-zinc-800 border-zinc-700 text-white text-sm resize-none h-20"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" className="border-zinc-700 text-zinc-400" onClick={() => setScheduleModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={!scheduleTitle.trim() || !scheduleDate || agentCreateEvent.isPending}
+              onClick={() => {
+                if (!scheduleTitle.trim() || !scheduleDate) return;
+                const startAt = new Date(`${scheduleDate}T${scheduleTime}:00`);
+                const endAt = new Date(startAt.getTime() + scheduleDuration * 60_000);
+                agentCreateEvent.mutate({
+                  title: scheduleTitle.trim(),
+                  startAt: startAt.toISOString(),
+                  endAt: endAt.toISOString(),
+                  type: scheduleType,
+                  status: "scheduled",
+                  notes: scheduleNotes.trim() || undefined,
+                });
+              }}
+            >
+              {agentCreateEvent.isPending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Scheduling…</> : "Schedule Meeting"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Preview Email Modal */}
       {selectedConv && (
