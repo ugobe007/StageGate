@@ -51,11 +51,21 @@ const SERVICE_GROUPS = [
   { title: "Build capability", desc: "StagePro™ training, showroom demos, market support, and sales enablement." },
 ];
 
+function parsePricingTiers(value: unknown): any[] {
+  if (!value || typeof value !== "string") return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function ServiceCard({ svc, phase }: { svc: any; phase: "phase1" | "phase2" }) {
   const cfg = SVC_CONFIG[svc.slug] || { icon: Package, accent: GREEN };
   const Icon = cfg.icon;
   const features = FEATURES[svc.slug] || [];
-  const tiers: any[] = svc.pricingTiers ? JSON.parse(svc.pricingTiers) : [];
+  const tiers = parsePricingTiers(svc.pricingTiers);
   const isPhase2 = phase === "phase2";
 
   return (

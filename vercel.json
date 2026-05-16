@@ -1,4 +1,7 @@
 {
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm exec vite build",
+  "outputDirectory": "dist/public",
   "rewrites": [
     {
       "source": "/((?!api/|assets/|.*\\..*).*)",

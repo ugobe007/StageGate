@@ -95,6 +95,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
+  if (user.role !== "admin") {
+    return (
+      <div
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: D.bg, fontFamily: D.font }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", padding: "2rem", maxWidth: "22rem", width: "100%", textAlign: "center" }}>
+          <h2 style={{ fontSize: "1.125rem", fontWeight: 600, color: D.text }}>Admin access required</h2>
+          <p style={{ fontSize: "0.875rem", color: D.text2 }}>Your account is signed in, but it is not an administrator account.</p>
+          <button
+            onClick={() => { window.location.href = "/"; }}
+            style={{
+              width: "100%", padding: "0.5rem 1rem", borderRadius: "0.25rem",
+              background: D.surface2, border: `1px solid ${D.border}`,
+              color: D.text, fontWeight: 700, fontSize: "0.875rem", cursor: "pointer",
+            }}
+          >
+            Return Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return <SidebarShell>{children}</SidebarShell>;
 }
 

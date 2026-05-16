@@ -15,9 +15,8 @@ import { eq, and } from "drizzle-orm";
 function verifyResendSignature(req: Request): boolean {
   const secret = process.env.RESEND_WEBHOOK_SECRET;
   if (!secret) {
-    // If no secret configured, skip verification (dev/test only)
     console.warn("[Resend Webhook] RESEND_WEBHOOK_SECRET not set — skipping signature verification");
-    return true;
+    return process.env.NODE_ENV !== "production";
   }
 
   // Svix format
@@ -32,7 +31,8 @@ function verifyResendSignature(req: Request): boolean {
         ? Buffer.from(secret.slice(6), "base64")
         : Buffer.from(secret, "base64");
 
-      const body = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+      const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
+      const body = rawBody ? rawBody.toString("utf8") : typeof req.body === "string" ? req.body : JSON.stringify(req.body);
       const toSign = `${svixId}.${svixTimestamp}.${body}`;
       const hmac = crypto.createHmac("sha256", rawSecret).update(toSign).digest("base64");
 
@@ -55,7 +55,8 @@ function verifyResendSignature(req: Request): boolean {
       const ts = parts["t"];
       const v1 = parts["v1"];
       if (!ts || !v1) return false;
-      const body = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+      const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
+      const body = rawBody ? rawBody.toString("utf8") : typeof req.body === "string" ? req.body : JSON.stringify(req.body);
       const toSign = `${ts}.${body}`;
       const hmac = crypto.createHmac("sha256", secret).update(toSign).digest("hex");
       return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(v1));

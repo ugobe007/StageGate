@@ -15,6 +15,7 @@
  * https://resend.com/docs/api-reference/webhooks/introduction
  */
 import type { Request, Response } from "express";
+import crypto from "crypto";
 import { getDb } from "../db";
 import {
   emailThreads,
@@ -51,8 +52,31 @@ const SCHEDULING_KEYWORDS = [
 
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
+function verifyInboundSignature(req: Request): boolean {
+  const secret = process.env.RESEND_WEBHOOK_SECRET;
+  if (!secret) return process.env.NODE_ENV !== "production";
+  const svixId = req.headers["svix-id"] as string | undefined;
+  const svixTimestamp = req.headers["svix-timestamp"] as string | undefined;
+  const svixSignature = req.headers["svix-signature"] as string | undefined;
+  if (!svixId || !svixTimestamp || !svixSignature) return false;
+  try {
+    const rawSecret = secret.startsWith("whsec_")
+      ? Buffer.from(secret.slice(6), "base64")
+      : Buffer.from(secret, "base64");
+    const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
+    const body = rawBody ? rawBody.toString("utf8") : JSON.stringify(req.body);
+    const hmac = crypto.createHmac("sha256", rawSecret).update(`${svixId}.${svixTimestamp}.${body}`).digest("base64");
+    return svixSignature.split(" ").some(sig => sig === `v1,${hmac}`);
+  } catch {
+    return false;
+  }
+}
+
 export async function resendInboundHandler(req: Request, res: Response) {
   try {
+    if (!verifyInboundSignature(req)) {
+      return res.status(401).json({ error: "Invalid signature" });
+    }
     const payload = req.body as ResendInboundPayload;
 
     const fromAddress = extractEmail(payload.from ?? "");
