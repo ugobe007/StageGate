@@ -120,10 +120,8 @@ export default function ClientDashboard() {
             <p style={{ color: "#64748b", marginBottom: "2rem" }}>
               Complete your company profile so StageGate can prepare the right logistics for your robots.
             </p>
-            <Link href="/onboarding">
-              <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#00ff87", color: "#fff", fontWeight: 700, fontSize: "1rem", borderRadius: "0.375rem", textDecoration: "none" }}>
-                Start Setup <ArrowRight size={16} />
-              </a>
+            <Link href="/onboarding" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#00ff87", color: "#080808", fontWeight: 700, fontSize: "1rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+              Start Setup <ArrowRight size={16} />
             </Link>
           </div>
         </div>

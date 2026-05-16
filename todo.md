@@ -1559,3 +1559,8 @@
 - [x] Onboarding: rewrite to dark palette
 - [x] Register: rewrite to dark palette
 - [x] index.css sb-admin CSS section: replace all light tokens with dark palette
+
+## v55 — Bug Fixes: /dashboard Errors
+
+- [x] Fix nested anchor tags in ClientDashboard (Link wrapping an <a> tag)
+- [x] Fix company.getMyProfile returning undefined — must return null when no profile found

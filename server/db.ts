@@ -110,9 +110,9 @@ export async function getUserByOpenId(openId: string) {
 
 export async function getCompanyProfileByUserId(userId: number) {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) return null;
   const result = await db.select().from(companyProfiles).where(eq(companyProfiles.userId, userId)).limit(1);
-  return result[0];
+  return result[0] ?? null;
 }
 
 export async function upsertCompanyProfile(data: InsertCompanyProfile) {
