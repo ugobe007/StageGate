@@ -1577,3 +1577,9 @@
 - [x] Onboarding: dark focus ring on all Input/Textarea components via .dark-page-inputs CSS wrapper
 - [x] Register: all three Navbar usages now pass darkBg prop
 - [x] ClientDashboard: My Requests section already existed; fixed all #fff card backgrounds to #111 and #64748b text to rgba(255,255,255,0.45); added dark-page-inputs wrapper to service request form; added Navbar darkBg prop
+
+## v59 — Select Dark Styling, Admin Redirect, Onboarding Persistence
+
+- [x] ClientDashboard: dark select/dropdown styling with custom arrow SVG (background #111, color #ececec, border rgba(255,255,255,0.12))
+- [x] Auth flow: admin redirect already correctly implemented in AuthRedirect.tsx; fixed AuthRedirect loading screen to use dark palette
+- [x] Onboarding: persistence added — loads existing draft profile on mount (pre-populates all fields), saves progress on each step advance (onboardingComplete: false), final submit sets onboardingComplete: true; fixed all #64748b and #fff colors in step descriptions and service cards

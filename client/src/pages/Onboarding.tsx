@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
@@ -55,11 +55,12 @@ export default function Onboarding() {
   const { user, isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
   const [step, setStep] = useState(1);
+  const [hydrated, setHydrated] = useState(false);
 
   const [companyName, setCompanyName] = useState("");
   const [website, setWebsite] = useState("");
-  const [contactName, setContactName] = useState(user?.name ?? "");
-  const [contactEmail, setContactEmail] = useState(user?.email ?? "");
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [country, setCountry] = useState("");
   const [description, setDescription] = useState("");
@@ -75,9 +76,66 @@ export default function Onboarding() {
 
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
+  // Load existing draft profile to pre-populate form (resumable wizard)
+  const { data: existingProfile } = trpc.company.getMyProfile.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
+
+  useEffect(() => {
+    if (hydrated || !existingProfile) return;
+    setCompanyName(existingProfile.companyName ?? "");
+    setWebsite(existingProfile.website ?? "");
+    setContactName(existingProfile.contactName ?? user?.name ?? "");
+    setContactEmail(existingProfile.contactEmail ?? user?.email ?? "");
+    setContactPhone(existingProfile.contactPhone ?? "");
+    setCountry(existingProfile.country ?? "");
+    setDescription(existingProfile.description ?? "");
+    setLinkedinUrl(existingProfile.linkedinUrl ?? "");
+    if (existingProfile.robots) {
+      try { const r = JSON.parse(existingProfile.robots); if (r.length) setRobots(r); } catch {}
+    }
+    if (existingProfile.showsAttending) {
+      try { const s = JSON.parse(existingProfile.showsAttending); if (s.length) setShows(s); } catch {}
+    }
+    if (existingProfile.servicesNeeded) {
+      try { const sv = JSON.parse(existingProfile.servicesNeeded); if (sv.length) setSelectedServices(sv); } catch {}
+    }
+    setHydrated(true);
+  }, [existingProfile, hydrated, user]);
+
+  // Also set contact info from user object if no profile yet
+  useEffect(() => {
+    if (!hydrated && !existingProfile && user) {
+      setContactName(user.name ?? "");
+      setContactEmail(user.email ?? "");
+    }
+  }, [user, hydrated, existingProfile]);
+
   const upsertProfile = trpc.company.upsertProfile.useMutation({
     onSuccess: () => navigate("/dashboard"),
   });
+
+  // Save progress to server on each step advance (onboardingComplete stays false until final submit)
+  const saveProgress = trpc.company.upsertProfile.useMutation();
+
+  const handleNextStep = () => {
+    saveProgress.mutate({
+      companyName: companyName || "(draft)",
+      website: website || undefined,
+      contactName: contactName || undefined,
+      contactEmail: contactEmail || undefined,
+      contactPhone: contactPhone || undefined,
+      country: country || undefined,
+      description: description || undefined,
+      linkedinUrl: linkedinUrl || undefined,
+      robots: JSON.stringify(robots.filter(r => r.name)),
+      showsAttending: JSON.stringify(shows.filter(s => s.showName)),
+      servicesNeeded: JSON.stringify(selectedServices),
+      onboardingComplete: false,
+    });
+    setStep(s => s + 1);
+  };
 
   const handleSubmit = () => {
     upsertProfile.mutate({
@@ -164,7 +222,7 @@ export default function Onboarding() {
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
             <div>
               <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#ececec", margin: "0 0 0.25rem" }}>Tell us about your company</h1>
-              <p style={{ fontSize: "0.875rem", color: "#64748b", margin: 0 }}>This helps us prepare the right logistics for your robots.</p>
+              <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.40)", margin: 0 }}>This helps us prepare the right logistics for your robots.</p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <div>
@@ -223,12 +281,12 @@ export default function Onboarding() {
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
             <div>
               <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#ececec", margin: "0 0 0.25rem" }}>Tell us about your robot(s)</h1>
-              <p style={{ fontSize: "0.875rem", color: "#64748b", margin: 0 }}>We need this to plan handling, staging, and logistics.</p>
+              <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.40)", margin: 0 }}>We need this to plan handling, staging, and logistics.</p>
             </div>
             {robots.map((robot, idx) => (
               <div key={idx} style={{ padding: "1.125rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111", display: "flex", flexDirection: "column", gap: "0.875rem" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#64748b" }}>Robot {idx + 1}</span>
+                  <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "rgba(255,255,255,0.40)" }}>Robot {idx + 1}</span>
                   {robots.length > 1 && (
                     <button onClick={() => setRobots(prev => prev.filter((_, i) => i !== idx))}
                       style={{ fontSize: "0.8125rem", color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}>Remove</button>
@@ -279,12 +337,12 @@ export default function Onboarding() {
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
             <div>
               <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#ececec", margin: "0 0 0.25rem" }}>Which shows are you attending?</h1>
-              <p style={{ fontSize: "0.875rem", color: "#64748b", margin: 0 }}>We'll prepare logistics for each event in advance.</p>
+              <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.40)", margin: 0 }}>We'll prepare logistics for each event in advance.</p>
             </div>
             {shows.map((show, idx) => (
               <div key={idx} style={{ padding: "1.125rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111", display: "flex", flexDirection: "column", gap: "0.875rem" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#64748b" }}>Show {idx + 1}</span>
+                  <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "rgba(255,255,255,0.40)" }}>Show {idx + 1}</span>
                   {shows.length > 1 && (
                     <button onClick={() => setShows(prev => prev.filter((_, i) => i !== idx))}
                       style={{ fontSize: "0.8125rem", color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}>Remove</button>
@@ -320,7 +378,7 @@ export default function Onboarding() {
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
             <div>
               <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#ececec", margin: "0 0 0.25rem" }}>What services do you need?</h1>
-              <p style={{ fontSize: "0.875rem", color: "#64748b", margin: 0 }}>Select all that apply — we'll tailor your quote accordingly.</p>
+              <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.40)", margin: 0 }}>Select all that apply — we'll tailor your quote accordingly.</p>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
               {SERVICES_NEEDED.map(svc => {
@@ -331,7 +389,7 @@ export default function Onboarding() {
                     style={{
                       padding: "1rem", borderRadius: "0.5rem", textAlign: "left", cursor: "pointer",
                       border: `1px solid ${selected ? "#00ff87" : "rgba(255,255,255,0.08)"}`,
-                      background: selected ? "rgba(62,207,142,0.06)" : "#fff",
+                      background: selected ? "rgba(0,255,135,0.06)" : "#111",
                       transition: "all 0.1s",
                     }}
                   >
@@ -339,7 +397,7 @@ export default function Onboarding() {
                       <Icon size={16} style={{ color: selected ? "#00ff87" : "rgba(255,255,255,0.30)", marginTop: "0.125rem", flexShrink: 0 }} />
                       <div>
                         <div style={{ fontSize: "0.875rem", fontWeight: 600, color: selected ? "#ececec" : "#ececec" }}>{svc.label}</div>
-                        <div style={{ fontSize: "0.8125rem", color: "#64748b", marginTop: "0.125rem" }}>{svc.desc}</div>
+                        <div style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", marginTop: "0.125rem" }}>{svc.desc}</div>
                       </div>
                     </div>
                   </button>
@@ -374,7 +432,7 @@ export default function Onboarding() {
 
           {step < 4 ? (
             <button
-              onClick={() => setStep(s => s + 1)}
+              onClick={handleNextStep}
               disabled={step === 1 && !companyName.trim()}
               style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: (step === 1 && !companyName.trim()) ? 0.5 : 1 }}
             >

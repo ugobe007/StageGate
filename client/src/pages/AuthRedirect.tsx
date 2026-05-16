@@ -40,10 +40,10 @@ export default function AuthRedirect() {
   }, [loading, profileLoading, isAuthenticated, user, profile, navigate]);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4 text-muted-foreground">
-        <Loader2 className="animate-spin" size={32} />
-        <p className="text-sm">Setting up your workspace…</p>
+    <div style={{ minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
+        <Loader2 size={28} style={{ color: "#00ff87", animation: "spin 1s linear infinite" }} />
+        <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.45)" }}>Setting up your workspace…</p>
       </div>
     </div>
   );
