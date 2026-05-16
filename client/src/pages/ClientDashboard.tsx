@@ -94,14 +94,17 @@ export default function ClientDashboard() {
 
   if (!isAuthenticated) {
     return (
-      <div style={{ minHeight: "100vh", background: "#fff" }}>
+      <div style={{ minHeight: "100vh", background: "#080808" }}>
         <Navbar />
-        <div style={{ paddingTop: "8rem", paddingBottom: "4rem", maxWidth: "28rem", margin: "0 auto", padding: "8rem 1rem 4rem", textAlign: "center" }}>
-          <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem" }}>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#ececec", marginBottom: "0.75rem" }}>Sign In Required</h1>
-            <p style={{ color: "#64748b", marginBottom: "2rem" }}>Please sign in to access your dashboard.</p>
-            <a href={getLoginUrl()} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#00ff87", color: "#fff", fontWeight: 700, fontSize: "1rem", borderRadius: "0.375rem", textDecoration: "none" }}>
-              Sign In <ArrowRight size={16} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 4rem)", padding: "2rem 1rem" }}>
+          <div style={{ maxWidth: "26rem", width: "100%", textAlign: "center" }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(0,255,135,0.10)", border: "1px solid rgba(0,255,135,0.20)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
+              <ArrowRight size={20} style={{ color: "#00ff87" }} />
+            </div>
+            <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#ececec", marginBottom: "0.5rem", letterSpacing: "-0.02em" }}>Sign In Required</h1>
+            <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.9375rem", marginBottom: "2rem", lineHeight: 1.6 }}>Please sign in to access your dashboard.</p>
+            <a href={getLoginUrl()} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 2rem", background: "#f59e0b", color: "#080808", fontWeight: 800, fontSize: "0.875rem", letterSpacing: "0.06em", textTransform: "uppercase", borderRadius: "0.25rem", textDecoration: "none" }}>
+              Sign In <ArrowRight size={14} />
             </a>
           </div>
         </div>
@@ -111,18 +114,22 @@ export default function ClientDashboard() {
 
   if (!profile || !profile.onboardingComplete) {
     return (
-      <div style={{ minHeight: "100vh", background: "#fff" }}>
+      <div style={{ minHeight: "100vh", background: "#080808" }}>
         <Navbar />
-        <div style={{ paddingTop: "8rem", paddingBottom: "4rem", maxWidth: "28rem", margin: "0 auto", padding: "8rem 1rem 4rem", textAlign: "center" }}>
-          <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem" }}>
-            <Bot size={40} style={{ color: "#00ff87", margin: "0 auto 1rem" }} />
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#ececec", marginBottom: "0.75rem" }}>Set Up Your Profile</h1>
-            <p style={{ color: "#64748b", marginBottom: "2rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 4rem)", padding: "2rem 1rem" }}>
+          <div style={{ maxWidth: "26rem", width: "100%", textAlign: "center" }}>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(0,255,135,0.08)", border: "1px solid rgba(0,255,135,0.18)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
+              <Bot size={24} style={{ color: "#00ff87" }} />
+            </div>
+            <p style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.28)", marginBottom: "0.75rem", fontFamily: "'JetBrains Mono', monospace" }}>Client Portal</p>
+            <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#ececec", marginBottom: "0.625rem", letterSpacing: "-0.02em", lineHeight: 1.2 }}>Set Up Your Profile</h1>
+            <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.9375rem", marginBottom: "2rem", lineHeight: 1.65 }}>
               Complete your company profile so StageGate can prepare the right logistics for your robots.
             </p>
-            <Link href="/onboarding" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#00ff87", color: "#080808", fontWeight: 700, fontSize: "1rem", borderRadius: "0.375rem", textDecoration: "none" }}>
-              Start Setup <ArrowRight size={16} />
+            <Link href="/onboarding" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 2rem", background: "#f59e0b", color: "#080808", fontWeight: 800, fontSize: "0.875rem", letterSpacing: "0.06em", textTransform: "uppercase", borderRadius: "0.25rem", textDecoration: "none" }}>
+              Start Setup <ArrowRight size={14} />
             </Link>
+            <p style={{ marginTop: "1.25rem", fontSize: "0.8125rem", color: "rgba(255,255,255,0.25)" }}>Takes about 3 minutes</p>
           </div>
         </div>
       </div>
