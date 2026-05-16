@@ -1672,5 +1672,13 @@
 - [x] calendar_events table: add reminder_sent_at column (nullable timestamp) for idempotent reminder tracking
 - [x] /api/scheduled/calendar-reminder heartbeat handler: query events where startAt is 22-26h from now and reminderSentAt is null, send reminder emails to prospect + Tommy + owner, stamp reminderSentAt
 - [x] Mount /api/scheduled/calendar-reminder in server/_core/index.ts
-- [ ] PENDING AFTER DEPLOY: manus-heartbeat create --name calendar-reminder --cron "0 0 * * * *" --path /api/scheduled/calendar-reminder --description "Hourly 24h-ahead meeting reminder emails"
+- [x] DEPLOYED: manus-heartbeat create --name calendar-reminder --cron "0 0 * * * *" --path /api/scheduled/calendar-reminder | task_uid: B4zrZfUCLbH8cQw289mFdu | next: 2026-05-16T15:00:00Z
 - [x] Vitest: 1024 tests passing (34 test files), calendar.confirm + calendar.reschedule covered via calendar.test.ts
+
+## v68 — End-to-End Test Run (Email + Calendar + Orders)
+
+- [x] Full vitest suite run — 1056 tests passing across 35 test files
+- [x] Integration smoke test: email outreach workflow — 9 steps, all pass
+- [x] Integration smoke test: calendar workflow — 11 steps, all pass
+- [x] Integration smoke test: customer order pipeline — 12 steps, all pass
+- [x] Compile and deliver test report — delivered to user
