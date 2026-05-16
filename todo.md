@@ -1682,3 +1682,10 @@
 - [x] Integration smoke test: calendar workflow — 11 steps, all pass
 - [x] Integration smoke test: customer order pipeline — 12 steps, all pass
 - [x] Compile and deliver test report — delivered to user
+
+## v69 — Calendar Event Cancel Button
+
+- [x] calendar.cancel adminProcedure: set status=cancelled, send cancellation emails to prospect + Tommy + owner
+- [x] AdminCalendar: red "Cancel" button on scheduled/confirmed event cards, confirm dialog with optional reason field
+- [x] AdminSalesAgent Meetings tab: red "Cancel" button on scheduled/confirmed event cards with confirm Dialog
+- [x] Vitest: 3 tests for calendar.cancel (admin allowed, already-cancelled throws, non-admin rejected) | 1059 total passing

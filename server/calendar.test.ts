@@ -191,3 +191,82 @@ describe("calendar.agentList", () => {
     await expect(caller.calendar.agentList({})).rejects.toThrow();
   });
 });
+
+describe("calendar.cancel", () => {
+  beforeEach(async () => {
+    const { getCalendarEventById, updateCalendarEvent } = await import("./db");
+    // Default: event exists and is scheduled
+    vi.mocked(getCalendarEventById).mockResolvedValue({
+      id: 10,
+      title: "Intro Call",
+      description: null,
+      startAt: new Date(Date.now() + 86400000),
+      endAt: new Date(Date.now() + 90000000),
+      type: "meeting",
+      status: "scheduled",
+      prospectId: null,
+      prospectEmail: "prospect@example.com",
+      prospectName: "Test Prospect",
+      companyName: "Test Co",
+      notes: null,
+      shareToken: "tok-cancel",
+      createdBy: 42,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    vi.mocked(updateCalendarEvent).mockImplementation(async (id, data) => ({
+      id,
+      title: "Intro Call",
+      description: null,
+      startAt: new Date(Date.now() + 86400000),
+      endAt: new Date(Date.now() + 90000000),
+      type: "meeting",
+      status: "scheduled",
+      prospectId: null,
+      prospectEmail: "prospect@example.com",
+      prospectName: "Test Prospect",
+      companyName: "Test Co",
+      notes: null,
+      shareToken: "tok-cancel",
+      createdBy: 42,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...data,
+    }));
+  });
+
+  it("admin can cancel a scheduled event", async () => {
+    const caller = appRouter.createCaller(makeAdminCtx());
+    const result = await caller.calendar.cancel({ id: 10, reason: "Scheduling conflict" });
+    expect(result.event.status).toBe("cancelled");
+  });
+
+  it("throws BAD_REQUEST when event is already cancelled", async () => {
+    const { getCalendarEventById } = await import("./db");
+    vi.mocked(getCalendarEventById).mockResolvedValueOnce({
+      id: 10,
+      title: "Already Cancelled",
+      description: null,
+      startAt: new Date(Date.now() + 86400000),
+      endAt: new Date(Date.now() + 90000000),
+      type: "meeting",
+      status: "cancelled",
+      prospectId: null,
+      prospectEmail: null,
+      prospectName: null,
+      companyName: null,
+      notes: null,
+      shareToken: "tok-cancel",
+      createdBy: 42,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const caller = appRouter.createCaller(makeAdminCtx());
+    await expect(caller.calendar.cancel({ id: 10 })).rejects.toThrow();
+  });
+
+  it("non-admin cannot cancel events", async () => {
+    const caller = appRouter.createCaller(makePublicCtx());
+    await expect(caller.calendar.cancel({ id: 10 })).rejects.toThrow();
+  });
+});

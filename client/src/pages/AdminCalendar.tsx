@@ -5,7 +5,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import {
   Calendar, Plus, Edit2, Trash2, Copy, ExternalLink,
-  Clock, User, Building2, Phone, Video, Star, ChevronDown, ChevronUp, X, Check, CheckCircle, RefreshCw
+  Clock, User, Building2, Phone, Video, Star, ChevronDown, ChevronUp, X, Check, CheckCircle, RefreshCw, XCircle
 } from "lucide-react";
 
 type EventType = "meeting" | "demo" | "call" | "event" | "follow_up";
@@ -95,6 +95,8 @@ export default function AdminCalendar() {
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
   const [reschedulingEvent, setReschedulingEvent] = useState<CalendarEvent | null>(null);
   const [rescheduleForm, setRescheduleForm] = useState({ startAt: "", endAt: "", notes: "" });
+  const [cancellingEvent, setCancellingEvent] = useState<CalendarEvent | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
 
   const { data, isLoading, refetch } = trpc.calendar.list.useQuery(
     { type: typeFilter || undefined },
@@ -124,6 +126,11 @@ export default function AdminCalendar() {
   const rescheduleMutation = trpc.calendar.reschedule.useMutation({
     onSuccess: () => { toast.success("Event rescheduled — emails sent"); utils.calendar.list.invalidate(); utils.calendar.upcomingCount.invalidate(); setReschedulingEvent(null); },
     onError: (e) => { toast.error(e.message); },
+  });
+
+  const cancelMutation = trpc.calendar.cancel.useMutation({
+    onSuccess: () => { toast.success("Event cancelled — emails sent"); utils.calendar.list.invalidate(); utils.calendar.upcomingCount.invalidate(); setCancellingEvent(null); setCancelReason(""); },
+    onError: (e) => { toast.error(e.message); setCancellingEvent(null); },
   });
 
   const events: CalendarEvent[] = (data?.events ?? []) as CalendarEvent[];
@@ -352,6 +359,14 @@ export default function AdminCalendar() {
                               title="Reschedule"
                               style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: "#94a3b8", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.5625rem" }}>
                               <RefreshCw size={11} /> Reschedule
+                            </button>
+                          )}
+                          {(ev.status === "scheduled" || ev.status === "confirmed") && (
+                            <button
+                              onClick={() => { setCancellingEvent(ev); setCancelReason(""); }}
+                              title="Cancel Event"
+                              style={{ background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: "#ef4444", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.5625rem" }}>
+                              <XCircle size={11} /> Cancel
                             </button>
                           )}
                           <button onClick={() => openEdit(ev)}
@@ -588,6 +603,45 @@ export default function AdminCalendar() {
                 disabled={rescheduleMutation.isPending}
                 style={{ background: rescheduleMutation.isPending ? "rgba(0,255,135,0.4)" : "#00ff87", color: "#0a0a0a", border: "none", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: rescheduleMutation.isPending ? "not-allowed" : "pointer" }}>
                 {rescheduleMutation.isPending ? "Sending…" : "Reschedule & Notify"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirm Modal */}
+      {cancellingEvent && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}
+          onClick={() => setCancellingEvent(null)}>
+          <div style={{ background: "#0f1117", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "0.75rem", padding: "1.5rem", maxWidth: "420px", width: "100%" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+              <XCircle size={16} color="#ef4444" />
+              <span style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#ef4444" }}>Cancel Event</span>
+            </div>
+            <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "1rem" }}>
+              Cancel <strong style={{ color: "#e2e8f0" }}>{cancellingEvent.title}</strong>? Cancellation emails will be sent to
+              {cancellingEvent.prospectEmail ? ` ${cancellingEvent.prospectName ?? cancellingEvent.prospectEmail},` : ""} Tommy, and the owner.
+            </p>
+            <div style={{ marginBottom: "1rem" }}>
+              <label style={{ display: "block", fontSize: "0.5625rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginBottom: "0.375rem" }}>Reason (optional)</label>
+              <input
+                value={cancelReason}
+                onChange={e => setCancelReason(e.target.value)}
+                placeholder="e.g. Scheduling conflict, prospect unavailable…"
+                style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.375rem", padding: "0.5rem 0.75rem", color: "#e2e8f0", fontSize: "0.6875rem", outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+              <button onClick={() => setCancellingEvent(null)}
+                style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.375rem", padding: "0.5rem 1rem", color: "#64748b", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+                Keep Event
+              </button>
+              <button
+                onClick={() => cancelMutation.mutate({ id: cancellingEvent.id, reason: cancelReason || undefined })}
+                disabled={cancelMutation.isPending}
+                style={{ background: cancelMutation.isPending ? "rgba(239,68,68,0.4)" : "#ef4444", color: "#fff", border: "none", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: cancelMutation.isPending ? "not-allowed" : "pointer" }}>
+                {cancelMutation.isPending ? "Cancelling…" : "Cancel Event & Notify"}
               </button>
             </div>
           </div>

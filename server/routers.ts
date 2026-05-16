@@ -4138,6 +4138,86 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return { event };
       }),
 
+    // Admin: cancel event — set status=cancelled, send cancellation emails
+    cancel: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        reason: z.string().optional(), // optional cancellation reason
+      }))
+      .mutation(async ({ input }) => {
+        const existing = await db.getCalendarEventById(input.id);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+        if (existing.status === "cancelled") throw new TRPCError({ code: "BAD_REQUEST", message: "Event is already cancelled" });
+
+        const event = await db.updateCalendarEvent(input.id, { status: "cancelled" });
+        if (!event) throw new TRPCError({ code: "NOT_FOUND" });
+
+        const shareUrl = event.shareToken
+          ? `https://onstage.bot/calendar/${event.shareToken}`
+          : "https://onstage.bot";
+
+        const startDisplay = new Date(event.startAt as Date).toLocaleString("en-US", {
+          timeZone: "America/Los_Angeles",
+          dateStyle: "full",
+          timeStyle: "short",
+        });
+
+        const cancelHtml = `
+<div style="font-family:sans-serif;max-width:600px;">
+  <h2 style="color:#ef4444;">Meeting Cancelled — ${event.companyName ?? event.title}</h2>
+  <p>The following meeting has been cancelled:</p>
+  <table style="border-collapse:collapse;width:100%;margin:1rem 0;">
+    <tr><td style="padding:0.5rem 0;color:#555;width:120px;"><strong>Title</strong></td><td style="padding:0.5rem 0;">${event.title}</td></tr>
+    <tr><td style="padding:0.5rem 0;color:#555;"><strong>Was Scheduled</strong></td><td style="padding:0.5rem 0;">${startDisplay} (Pacific Time)</td></tr>
+    ${input.reason ? `<tr><td style="padding:0.5rem 0;color:#555;"><strong>Reason</strong></td><td style="padding:0.5rem 0;">${input.reason}</td></tr>` : ""}
+  </table>
+  <p style="color:#555;">Questions? Reply to this email or reach us at <a href="mailto:hello@onstage.bot">hello@onstage.bot</a>.</p>
+  <hr style="border-color:#eee;">
+  <p style="color:#999;font-size:12px;">StageGate — Robotics Activation Infrastructure • <a href="https://onstage.bot" style="color:#999;">onstage.bot</a></p>
+</div>`;
+
+        const subject = `[StageGate] Meeting Cancelled: ${event.title}`;
+        const textBody = `The meeting "${event.title}" scheduled for ${startDisplay} PT has been cancelled.${input.reason ? `\n\nReason: ${input.reason}` : ""}\n\n— StageGate Team\nhello@onstage.bot`;
+
+        // Email Tommy
+        try {
+          await emailHelpers.sendEmail({ to: "tom@starsupportinc.com", subject, body: textBody, htmlBody: cancelHtml });
+        } catch (e) { console.warn("[Calendar] Cancel email to Tommy failed:", e); }
+
+        // Email owner
+        try {
+          await emailHelpers.sendEmail({ to: "ugobe07@gmail.com", subject, body: textBody, htmlBody: cancelHtml });
+        } catch (e) { console.warn("[Calendar] Cancel email to owner failed:", e); }
+
+        // Email prospect if we have their address
+        if (event.prospectEmail) {
+          const prospectCancelHtml = `
+<div style="font-family:sans-serif;max-width:600px;">
+  <h2 style="color:#1a1a1a;">Your Meeting Has Been Cancelled</h2>
+  <p>Hi ${event.prospectName ?? "there"},</p>
+  <p>We regret to inform you that the following meeting has been cancelled:</p>
+  <table style="border-collapse:collapse;width:100%;margin:1rem 0;">
+    <tr><td style="padding:0.5rem 0;color:#555;width:120px;"><strong>Meeting</strong></td><td style="padding:0.5rem 0;">${event.title}</td></tr>
+    <tr><td style="padding:0.5rem 0;color:#555;"><strong>Was Scheduled</strong></td><td style="padding:0.5rem 0;">${startDisplay} (Pacific Time)</td></tr>
+    ${input.reason ? `<tr><td style="padding:0.5rem 0;color:#555;"><strong>Reason</strong></td><td style="padding:0.5rem 0;">${input.reason}</td></tr>` : ""}
+  </table>
+  <p style="color:#555;">We apologize for any inconvenience. Please reply to this email or contact us at <a href="mailto:hello@onstage.bot">hello@onstage.bot</a> to reschedule.</p>
+  <hr style="border-color:#eee;">
+  <p style="color:#999;font-size:12px;">StageGate — Robotics Activation Infrastructure • <a href="https://onstage.bot" style="color:#999;">onstage.bot</a></p>
+</div>`;
+          try {
+            await emailHelpers.sendEmail({
+              to: event.prospectEmail,
+              subject: `Your Meeting with StageGate Has Been Cancelled`,
+              body: `Hi ${event.prospectName ?? "there"},\n\nYour meeting "${event.title}" scheduled for ${startDisplay} PT has been cancelled.${input.reason ? `\n\nReason: ${input.reason}` : ""}\n\nPlease reply to reschedule.\n\n— StageGate Team\nhello@onstage.bot`,
+              htmlBody: prospectCancelHtml,
+            });
+          } catch (e) { console.warn("[Calendar] Cancel email to prospect failed:", e); }
+        }
+
+        return { event };
+      }),
+
     // Admin: count of upcoming scheduled/confirmed events (for sidebar badge)
     upcomingCount: adminProcedure
       .query(async () => {
