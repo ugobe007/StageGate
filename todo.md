@@ -1610,3 +1610,44 @@
 ## v64 — Service Requests + Prospects Cross-Link Polish
 - [x] AdminServiceRequests: add "Company" column to the requests table (between request type and status), showing companyName from the LEFT JOIN
 - [x] AdminProspects: read ?highlight=email URL param on mount, scroll to and apply emerald highlight border to the matching prospect row
+
+## v65 — Calendar & Meeting Scheduling
+
+### DB Schema
+- [x] calendar_events table: id, title, description, startAt, endAt, type (meeting|event|demo|call), status (scheduled|confirmed|cancelled|completed), prospectId (nullable FK), prospectEmail, prospectName, companyName, notes, shareToken (unique, for public share link), createdBy, createdAt, updatedAt
+- [x] Migration generated and applied
+
+### Server Layer
+- [x] calendar.list adminProcedure — list all events with optional date range + type filter
+- [x] calendar.get adminProcedure — get single event by id
+- [x] calendar.create adminProcedure — create event, generate shareToken
+- [x] calendar.update adminProcedure — update event fields
+- [x] calendar.delete adminProcedure — soft-delete / cancel event
+- [x] calendar.getByToken publicProcedure — get event by shareToken (for prospect-facing share link)
+- [x] calendar.agentList publicProcedure (cron-auth) — agent read access
+- [x] calendar.agentUpsert publicProcedure (cron-auth) — agent write access
+- [x] Auto-schedule hook in prospects.markReplied: if scheduleMeeting=true, create calendar event + send email to tom@starsupportinc.com and owner
+
+### Admin UI
+- [x] AdminCalendar page: month/week/list view toggle, event cards with type color coding
+- [x] Create/Edit event modal: title, type, date/time, prospect link, notes, share link copy button
+- [x] Event detail panel: full info, share link, status badge, cancel button
+- [x] Sidebar nav entry for Calendar (with upcoming count badge)
+- [x] Route /admin/calendar registered in App.tsx
+
+### Auto-Scheduling
+- [x] markReplied mutation: add optional scheduleMeeting boolean + proposedTime input
+- [x] On scheduleMeeting=true: create calendar event linked to prospect, send notification email to tom@starsupportinc.com and owner via Resend
+- [x] AdminProspects: "Schedule Meeting" button in all views (table/kanban/byshow) that opens a date/time picker modal before calling markReplied
+
+### Agent API
+- [x] calendar.agentList and calendar.agentCreate tRPC procedures for XBOT agent read/write (API-key-gated)
+
+### Tests
+- [x] calendar.list admin allowed, user rejected
+- [x] calendar.create admin allowed, user rejected
+- [x] calendar.getByToken public allowed (NOT_FOUND for unknown token, returns event for valid token)
+- [x] calendar.agentList cron-auth allowed, unauthenticated rejected
+- [x] calendar.update admin allowed
+- [x] calendar.delete admin allowed
+- [x] 10 calendar tests passing

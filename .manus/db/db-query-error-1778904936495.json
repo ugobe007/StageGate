@@ -1,0 +1,19 @@
+{
+  "query": "\nCREATE TABLE IF NOT EXISTS calendar_events (\n  id SERIAL PRIMARY KEY,\n  title VARCHAR(255) NOT NULL,\n  description TEXT,\n  \"startAt\" TIMESTAMPTZ NOT NULL,\n  \"endAt\" TIMESTAMPTZ NOT NULL,\n  type VARCHAR(32) NOT NULL DEFAULT 'meeting',\n  status VARCHAR(32) NOT NULL DEFAULT 'scheduled',\n  \"prospectId\" INTEGER,\n  \"prospectEmail\" VARCHAR(320),\n  \"prospectName\" VARCHAR(255),\n  \"companyName\" VARCHAR(255),\n  notes TEXT,\n  \"shareToken\" VARCHAR(64) UNIQUE,\n  \"createdBy\" INTEGER,\n  \"notificationSentAt\" TIMESTAMPTZ,\n  \"createdAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  \"updatedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\nCREATE INDEX IF NOT EXISTS idx_calendar_events_start ON calendar_events(\"startAt\");\nCREATE INDEX IF NOT EXISTS idx_calendar_events_prospect ON calendar_events(\"prospectId\");\nCREATE INDEX IF NOT EXISTS idx_calendar_events_share_token ON calendar_events(\"shareToken\");\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 7A3KDMzZSeM4dJm.1471215a256f --database LwE9ahmaKQsfHr8pVsGoiJ --execute \nCREATE TABLE IF NOT EXISTS calendar_events (\n  id SERIAL PRIMARY KEY,\n  title VARCHAR(255) NOT NULL,\n  description TEXT,\n  \"startAt\" TIMESTAMPTZ NOT NULL,\n  \"endAt\" TIMESTAMPTZ NOT NULL,\n  type VARCHAR(32) NOT NULL DEFAULT 'meeting',\n  status VARCHAR(32) NOT NULL DEFAULT 'scheduled',\n  \"prospectId\" INTEGER,\n  \"prospectEmail\" VARCHAR(320),\n  \"prospectName\" VARCHAR(255),\n  \"companyName\" VARCHAR(255),\n  notes TEXT,\n  \"shareToken\" VARCHAR(64) UNIQUE,\n  \"createdBy\" INTEGER,\n  \"notificationSentAt\" TIMESTAMPTZ,\n  \"createdAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  \"updatedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\nCREATE INDEX IF NOT EXISTS idx_calendar_events_start ON calendar_events(\"startAt\");\nCREATE INDEX IF NOT EXISTS idx_calendar_events_prospect ON calendar_events(\"prospectId\");\nCREATE INDEX IF NOT EXISTS idx_calendar_events_share_token ON calendar_events(\"shareToken\");\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 2: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 5 column 12 near \"\"startAt\" TIMESTAMPTZ NOT NULL,",
+    "  \"endAt\" TIMESTAMPTZ NOT NULL,",
+    "  type VARCHAR(32) NOT NULL DEFAULT 'meeting',",
+    "  status VARCHAR(32) NOT NULL DEFAULT 'scheduled',",
+    "  \"prospectId\" INTEGER,",
+    "  \"prospectEmail\" VARCHAR(320),",
+    "  \"prospectName\" VARCHAR(255),",
+    "  \"companyName\" VARCHAR(255),",
+    "  notes TEXT,",
+    "  \"shareToken\" VARCHAR(64) UNIQUE,",
+    "  \"createdBy\" INTEGER,",
+    "  \"notificationS"
+  ]
+}

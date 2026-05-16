@@ -1,4 +1,4 @@
-import { eq, desc, and, like, lte, isNotNull, notInArray, inArray } from "drizzle-orm";
+import { eq, desc, and, like, lte, gte, isNotNull, notInArray, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import {
@@ -37,6 +37,9 @@ import {
   serviceRequests,
   InsertServiceRequest,
   ServiceRequest,
+  calendarEvents,
+  CalendarEvent,
+  InsertCalendarEvent,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -749,5 +752,51 @@ export async function bulkUpdateProspectStatus(ids: number[], status: string): P
     .where(inArray(prospects.id, ids));
   return ids.length;
 }
+// ─── Calendar Events ─────────────────────────────────────────────────────────
+
+export async function listCalendarEvents(opts?: { from?: Date; to?: Date; type?: string }): Promise<CalendarEvent[]> {
+  const db = await getDb();
+  if (!db) return [];
+  let query = db.select().from(calendarEvents).$dynamic();
+  if (opts?.from) query = query.where(sql`${calendarEvents.startAt} >= ${opts.from}`);
+  if (opts?.to) query = query.where(sql`${calendarEvents.endAt} <= ${opts.to}`);
+  if (opts?.type) query = query.where(eq(calendarEvents.type, opts.type));
+  return query.orderBy(calendarEvents.startAt);
+}
+
+export async function getCalendarEventById(id: number): Promise<CalendarEvent | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(calendarEvents).where(eq(calendarEvents.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getCalendarEventByToken(token: string): Promise<CalendarEvent | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(calendarEvents).where(eq(calendarEvents.shareToken, token)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function createCalendarEvent(data: InsertCalendarEvent): Promise<CalendarEvent> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const [row] = await db.insert(calendarEvents).values(data).returning();
+  return row!;
+}
+
+export async function updateCalendarEvent(id: number, data: Partial<InsertCalendarEvent>): Promise<CalendarEvent | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db.update(calendarEvents).set({ ...data, updatedAt: new Date() }).where(eq(calendarEvents.id, id)).returning();
+  return row ?? null;
+}
+
+export async function deleteCalendarEvent(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(calendarEvents).where(eq(calendarEvents.id, id));
+}
+
 // Suppress unused import warnings
-export type { AgentRun, InsertAgentRun };
+export type { AgentRun, InsertAgentRun, CalendarEvent, InsertCalendarEvent };

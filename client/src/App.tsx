@@ -44,6 +44,8 @@ import About from "./pages/About";
 import Onboarding from "./pages/Onboarding";
 import AuthRedirect from "./pages/AuthRedirect";
 import AdminServiceRequests from "./pages/AdminServiceRequests";
+import AdminCalendar from "./pages/AdminCalendar";
+import CalendarEventPage from "./pages/CalendarEventPage";
 
 /** Wraps admin pages in the shared DashboardLayout sidebar shell */
 function AdminShell({ children }: { children: React.ReactNode }) {
@@ -97,6 +99,10 @@ function Router() {
       <Route path="/admin/vendors">{() => <AdminShell><AdminVendors /></AdminShell>}</Route>
       <Route path="/admin/logistics">{() => <AdminShell><AdminLogistics /></AdminShell>}</Route>
       <Route path="/admin/service-requests">{() => <AdminShell><AdminServiceRequests /></AdminShell>}</Route>
+      <Route path="/admin/calendar">{() => <AdminShell><AdminCalendar /></AdminShell>}</Route>
+
+      {/* Public calendar share link */}
+      <Route path="/calendar/:token" component={CalendarEventPage} />
 
       {/* Video intake */}
       <Route path="/xbot/video" component={VideoIntake} />

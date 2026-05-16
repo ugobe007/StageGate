@@ -11,6 +11,7 @@ import * as workflows from "./workflows";
 import * as emailHelpers from "./email";
 import { eq, desc, count, sql, inArray } from "drizzle-orm";
 import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems, schedulingSlots, salesAgentConversations, salesAgentRuns, vendors, emailThreads, logisticsWorkflows, logisticsCheckpoints, warehouseBays, warehouseBayEvents, tradeShows, services as servicesTable, logisticsPartners, xbotProjects, agentRuns, outreachCampaigns, serviceRequests } from "../drizzle/schema";
+import crypto from "crypto";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 
@@ -1212,11 +1213,90 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       }),
 
     // Quick status update: mark a prospect as replied/responded
+    // Optional: scheduleMeeting=true auto-creates a calendar event and sends emails to Tommy + owner
     markReplied: adminProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
+      .input(z.object({
+        id: z.number(),
+        scheduleMeeting: z.boolean().optional(),
+        proposedTime: z.string().optional(), // ISO datetime for meeting start
+        meetingDurationMinutes: z.number().int().positive().optional().default(30),
+        meetingNotes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const prospect = await db.getProspectById(input.id);
+        if (!prospect) throw new TRPCError({ code: "NOT_FOUND" });
+
+        // Update prospect status to responded
         await db.updateProspect(input.id, { status: "responded", repliedAt: new Date() });
-        return { success: true };
+
+        let calendarEvent = null;
+        if (input.scheduleMeeting && input.proposedTime) {
+          // Auto-create calendar event
+          const startAt = new Date(input.proposedTime);
+          const endAt = new Date(startAt.getTime() + (input.meetingDurationMinutes ?? 30) * 60 * 1000);
+          const crypto = await import("crypto");
+          const shareToken = crypto.randomBytes(24).toString("hex");
+
+          calendarEvent = await db.createCalendarEvent({
+            title: `Intro Call — ${prospect.company}`,
+            description: `Prospect responded to outreach. Scheduled intro call with ${prospect.contactName ?? prospect.company}.`,
+            startAt,
+            endAt,
+            type: "call",
+            status: "scheduled",
+            prospectId: input.id,
+            prospectEmail: prospect.contactEmail ?? null,
+            prospectName: prospect.contactName ?? null,
+            companyName: prospect.company,
+            notes: input.meetingNotes ?? null,
+            shareToken,
+            createdBy: ctx.user.id,
+          });
+
+          // Update prospect status to scheduled
+          await db.updateProspect(input.id, { status: "scheduled" });
+
+          // Format times for email
+          const startDisplay = startAt.toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "full", timeStyle: "short" });
+          const shareUrl = `https://onstage.bot/calendar/${shareToken}`;
+
+          const emailHtml = `
+<div style="font-family:sans-serif;max-width:600px;">
+  <h2 style="color:#00ff87;">New Meeting Scheduled — ${prospect.company}</h2>
+  <p><strong>Prospect:</strong> ${prospect.contactName ?? "Unknown"} (${prospect.contactEmail ?? "no email"})</p>
+  <p><strong>Company:</strong> ${prospect.company}</p>
+  <p><strong>Time:</strong> ${startDisplay} (PT)</p>
+  <p><strong>Duration:</strong> ${input.meetingDurationMinutes ?? 30} minutes</p>
+  ${input.meetingNotes ? `<p><strong>Notes:</strong> ${input.meetingNotes}</p>` : ""}
+  <p><a href="${shareUrl}" style="color:#00ff87;">View Event Details →</a></p>
+  <hr style="border-color:#333;">
+  <p style="color:#888;font-size:12px;">StageGate • onstage.bot</p>
+</div>`;
+
+          // Send to Tommy
+          try {
+            await emailHelpers.sendEmail({
+              to: "tom@starsupportinc.com",
+              subject: `[StageGate] Meeting Scheduled: ${prospect.company} — ${startDisplay}`,
+              body: `New meeting scheduled with ${prospect.company} (${prospect.contactEmail ?? ""}) for ${startDisplay} PT.\n\nView: ${shareUrl}`,
+              htmlBody: emailHtml,
+            });
+          } catch (e) {
+            console.warn("[Calendar] Failed to email Tommy:", e);
+          }
+
+          // Notify owner via Manus notification
+          try {
+            await notifyOwner({
+              title: `Meeting Scheduled: ${prospect.company}`,
+              content: `${prospect.contactName ?? prospect.company} responded YES to outreach. Call scheduled for ${startDisplay} PT.\n\nView: ${shareUrl}`,
+            });
+          } catch (e) {
+            console.warn("[Calendar] Failed to notify owner:", e);
+          }
+        }
+
+        return { success: true, calendarEvent };
       }),
 
     // Bulk update status for multiple prospects
@@ -3782,6 +3862,182 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           estimatedTotal: estimatedTotal.toFixed(2),
           message: `${match.name} (${match.sqft} sqft) @ $${rate}/sqft/day × ${input.robotSqft} sqft × ${input.days} days = $${estimatedTotal.toFixed(2)}`,
         };
+      }),
+  }),
+
+  // ─── Calendar ───────────────────────────────────────────────────────────────────
+  calendar: router({
+    // Admin: list all events with optional filters
+    list: adminProcedure
+      .input(z.object({
+        from: z.string().optional(), // ISO date string
+        to: z.string().optional(),
+        type: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        const events = await db.listCalendarEvents({
+          from: input.from ? new Date(input.from) : undefined,
+          to: input.to ? new Date(input.to) : undefined,
+          type: input.type,
+        });
+        return { events };
+      }),
+
+    // Admin: get single event by id
+    get: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const event = await db.getCalendarEventById(input.id);
+        if (!event) throw new TRPCError({ code: "NOT_FOUND" });
+        return { event };
+      }),
+
+    // Public: get event by share token (for prospect-facing share link)
+    getByToken: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .query(async ({ input }) => {
+        const event = await db.getCalendarEventByToken(input.token);
+        if (!event || event.status === "cancelled") throw new TRPCError({ code: "NOT_FOUND" });
+        // Return only public-safe fields
+        return {
+          event: {
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            startAt: event.startAt,
+            endAt: event.endAt,
+            type: event.type,
+            status: event.status,
+            prospectName: event.prospectName,
+            companyName: event.companyName,
+          },
+        };
+      }),
+
+    // Admin: create event
+    create: adminProcedure
+      .input(z.object({
+        title: z.string().min(1),
+        description: z.string().optional(),
+        startAt: z.string(), // ISO datetime
+        endAt: z.string(),
+        type: z.enum(["meeting", "demo", "call", "event", "follow_up"]).default("meeting"),
+        status: z.enum(["scheduled", "confirmed", "cancelled", "completed"]).default("scheduled"),
+        prospectId: z.number().optional(),
+        prospectEmail: z.string().optional(),
+        prospectName: z.string().optional(),
+        companyName: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const shareToken = crypto.randomBytes(24).toString("hex");
+        const event = await db.createCalendarEvent({
+          title: input.title,
+          description: input.description ?? null,
+          startAt: new Date(input.startAt),
+          endAt: new Date(input.endAt),
+          type: input.type,
+          status: input.status,
+          prospectId: input.prospectId ?? null,
+          prospectEmail: input.prospectEmail ?? null,
+          prospectName: input.prospectName ?? null,
+          companyName: input.companyName ?? null,
+          notes: input.notes ?? null,
+          shareToken,
+          createdBy: ctx.user.id,
+        });
+        return { event };
+      }),
+
+    // Admin: update event
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().min(1).optional(),
+        description: z.string().optional(),
+        startAt: z.string().optional(),
+        endAt: z.string().optional(),
+        type: z.enum(["meeting", "demo", "call", "event", "follow_up"]).optional(),
+        status: z.enum(["scheduled", "confirmed", "cancelled", "completed"]).optional(),
+        prospectEmail: z.string().optional(),
+        prospectName: z.string().optional(),
+        companyName: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, startAt, endAt, ...rest } = input;
+        const event = await db.updateCalendarEvent(id, {
+          ...rest,
+          ...(startAt ? { startAt: new Date(startAt) } : {}),
+          ...(endAt ? { endAt: new Date(endAt) } : {}),
+        });
+        if (!event) throw new TRPCError({ code: "NOT_FOUND" });
+        return { event };
+      }),
+
+    // Admin: delete event
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteCalendarEvent(input.id);
+        return { success: true };
+      }),
+
+    // Agent read access (cron-auth or admin)
+    agentList: publicProcedure
+      .input(z.object({
+        from: z.string().optional(),
+        to: z.string().optional(),
+        apiKey: z.string().optional(), // simple shared secret for agent access
+      }))
+      .query(async ({ input, ctx }) => {
+        const isAdmin = ctx.user?.role === "admin";
+        const isCron = (ctx.user as { isCron?: boolean })?.isCron === true;
+        const validApiKey = input.apiKey === process.env.BUILT_IN_FORGE_API_KEY;
+        if (!isAdmin && !isCron && !validApiKey) throw new TRPCError({ code: "FORBIDDEN" });
+        const events = await db.listCalendarEvents({
+          from: input.from ? new Date(input.from) : undefined,
+          to: input.to ? new Date(input.to) : undefined,
+        });
+        return { events };
+      }),
+
+    // Agent write access (cron-auth or admin)
+    agentUpsert: publicProcedure
+      .input(z.object({
+        title: z.string().min(1),
+        description: z.string().optional(),
+        startAt: z.string(),
+        endAt: z.string(),
+        type: z.enum(["meeting", "demo", "call", "event", "follow_up"]).default("meeting"),
+        status: z.enum(["scheduled", "confirmed", "cancelled", "completed"]).default("scheduled"),
+        prospectEmail: z.string().optional(),
+        prospectName: z.string().optional(),
+        companyName: z.string().optional(),
+        notes: z.string().optional(),
+        apiKey: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const isAdmin = ctx.user?.role === "admin";
+        const isCron = (ctx.user as { isCron?: boolean })?.isCron === true;
+        const validApiKey = input.apiKey === process.env.BUILT_IN_FORGE_API_KEY;
+        if (!isAdmin && !isCron && !validApiKey) throw new TRPCError({ code: "FORBIDDEN" });
+        const shareToken = crypto.randomBytes(24).toString("hex");
+        const event = await db.createCalendarEvent({
+          title: input.title,
+          description: input.description ?? null,
+          startAt: new Date(input.startAt),
+          endAt: new Date(input.endAt),
+          type: input.type,
+          status: input.status,
+          prospectEmail: input.prospectEmail ?? null,
+          prospectName: input.prospectName ?? null,
+          companyName: input.companyName ?? null,
+          notes: input.notes ?? null,
+          shareToken,
+          createdBy: null,
+        });
+        return { event };
       }),
   }),
 });

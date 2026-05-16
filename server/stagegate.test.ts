@@ -562,7 +562,7 @@ describe("prospects.markReplied", () => {
     const before = Date.now();
     const result = await caller.prospects.markReplied({ id: 1 });
     const after = Date.now();
-    expect(result).toEqual({ success: true });
+    expect(result).toMatchObject({ success: true });
     expect(vi.mocked(updateProspect)).toHaveBeenCalledOnce();
     const callArgs = vi.mocked(updateProspect).mock.calls[0];
     expect(callArgs[0]).toBe(1);

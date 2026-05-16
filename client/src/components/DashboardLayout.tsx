@@ -22,6 +22,7 @@ const menuItems = [
   { icon: Send,            label: "Outreach",         path: "/admin/outreach" },
   { icon: ClipboardList,   label: "Bookings",         path: "/admin/bookings" },
   { icon: Inbox,           label: "Service Requests", path: "/admin/service-requests" },
+  { icon: Calendar,        label: "Calendar",          path: "/admin/calendar" },
   { icon: Calendar,        label: "Shows",            path: "/admin/shows" },
   { icon: Package,         label: "Orders",           path: "/admin/orders" },
   { icon: ClipboardList,   label: "Demo Requests",    path: "/admin/demos" },

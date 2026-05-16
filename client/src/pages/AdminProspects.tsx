@@ -377,18 +377,46 @@ export default function AdminProspects() {
   // Reply notes inline state: prospectId → note text (undefined = not showing, string = showing)
   const [replyNotes, setReplyNotes] = useState<Record<number, string>>({});
   const [replyingId, setReplyingId] = useState<number | null>(null);
+
+  // Schedule meeting modal state
+  const [schedulingProspect, setSchedulingProspect] = useState<{ id: number; company: string; contactName?: string | null; contactEmail?: string | null } | null>(null);
+  const [scheduleForm, setScheduleForm] = useState({ proposedTime: "", durationMinutes: 30, notes: "" });
+
   const markReplied = trpc.prospects.markReplied.useMutation({
     onMutate: (vars) => {
       setReplyingId(vars.id);
     },
     onSuccess: (_, vars) => {
       setReplyingId(null);
+      setSchedulingProspect(null);
       // After marking replied, show the inline notes prompt
       setReplyNotes(prev => ({ ...prev, [vars.id]: "" }));
       refetch();
     },
     onError: () => setReplyingId(null),
   });
+
+  function openScheduleModal(p: { id: number; company: string; contactName?: string | null; contactEmail?: string | null }) {
+    setSchedulingProspect(p);
+    // Default to tomorrow 10am PT
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    const offset = tomorrow.getTimezoneOffset() * 60000;
+    setScheduleForm({ proposedTime: new Date(tomorrow.getTime() - offset).toISOString().slice(0, 16), durationMinutes: 30, notes: "" });
+  }
+
+  function confirmScheduleMeeting() {
+    if (!schedulingProspect || !scheduleForm.proposedTime) return;
+    markReplied.mutate({
+      id: schedulingProspect.id,
+      scheduleMeeting: true,
+      proposedTime: new Date(scheduleForm.proposedTime).toISOString(),
+      meetingDurationMinutes: scheduleForm.durationMinutes,
+      meetingNotes: scheduleForm.notes || undefined,
+    });
+    toast.success(`Meeting scheduled for ${schedulingProspect.company}! Emails sent to Tommy & owner.`);
+  }
 
   const saveReplyNote = (prospectId: number) => {
     const note = replyNotes[prospectId];
@@ -1148,11 +1176,23 @@ export default function AdminProspects() {
                               style={{ fontFamily: "var(--font-mono)", fontSize: "0.4rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.15rem 0.4rem", border: "1px solid rgba(0,255,135,0.30)", color: "#00ff87", background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
                             >✓ Replied</button>
                           )}
-                          {col === "responded" && (
+                          {col === "contacted" && (
                             <button
-                              onClick={() => updateProspect.mutate({ id: p.id, status: "converted" })}
-                              style={{ fontFamily: "var(--font-mono)", fontSize: "0.4rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.15rem 0.4rem", border: "1px solid rgba(167,139,250,0.40)", color: "#a78bfa", background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
-                            >★ Convert</button>
+                              onClick={() => openScheduleModal(p)}
+                              style={{ fontFamily: "var(--font-mono)", fontSize: "0.4rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.15rem 0.4rem", border: "1px solid rgba(129,140,248,0.40)", color: "#818cf8", background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
+                            >📅 Schedule</button>
+                          )}
+                          {col === "responded" && (
+                            <>
+                              <button
+                                onClick={() => openScheduleModal(p)}
+                                style={{ fontFamily: "var(--font-mono)", fontSize: "0.4rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.15rem 0.4rem", border: "1px solid rgba(129,140,248,0.40)", color: "#818cf8", background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
+                              >📅 Schedule</button>
+                              <button
+                                onClick={() => updateProspect.mutate({ id: p.id, status: "converted" })}
+                                style={{ fontFamily: "var(--font-mono)", fontSize: "0.4rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.15rem 0.4rem", border: "1px solid rgba(167,139,250,0.40)", color: "#a78bfa", background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
+                              >★ Convert</button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -1346,6 +1386,14 @@ export default function AdminProspects() {
                                   style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.2rem 0.55rem", border: "1px solid rgba(0,255,135,0.30)", color: "#00ff87", background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
                                 >
                                   ✓ Replied
+                                </button>
+                              )}
+                              {(p.status === "contacted" || p.status === "responded") && (
+                                <button
+                                  onClick={() => openScheduleModal(p)}
+                                  style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.2rem 0.55rem", border: "1px solid rgba(129,140,248,0.40)", color: "#818cf8", background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
+                                >
+                                  📅 Schedule
                                 </button>
                               )}
                             </div>
@@ -1635,6 +1683,25 @@ export default function AdminProspects() {
                           }}
                         >
                           <Mail size={12} /> Draft Email
+                        </button>
+                      )}
+                      {/* Schedule Meeting */}
+                      {(p.status === "contacted" || p.status === "responded") && (
+                        <button
+                          onClick={() => openScheduleModal(p)}
+                          title="Schedule Meeting"
+                          style={{
+                            display: "flex", alignItems: "center", gap: "0.3rem",
+                            fontSize: "0.8125rem", fontWeight: 500,
+                            padding: "0.25rem 0.625rem",
+                            border: "1px solid rgba(129,140,248,0.40)",
+                            color: "#818cf8",
+                            background: "#111111", cursor: "pointer",
+                            borderRadius: "0.25rem",
+                            transition: "all 0.1s",
+                          }}
+                        >
+                          <Calendar size={12} /> Schedule
                         </button>
                       )}
                       {/* Mark as Replied */}
@@ -1953,6 +2020,65 @@ export default function AdminProspects() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Meeting Modal */}
+      {schedulingProspect && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.80)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "1rem" }}>
+          <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.75rem", width: "100%", maxWidth: "460px", fontFamily: "var(--font-mono)" }}>
+            {/* Header */}
+            <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#818cf8" }}>Schedule Meeting</div>
+                <div style={{ fontSize: "0.625rem", color: "#64748b", marginTop: "0.25rem" }}>{schedulingProspect.company}{schedulingProspect.contactName ? ` — ${schedulingProspect.contactName}` : ""}</div>
+              </div>
+              <button onClick={() => setSchedulingProspect(null)} style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer" }}>
+                <X size={16} />
+              </button>
+            </div>
+            {/* Body */}
+            <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.5625rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginBottom: "0.375rem" }}>Proposed Date & Time *</label>
+                <input type="datetime-local" value={scheduleForm.proposedTime}
+                  onChange={e => setScheduleForm(f => ({ ...f, proposedTime: e.target.value }))}
+                  style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.375rem", padding: "0.5rem 0.75rem", color: "#e2e8f0", fontSize: "0.75rem", fontFamily: "var(--font-mono)", outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "0.5625rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginBottom: "0.375rem" }}>Duration (minutes)</label>
+                <select value={scheduleForm.durationMinutes}
+                  onChange={e => setScheduleForm(f => ({ ...f, durationMinutes: Number(e.target.value) }))}
+                  style={{ width: "100%", background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.375rem", padding: "0.5rem 0.75rem", color: "#e2e8f0", fontSize: "0.75rem", fontFamily: "var(--font-mono)", outline: "none" }}>
+                  <option value={15}>15 minutes</option>
+                  <option value={30}>30 minutes</option>
+                  <option value={45}>45 minutes</option>
+                  <option value={60}>60 minutes</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "0.5625rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginBottom: "0.375rem" }}>Notes (optional)</label>
+                <textarea value={scheduleForm.notes}
+                  onChange={e => setScheduleForm(f => ({ ...f, notes: e.target.value }))}
+                  rows={2} placeholder="Agenda, context, or prep notes…"
+                  style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.375rem", padding: "0.5rem 0.75rem", color: "#e2e8f0", fontSize: "0.75rem", fontFamily: "var(--font-mono)", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
+              </div>
+              <div style={{ background: "rgba(129,140,248,0.06)", border: "1px solid rgba(129,140,248,0.15)", borderRadius: "0.375rem", padding: "0.75rem", fontSize: "0.5625rem", color: "#94a3b8", lineHeight: 1.5 }}>
+                This will: mark the prospect as <strong style={{ color: "#818cf8" }}>Scheduled</strong>, create a calendar event, and send notification emails to <strong style={{ color: "#e2e8f0" }}>Tommy</strong> (tom@starsupportinc.com) and the <strong style={{ color: "#e2e8f0" }}>owner</strong>.
+              </div>
+            </div>
+            {/* Footer */}
+            <div style={{ padding: "1rem 1.5rem", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
+              <button onClick={() => setSchedulingProspect(null)}
+                style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.375rem", padding: "0.5rem 1rem", color: "#64748b", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", fontFamily: "var(--font-mono)" }}>
+                Cancel
+              </button>
+              <button onClick={confirmScheduleMeeting} disabled={!scheduleForm.proposedTime}
+                style={{ background: scheduleForm.proposedTime ? "#818cf8" : "rgba(129,140,248,0.3)", color: "#fff", border: "none", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: scheduleForm.proposedTime ? "pointer" : "not-allowed", fontFamily: "var(--font-mono)" }}>
+                Confirm & Send Emails
+              </button>
+            </div>
           </div>
         </div>
       )}

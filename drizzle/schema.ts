@@ -671,3 +671,33 @@ export const systemConfig = pgTable("system_config", {
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 export type SystemConfig = typeof systemConfig.$inferSelect;
+
+// ─── Calendar Events ─────────────────────────────────────────────────────────
+export const calendarEvents = pgTable("calendar_events", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  startAt: timestamp("startAt", { withTimezone: true }).notNull(),
+  endAt: timestamp("endAt", { withTimezone: true }).notNull(),
+  // type: meeting | demo | call | event | follow_up
+  type: varchar("type", { length: 32 }).notNull().default("meeting"),
+  // status: scheduled | confirmed | cancelled | completed
+  status: varchar("status", { length: 32 }).notNull().default("scheduled"),
+  // Linked prospect (nullable — events can be internal)
+  prospectId: integer("prospectId"),
+  prospectEmail: varchar("prospectEmail", { length: 320 }),
+  prospectName: varchar("prospectName", { length: 255 }),
+  companyName: varchar("companyName", { length: 255 }),
+  // Internal notes (not shared with prospect)
+  notes: text("notes"),
+  // Share token — unique per event, used for the public /calendar/:token page
+  shareToken: varchar("shareToken", { length: 64 }).unique(),
+  // Who created it (admin user id)
+  createdBy: integer("createdBy"),
+  // Notification tracking
+  notificationSentAt: timestamp("notificationSentAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+});
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
