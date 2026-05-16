@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
@@ -423,7 +423,45 @@ export default function ClientDashboard() {
                             </div>
                           </button>
                           {isExpanded && (
-                            <div style={{ padding: "0.875rem 1rem", borderTop: "1px solid rgba(255,255,255,0.08)", background: "#080808", display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.875rem" }}>
+                            <div style={{ padding: "0.875rem 1rem", borderTop: "1px solid rgba(255,255,255,0.08)", background: "#080808", display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.875rem" }}>
+                              {/* Status progression timeline */}
+                              {(() => {
+                                const stages = [
+                                  { key: "new",         label: "Received" },
+                                  { key: "quoted",      label: "Quoted" },
+                                  { key: "approved",    label: "Approved" },
+                                  { key: "in_progress", label: "In Progress" },
+                                  { key: "completed",   label: "Complete" },
+                                ];
+                                const currentIdx = stages.findIndex(s => s.key === req.status);
+                                return (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: "0.25rem" }}>
+                                    {stages.map((stage, i) => {
+                                      const isPast = i < currentIdx;
+                                      const isCurrent = i === currentIdx;
+                                      const isFuture = i > currentIdx;
+                                      return (
+                                        <React.Fragment key={stage.key}>
+                                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", flex: "0 0 auto" }}>
+                                            <div style={{
+                                              width: "8px", height: "8px", borderRadius: "50%",
+                                              background: isCurrent ? "#00ff87" : isPast ? "rgba(0,255,135,0.40)" : "rgba(255,255,255,0.12)",
+                                              border: isCurrent ? "2px solid #00ff87" : "none",
+                                              boxShadow: isCurrent ? "0 0 6px rgba(0,255,135,0.50)" : "none",
+                                            }} />
+                                            <span style={{ fontSize: "0.625rem", color: isCurrent ? "#00ff87" : isPast ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.18)", whiteSpace: "nowrap" }}>
+                                              {stage.label}
+                                            </span>
+                                          </div>
+                                          {i < stages.length - 1 && (
+                                            <div style={{ flex: 1, height: "1px", background: i < currentIdx ? "rgba(0,255,135,0.30)" : "rgba(255,255,255,0.08)", margin: "0 0.25rem", marginBottom: "1.125rem" }} />
+                                          )}
+                                        </React.Fragment>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })()}
                               {req.robotName && <div style={{ color: "rgba(255,255,255,0.55)" }}><span style={{ color: "rgba(255,255,255,0.30)" }}>Robot: </span>{req.robotName}</div>}
                               {req.showDate && <div style={{ color: "rgba(255,255,255,0.55)" }}><span style={{ color: "rgba(255,255,255,0.30)" }}>Date: </span>{req.showDate}</div>}
                               {req.urgency && req.urgency !== "normal" && (

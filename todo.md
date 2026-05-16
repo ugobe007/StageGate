@@ -1597,3 +1597,12 @@
 - [x] getSiteStats: added serviceRequests query to Promise.all, returns { total, newCount } for new status
 - [x] Resend email verified: sendEmail called from updateServiceRequestStatus on quoted/approved, from outreach@onstage.bot, RESEND_API_KEY wired correctly
 - [x] GitHub: pushed 45 commits to ugobe007/StageGate main
+
+## v62 — Outreach Flow Fix, Sidebar Badge, Status Timeline, Prospect Quick-Link
+
+- [x] AdminProspects: replaced confusing Send/Replied buttons with Draft Email → Review Draft → Send workflow
+- [x] AdminProspects: persistent status labels — per-row Draft Email / Review Draft / Send / ✓ Sent / ✓ Replied buttons based on prospect status and draft state
+- [x] AdminProspects: DraftReviewModal with subject/body editing, Approve/Discard/Regenerate actions; uses trpc.admin.getDraftsForProspect + createDraft + approveDraft + discardDraft + editDraft + sendDraft
+- [x] DashboardLayout sidebar: live "New Requests" count badge next to Service Requests nav item (trpc.admin.getNewServiceRequestCount, refetch every 60s)
+- [x] ClientDashboard: status progression timeline (Received → Quoted → Approved → In Progress → Complete) with emerald dot indicator inside expanded request detail
+- [ ] AdminServiceRequests: add "View Prospect" quick-link that jumps to that company's row in AdminProspects (deferred to v63)

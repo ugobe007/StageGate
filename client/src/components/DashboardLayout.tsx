@@ -126,6 +126,11 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
+  const { data: serviceRequestNewCount } = trpc.admin.getNewServiceRequestCount.useQuery(undefined, {
+    enabled: user?.role === "admin",
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
 
   useEffect(() => {
     localStorage.setItem("sg-sidebar-collapsed", String(collapsed));
@@ -210,7 +215,8 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
           const Icon = item.icon;
           const pendingDrafts = item.path === "/admin/outreach" ? (draftCount?.pending ?? 0) : 0;
           const pendingBookings = item.path === "/admin/bookings" ? (bookingNewCount?.count ?? 0) : 0;
-          const count = pendingDrafts + pendingBookings;
+          const pendingServiceRequests = item.path === "/admin/service-requests" ? (serviceRequestNewCount?.count ?? 0) : 0;
+          const count = pendingDrafts + pendingBookings + pendingServiceRequests;
           return (
             <button
               key={item.path}

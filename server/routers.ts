@@ -1741,6 +1741,18 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return emailHelpers.getDraftsWithProspects(input.statuses ?? ["pending", "approved"]);
       }),
 
+    // Get drafts for a single prospect (for per-row review in AdminProspects)
+     getDraftsForProspect: adminProcedure
+      .input(z.object({ prospectId: z.number() }))
+      .query(async ({ input }) => {
+        return emailHelpers.getDraftsForProspect(input.prospectId);
+      }),
+    // Create a new draft for a prospect
+    createDraft: adminProcedure
+      .input(z.object({ prospectId: z.number(), subject: z.string(), body: z.string() }))
+      .mutation(async ({ input }) => {
+        return emailHelpers.createDraft({ prospectId: input.prospectId, subject: input.subject, body: input.body });
+      }),
     // Approve a draft
     approveDraft: adminProcedure
       .input(z.object({ draftId: z.number() }))
@@ -1815,6 +1827,12 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return { sent, failed, errors };
       }),
 
+    getNewServiceRequestCount: adminProcedure.query(async () => {
+      const pgDb = await getDb();
+      if (!pgDb) return { count: 0 };
+      const rows = await pgDb.select({ n: count() }).from(serviceRequests).where(eq(serviceRequests.status, "new"));
+      return { count: Number(rows[0]?.n ?? 0) };
+    }),
     getDraftCount: adminProcedure.query(async () => {
       const pgDb = await getDb();
       if (!pgDb) return { pending: 0, approved: 0, sent: 0, lastSentAt: null };

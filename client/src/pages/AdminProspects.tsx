@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -268,6 +268,85 @@ export default function AdminProspects() {
       }))
     });
   };
+
+  // Draft review modal state
+  const [draftReviewId, setDraftReviewId] = useState<number | null>(null);
+  const [draftReviewSubject, setDraftReviewSubject] = useState("");
+  const [draftReviewBody, setDraftReviewBody] = useState("");
+  const [draftReviewDraftId, setDraftReviewDraftId] = useState<number | null>(null);
+  const [draftReviewEditing, setDraftReviewEditing] = useState(false);
+  const [draftGeneratingId, setDraftGeneratingId] = useState<number | null>(null);
+
+  const { data: reviewDrafts } = trpc.admin.getDraftsForProspect.useQuery(
+    { prospectId: draftReviewId! },
+    { enabled: draftReviewId !== null }
+  );
+
+  const openDraftReview = (prospectId: number) => {
+    setDraftReviewId(prospectId);
+    setDraftReviewEditing(false);
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!reviewDrafts || reviewDrafts.length === 0) {
+      setDraftReviewSubject("");
+      setDraftReviewBody("");
+      setDraftReviewDraftId(null);
+      return;
+    }
+    const draft = (reviewDrafts as Array<{status: string; subject: string; body: string; id: number}>).find(d => d.status === "approved") ??
+                  (reviewDrafts as Array<{status: string; subject: string; body: string; id: number}>).find(d => d.status === "pending") ??
+                  (reviewDrafts as Array<{status: string; subject: string; body: string; id: number}>)[0];
+    setDraftReviewSubject(draft.subject ?? "");
+    setDraftReviewBody(draft.body ?? "");
+    setDraftReviewDraftId(draft.id);
+  }, [reviewDrafts]);
+
+  const generateDraftMutation = trpc.prospects.regenerateDraft.useMutation({
+    onSuccess: (data, vars) => {
+      setDraftGeneratingId(null);
+      createDraftMutation.mutate({ prospectId: vars.id, subject: "StageGate — Let's Talk Robots", body: data.draft });
+    },
+    onError: () => setDraftGeneratingId(null),
+  });
+
+  const createDraftMutation = trpc.admin.createDraft.useMutation({
+    onSuccess: () => {
+      if (draftReviewId) void utils.admin.getDraftsForProspect.invalidate({ prospectId: draftReviewId });
+    },
+    onError: (err: { message: string }) => toast.error(err.message),
+  });
+
+  const approveDraftMutation = trpc.admin.approveDraft.useMutation({
+    onSuccess: () => { if (draftReviewId) void utils.admin.getDraftsForProspect.invalidate({ prospectId: draftReviewId }); },
+    onError: (err: { message: string }) => toast.error(err.message),
+  });
+
+  const editDraftMutation = trpc.admin.editDraft.useMutation({
+    onSuccess: () => {
+      setDraftReviewEditing(false);
+      if (draftReviewId) void utils.admin.getDraftsForProspect.invalidate({ prospectId: draftReviewId });
+    },
+    onError: (err: { message: string }) => toast.error(err.message),
+  });
+
+  const discardDraftMutation = trpc.admin.discardDraft.useMutation({
+    onSuccess: () => {
+      if (draftReviewId) void utils.admin.getDraftsForProspect.invalidate({ prospectId: draftReviewId });
+      toast.success("Draft discarded");
+    },
+    onError: (err: { message: string }) => toast.error(err.message),
+  });
+
+  const sendDraftMutation = trpc.admin.sendDraft.useMutation({
+    onSuccess: (data: { sentTo: string }) => {
+      toast.success(`Email sent to ${data.sentTo}`);
+      setDraftReviewId(null);
+      refetch();
+    },
+    onError: (err: { message: string }) => toast.error(err.message),
+  });
 
   // Reply notes inline state: prospectId → note text (undefined = not showing, string = showing)
   const [replyNotes, setReplyNotes] = useState<Record<number, string>>({});
@@ -1491,36 +1570,37 @@ export default function AdminProspects() {
                       })()}
                     </div>
 
-                    {/* Actions */}
+                    {/* Actions — Draft Email workflow */}
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }} onClick={e => e.stopPropagation()}>
-                      <button
-                        onClick={() => {
-                          if (isSent || p.status === "contacted") return;
-                          setSendingId(p.id);
-                          sendEmail.mutate({ prospectId: p.id });
-                        }}
-                        disabled={sendingId === p.id || isSent || p.status === "contacted"}
-                        style={{
-                          display: "flex", alignItems: "center", gap: "0.3rem",
-                          fontSize: "0.8125rem", fontWeight: 500,
-                          padding: "0.25rem 0.625rem",
-                          border: `1px solid ${isSent || p.status === "contacted" ? "rgba(62,207,142,0.40)" : isFailed ? "rgba(239,68,68,0.40)" : "rgba(255,255,255,0.08)"}`,
-                          color: isSent || p.status === "contacted" ? "#00ff87" : isFailed ? "#ef4444" : "rgba(255,255,255,0.55)",
-                          background: "#111111", cursor: sendingId === p.id ? "wait" : "pointer",
-                          borderRadius: "0.25rem", opacity: sendingId === p.id ? 0.6 : 1,
-                          transition: "all 0.1s",
-                        }}
-                      >
-                        {sendingId === p.id ? (
-                          <RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} />
-                        ) : isSent || p.status === "contacted" ? (
-                          <><Check size={12} /> Sent</>
-                        ) : isFailed ? (
-                          <><X size={12} /> Failed</>
-                        ) : (
-                          <><Mail size={12} /> Send</>
-                        )}
-                      </button>
+                      {/* Status-aware outreach action button */}
+                      {p.status === "contacted" || isSent ? (
+                        <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", color: "#00ff87" }}>
+                          <Check size={12} /> Sent
+                        </span>
+                      ) : p.status === "responded" ? (
+                        <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", color: "#00ff87" }}>
+                          <Check size={12} /> Replied
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setDraftGeneratingId(p.id);
+                            openDraftReview(p.id);
+                          }}
+                          style={{
+                            display: "flex", alignItems: "center", gap: "0.3rem",
+                            fontSize: "0.8125rem", fontWeight: 500,
+                            padding: "0.25rem 0.625rem",
+                            border: "1px solid rgba(255,255,255,0.12)",
+                            color: "rgba(255,255,255,0.70)",
+                            background: "#111111", cursor: "pointer",
+                            borderRadius: "0.25rem",
+                            transition: "all 0.1s",
+                          }}
+                        >
+                          <Mail size={12} /> Draft Email
+                        </button>
+                      )}
                       {/* Mark as Replied */}
                       {(p.status === "new" || p.status === "contacted") && (
                         <button
@@ -1658,6 +1738,185 @@ export default function AdminProspects() {
                 {csvImporting ? "Importing…" : `Import ${csvPreview.length} Prospects`}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Draft Review Modal */}
+      {draftReviewId !== null && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}
+          onClick={() => setDraftReviewId(null)}
+        >
+          <div
+            style={{ background: "#111", border: "1px solid rgba(255,255,255,0.10)", borderRadius: "0.5rem", padding: "2rem", maxWidth: "44rem", width: "100%", maxHeight: "85vh", overflow: "auto" }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+              <div>
+                <h2 style={{ fontFamily: "var(--font-mono)", fontSize: "0.875rem", color: "#ececec", margin: 0, letterSpacing: "-0.02em" }}>Draft Email Review</h2>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(255,255,255,0.35)", margin: "0.25rem 0 0" }}>
+                  {sortedProspects.find(p => p.id === draftReviewId)?.company ?? ""} — {sortedProspects.find(p => p.id === draftReviewId)?.contactEmail ?? "no email"}
+                </p>
+              </div>
+              <button onClick={() => setDraftReviewId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.40)" }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Draft content or empty state */}
+            {!draftReviewDraftId && !draftReviewSubject ? (
+              <div style={{ textAlign: "center", padding: "2rem 0" }}>
+                <p style={{ color: "rgba(255,255,255,0.40)", fontSize: "0.875rem", marginBottom: "1.25rem" }}>No draft yet. Generate one with AI or write your own.</p>
+                <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+                  <button
+                    onClick={() => {
+                      const prospect = sortedProspects.find(p => p.id === draftReviewId);
+                      if (!prospect) return;
+                      setDraftGeneratingId(draftReviewId);
+                      generateDraftMutation.mutate({ id: draftReviewId! });
+                    }}
+                    disabled={generateDraftMutation.isPending}
+                    style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "1px solid rgba(0,255,135,0.40)", color: "#00ff87", background: "rgba(0,255,135,0.06)", cursor: generateDraftMutation.isPending ? "wait" : "pointer", borderRadius: "0.25rem" }}
+                  >
+                    {generateDraftMutation.isPending ? <RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Zap size={13} />}
+                    {generateDraftMutation.isPending ? "Generating…" : "Generate with AI"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDraftReviewSubject("StageGate — Let's Talk Robots");
+                      setDraftReviewBody("");
+                      setDraftReviewEditing(true);
+                    }}
+                    style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.5rem 1.25rem", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.60)", background: "transparent", cursor: "pointer", borderRadius: "0.25rem" }}
+                  >
+                    Write Manually
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Draft status badge */}
+                {draftReviewDraftId && (() => {
+                  const draft = (reviewDrafts as Array<{id: number; status: string}> | undefined)?.find(d => d.id === draftReviewDraftId);
+                  const status = draft?.status ?? "pending";
+                  const statusColor = status === "approved" ? "#00ff87" : status === "sent" ? "#60a5fa" : "#f59e0b";
+                  return (
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: statusColor, marginBottom: "1rem" }}>
+                      <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: statusColor, display: "inline-block" }} />
+                      {status}
+                    </div>
+                  );
+                })()}
+
+                {/* Subject */}
+                <div style={{ marginBottom: "1rem" }}>
+                  <label style={{ display: "block", fontSize: "0.6875rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", marginBottom: "0.375rem" }}>Subject</label>
+                  {draftReviewEditing ? (
+                    <input
+                      value={draftReviewSubject}
+                      onChange={e => setDraftReviewSubject(e.target.value)}
+                      style={{ width: "100%", background: "#080808", border: "1px solid rgba(255,255,255,0.12)", color: "#ececec", padding: "0.5rem 0.75rem", borderRadius: "0.25rem", fontSize: "0.875rem", outline: "none" }}
+                    />
+                  ) : (
+                    <p style={{ fontSize: "0.875rem", color: "#ececec", margin: 0, padding: "0.5rem 0" }}>{draftReviewSubject}</p>
+                  )}
+                </div>
+
+                {/* Body */}
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <label style={{ display: "block", fontSize: "0.6875rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", marginBottom: "0.375rem" }}>Body</label>
+                  {draftReviewEditing ? (
+                    <textarea
+                      value={draftReviewBody}
+                      onChange={e => setDraftReviewBody(e.target.value)}
+                      rows={10}
+                      style={{ width: "100%", background: "#080808", border: "1px solid rgba(255,255,255,0.12)", color: "#ececec", padding: "0.5rem 0.75rem", borderRadius: "0.25rem", fontSize: "0.8125rem", outline: "none", resize: "vertical", lineHeight: 1.6 }}
+                    />
+                  ) : (
+                    <pre style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.75)", margin: 0, padding: "0.75rem", background: "#080808", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "0.25rem", whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{draftReviewBody}</pre>
+                  )}
+                </div>
+
+                {/* Action buttons */}
+                <div style={{ display: "flex", gap: "0.625rem", flexWrap: "wrap" }}>
+                  {draftReviewEditing ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          if (draftReviewDraftId) {
+                            editDraftMutation.mutate({ draftId: draftReviewDraftId, subject: draftReviewSubject, body: draftReviewBody });
+                          } else {
+                            createDraftMutation.mutate({ prospectId: draftReviewId!, subject: draftReviewSubject, body: draftReviewBody });
+                            setDraftReviewEditing(false);
+                          }
+                        }}
+                        style={{ fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "1px solid rgba(0,255,135,0.40)", color: "#00ff87", background: "rgba(0,255,135,0.06)", cursor: "pointer", borderRadius: "0.25rem" }}
+                      >
+                        Save Draft
+                      </button>
+                      <button
+                        onClick={() => setDraftReviewEditing(false)}
+                        style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.5rem 1.25rem", border: "1px solid rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.50)", background: "transparent", cursor: "pointer", borderRadius: "0.25rem" }}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {draftReviewDraftId && (() => {
+                        const draft = (reviewDrafts as Array<{id: number; status: string}> | undefined)?.find(d => d.id === draftReviewDraftId);
+                        const isApproved = draft?.status === "approved";
+                        return (
+                          <>
+                            {!isApproved && (
+                              <button
+                                onClick={() => approveDraftMutation.mutate({ draftId: draftReviewDraftId })}
+                                disabled={approveDraftMutation.isPending}
+                                style={{ fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "1px solid rgba(0,255,135,0.40)", color: "#00ff87", background: "rgba(0,255,135,0.06)", cursor: "pointer", borderRadius: "0.25rem" }}
+                              >
+                                Approve
+                              </button>
+                            )}
+                            {isApproved && (
+                              <button
+                                onClick={() => sendDraftMutation.mutate({ draftId: draftReviewDraftId })}
+                                disabled={sendDraftMutation.isPending}
+                                style={{ fontSize: "0.8125rem", fontWeight: 700, padding: "0.5rem 1.5rem", border: "none", color: "#080808", background: "#00ff87", cursor: sendDraftMutation.isPending ? "wait" : "pointer", borderRadius: "0.25rem" }}
+                              >
+                                {sendDraftMutation.isPending ? "Sending…" : "Send Email"}
+                              </button>
+                            )}
+                          </>
+                        );
+                      })()}
+                      <button
+                        onClick={() => setDraftReviewEditing(true)}
+                        style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.55)", background: "transparent", cursor: "pointer", borderRadius: "0.25rem" }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => generateDraftMutation.mutate({ id: draftReviewId! })}
+                        disabled={generateDraftMutation.isPending}
+                        style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.55)", background: "transparent", cursor: "pointer", borderRadius: "0.25rem" }}
+                      >
+                        <Zap size={12} /> Regenerate
+                      </button>
+                      {draftReviewDraftId && (
+                        <button
+                          onClick={() => discardDraftMutation.mutate({ draftId: draftReviewDraftId })}
+                          style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid rgba(239,68,68,0.30)", color: "#ef4444", background: "transparent", cursor: "pointer", borderRadius: "0.25rem", marginLeft: "auto" }}
+                        >
+                          Discard
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
