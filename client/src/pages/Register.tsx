@@ -20,7 +20,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 const sectionStyle: React.CSSProperties = {
-  padding: "1.5rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff",
+  padding: "1.5rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111",
 };
 
 export default function Register() {
@@ -78,7 +78,7 @@ export default function Register() {
         <Navbar />
         <div style={{ paddingTop: "8rem", paddingBottom: "4rem" }}>
           <div style={{ maxWidth: "28rem", margin: "0 auto", padding: "0 1rem", textAlign: "center" }}>
-            <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#fff" }}>
+            <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#111" }}>
               <div style={{ width: "3rem", height: "3rem", borderRadius: "0.5rem", background: "rgba(62,207,142,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem" }}>
                 <Bot size={22} style={{ color: "#00ff87" }} />
               </div>
@@ -103,7 +103,7 @@ export default function Register() {
         <Navbar />
         <div style={{ paddingTop: "8rem", paddingBottom: "4rem" }}>
           <div style={{ maxWidth: "28rem", margin: "0 auto", padding: "0 1rem", textAlign: "center" }}>
-            <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#fff" }}>
+            <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#111" }}>
               <div style={{ width: "3rem", height: "3rem", borderRadius: "9999px", background: "rgba(62,207,142,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem" }}>
                 <CheckCircle size={22} style={{ color: "#00ff87" }} />
               </div>
@@ -121,7 +121,7 @@ export default function Register() {
                   </a>
                 </Link>
                 <Link href="/order">
-                  <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.55)", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+                  <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111", color: "rgba(255,255,255,0.55)", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                     Book Services
                   </a>
                 </Link>
@@ -240,7 +240,7 @@ export default function Register() {
                 {upsertProfile.isPending ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Saving…</> : <>Complete Registration <ArrowRight size={15} /></>}
               </button>
               <Link href="/">
-                <a style={{ display: "flex", alignItems: "center", padding: "0.75rem 1.25rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "#64748b", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+                <a style={{ display: "flex", alignItems: "center", padding: "0.75rem 1.25rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111", color: "rgba(255,255,255,0.45)", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                   Cancel
                 </a>
               </Link>

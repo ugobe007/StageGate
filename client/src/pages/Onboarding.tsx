@@ -42,13 +42,13 @@ interface ShowEntry {
 
 const inputStyle: React.CSSProperties = {
   width: "100%", height: "2.25rem", borderRadius: "0.375rem",
-  border: "1px solid rgba(255,255,255,0.08)", background: "#fff",
+  border: "1px solid rgba(255,255,255,0.12)", background: "#111",
   padding: "0 0.75rem", fontSize: "0.875rem", color: "#ececec", outline: "none",
   boxSizing: "border-box",
 };
 
 const labelStyle: React.CSSProperties = {
-  fontSize: "0.8125rem", fontWeight: 500, color: "#64748b", display: "block", marginBottom: "0.375rem",
+  fontSize: "0.8125rem", fontWeight: 500, color: "rgba(255,255,255,0.45)", display: "block", marginBottom: "0.375rem",
 };
 
 export default function Onboarding() {
@@ -110,7 +110,7 @@ export default function Onboarding() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#080808" }}>
         <Loader2 size={28} style={{ color: "#00ff87", animation: "spin 1s linear infinite" }} />
       </div>
     );
@@ -121,7 +121,7 @@ export default function Onboarding() {
   return (
     <div style={{ minHeight: "100vh", background: "#080808" }}>
       {/* Header */}
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "#fff", position: "sticky", top: 0, zIndex: 10 }}>
+      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(8,8,8,0.96)", backdropFilter: "blur(20px)", position: "sticky", top: 0, zIndex: 10 }}>
         <div style={{ maxWidth: "40rem", margin: "0 auto", padding: "1rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
             <div style={{ width: "1.875rem", height: "1.875rem", borderRadius: "0.375rem", background: "#00ff87", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -226,7 +226,7 @@ export default function Onboarding() {
               <p style={{ fontSize: "0.875rem", color: "#64748b", margin: 0 }}>We need this to plan handling, staging, and logistics.</p>
             </div>
             {robots.map((robot, idx) => (
-              <div key={idx} style={{ padding: "1.125rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", display: "flex", flexDirection: "column", gap: "0.875rem" }}>
+              <div key={idx} style={{ padding: "1.125rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111", display: "flex", flexDirection: "column", gap: "0.875rem" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#64748b" }}>Robot {idx + 1}</span>
                   {robots.length > 1 && (
@@ -267,7 +267,7 @@ export default function Onboarding() {
             ))}
             <button
               onClick={() => setRobots(prev => [...prev, { name: "", type: "", weight: "", dimensions: "", powerReq: "", notes: "" }])}
-              style={{ width: "100%", padding: "0.625rem", fontSize: "0.875rem", fontWeight: 500, color: "#64748b", background: "#fff", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "0.375rem", cursor: "pointer" }}
+              style={{ width: "100%", padding: "0.625rem", fontSize: "0.875rem", fontWeight: 500, color: "rgba(255,255,255,0.40)", background: "#111", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "0.375rem", cursor: "pointer" }}
             >
               + Add Another Robot
             </button>
@@ -282,7 +282,7 @@ export default function Onboarding() {
               <p style={{ fontSize: "0.875rem", color: "#64748b", margin: 0 }}>We'll prepare logistics for each event in advance.</p>
             </div>
             {shows.map((show, idx) => (
-              <div key={idx} style={{ padding: "1.125rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", display: "flex", flexDirection: "column", gap: "0.875rem" }}>
+              <div key={idx} style={{ padding: "1.125rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111", display: "flex", flexDirection: "column", gap: "0.875rem" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#64748b" }}>Show {idx + 1}</span>
                   {shows.length > 1 && (
@@ -308,7 +308,7 @@ export default function Onboarding() {
             ))}
             <button
               onClick={() => setShows(prev => [...prev, { showName: "", boothNumber: "", year: new Date().getFullYear().toString() }])}
-              style={{ width: "100%", padding: "0.625rem", fontSize: "0.875rem", fontWeight: 500, color: "#64748b", background: "#fff", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "0.375rem", cursor: "pointer" }}
+              style={{ width: "100%", padding: "0.625rem", fontSize: "0.875rem", fontWeight: 500, color: "rgba(255,255,255,0.40)", background: "#111", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "0.375rem", cursor: "pointer" }}
             >
               + Add Another Show
             </button>
@@ -366,7 +366,7 @@ export default function Onboarding() {
           {step > 1 ? (
             <button
               onClick={() => setStep(s => s - 1)}
-              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111", color: "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer" }}
             >
               <ArrowLeft size={14} /> Back
             </button>

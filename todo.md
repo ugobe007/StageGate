@@ -1564,3 +1564,10 @@
 
 - [x] Fix nested anchor tags in ClientDashboard (Link wrapping an <a> tag)
 - [x] Fix company.getMyProfile returning undefined — must return null when no profile found
+
+## v57 — Navbar Color Fix on Profile Input Pages
+
+- [x] Fix Navbar top bar colors on ClientDashboard, Onboarding, Register — must use dark editorial palette
+- [x] Navbar: add darkBg prop so it shows solid dark bg on dark-background pages (no transparent bleed)
+- [x] Onboarding: fix header bg (#080808), input bg (#111), label color, card bg, loading bg
+- [x] Register: fix all card/button backgrounds from #fff to #111

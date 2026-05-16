@@ -5,7 +5,7 @@ import { getLoginUrl } from "@/const";
 import { Menu, X } from "lucide-react";
 import GetQuoteModal from "@/components/GetQuoteModal";
 
-export default function Navbar() {
+export default function Navbar({ darkBg = false }: { darkBg?: boolean }) {
   const { user, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -32,11 +32,11 @@ export default function Navbar() {
   const isActive = (href: string) =>
     href === "/" ? location === "/" : location.startsWith(href);
 
-  const navBg = scrolled
-    ? "rgba(0,0,0,0.85)"
+  const navBg = (scrolled || darkBg)
+    ? "rgba(8,8,8,0.96)"
     : "transparent";
 
-  const navBorder = scrolled
+  const navBorder = (scrolled || darkBg)
     ? "1px solid rgba(255,255,255,0.07)"
     : "1px solid transparent";
 
