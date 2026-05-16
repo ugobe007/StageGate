@@ -62,9 +62,10 @@ const STEPS = [
 ];
 
 export default function Home() {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const [demoOpen, setDemoOpen] = useState(false);
   const { ref: statsRef, inView: statsVisible } = useInView(0.4);
+  const isAdmin = user?.role === "admin";
 
   const showsCount  = useCountUp(19,  1600, statsVisible);
   const robotsCount = useCountUp(200, 1800, statsVisible);
@@ -97,21 +98,44 @@ export default function Home() {
             <Link href="/services" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Services</Link>
             <Link href="/xbot" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>XBOT</Link>
             <Link href="/about" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>About</Link>
+            {isAdmin && <Link href="/admin" style={{ fontSize: "0.8125rem", color: "#00ff87", fontWeight: 700, textDecoration: "none" }}>Admin</Link>}
             <a href="#contact" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Contact</a>
           </div>
 
           {/* Auth CTA — always visible */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <a href={getLoginUrl()} style={{
-              fontSize: "0.8125rem",
-              color: "rgba(255,255,255,0.85)",
-              fontWeight: 600,
-              textDecoration: "none",
-              padding: "0.45rem 0.9rem",
-              border: "1px solid rgba(255,255,255,0.18)",
-              borderRadius: "6px",
-            }}>Sign In</a>
-            <Link href="/register">
+            {isAuthenticated ? (
+              <>
+                <Link href={isAdmin ? "/admin" : "/dashboard"} style={{
+                  fontSize: "0.8125rem",
+                  color: isAdmin ? "#00ff87" : "rgba(255,255,255,0.85)",
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  padding: "0.45rem 0.9rem",
+                  border: isAdmin ? "1px solid rgba(0,255,135,0.35)" : "1px solid rgba(255,255,255,0.18)",
+                  borderRadius: "6px",
+                }}>{isAdmin ? "Admin Panel" : "Dashboard"}</Link>
+                <button onClick={() => void logout()} style={{
+                  fontSize: "0.8125rem",
+                  color: "rgba(255,255,255,0.55)",
+                  fontWeight: 600,
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                }}>Sign Out</button>
+              </>
+            ) : (
+              <a href={getLoginUrl()} style={{
+                fontSize: "0.8125rem",
+                color: "rgba(255,255,255,0.85)",
+                fontWeight: 600,
+                textDecoration: "none",
+                padding: "0.45rem 0.9rem",
+                border: "1px solid rgba(255,255,255,0.18)",
+                borderRadius: "6px",
+              }}>Sign In</a>
+            )}
+            {!isAuthenticated && <Link href="/register">
               <button style={{
                 background: "#ff9500",
                 color: "#080808",
@@ -126,7 +150,7 @@ export default function Home() {
                 gap: "0.35rem",
                 letterSpacing: "0.01em",
               }}>Get Started <ArrowRight size={13} /></button>
-            </Link>
+            </Link>}
           </div>
         </div>
 

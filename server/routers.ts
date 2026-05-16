@@ -4022,7 +4022,8 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       .query(async ({ input, ctx }) => {
         const isAdmin = ctx.user?.role === "admin";
         const isCron = (ctx.user as { isCron?: boolean })?.isCron === true;
-        const validApiKey = input.apiKey === process.env.BUILT_IN_FORGE_API_KEY;
+        const expectedApiKey = process.env.BUILT_IN_FORGE_API_KEY;
+        const validApiKey = Boolean(expectedApiKey && input.apiKey && input.apiKey === expectedApiKey);
         if (!isAdmin && !isCron && !validApiKey) throw new TRPCError({ code: "FORBIDDEN" });
         const events = await db.listCalendarEvents({
           from: input.from ? new Date(input.from) : undefined,

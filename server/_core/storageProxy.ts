@@ -1,4 +1,6 @@
 import type { Express } from "express";
+import fs from "node:fs";
+import path from "node:path";
 import { ENV } from "./env";
 
 export function registerStorageProxy(app: Express) {
@@ -6,6 +8,19 @@ export function registerStorageProxy(app: Express) {
     const key = (req.params as Record<string, string>)[0];
     if (!key) {
       res.status(400).send("Missing storage key");
+      return;
+    }
+
+    const localPath = path.resolve(
+      import.meta.dirname,
+      "../..",
+      "client",
+      "public",
+      "manus-storage",
+      key,
+    );
+    if (fs.existsSync(localPath)) {
+      res.sendFile(localPath);
       return;
     }
 
