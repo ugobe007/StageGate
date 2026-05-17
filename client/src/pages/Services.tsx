@@ -3,10 +3,12 @@ import { trpc } from "@/lib/trpc";
 import Navbar from "@/components/Navbar";
 import {
   Package, Warehouse, Zap, Wrench, Clock,
-  GraduationCap, Monitor, TrendingUp, ArrowRight, CheckCircle2
+  GraduationCap, Monitor, TrendingUp, Shield,
+  Radio, Battery, Users, BarChart2, CheckCircle2,
+  ArrowRight, ChevronRight,
 } from "lucide-react";
 
-/* ── Palette ─────────────────────────────────────────────────────────── */
+/* ── Palette ────────────────────────────────────────────────────────────── */
 const BG      = "#080808";
 const CARD    = "#111111";
 const BORDER  = "#222222";
@@ -15,43 +17,159 @@ const TEXT_HI  = "#f1f5f9";
 const TEXT_MID = "#94a3b8";
 const TEXT_DIM = "#64748b";
 
+/* ── Tier metadata ──────────────────────────────────────────────────────── */
+const TIERS = [
+  {
+    key: "tier1",
+    label: "Tier 1",
+    name: "Critical Operational Services",
+    tagline: "The robot must work tomorrow morning.",
+    description: "Entry-point services that solve immediate pain, close deals quickly, and get StageGate embedded into operations. These are painkillers customers already need.",
+    accent: "#3b82f6",
+    pillColor: "#1d4ed8",
+  },
+  {
+    key: "tier2",
+    label: "Tier 2",
+    name: "High-Margin Recurring Infrastructure",
+    tagline: "The real business.",
+    description: "The infrastructure layer where StageGate becomes valuable and hard to replace. Creates recurring revenue, operational data, and deep lock-in.",
+    accent: GREEN,
+    pillColor: "#065f46",
+  },
+  {
+    key: "tier3",
+    label: "Tier 3",
+    name: "Strategic Platform Services",
+    tagline: "The venture-scale moat.",
+    description: "Services that transform StageGate from a vendor into an operating system for the robot economy. This is where the valuation expands.",
+    accent: "#a78bfa",
+    pillColor: "#4c1d95",
+  },
+];
+
+/* ── Service config: icon + accent per slug ─────────────────────────────── */
 const SVC_CONFIG: Record<string, { icon: React.ElementType; accent: string }> = {
-  "inbound-logistics":       { icon: Package,       accent: "#3b82f6" },
-  "warehousing-storage":     { icon: Warehouse,     accent: "#8b5cf6" },
-  "staging-activation":      { icon: Zap,           accent: GREEN },
-  "live-technical-support":  { icon: Wrench,        accent: "#f59e0b" },
-  "stagehand-247":           { icon: Clock,         accent: "#f59e0b" },
-  "stagepro-training":       { icon: GraduationCap, accent: "#8b5cf6" },
-  "showroom-demo":           { icon: Monitor,       accent: "#3b82f6" },
-  "robot-sales-marketing":   { icon: TrendingUp,    accent: "#ef4444" },
+  "robot-receiving-intake":          { icon: Package,       accent: "#3b82f6" },
+  "activation-calibration":          { icon: Zap,           accent: GREEN },
+  "live-technical-support":          { icon: Wrench,        accent: "#f59e0b" },
+  "storage-fleet-management":        { icon: Warehouse,     accent: "#60a5fa" },
+  "stagehand-operations-center":     { icon: Radio,         accent: GREEN },
+  "stagegate-ready-certification":   { icon: Shield,        accent: "#22d3ee" },
+  "robot-insurance-warranty":        { icon: Shield,        accent: "#f97316" },
+  "battery-charging-infrastructure": { icon: Battery,       accent: "#facc15" },
+  "robot-showroom-service":          { icon: Monitor,       accent: "#3b82f6" },
+  "operator-staffing-network":       { icon: Users,         accent: "#a78bfa" },
+  "stagepro-workforce-pipeline":     { icon: GraduationCap, accent: "#8b5cf6" },
+  "deployment-analytics-telemetry":  { icon: BarChart2,     accent: "#10b981" },
+  "robot-sales-marketing":           { icon: TrendingUp,    accent: "#ef4444" },
 };
 
+/* ── Inline feature bullets per slug ────────────────────────────────────── */
 const FEATURES: Record<string, string[]> = {
-  "inbound-logistics":       ["Airport pickup from Harry Reid International", "ATA Carnet & customs coordination", "Climate-controlled receiving", "Full arrival inspection & documentation", "Concierge white-glove service available"],
-  "warehousing-storage":     ["Secure, climate-controlled facility", "Pre-show and post-show storage", "Year-round storage available", "Inventory management system", "Insurance-ready documentation"],
-  "staging-activation":      ["Unpacking & crate management", "Bench testing & diagnostics", "Firmware updates & calibration", "Booth delivery & assembly", "Full pre-show readiness check"],
-  "live-technical-support":  ["On-call technician on the show floor", "Daily startup & shutdown cycles", "Real-time troubleshooting", "Rapid repair during live demos", "Multi-day packages available"],
-  "stagehand-247":           ["Remote monitoring & diagnostics", "On-site emergency dispatch", "Monthly SLA contracts", "Multi-robot fleet support", "Post-sales deployment support"],
-  "stagepro-training":       ["Learn by repairing real client robots", "Master technician supervision", "All robot brands & types covered", "1-day to 6-week programs", "Corporate cohort pricing available"],
-  "showroom-demo":           ["Permanent Las Vegas showroom space", "Year-round demo availability", "Investor & media visit support", "Staffed demo presentations", "Annual lease discounts"],
-  "robot-sales-marketing":   ["US market distribution partnerships", "The Robot Guild™ brand activation", "StageGate Ready™ certification", "Trade show booth marketing", "Commission-based sales model"],
+  "robot-receiving-intake": [
+    "Airport pickup from Harry Reid International",
+    "ATA Carnet & customs coordination",
+    "Shock, damage & battery compliance inspection",
+    "Full photo documentation & insurance verification",
+    "Inventory logging with chain-of-custody record",
+  ],
+  "activation-calibration": [
+    "Unpacking, assembly & crate management",
+    "Firmware updates & sensor calibration",
+    "WiFi, network & localization testing",
+    "Motion validation & full safety checks",
+    "Pre-show readiness sign-off before doors open",
+  ],
+  "live-technical-support": [
+    "Dedicated technician on the show floor",
+    "Daily startup / shutdown cycles",
+    "Emergency troubleshooting & crash recovery",
+    "Battery swaps & rapid parts replacement",
+    "Multi-day show packages available",
+  ],
+  "storage-fleet-management": [
+    "Climate-controlled, secure facility",
+    "Year-round or per-show storage",
+    "Charging maintenance & preventive diagnostics",
+    "Firmware upkeep between deployments",
+    "Redeployment prep & spare parts storage",
+  ],
+  "stagehand-operations-center": [
+    "Remote diagnostics & fleet health monitoring",
+    "OTA firmware coordination",
+    "AI incident logging & deployment analytics",
+    "Emergency dispatch with SLA guarantees",
+    "Multi-robot fleet support & escalation paths",
+  ],
+  "stagegate-ready-certification": [
+    "Trade-show, hospitality & airport ready",
+    "Public-interaction & deployment-safe",
+    "Battery-safe, ADA & network compliant",
+    "Certification badge for marketing materials",
+    "Annual renewal program",
+  ],
+  "robot-insurance-warranty": [
+    "Deployment audits & operational verification",
+    "Incident reports & failure logging",
+    "Transport inspection records",
+    "Warranty processing support",
+    "Insurance partnership documentation",
+  ],
+  "battery-charging-infrastructure": [
+    "Charging station design & installation",
+    "Battery health monitoring & swap systems",
+    "Thermal management & storage compliance",
+    "Booth power provisioning for shows",
+    "Fleet charging logistics coordination",
+  ],
+  "robot-showroom-service": [
+    "Permanent Las Vegas showroom space",
+    "Year-round demo & investor visit support",
+    "Benchmarking labs & interoperability testing",
+    "Staffed demo presentations & media access",
+    "Annual lease discounts available",
+  ],
+  "operator-staffing-network": [
+    "Certified & multilingual operators",
+    "Hospitality-trained demo specialists",
+    "Field technicians & roaming support teams",
+    "FIRST Robotics & university pipelines",
+    "On-demand or full-show deployment",
+  ],
+  "stagepro-workforce-pipeline": [
+    "Learn by repairing real client robots",
+    "Master technician supervision",
+    "All brands & robot types covered",
+    "1-day to 6-week programs",
+    "Corporate cohort & recruiting placement",
+  ],
+  "deployment-analytics-telemetry": [
+    "Failure rate tracking by robot model & environment",
+    "Battery, network & uptime telemetry",
+    "Average deployment time benchmarks",
+    "Post-show operational reports",
+    "Aggregate industry dataset (anonymized)",
+  ],
+  "robot-sales-marketing": [
+    "US market distribution partnerships",
+    "The Robot Guild™ brand activation",
+    "StageGate Ready™ certification alignment",
+    "Trade show booth marketing strategy",
+    "Commission-based sales model",
+  ],
 };
 
-const SERVICE_WORKFLOW = [
+/* ── Workflow steps ─────────────────────────────────────────────────────── */
+const WORKFLOW = [
   { step: "01", title: "Intake", desc: "XBOT or a service form captures robot specs, show details, deadlines, contacts, and required support." },
-  { step: "02", title: "Plan", desc: "StageGate translates the request into a service scope, timeline, quote, risk notes, and owner assignments." },
-  { step: "03", title: "Move", desc: "Logistics, receiving, storage, booth delivery, and activation are coordinated against the show calendar." },
-  { step: "04", title: "Support", desc: "Max and the technician network handle demo readiness, troubleshooting, repair, and post-show handoff." },
+  { step: "02", title: "Plan",   desc: "StageGate translates the request into a service scope, timeline, quote, risk notes, and owner assignments." },
+  { step: "03", title: "Move",   desc: "Logistics, receiving, storage, booth delivery, and activation are coordinated against the show calendar." },
+  { step: "04", title: "Support",desc: "The technician network handles demo readiness, troubleshooting, repair, and post-show handoff." },
 ];
 
-const SERVICE_GROUPS = [
-  { title: "Move the robot", desc: "Inbound logistics, customs coordination, ground transport, warehousing, and show delivery." },
-  { title: "Make it demo-ready", desc: "Unpack, inspect, stage, power, calibrate, activate, and support live demonstrations." },
-  { title: "Keep it working", desc: "StageHand™ remote support, emergency dispatch, maintenance, and field escalation." },
-  { title: "Build capability", desc: "StagePro™ training, showroom demos, market support, and sales enablement." },
-];
-
-function parsePricingTiers(value: unknown): any[] {
+/* ── Parsers ────────────────────────────────────────────────────────────── */
+function parsePricingTiers(value: unknown): Array<{ label: string; price?: number; unit?: string }> {
   if (!value || typeof value !== "string") return [];
   try {
     const parsed = JSON.parse(value);
@@ -61,12 +179,12 @@ function parsePricingTiers(value: unknown): any[] {
   }
 }
 
-function ServiceCard({ svc, phase }: { svc: any; phase: "phase1" | "phase2" }) {
-  const cfg = SVC_CONFIG[svc.slug] || { icon: Package, accent: GREEN };
+/* ── Service card ───────────────────────────────────────────────────────── */
+function ServiceCard({ svc }: { svc: any }) {
+  const cfg = SVC_CONFIG[svc.slug] ?? { icon: Package, accent: GREEN };
   const Icon = cfg.icon;
-  const features = FEATURES[svc.slug] || [];
+  const features = FEATURES[svc.slug] ?? [];
   const tiers = parsePricingTiers(svc.pricingTiers);
-  const isPhase2 = phase === "phase2";
 
   return (
     <div
@@ -78,56 +196,49 @@ function ServiceCard({ svc, phase }: { svc: any; phase: "phase1" | "phase2" }) {
         display: "flex",
         flexDirection: "column",
         gap: "1rem",
-        opacity: isPhase2 ? 0.65 : 1,
         transition: "border-color 0.15s",
       }}
-      onMouseEnter={e => { if (!isPhase2) (e.currentTarget as HTMLElement).style.borderColor = "#333333"; }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "#2a2a2a"; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = BORDER; }}
     >
-      {/* Header row */}
+      {/* Icon + badge */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem" }}>
         <div style={{
           width: "36px", height: "36px", borderRadius: "0.375rem", flexShrink: 0,
           display: "flex", alignItems: "center", justifyContent: "center",
-          background: `${cfg.accent}18`, border: `1px solid ${cfg.accent}30`,
+          background: `${cfg.accent}16`, border: `1px solid ${cfg.accent}28`,
         }}>
           <Icon size={16} style={{ color: cfg.accent }} />
         </div>
         <span style={{
-          fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.04em",
-          color: isPhase2 ? TEXT_DIM : GREEN,
-          fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+          fontSize: "0.625rem", fontWeight: 500, letterSpacing: "0.08em",
+          textTransform: "uppercase", color: cfg.accent,
+          fontFamily: "'JetBrains Mono', monospace",
+          paddingTop: "2px",
         }}>
-          {isPhase2 ? "2026" : "LIVE"}
+          {svc.priceUnit && svc.basePrice
+            ? `from $${Number(svc.basePrice).toLocaleString()} / ${svc.priceUnit}`
+            : "custom pricing"}
         </span>
       </div>
 
       {/* Name + description */}
       <div>
         <h3 style={{
-          fontSize: "0.9375rem",
-          fontWeight: 600,
-          color: TEXT_HI,
-          marginBottom: "0.375rem",
-          letterSpacing: "-0.01em",
-          lineHeight: 1.3,
+          fontSize: "0.9375rem", fontWeight: 600, color: TEXT_HI,
+          marginBottom: "0.375rem", letterSpacing: "-0.01em", lineHeight: 1.3,
         }}>
           {svc.name}
         </h3>
-        <p style={{
-          fontSize: "0.8125rem",
-          lineHeight: 1.6,
-          color: TEXT_MID,
-          margin: 0,
-        }}>
+        <p style={{ fontSize: "0.8125rem", lineHeight: 1.6, color: TEXT_MID, margin: 0 }}>
           {svc.description}
         </p>
       </div>
 
-      {/* Feature list */}
+      {/* Features */}
       {features.length > 0 && (
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.375rem", flex: 1 }}>
-          {features.map((f) => (
+          {features.map(f => (
             <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
               <CheckCircle2 size={11} style={{ color: cfg.accent, flexShrink: 0, marginTop: "0.2rem" }} />
               <span style={{ fontSize: "0.8125rem", color: TEXT_MID, lineHeight: 1.5 }}>{f}</span>
@@ -137,18 +248,16 @@ function ServiceCard({ svc, phase }: { svc: any; phase: "phase1" | "phase2" }) {
       )}
 
       {/* Pricing tiers */}
-      {tiers.length > 0 && (
+      {tiers.length > 0 && tiers.some(t => t.price) && (
         <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: "0.875rem" }}>
           <p style={{
-            fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.08em",
-            textTransform: "uppercase", color: TEXT_DIM,
-            marginBottom: "0.625rem",
-            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+            fontSize: "0.625rem", fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase",
+            color: TEXT_DIM, marginBottom: "0.625rem", fontFamily: "'JetBrains Mono', monospace",
           }}>
             Pricing
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
-            {tiers.map((tier: any) => (
+            {tiers.map(tier => (
               <div key={tier.label}>
                 <div style={{ fontSize: "0.9375rem", fontWeight: 700, color: cfg.accent, fontFamily: "'JetBrains Mono', monospace" }}>
                   {tier.price ? `$${Number(tier.price).toLocaleString()}` : "Custom"}
@@ -160,241 +269,241 @@ function ServiceCard({ svc, phase }: { svc: any; phase: "phase1" | "phase2" }) {
           </div>
         </div>
       )}
+
+      {/* CTA */}
+      <div style={{ marginTop: "auto" }}>
+        <Link href="/order">
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: "0.375rem",
+            fontSize: "0.8125rem", fontWeight: 500, color: cfg.accent, cursor: "pointer",
+            textDecoration: "none",
+          }}>
+            Request this service <ChevronRight size={14} />
+          </span>
+        </Link>
+      </div>
     </div>
   );
 }
 
-export default function Services() {
-  const { data: services, isLoading } = trpc.services.list.useQuery();
+/* ── Tier section ───────────────────────────────────────────────────────── */
+function TierSection({ tier, services }: { tier: typeof TIERS[number]; services: any[] }) {
+  if (!services.length) return null;
+  return (
+    <section style={{ marginBottom: "4.5rem" }}>
+      {/* Tier header */}
+      <div style={{
+        display: "flex", flexDirection: "column", gap: "0.5rem",
+        padding: "1.5rem", borderRadius: "0.75rem",
+        border: `1px solid ${tier.accent}22`,
+        background: `${tier.accent}07`,
+        marginBottom: "1.75rem",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+          <span style={{
+            fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.12em",
+            textTransform: "uppercase", color: tier.accent,
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>
+            {tier.label}
+          </span>
+          <span style={{ width: "1px", height: "12px", background: `${tier.accent}44` }} />
+          <span style={{ fontSize: "0.6875rem", color: TEXT_DIM, fontStyle: "italic" }}>
+            {tier.tagline}
+          </span>
+        </div>
+        <h2 style={{
+          fontSize: "clamp(1.25rem, 2.5vw, 1.875rem)", fontWeight: 700,
+          letterSpacing: "-0.03em", color: TEXT_HI, lineHeight: 1.15,
+        }}>
+          {tier.name}
+        </h2>
+        <p style={{ fontSize: "0.875rem", color: TEXT_MID, lineHeight: 1.65, maxWidth: "56rem", margin: 0 }}>
+          {tier.description}
+        </p>
+      </div>
 
-  const phase1 = (services || []).filter(s => s.phase === "phase1");
-  const phase2 = (services || []).filter(s => s.phase === "phase2");
+      {/* Cards grid */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+        gap: "1rem",
+      }}>
+        {services.map(svc => (
+          <ServiceCard key={svc.slug} svc={svc} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ── Main page ──────────────────────────────────────────────────────────── */
+export default function Services() {
+  const { data: allServices, isLoading } = trpc.services.list.useQuery();
+
+  const tier1 = (allServices ?? []).filter(s => s.phase === "tier1" || s.phase === "phase1").sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const tier2 = (allServices ?? []).filter(s => s.phase === "tier2").sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const tier3 = (allServices ?? []).filter(s => s.phase === "tier3" || s.phase === "phase2").sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   return (
     <div style={{ minHeight: "100vh", background: BG, color: TEXT_HI, fontFamily: "'Inter', 'Space Grotesk', ui-sans-serif, system-ui, sans-serif" }}>
       <Navbar />
 
-      {/* ── Page header ── */}
-      <div style={{ paddingTop: "7rem", paddingBottom: "3.5rem", borderBottom: `1px solid ${BORDER}`, background: "#0a0a0a" }}>
-        <div className="container" style={{ textAlign: "center" }}>
+      {/* ── Hero ── */}
+      <div style={{ paddingTop: "7rem", paddingBottom: "4rem", borderBottom: `1px solid ${BORDER}`, background: "#09090b" }}>
+        <div className="container" style={{ maxWidth: "64rem" }}>
           <p style={{
-            fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.12em",
+            fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.14em",
             textTransform: "uppercase", color: GREEN,
-            fontFamily: "'JetBrains Mono', monospace",
-            marginBottom: "0.875rem",
+            fontFamily: "'JetBrains Mono', monospace", marginBottom: "1rem",
           }}>
-            Complete Service Catalog
+            Service Architecture
           </p>
           <h1 style={{
-            fontSize: "clamp(2.25rem, 5vw, 3.5rem)",
-            fontWeight: 800,
-            letterSpacing: "-0.04em",
-            lineHeight: 1.05,
-            color: "#ffffff",
-            marginBottom: "1rem",
+            fontSize: "clamp(2.25rem, 5vw, 3.75rem)",
+            fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.05,
+            color: "#ffffff", marginBottom: "1.25rem",
           }}>
-            Eight Services.{" "}
-            <span style={{ color: GREEN }}>One Platform.</span>
+            The operational stack{" "}
+            <span style={{ color: GREEN }}>for physical AI.</span>
           </h1>
           <p style={{
-            fontSize: "1rem",
-            lineHeight: 1.65,
-            color: TEXT_MID,
-            maxWidth: "38rem",
-            margin: "0 auto",
+            fontSize: "1.0625rem", lineHeight: 1.7, color: TEXT_MID, maxWidth: "44rem", marginBottom: "2rem",
           }}>
-            StageGate is the operating layer for robot trade shows: logistics,
-            staging, technical support, training, showroom demos, and sales activation
-            connected through one workflow.
+            We did not ask "what services can we sell?"<br />
+            We asked "what operational dependencies will robot companies eventually need?" <br />
+            That changes everything.
           </p>
+
+          {/* Strategic comparison row */}
+          <div style={{
+            display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+            gap: "1px", border: `1px solid ${BORDER}`, borderRadius: "0.75rem", overflow: "hidden",
+          }}>
+            {[
+              { industry: "Cloud computing", equiv: "AWS infrastructure" },
+              { industry: "Aviation",         equiv: "Ground operations" },
+              { industry: "Formula 1",        equiv: "Pit crews" },
+              { industry: "Trade shows",      equiv: "Freeman / GES" },
+              { industry: "Robotics",         equiv: "StageGate", highlight: true },
+            ].map(row => (
+              <div key={row.industry} style={{
+                padding: "1rem 1.25rem",
+                background: row.highlight ? `${GREEN}10` : CARD,
+                borderLeft: row.highlight ? `2px solid ${GREEN}` : "none",
+              }}>
+                <div style={{ fontSize: "0.6875rem", color: TEXT_DIM, marginBottom: "0.25rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  {row.industry}
+                </div>
+                <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: row.highlight ? GREEN : TEXT_HI }}>
+                  {row.equiv}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="container" style={{ paddingTop: "3.5rem", paddingBottom: "4rem" }}>
+      <div className="container" style={{ paddingTop: "3.5rem", paddingBottom: "5rem" }}>
 
-        {/* ── Definition ── */}
-        <div style={{ marginBottom: "3.5rem", display: "grid", gridTemplateColumns: "0.85fr 1.15fr", gap: "3rem", alignItems: "start" }}>
-          <div>
-            <p style={{
-              fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.12em",
-              textTransform: "uppercase", color: GREEN,
-              fontFamily: "'JetBrains Mono', monospace",
-              marginBottom: "0.875rem",
-            }}>
-              Definition
+        {/* ── Highest-value callout ── */}
+        <div style={{
+          marginBottom: "3.5rem", padding: "1.25rem 1.5rem",
+          borderRadius: "0.75rem", border: `1px solid ${GREEN}22`,
+          background: `${GREEN}08`,
+          display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap",
+        }}>
+          <div style={{ flex: 1, minWidth: "16rem" }}>
+            <p style={{ fontSize: "0.6875rem", color: GREEN, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace", marginBottom: "0.375rem" }}>
+              Highest Strategic Value
             </p>
-            <h2 style={{ fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 800, letterSpacing: "-0.035em", lineHeight: 1.08, color: "#ffffff" }}>
-              Services organized around the robot's journey.
-            </h2>
+            <p style={{ fontSize: "0.875rem", color: TEXT_MID, margin: 0, lineHeight: 1.6 }}>
+              Remote operations center · Certification · Storage & fleet · Deployment analytics · Workforce pipeline
+            </p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1rem" }}>
-            {SERVICE_GROUPS.map(group => (
-              <div key={group.title} style={{ borderTop: `1px solid ${BORDER}`, paddingTop: "1rem" }}>
-                <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, color: TEXT_HI, marginBottom: "0.4rem" }}>{group.title}</h3>
-                <p style={{ fontSize: "0.8125rem", lineHeight: 1.6, color: TEXT_MID, margin: 0 }}>{group.desc}</p>
-              </div>
-            ))}
+          <div style={{ fontSize: "0.8125rem", color: TEXT_DIM, maxWidth: "28rem", lineHeight: 1.6 }}>
+            Eventually every major city with robot deployments will need receiving, activation, charging, repair, storage, staffing, compliance, certification, and monitoring. You are building the first.
           </div>
         </div>
 
         {/* ── Workflow ── */}
         <div style={{ marginBottom: "3.5rem", padding: "1.5rem", borderRadius: "0.75rem", border: `1px solid ${BORDER}`, background: CARD }}>
-          <div style={{ marginBottom: "1.5rem" }}>
-            <p style={{
-              fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.12em",
-              textTransform: "uppercase", color: GREEN,
-              fontFamily: "'JetBrains Mono', monospace",
-              marginBottom: "0.625rem",
-            }}>
-              Workflow Design
-            </p>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.025em", color: TEXT_HI }}>
-              One request becomes an operating plan.
-            </h2>
-          </div>
+          <p style={{
+            fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase",
+            color: GREEN, fontFamily: "'JetBrains Mono', monospace", marginBottom: "0.625rem",
+          }}>
+            Workflow Design
+          </p>
+          <h2 style={{ fontSize: "1.375rem", fontWeight: 700, letterSpacing: "-0.025em", color: TEXT_HI, marginBottom: "1.25rem" }}>
+            One request becomes an operating plan.
+          </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0 }}>
-            {SERVICE_WORKFLOW.map((item, index) => (
-              <div key={item.step} style={{ padding: "1rem", borderLeft: index === 0 ? "none" : `1px solid ${BORDER}` }}>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "1.5rem", fontWeight: 700, color: `${GREEN}66`, marginBottom: "0.75rem" }}>{item.step}</div>
-                <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, color: TEXT_HI, marginBottom: "0.4rem" }}>{item.title}</h3>
-                <p style={{ fontSize: "0.8125rem", color: TEXT_MID, lineHeight: 1.55, margin: 0 }}>{item.desc}</p>
+            {WORKFLOW.map((item, i) => (
+              <div key={item.step} style={{ padding: "1rem", borderLeft: i === 0 ? "none" : `1px solid ${BORDER}` }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "1.375rem", fontWeight: 700, color: `${GREEN}55`, marginBottom: "0.625rem" }}>
+                  {item.step}
+                </div>
+                <h3 style={{ fontSize: "0.875rem", fontWeight: 700, color: TEXT_HI, marginBottom: "0.375rem" }}>{item.title}</h3>
+                <p style={{ fontSize: "0.8125rem", lineHeight: 1.6, color: TEXT_MID, margin: 0 }}>{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* ── Phase 1 ── */}
-        <div style={{ marginBottom: "3.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.75rem" }}>
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: "0.5rem",
-              padding: "0.25rem 0.75rem",
-              borderRadius: "9999px",
-              border: `1px solid ${GREEN}40`,
-              background: `${GREEN}0d`,
-              fontSize: "0.6875rem",
-              fontWeight: 500,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: GREEN,
-              fontFamily: "'JetBrains Mono', monospace",
-              whiteSpace: "nowrap",
-            }}>
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: GREEN, animation: "pulse 2s infinite" }} />
-              Phase 1 — Available Now
-            </div>
-            <div style={{ flex: 1, height: "1px", background: BORDER }} />
-          </div>
-
-          {isLoading ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} style={{ height: "20rem", borderRadius: "0.75rem", background: CARD, border: `1px solid ${BORDER}`, animation: "pulse 1.5s infinite" }} />
-              ))}
-            </div>
-          ) : phase1.length > 0 ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
-              {phase1.map(svc => <ServiceCard key={svc.id} svc={svc} phase="phase1" />)}
-            </div>
-          ) : (
-            /* Static fallback when DB is empty — shows all 8 service lines */
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
-              {Object.entries(SVC_CONFIG).map(([slug, cfg]) => {
-                const Icon = cfg.icon;
-                const features = FEATURES[slug] || [];
-                return (
-                  <div key={slug} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: "0.75rem", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem" }}>
-                      <div style={{ width: "36px", height: "36px", borderRadius: "0.375rem", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: `${cfg.accent}18`, border: `1px solid ${cfg.accent}30` }}>
-                        <Icon size={16} style={{ color: cfg.accent }} />
-                      </div>
-                      <span style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.04em", color: GREEN, fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}>LIVE</span>
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: "0.9375rem", fontWeight: 600, color: TEXT_HI, marginBottom: "0.375rem", letterSpacing: "-0.01em", lineHeight: 1.3, textTransform: "capitalize" }}>
-                        {slug.replace(/-/g, " ").replace(/\b247\b/, "24/7")}
-                      </h3>
-                    </div>
-                    {features.length > 0 && (
-                      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.375rem", flex: 1 }}>
-                        {features.map((f) => (
-                          <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
-                            <CheckCircle2 size={11} style={{ color: cfg.accent, flexShrink: 0, marginTop: "0.2rem" }} />
-                            <span style={{ fontSize: "0.8125rem", color: TEXT_MID, lineHeight: 1.5 }}>{f}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* ── Phase 2 ── */}
-        {phase2.length > 0 && (
-          <div style={{ marginBottom: "3.5rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.75rem" }}>
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: "0.5rem",
-                padding: "0.25rem 0.75rem",
-                borderRadius: "9999px",
-                border: `1px solid ${BORDER}`,
-                fontSize: "0.6875rem",
-                fontWeight: 500,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: TEXT_DIM,
-                fontFamily: "'JetBrains Mono', monospace",
-                whiteSpace: "nowrap",
-              }}>
-                Phase 2 — Launching 2026
-              </div>
-              <div style={{ flex: 1, height: "1px", background: BORDER }} />
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
-              {phase2.map(svc => <ServiceCard key={svc.id} svc={svc} phase="phase2" />)}
-            </div>
-          </div>
+        {/* ── Three tier sections ── */}
+        {isLoading ? (
+          <div style={{ textAlign: "center", padding: "4rem 0", color: TEXT_DIM }}>Loading services…</div>
+        ) : (
+          <>
+            {TIERS.map(tier => (
+              <TierSection
+                key={tier.key}
+                tier={tier}
+                services={tier.key === "tier1" ? tier1 : tier.key === "tier2" ? tier2 : tier3}
+              />
+            ))}
+          </>
         )}
 
-        {/* ── CTA ── */}
+        {/* ── Bottom CTA ── */}
         <div style={{
-          padding: "2.5rem",
-          borderRadius: "0.75rem",
-          border: `1px solid #3ecf8e30`,
-          background: "#0d1a14",
+          padding: "2.5rem", borderRadius: "0.75rem",
+          border: `1px solid ${BORDER}`,
+          background: CARD,
           textAlign: "center",
         }}>
           <p style={{
-            fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.12em",
-            textTransform: "uppercase", color: GREEN,
-            fontFamily: "'JetBrains Mono', monospace",
-            marginBottom: "0.75rem",
+            fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase",
+            color: GREEN, fontFamily: "'JetBrains Mono', monospace", marginBottom: "1rem",
           }}>
-            Get Started
+            What to avoid
           </p>
-          <h2 style={{
-            fontSize: "clamp(1.5rem, 3vw, 2rem)",
-            fontWeight: 700,
-            letterSpacing: "-0.03em",
-            color: "#ffffff",
-            marginBottom: "0.625rem",
-          }}>
-            Ready to Book Services?
+          <h2 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.025em", color: TEXT_HI, marginBottom: "0.75rem" }}>
+            We never position around generic logistics.
           </h2>
-          <p style={{ fontSize: "0.875rem", color: TEXT_MID, marginBottom: "1.5rem" }}>
-            Register your company for free, then select your show and services.
+          <p style={{ fontSize: "0.9375rem", color: TEXT_MID, lineHeight: 1.7, maxWidth: "36rem", margin: "0 auto 2rem" }}>
+            Generic logistics, warehousing, labor staffing, AV support, and "event services" are low-multiple businesses. StageGate is always framed around <strong style={{ color: TEXT_HI }}>robot operational infrastructure</strong>.
           </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", justifyContent: "center" }}>
-            <Link href="/register">
-              <button className="btn-primary">
-                Register free <ArrowRight size={14} />
-              </button>
-            </Link>
+          <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/order">
-              <button className="btn-default">Book services now</button>
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: "0.5rem",
+                padding: "0.625rem 1.25rem", borderRadius: "0.5rem",
+                background: GREEN, color: "#000", fontSize: "0.875rem",
+                fontWeight: 600, cursor: "pointer", textDecoration: "none",
+              }}>
+                Request a service <ArrowRight size={15} />
+              </span>
+            </Link>
+            <Link href="/stagehand">
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: "0.5rem",
+                padding: "0.625rem 1.25rem", borderRadius: "0.5rem",
+                border: `1px solid ${BORDER}`, color: TEXT_MID,
+                fontSize: "0.875rem", fontWeight: 500, cursor: "pointer", textDecoration: "none",
+              }}>
+                StageHand™ Operations Center
+              </span>
             </Link>
           </div>
         </div>
