@@ -34,9 +34,10 @@ export default function ServiceOrder() {
   const { data: profile } = trpc.company.getMyProfile.useQuery(undefined, { enabled: isAuthenticated });
 
   const createOrder = trpc.orders.create.useMutation({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onSuccess: (data) => {
       toast.success(`Order #${data.orderId} placed successfully!`);
-      navigate("/dashboard");
+      navigate(`/orders/${data.orderId}`);
     },
     onError: (err) => {
       toast.error(err.message || "Failed to place order");

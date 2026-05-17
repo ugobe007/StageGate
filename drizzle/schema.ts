@@ -144,6 +144,10 @@ export const serviceOrders = pgTable("service_orders", {
   totalAmount: decimal("totalAmount", { precision: 10, scale: 2 }),
   notes: text("notes"),
   bookingId: integer("bookingId"), // originating booking_request id (if converted from a booking)
+  stripeCheckoutSessionId: varchar("stripeCheckoutSessionId", { length: 255 }),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
+  stripePaymentStatus: varchar("stripePaymentStatus", { length: 64 }).default("unpaid"),
+  paidAt: timestamp("paidAt", { withTimezone: true }),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });

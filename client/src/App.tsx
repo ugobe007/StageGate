@@ -13,6 +13,7 @@ import Register from "./pages/Register";
 import GetStarted from "./pages/GetStarted";
 import ClientDashboard from "./pages/ClientDashboard";
 import ServiceOrder from "./pages/ServiceOrder";
+import OrderDetail from "./pages/OrderDetail";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminQuotes from "@/pages/AdminQuotes";
 import AdminDemoRequests from "@/pages/AdminDemoRequests";
@@ -78,6 +79,7 @@ function Router() {
       <Route path="/dashboard" component={ClientDashboard} />
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/order" component={ServiceOrder} />
+      <Route path="/orders/:id" component={OrderDetail} />
 
       {/* Admin — all wrapped in DashboardLayout sidebar */}
       <Route path="/admin">{() => <AdminShell><AdminDashboard /></AdminShell>}</Route>

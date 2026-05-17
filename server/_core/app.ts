@@ -8,6 +8,7 @@ import { createContext } from "./context";
 import { followupDigestHandler, nightlyResearchHandler } from "../scheduledHandlers";
 import { resendWebhookHandler } from "../webhooks/resend";
 import { resendInboundHandler } from "../webhooks/resend-inbound";
+import { stripeWebhookHandler, createCheckoutSession, stripeConfigured } from "./stripe";
 import {
   salesAgentIngestHandler,
   salesAgentOutreachHandler,
@@ -113,6 +114,30 @@ export async function createStageGateApp(): Promise<Express> {
 
   app.post("/api/webhooks/resend", resendWebhookHandler);
   app.post("/api/webhooks/resend-inbound", resendInboundHandler);
+  app.post("/api/webhooks/stripe", stripeWebhookHandler);
+
+  // Stripe checkout session — called from the client with an orderId
+  app.post("/api/payments/checkout", async (req: Request, res: Response) => {
+    try {
+      if (!stripeConfigured()) {
+        return res.status(503).json({ error: "Payments are not configured yet" });
+      }
+      const { orderId } = req.body as { orderId?: number };
+      if (!orderId) return res.status(400).json({ error: "orderId is required" });
+
+      const origin = `${req.headers["x-forwarded-proto"]?.toString().split(",")[0] ?? req.protocol}://${req.get("host")}`;
+      const url = await createCheckoutSession(
+        orderId,
+        `${origin}/orders/${orderId}`,
+        `${origin}/orders/${orderId}`
+      );
+      res.json({ url });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[payments/checkout] Error:", msg);
+      res.status(500).json({ error: msg });
+    }
+  });
 
   return app;
 }
