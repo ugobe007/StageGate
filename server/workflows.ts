@@ -49,8 +49,10 @@ export async function getDbHealth(): Promise<DbHealthResult> {
     const counts: Record<string, number> = {};
     for (const t of tableNames) {
       const res = await db.execute(sql`SELECT COUNT(*) as cnt FROM ${sql.identifier(t)}`);
-      const rows = res as unknown as Array<{ cnt: string | number }>;
-      counts[t] = Number(rows[0]?.cnt ?? 0);
+      // db.execute() returns a pg QueryResult { rows: [...] }, not a plain array
+      const rawRows: Array<{ cnt: string | number }> =
+        (res as any).rows ?? (Array.isArray(res) ? res : []);
+      counts[t] = Number(rawRows[0]?.cnt ?? 0);
     }
     return { connected: true, backend, tables: counts, checkedAt: new Date() };
   } catch (err) {

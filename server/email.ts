@@ -150,22 +150,32 @@ export async function recordOutboundCommunication({
   const toEmail = getProspectOutreachEmail(prospect);
   if (!toEmail) return;
 
-  await db.insert(emailThreads).values({
-    prospectId: prospect.id,
-    threadId: `stagegate-${prospect.id}`,
-    direction: "outbound",
-    fromAddress: FROM_ADDRESS,
-    toAddress: toEmail,
-    subject,
-    body,
-    resendMessageId,
-  });
+  // Write to email_threads (best-effort, no FK constraint)
+  try {
+    await db.insert(emailThreads).values({
+      prospectId: prospect.id,
+      threadId: `stagegate-${prospect.id}-${Date.now()}`,
+      direction: "outbound",
+      fromAddress: FROM_ADDRESS,
+      toAddress: toEmail,
+      subject,
+      body,
+      resendMessageId,
+    });
+  } catch (err) {
+    console.error("[email] emailThreads insert failed:", err);
+  }
 
-  await db.insert(prospectActivities).values({
-    prospectId: prospect.id,
-    type: "email_sent",
-    title: subject,
-    description: `Outbound email sent to ${toEmail}`,
-    metadata: { source, messageId: resendMessageId, toEmail },
-  });
+  // Write persistent activity log (separate try so a FK miss never blocks email delivery)
+  try {
+    await db.insert(prospectActivities).values({
+      prospectId: prospect.id,
+      type: "email_sent",
+      title: subject,
+      description: `Outbound email sent to ${toEmail}`,
+      metadata: { source, messageId: resendMessageId ?? null, toEmail } as Record<string, unknown>,
+    });
+  } catch (err) {
+    console.error("[email] prospectActivities insert failed (prospectId:", prospect.id, "):", err);
+  }
 }

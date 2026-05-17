@@ -1460,6 +1460,17 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
             const emailSubject = `StageGate: Las Vegas Robot Logistics for ${prospect.company}`;
             await db.createOutreachCampaign({ prospectId: prospect.id, emailSubject, emailBody, emailStatus: "sent", emailSentAt: new Date() });
             await db.updateProspect(prospect.id, { status: "contacted" });
+            // Log persistent activity record so the contact timeline stays up to date
+            const dbConn2 = await getDb();
+            if (dbConn2) {
+              await dbConn2.insert(prospectActivities).values({
+                prospectId: prospect.id,
+                type: "email_sent",
+                title: emailSubject,
+                description: `XBOT bulk outreach email sent to ${prospect.contactEmail ?? prospect.company}`,
+                metadata: { source: "xbot_bulk_outreach", company: prospect.company },
+              });
+            }
             results.push({ id: prospectId, success: true, company: prospect.company });
           } catch (err) {
             const msg = err instanceof Error ? err.message : "Unknown error";
