@@ -30,14 +30,14 @@ import {
 
 export interface DbHealthResult {
   connected: boolean;
-  backend: "supabase" | "mysql" | "unknown";
+  backend: "supabase" | "unknown";
   tables: Record<string, number>;
   checkedAt: Date;
 }
 
 export async function getDbHealth(): Promise<DbHealthResult> {
   const db = await getDb();
-  const backend = process.env.SUPABASE_DATABASE_URL ? "supabase" : "mysql";
+  const backend = process.env.SUPABASE_DATABASE_URL ? "supabase" : "unknown";
   if (!db) {
     return { connected: false, backend, tables: {}, checkedAt: new Date() };
   }
