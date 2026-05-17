@@ -531,6 +531,8 @@ export default function AdminSalesAgent() {
   const [scheduleDuration, setScheduleDuration] = useState(30);
   const [scheduleNotes, setScheduleNotes] = useState("");
   const [scheduleType, setScheduleType] = useState<"meeting" | "call" | "demo">("call");
+  // Prospect linked to a schedule action (set when "Schedule a Call" is clicked from detail panel)
+  const [schedulingProspect, setSchedulingProspect] = useState<{ id: number; company: string; email?: string | null; name?: string | null } | null>(null);
   // v67: confirm + reschedule state
   const [confirmingCalId, setConfirmingCalId] = useState<number | null>(null);
   const [reschedulingCalEvt, setReschedulingCalEvt] = useState<typeof upcomingEvents[0] | null>(null);
@@ -705,6 +707,7 @@ export default function AdminSalesAgent() {
       setScheduleTime("10:00");
       setScheduleDuration(30);
       setScheduleNotes("");
+      setSchedulingProspect(null);
       refetchCalendar();
     },
     onError: (err) => toast.error(`Failed to schedule: ${err.message}`),
@@ -1116,6 +1119,29 @@ export default function AdminSalesAgent() {
                     <Button
                       size="sm"
                       variant="outline"
+                      className="w-full border-teal-700 text-teal-400 hover:bg-teal-950/30 hover:border-teal-600 gap-1.5"
+                      onClick={() => {
+                        const p = selectedConv.prospect;
+                        setSchedulingProspect({
+                          id: p.id,
+                          company: p.company,
+                          email: p.contactEmail ?? null,
+                          name: p.contactName ?? null,
+                        });
+                        setScheduleTitle(`Intro Call — ${p.company}`);
+                        setScheduleDate("");
+                        setScheduleTime("10:00");
+                        setScheduleDuration(30);
+                        setScheduleNotes("");
+                        setScheduleType("call");
+                        setScheduleModalOpen(true);
+                      }}
+                    >
+                      <Calendar className="w-3.5 h-3.5" /> Schedule a Call
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       className="w-full border-zinc-700 text-emerald-400 hover:bg-emerald-950/30 hover:border-emerald-700 gap-1.5"
                       disabled={verifyingId === selectedConv.prospect.id}
                       onClick={() => {
@@ -1432,15 +1458,17 @@ export default function AdminSalesAgent() {
       </div>
 
       {/* ── Schedule Meeting Modal (v66) ── */}
-      <Dialog open={scheduleModalOpen} onOpenChange={setScheduleModalOpen}>
+      <Dialog open={scheduleModalOpen} onOpenChange={(v) => { setScheduleModalOpen(v); if (!v) setSchedulingProspect(null); }}>
         <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-white">
-              <Calendar className="w-4 h-4 text-emerald-400" />
-              Schedule a Meeting
+              <Calendar className="w-4 h-4 text-teal-400" />
+              {schedulingProspect ? `Schedule a Call — ${schedulingProspect.company}` : "Schedule a Meeting"}
             </DialogTitle>
             <DialogDescription className="text-zinc-500">
-              Create a calendar event and optionally link it to a prospect.
+              {schedulingProspect
+                ? `This will be linked to ${schedulingProspect.company} and appear in the Meetings tab.`
+                : "Create a calendar event and optionally link it to a prospect."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -1531,6 +1559,12 @@ export default function AdminSalesAgent() {
                   type: scheduleType,
                   status: "scheduled",
                   notes: scheduleNotes.trim() || undefined,
+                  ...(schedulingProspect ? {
+                    prospectId: schedulingProspect.id,
+                    prospectEmail: schedulingProspect.email ?? undefined,
+                    prospectName: schedulingProspect.name ?? undefined,
+                    companyName: schedulingProspect.company,
+                  } : {}),
                 });
               }}
             >

@@ -345,17 +345,20 @@ Cal should:
 
 Under 100 words. Warm but brief.`,
 
-  followup_2: `Write a final email from Cal at StageGate to {{companyName}}.
+  followup_2: `Write the final email from Cal at StageGate to {{companyName}}.
 Their robot: {{robotDescription}}
 
-This is the last email in the sequence. Cal should:
-- Be very brief — this is a nudge, not a pitch
-- Mention that beyond show support, StageGate can help them set up customer demos in Las Vegas year-round — the city has hotels, casinos, and venues that want to demo robots
-- Frame it simply: "If you're ever looking to set up a demo in Vegas for investors or customers, we have the space and the team for it."
-- Keep it warm, no pressure
-- One soft CTA: "happy to chat if the timing works better down the road"
-- Close with: "Check out onstage.bot and register — it's free."
-- Sign-off: "Thanks,\nCal — Robot Ready Team @ StageGate"
+This is the last email in the outreach sequence. It has two short parts:
 
-Under 80 words.`,
+PART 1 — Vegas demos year-round:
+Cal mentions briefly that StageGate isn't just for trade shows. If they ever want to set up a demo in Las Vegas for investors, customers, or press — the city has the venues, the audience, and StageGate has the space and team to support it. One or two sentences, no pitch.
+
+PART 2 — The Robot Guild:
+Cal introduces The Robot Guild naturally, like mentioning a friend. Something like: "I also want to mention a group called The Robot Guild — they work with robot companies on brand partnerships, cultural activations, and the kind of press that builds real awareness. They're selective but I think you'd be a good fit. I can make a warm intro if you're interested." Keep it genuinely casual — not a pitch. Just planting a seed.
+
+Wrap up with a soft CTA: "Either way, let me know if the timing ever works out."
+Close with: "Check out onstage.bot and register — it's free."
+Sign-off: "Thanks,\nCal — Robot Ready Team @ StageGate"
+
+Under 100 words total. Warm. No pressure.`,
 };
