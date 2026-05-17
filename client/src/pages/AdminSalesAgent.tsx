@@ -20,7 +20,7 @@ import {
   Bot, Mail, Clock, MessageSquare,
   Zap, Send, RefreshCw, Eye, Users,
   TrendingUp, Calendar, Star, Cpu, Factory,
-  CheckCircle, XCircle, Edit3, Inbox,
+  CheckCircle, CheckCircle2, XCircle, Edit3, Inbox,
   ShieldCheck, Upload, FileText, Loader2,
   MousePointerClick
 } from "lucide-react";
@@ -101,7 +101,21 @@ interface PreviewModalProps {
 
 function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStage }: PreviewModalProps) {
   const [selectedStage, setSelectedStage] = useState<string>(currentStage);
-  const [preview, setPreview] = useState<{ subject: string; body: string; stage: string; nextStage: string } | null>(null);
+  const [preview, setPreview] = useState<{ subject: string; body: string; stage: string; nextStage: string; fromCache?: boolean } | null>(null);
+
+  // Auto-load existing draft from DB (no LLM call)
+  const { data: existingDraft, isLoading: draftLoading } = trpc.salesAgent.getDraftForProspect.useQuery(
+    { prospectId: prospectId ?? 0 },
+    { enabled: open && !!prospectId }
+  );
+
+  // When existing draft loads, show it immediately
+  useEffect(() => {
+    if (existingDraft && !preview) {
+      const NEXT: Record<string, string> = { discovery: "intro_sent", intro_sent: "followup_1", followup_1: "followup_2", followup_2: "robot_guild", robot_guild: "robot_guild" };
+      setPreview({ subject: existingDraft.subject ?? "", body: existingDraft.body ?? "", stage: selectedStage, nextStage: NEXT[selectedStage] ?? "intro_sent", fromCache: true });
+    }
+  }, [existingDraft]);
 
   const previewMutation = trpc.salesAgent.previewEmail.useMutation({
     onSuccess: (data) => setPreview(data),
@@ -119,12 +133,12 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
             Cal Email Preview — {companyName}
           </DialogTitle>
           <DialogDescription className="text-zinc-500">
-            Generate a live LLM draft for any stage. This does not send anything.
+            Review Cal's draft before approving. Use Regenerate to get a fresh LLM draft.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex items-center gap-3 py-3 border-b border-zinc-800">
-          <span className="text-xs text-zinc-500 whitespace-nowrap">Preview stage:</span>
+          <span className="text-xs text-zinc-500 whitespace-nowrap">Stage:</span>
           <div className="flex gap-1.5 flex-wrap">
             {PREVIEW_STAGES.map(s => {
               const stageInfo = STAGE_MAP[s];
@@ -145,7 +159,8 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
           </div>
           <Button
             size="sm"
-            className="ml-auto bg-amber-500 hover:bg-amber-600 text-black font-medium gap-1.5 flex-shrink-0"
+            variant="outline"
+            className="ml-auto border-zinc-700 text-zinc-400 hover:text-white gap-1.5 flex-shrink-0 text-xs"
             disabled={previewMutation.isPending || !prospectId}
             onClick={() => {
               if (!prospectId) return;
@@ -153,25 +168,32 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
               previewMutation.mutate({
                 prospectId,
                 stage: selectedStage as "discovery" | "intro_sent" | "followup_1" | "followup_2" | "robot_guild",
+                forceRegenerate: true,
               });
             }}
           >
             {previewMutation.isPending
-              ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Generating…</>
-              : <><Zap className="w-3.5 h-3.5" /> Generate</>
+              ? <><RefreshCw className="w-3 h-3 animate-spin" /> Regenerating…</>
+              : <><RefreshCw className="w-3 h-3" /> Regenerate</>
             }
           </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto py-4">
-          {previewMutation.isPending && (
+          {(draftLoading || previewMutation.isPending) && (
             <div className="flex flex-col items-center justify-center py-12 text-zinc-500 gap-3">
               <RefreshCw className="w-6 h-6 animate-spin text-amber-400" />
-              <p className="text-sm">Cal is thinking…</p>
+              <p className="text-sm">{previewMutation.isPending ? "Cal is regenerating…" : "Loading Cal's draft…"}</p>
             </div>
           )}
           {preview && !previewMutation.isPending && (
             <div className="space-y-4">
+              {preview.fromCache && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                  <span className="text-xs text-emerald-400">Cal's saved draft — ready to send. Use Regenerate for a fresh version.</span>
+                </div>
+              )}
               <div className="bg-zinc-800/60 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-zinc-500 uppercase tracking-wide">Subject</span>
@@ -188,14 +210,14 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
                 <pre className="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap font-sans">{preview.body}</pre>
               </div>
               <p className="text-xs text-zinc-600 text-center">
-                This is a live LLM draft. Use "Send Cal's Next Email" in the detail panel to actually send.
+                Use "Send Cal's Next Email" in the detail panel to send this to the prospect.
               </p>
             </div>
           )}
-          {!preview && !previewMutation.isPending && (
+          {!preview && !draftLoading && !previewMutation.isPending && (
             <div className="flex flex-col items-center justify-center py-12 text-zinc-600 gap-3">
               <Bot className="w-8 h-8" />
-              <p className="text-sm">Select a stage and click Generate to see Cal's draft</p>
+              <p className="text-sm">No draft found. Click Regenerate to have Cal write one.</p>
             </div>
           )}
         </div>

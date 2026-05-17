@@ -2721,16 +2721,52 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
 
     // Admin: preview a Cal email (LLM draft, not sent)
     // Replaces the old fetch to /api/scheduled/sales-agent-preview; returns subject, body, stage, nextStage.
+    // Get Cal's existing draft for a prospect from draft_emails (no LLM call)
+    getDraftForProspect: adminProcedure
+      .input(z.object({ prospectId: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return null;
+        const [draft] = await dbConn
+          .select()
+          .from(draftEmails)
+          .where(eq(draftEmails.prospectId, input.prospectId))
+          .orderBy(desc(draftEmails.createdAt))
+          .limit(1);
+        return draft ?? null;
+      }),
+
     previewEmail: adminProcedure
       .input(z.object({
         prospectId: z.number(),
         stage: z.enum(["discovery", "intro_sent", "followup_1", "followup_2", "robot_guild"]).optional(),
+        forceRegenerate: z.boolean().optional(),
       }))
       .mutation(async ({ input }) => {
-        // No internal fetch to /api/scheduled/sales-agent-preview; use the shared core for Vercel safety.
         const dbConn = await getDb();
         if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
+        // 1. Return existing pending draft immediately unless explicitly regenerating
+        if (!input.forceRegenerate) {
+          const [existing] = await dbConn
+            .select()
+            .from(draftEmails)
+            .where(eq(draftEmails.prospectId, input.prospectId))
+            .orderBy(desc(draftEmails.createdAt))
+            .limit(1);
+          if (existing?.body && existing.body.trim().length > 0) {
+            const [conv] = await dbConn
+              .select()
+              .from(salesAgentConversations)
+              .where(eq(salesAgentConversations.prospectId, input.prospectId))
+              .limit(1);
+            const stage = input.stage ?? (conv?.state as "discovery" | "intro_sent" | "followup_1" | "followup_2" | "robot_guild") ?? "discovery";
+            const NEXT: Record<string, string> = { discovery: "intro_sent", intro_sent: "followup_1", followup_1: "followup_2", followup_2: "robot_guild", robot_guild: "robot_guild" };
+            return { subject: existing.subject ?? "", body: existing.body, stage, nextStage: NEXT[stage] ?? "intro_sent", fromCache: true };
+          }
+        }
+
+        // 2. No cached draft — attempt LLM generation
         const [prospect] = await dbConn
           .select()
           .from(prospectsTable)
@@ -2746,9 +2782,27 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
 
         const stage = input.stage ?? (conv?.state as "discovery" | "intro_sent" | "followup_1" | "followup_2" | "robot_guild") ?? "discovery";
 
-        const preview = await salesAgentPreviewCore(input.prospectId, stage);
-        const { subject, body, nextStage } = preview;
-        return { subject, body, stage: preview.stage, nextStage };
+        try {
+          const preview = await salesAgentPreviewCore(input.prospectId, stage);
+          const { subject, body, nextStage } = preview;
+          // Save the freshly generated draft so next time it loads instantly
+          await dbConn.insert(draftEmails).values({
+            prospectId: input.prospectId,
+            subject,
+            body,
+            status: "pending",
+          });
+          return { subject, body, stage: preview.stage, nextStage, fromCache: false };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg.includes("429") || msg.includes("quota") || msg.includes("insufficient")) {
+            throw new TRPCError({
+              code: "TOO_MANY_REQUESTS",
+              message: "OpenAI quota exceeded. Please add billing at platform.openai.com or contact the admin. Existing drafts are still accessible.",
+            });
+          }
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: msg });
+        }
       }),
 
     // Admin: update conversation stage manually
