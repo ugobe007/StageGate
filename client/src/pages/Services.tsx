@@ -292,9 +292,42 @@ export default function Services() {
                 <div key={i} style={{ height: "20rem", borderRadius: "0.75rem", background: CARD, border: `1px solid ${BORDER}`, animation: "pulse 1.5s infinite" }} />
               ))}
             </div>
-          ) : (
+          ) : phase1.length > 0 ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
               {phase1.map(svc => <ServiceCard key={svc.id} svc={svc} phase="phase1" />)}
+            </div>
+          ) : (
+            /* Static fallback when DB is empty — shows all 8 service lines */
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
+              {Object.entries(SVC_CONFIG).map(([slug, cfg]) => {
+                const Icon = cfg.icon;
+                const features = FEATURES[slug] || [];
+                return (
+                  <div key={slug} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: "0.75rem", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem" }}>
+                      <div style={{ width: "36px", height: "36px", borderRadius: "0.375rem", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: `${cfg.accent}18`, border: `1px solid ${cfg.accent}30` }}>
+                        <Icon size={16} style={{ color: cfg.accent }} />
+                      </div>
+                      <span style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.04em", color: GREEN, fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}>LIVE</span>
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: "0.9375rem", fontWeight: 600, color: TEXT_HI, marginBottom: "0.375rem", letterSpacing: "-0.01em", lineHeight: 1.3, textTransform: "capitalize" }}>
+                        {slug.replace(/-/g, " ").replace(/\b247\b/, "24/7")}
+                      </h3>
+                    </div>
+                    {features.length > 0 && (
+                      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.375rem", flex: 1 }}>
+                        {features.map((f) => (
+                          <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
+                            <CheckCircle2 size={11} style={{ color: cfg.accent, flexShrink: 0, marginTop: "0.2rem" }} />
+                            <span style={{ fontSize: "0.8125rem", color: TEXT_MID, lineHeight: 1.5 }}>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

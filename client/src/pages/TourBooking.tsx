@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import Navbar from "@/components/Navbar";
 import {
   MapPin, Calendar, Bot, Zap, CheckCircle2,
   ArrowRight, Factory, Cpu, Building2, Warehouse
@@ -135,9 +136,10 @@ export default function TourBooking() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
+      <Navbar darkBg />
       {/* Hero */}
       <div className="border-b border-zinc-800 bg-zinc-900/50">
-        <div className="max-w-4xl mx-auto px-6 py-16">
+        <div className="max-w-4xl mx-auto px-6 pt-28 pb-16">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <Bot className="w-5 h-5 text-amber-400" />

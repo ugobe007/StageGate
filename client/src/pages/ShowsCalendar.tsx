@@ -214,6 +214,23 @@ export default function ShowsCalendar() {
                 <div key={i} className="rounded-xl border p-5 animate-pulse" style={{ background: CARD, borderColor: BORDER, height: "160px" }} />
               ))}
             </div>
+          ) : filtered.length === 0 && shows.length === 0 ? (
+            /* No shows in database at all */
+            <div className="text-center py-20">
+              <p className="text-4xl mb-4">📅</p>
+              <p className="font-semibold text-lg" style={{ color: TEXT_HI }}>2026 Show Calendar Coming Soon</p>
+              <p className="text-sm mt-2 max-w-sm mx-auto" style={{ color: TEXT_DIM }}>
+                We're adding Las Vegas trade shows for 2026. Get a quote now and we'll confirm availability for your specific event.
+              </p>
+              <div className="flex items-center justify-center gap-3 mt-6 flex-wrap">
+                <button className="btn-primary" onClick={() => setQuoteOpen(true)}>
+                  Get a quote <ArrowRight size={14} />
+                </button>
+                <Link href="/register">
+                  <span className="btn-default">Register free <ArrowRight size={14} /></span>
+                </Link>
+              </div>
+            </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20">
               <p className="text-4xl mb-4">📅</p>
