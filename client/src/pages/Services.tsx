@@ -364,15 +364,14 @@ export default function Services() {
             fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.05,
             color: "#ffffff", marginBottom: "1.25rem",
           }}>
-            The operational stack{" "}
-            <span style={{ color: GREEN }}>for physical AI.</span>
+            Your robot performs.{" "}
+            <span style={{ color: GREEN }}>We handle everything else.</span>
           </h1>
           <p style={{
             fontSize: "1.0625rem", lineHeight: 1.7, color: TEXT_MID, maxWidth: "44rem", marginBottom: "2rem",
           }}>
-            We did not ask "what services can we sell?"<br />
-            We asked "what operational dependencies will robot companies eventually need?" <br />
-            That changes everything.
+            Receiving, activation, live support, storage, certification, remote monitoring —
+            every operational dependency a robot company needs, in one place, in Las Vegas.
           </p>
 
           {/* Strategic comparison row */}
