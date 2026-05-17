@@ -2,6 +2,21 @@
   "installCommand": "pnpm install",
   "buildCommand": "pnpm exec vite build && pnpm exec esbuild server/_core/app.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/app.js",
   "outputDirectory": "dist/public",
+  "headers": [
+    {
+      "source": "/((?!api/|assets/|.*\\..*).*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!api/|assets/|.*\\..*).*)",
