@@ -234,6 +234,7 @@ function PendingDraftsTab() {
   const [editSubject, setEditSubject] = useState("");
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [discardingId, setDiscardingId] = useState<number | null>(null);
+  const [bulkResult, setBulkResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
 
   const { data: drafts = [], isLoading, refetch } = trpc.admin.getDrafts.useQuery(
     { statuses: ["pending"] }
@@ -275,6 +276,19 @@ function PendingDraftsTab() {
     },
   });
 
+  const bulkSend = trpc.admin.bulkSendDrafts.useMutation({
+    onSuccess: (data) => {
+      const result = data as { sent: number; failed: number; total: number };
+      setBulkResult(result);
+      toast.success(`Cal sent ${result.sent} email${result.sent !== 1 ? "s" : ""}${result.failed > 0 ? ` (${result.failed} failed)` : ""}`);
+      utils.admin.getDraftCount.invalidate();
+      refetch();
+    },
+    onError: (err: { message: string }) => {
+      toast.error(`Bulk send failed: ${err.message}`);
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-48 text-zinc-500">
@@ -289,7 +303,7 @@ function PendingDraftsTab() {
         <Inbox className="w-10 h-10" />
         <p className="text-sm font-medium text-zinc-500">No pending drafts</p>
         <p className="text-xs text-center max-w-xs">
-          When a prospect replies to Cal, an AI-generated response will appear here for your review before it goes out.
+          Cal's drafts will appear here. Review each one, edit if needed, then approve and send — or bulk approve all at once.
         </p>
       </div>
     );
@@ -301,15 +315,39 @@ function PendingDraftsTab() {
         <p className="text-sm text-zinc-400">
           <span className="text-white font-medium">{drafts.length}</span> draft{drafts.length !== 1 ? "s" : ""} awaiting review
         </p>
-        <Button
-          size="sm"
-          variant="outline"
-          className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 gap-1.5"
-          onClick={() => refetch()}
-        >
-          <RefreshCw className="w-3.5 h-3.5" /> Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 gap-1.5"
+            onClick={() => refetch()}
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh
+          </Button>
+          <Button
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-1.5"
+            disabled={bulkSend.isPending || drafts.length === 0}
+            onClick={() => bulkSend.mutate({})}
+          >
+            {bulkSend.isPending
+              ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Sending all…</>
+              : <><Send className="w-3.5 h-3.5" /> Bulk Approve All ({drafts.length})</>
+            }
+          </Button>
+        </div>
       </div>
+
+      {bulkResult && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <span className="text-emerald-300">
+            Cal sent <strong>{bulkResult.sent}</strong> email{bulkResult.sent !== 1 ? "s" : ""}.
+            {bulkResult.failed > 0 && <span className="text-amber-400 ml-1">{bulkResult.failed} failed.</span>}
+          </span>
+          <button onClick={() => setBulkResult(null)} className="ml-auto text-zinc-500 hover:text-zinc-300 text-xs">Dismiss</button>
+        </div>
+      )}
 
       {(drafts as Array<{ draft: { id: number; subject: string; body: string; createdAt: Date | string; agentReasoning?: string | null }; prospect: { id: number; company: string; contactEmail?: string | null; robotType?: string | null } }>).map(({ draft, prospect }) => (
         <div
