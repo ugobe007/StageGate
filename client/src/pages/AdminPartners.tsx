@@ -17,10 +17,10 @@ import {
 } from "@/components/ui/select";
 
 const CATEGORIES = [
-  { value: "customs", label: "Customs & Freight Forwarding", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-  { value: "transporter", label: "Equipment Transporter", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
-  { value: "insurance", label: "Insurance & Bonding", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
-  { value: "parts", label: "Spare Parts Supplier", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
+  { value: "customs", label: "Customs & Freight Forwarding", color: "border border-blue-500/40 text-blue-400" },
+  { value: "transporter", label: "Equipment Transporter", color: "border border-orange-500/40 text-orange-400" },
+  { value: "insurance", label: "Insurance & Bonding", color: "border border-purple-500/40 text-purple-400" },
+  { value: "parts", label: "Spare Parts Supplier", color: "border border-yellow-500/40 text-yellow-400" },
   { value: "general", label: "Other", color: "bg-secondary text-muted-foreground border-border" },
 ];
 

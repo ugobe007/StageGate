@@ -27,19 +27,19 @@ import {
 import { Progress } from "@/components/ui/progress";
 
 const STAGES = [
-  { id: "discovery",      label: "Discovered",     color: "bg-zinc-700 text-zinc-300" },
-  { id: "intro_sent",     label: "Intro Sent",      color: "bg-blue-500/20 text-blue-400" },
-  { id: "followup_1",     label: "Follow-up 1",     color: "bg-indigo-500/20 text-indigo-400" },
-  { id: "followup_2",     label: "Follow-up 2",     color: "bg-violet-500/20 text-violet-400" },
-  { id: "robot_guild",    label: "Robot Guild",     color: "bg-amber-500/20 text-amber-400" },
-  { id: "responded",      label: "Responded",       color: "bg-emerald-500/20 text-emerald-400" },
-  { id: "scheduling",     label: "Scheduling",      color: "bg-teal-500/20 text-teal-400" },
-  { id: "booked",         label: "Booked",          color: "bg-emerald-600/20 text-emerald-300" },
-  { id: "not_interested", label: "Not Interested",  color: "bg-zinc-600/40 text-zinc-500" },
-  { id: "email_opened",   label: "Email Opened",   color: "bg-sky-500/20 text-sky-400" },
-  { id: "link_clicked",   label: "Link Clicked",   color: "bg-cyan-500/20 text-cyan-400" },
-  { id: "awaiting_reply", label: "Replied",         color: "bg-amber-500/20 text-amber-400" },
-  { id: "converted",      label: "Converted",       color: "bg-yellow-500/20 text-yellow-400" },
+  { id: "discovery",      label: "Discovered",     color: "text-zinc-400" },
+  { id: "intro_sent",     label: "Intro Sent",      color: "text-blue-400" },
+  { id: "followup_1",     label: "Follow-up 1",     color: "text-indigo-400" },
+  { id: "followup_2",     label: "Follow-up 2",     color: "text-violet-400" },
+  { id: "robot_guild",    label: "Robot Guild",     color: "text-amber-400" },
+  { id: "responded",      label: "Responded",       color: "text-emerald-400" },
+  { id: "scheduling",     label: "Scheduling",      color: "text-teal-400" },
+  { id: "booked",         label: "Booked",          color: "text-emerald-400" },
+  { id: "not_interested", label: "Not Interested",  color: "text-zinc-500" },
+  { id: "email_opened",   label: "Email Opened",   color: "text-sky-400" },
+  { id: "link_clicked",   label: "Link Clicked",   color: "text-cyan-400" },
+  { id: "awaiting_reply", label: "Replied",         color: "text-amber-400" },
+  { id: "converted",      label: "Converted",       color: "text-yellow-400" },
 ] as const;
 
 type Stage = typeof STAGES[number]["id"];
@@ -49,23 +49,23 @@ const STAGE_MAP = Object.fromEntries(
 
 function stageBadge(state: string) {
   const s = STAGE_MAP[state as Stage];
-  if (!s) return <Badge className="bg-zinc-700 text-zinc-300 text-xs">{state}</Badge>;
-  return <Badge className={`${s.color} text-xs border-0`}>{s.label}</Badge>;
+  if (!s) return <span className="text-zinc-400 text-xs font-medium">{state}</span>;
+  return <span className={`${s.color} text-xs font-medium`}>{s.label}</span>;
 }
 
 function robotCategoryBadge(category: string | null | undefined) {
   if (!category || category === "light") return null;
   if (category === "heavy_industrial") {
     return (
-      <Badge className="bg-orange-500/20 text-orange-400 text-xs border-0 gap-1">
+      <span className="text-orange-400 text-xs font-medium inline-flex items-center gap-1">
         <Factory className="w-2.5 h-2.5" /> Heavy Industrial
-      </Badge>
+      </span>
     );
   }
   return (
-    <Badge className="bg-purple-500/20 text-purple-400 text-xs border-0 gap-1">
+    <span className="text-purple-400 text-xs font-medium inline-flex items-center gap-1">
       <Cpu className="w-2.5 h-2.5" /> Mixed
-    </Badge>
+    </span>
   );
 }
 
@@ -132,7 +132,7 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
                 <button
                   key={s}
                   onClick={() => { setSelectedStage(s); setPreview(null); }}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                     selectedStage === s
                       ? (stageInfo?.color ?? "bg-zinc-700 text-white") + " ring-1 ring-current"
                       : "text-zinc-500 hover:text-zinc-300 bg-zinc-800"
@@ -306,7 +306,7 @@ function PendingDraftsTab() {
                 )}
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <Badge className="bg-amber-500/20 text-amber-400 text-xs border-0">Pending Reply</Badge>
+                <Badge className="text-amber-400 text-xs border-0">Pending Reply</Badge>
                 <span className="text-xs text-zinc-600">{timeAgo(draft.createdAt)}</span>
               </div>
             </div>
@@ -742,7 +742,7 @@ export default function AdminSalesAgent() {
           >
             <Calendar className="w-4 h-4" /> Meetings
             {upcomingEvents.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-700">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold text-emerald-400 border border-emerald-700">
                 {upcomingEvents.length}
               </span>
             )}
@@ -838,13 +838,13 @@ export default function AdminSalesAgent() {
               <div className="px-6 py-3 border-b border-zinc-800 flex items-center gap-2 overflow-x-auto">
                 <button
                   onClick={() => setFilterStage("all")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "all" ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+                  className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "all" ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
                 >
                   All ({conversations.length})
                 </button>
                 <button
                   onClick={() => setFilterStage("ready")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "ready" ? "bg-amber-500/30 text-amber-300" : "text-zinc-500 hover:text-zinc-300"}`}
+                  className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "ready" ? "bg-amber-500/30 text-amber-300" : "text-zinc-500 hover:text-zinc-300"}`}
                 >
                   Ready ({stats.readyNow})
                 </button>
@@ -855,7 +855,7 @@ export default function AdminSalesAgent() {
                     <button
                       key={s.id}
                       onClick={() => setFilterStage(s.id)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${filterStage === s.id ? `${s.color} ring-1 ring-current` : "text-zinc-500 hover:text-zinc-300"}`}
+                      className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === s.id ? `${s.color} ring-1 ring-current` : "text-zinc-500 hover:text-zinc-300"}`}
                     >
                       {s.label} ({cnt})
                     </button>
@@ -1278,15 +1278,15 @@ export default function AdminSalesAgent() {
                     const start = new Date(evt.startAt);
                     const end = new Date(evt.endAt);
                     const typeColors: Record<string, string> = {
-                      meeting: "bg-blue-500/20 text-blue-400 border-blue-800",
-                      call: "bg-emerald-500/20 text-emerald-400 border-emerald-800",
-                      demo: "bg-amber-500/20 text-amber-400 border-amber-800",
+                      meeting: "text-blue-400 border-blue-800",
+                      call: "text-emerald-400 border-emerald-800",
+                      demo: "text-amber-400 border-amber-800",
                       event: "bg-purple-500/20 text-purple-400 border-purple-800",
                       follow_up: "bg-zinc-500/20 text-zinc-400 border-zinc-700",
                     };
                     const typeColor = typeColors[evt.type] ?? typeColors.meeting;
                     const statusColors: Record<string, string> = {
-                      scheduled: "bg-zinc-700 text-zinc-300",
+                      scheduled: "text-zinc-400",
                       confirmed: "bg-emerald-600/30 text-emerald-300",
                       completed: "bg-zinc-800 text-zinc-500",
                       cancelled: "bg-red-900/30 text-red-400",
@@ -1511,8 +1511,8 @@ export default function AdminSalesAgent() {
                     <Mail className="w-4 h-4 text-emerald-400" />
                     <span className="font-mono text-emerald-300 text-sm">{verifyResult.email}</span>
                     <Badge className={`text-xs border-0 ml-auto ${
-                      verifyResult.confidence === "high" ? "bg-emerald-500/20 text-emerald-400" :
-                      verifyResult.confidence === "medium" ? "bg-amber-500/20 text-amber-400" :
+                      verifyResult.confidence === "high" ? "text-emerald-400" :
+                      verifyResult.confidence === "medium" ? "text-amber-400" :
                       "bg-zinc-700 text-zinc-400"
                     }`}>{verifyResult.confidence}</Badge>
                   </div>
@@ -1541,7 +1541,7 @@ export default function AdminSalesAgent() {
               )}
               <Button
                 size="sm"
-                className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                className="w-full bg-zinc-800 hover:text-zinc-400"
                 onClick={() => { setVerifyModalOpen(false); setVerifyResult(null); }}
               >Close</Button>
             </div>
@@ -1619,7 +1619,7 @@ export default function AdminSalesAgent() {
             {(verifyProgress?.status === "complete" || verifyProgress?.status === "error") && (
               <Button
                 size="sm"
-                className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                className="w-full bg-zinc-800 hover:text-zinc-400"
                 onClick={handleCloseProgressModal}
               >
                 {verifyProgress.status === "complete" ? "View Summary" : "Close"}
@@ -1658,7 +1658,7 @@ export default function AdminSalesAgent() {
                 </div>
               </div>
               <p className="text-sm text-zinc-400">{bulkVerifyResult.message}</p>
-              <Button size="sm" className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+              <Button size="sm" className="w-full bg-zinc-800 hover:text-zinc-400"
                 onClick={() => setBulkVerifyModalOpen(false)}>Close</Button>
             </div>
           )}

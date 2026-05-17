@@ -11,20 +11,20 @@ import {
 } from "lucide-react";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  pending:     { label: "Pending",     color: "bg-zinc-800 text-zinc-300 border-zinc-700",          icon: <Clock size={12} /> },
-  confirmed:   { label: "Confirmed",   color: "bg-blue-900/60 text-blue-300 border-blue-700/40",    icon: <CheckCircle2 size={12} /> },
-  in_progress: { label: "In Progress", color: "bg-amber-900/60 text-amber-300 border-amber-700/40", icon: <RefreshCw size={12} /> },
-  completed:   { label: "Completed",   color: "bg-emerald-900/60 text-emerald-300 border-emerald-700/40", icon: <CheckCircle2 size={12} /> },
-  cancelled:   { label: "Cancelled",   color: "bg-red-900/60 text-red-300 border-red-700/40",       icon: <AlertCircle size={12} /> },
+  pending:     { label: "Pending",     color: "text-zinc-400 border-zinc-700",          icon: <Clock size={12} /> },
+  confirmed:   { label: "Confirmed",   color: "text-blue-400 border-blue-700/40",    icon: <CheckCircle2 size={12} /> },
+  in_progress: { label: "In Progress", color: "text-amber-400 border-amber-700/40", icon: <RefreshCw size={12} /> },
+  completed:   { label: "Completed",   color: "text-emerald-400 border-emerald-700/40", icon: <CheckCircle2 size={12} /> },
+  cancelled:   { label: "Cancelled",   color: "text-red-400 border-red-700/40",       icon: <AlertCircle size={12} /> },
 };
 
 const BOOKING_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  new:       { label: "New",       color: "bg-zinc-800 text-zinc-300" },
-  reviewed:  { label: "Reviewed",  color: "bg-blue-900/60 text-blue-300" },
-  quoted:    { label: "Quoted",    color: "bg-amber-900/60 text-amber-300" },
-  confirmed: { label: "Confirmed", color: "bg-emerald-900/60 text-emerald-300" },
-  cancelled: { label: "Cancelled", color: "bg-red-900/60 text-red-300" },
-  converted: { label: "Converted", color: "bg-violet-900/60 text-violet-300" },
+  new:       { label: "New",       color: "text-zinc-400" },
+  reviewed:  { label: "Reviewed",  color: "text-blue-400" },
+  quoted:    { label: "Quoted",    color: "text-amber-400" },
+  confirmed: { label: "Confirmed", color: "text-emerald-400" },
+  cancelled: { label: "Cancelled", color: "text-red-400" },
+  converted: { label: "Converted", color: "text-violet-400" },
 };
 
 export default function AdminOrderDetail() {
@@ -366,7 +366,7 @@ export default function AdminOrderDetail() {
                     <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-2">Services Requested</p>
                     <div className="flex flex-wrap gap-1.5">
                       {(data.booking.services as string[]).map((svc, i) => (
-                        <span key={i} className="text-[11px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded border border-zinc-700">
+                        <span key={i} className="text-[11px] text-zinc-400 px-2 py-0.5 rounded border border-zinc-700">
                           {svc}
                         </span>
                       ))}
@@ -648,10 +648,10 @@ export default function AdminOrderDetail() {
               </div>
               {workflowData.checkpoints.map((cp) => {
                 const statusColors: Record<string, string> = {
-                  pending:     "bg-zinc-800 text-zinc-400 border-zinc-700",
-                  in_progress: "bg-amber-900/60 text-amber-300 border-amber-700/40",
-                  completed:   "bg-emerald-900/60 text-emerald-300 border-emerald-700/40",
-                  blocked:     "bg-red-900/60 text-red-300 border-red-700/40",
+                  pending:     "text-zinc-400 border-zinc-700",
+                  in_progress: "text-amber-400 border-amber-700/40",
+                  completed:   "text-emerald-400 border-emerald-700/40",
+                  blocked:     "text-red-400 border-red-700/40",
                   escalated:   "bg-red-900/80 text-red-200 border-red-600",
                 };
                 return (

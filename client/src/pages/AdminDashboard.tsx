@@ -66,7 +66,6 @@ const Btn = ({ children, href, onClick, variant = "default" }: {
 export default function AdminDashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const [togglingRoleId, setTogglingRoleId] = useState<number | null>(null);
-  const [migrating, setMigrating] = useState(false);
 
   const { data: allOrders } = trpc.orders.allOrders.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: shows } = trpc.shows.list.useQuery();
@@ -74,16 +73,6 @@ export default function AdminDashboard() {
   const { data: allProfiles } = trpc.company.getAllProfiles.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: siteStats } = trpc.admin.getSiteStats.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: dbHealth, refetch: refetchDbHealth } = trpc.admin.dbHealth.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin", refetchInterval: 30000 });
-  const runMigration = trpc.admin.runMigration.useMutation({
-    onMutate: () => setMigrating(true),
-    onSuccess: (data) => {
-      setMigrating(false);
-      refetchDbHealth();
-      const rows = Object.entries(data.result.migrated).map(([k, v]) => `${k}: ${v}`).join(", ");
-      toast.success("Migration complete", { description: rows });
-    },
-    onError: (err) => { setMigrating(false); toast.error("Migration failed", { description: err.message }); },
-  });
   const { data: draftCount } = trpc.admin.getDraftCount.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin", refetchInterval: 60_000 });
   const { data: allUsers, refetch: refetchUsers } = trpc.admin.getUsers.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const setUserRole = trpc.admin.setUserRole.useMutation({
@@ -404,8 +393,7 @@ export default function AdminDashboard() {
               </span>
             </div>
             <button
-              disabled={migrating}
-              onClick={() => runMigration.mutate()}
+              onClick={() => refetchDbHealth()}
               style={{
                 display: "inline-flex", alignItems: "center", gap: "0.375rem",
                 padding: "0.3rem 0.65rem", borderRadius: "0.25rem",
@@ -413,8 +401,8 @@ export default function AdminDashboard() {
                 border: `1px solid ${D.border}`, background: "transparent", color: D.text2,
               }}
             >
-              {migrating ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : <RefreshCw size={12} />}
-              {migrating ? "Syncing…" : "Re-run Migration"}
+              <RefreshCw size={12} />
+              Refresh
             </button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: "0.5rem", padding: "1rem 1.25rem" }}>

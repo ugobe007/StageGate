@@ -30,11 +30,11 @@ import {
 // ─── Pipeline stages ──────────────────────────────────────────────────────────
 
 const PIPELINE_STAGES = [
-  { key: "new",       label: "Prospects",  color: "bg-zinc-800 text-zinc-300",    dot: "bg-zinc-500"   },
-  { key: "contacted", label: "Contacted",  color: "bg-blue-900/60 text-blue-300", dot: "bg-blue-400"   },
-  { key: "responded", label: "Replied",    color: "bg-amber-900/60 text-amber-300", dot: "bg-amber-400" },
-  { key: "scheduled", label: "Qualified",  color: "bg-emerald-900/60 text-emerald-300", dot: "bg-emerald-400" },
-  { key: "converted", label: "Jobs",       color: "bg-violet-900/60 text-violet-300", dot: "bg-violet-400" },
+  { key: "new",       label: "Prospects",  color: "text-zinc-400",    dot: "bg-zinc-500"   },
+  { key: "contacted", label: "Contacted",  color: "text-blue-400", dot: "bg-blue-400"   },
+  { key: "responded", label: "Replied",    color: "text-amber-400", dot: "bg-amber-400" },
+  { key: "scheduled", label: "Qualified",  color: "text-emerald-400", dot: "bg-emerald-400" },
+  { key: "converted", label: "Jobs",       color: "text-violet-400", dot: "bg-violet-400" },
 ] as const;
 
 type StageKey = typeof PIPELINE_STAGES[number]["key"];
@@ -479,10 +479,10 @@ function CRMPanel({
   } : null;
 
   const confidenceColor: Record<string, string> = {
-    verified: "text-emerald-400 bg-emerald-900/40 border border-emerald-700/40",
-    high:     "text-blue-400 bg-blue-900/40 border border-blue-700/40",
-    medium:   "text-amber-400 bg-amber-900/40 border border-amber-700/40",
-    low:      "text-red-400 bg-red-900/40 border border-red-700/40",
+    verified: "text-emerald-400 border border-emerald-700/40",
+    high:     "text-blue-400 border border-blue-700/40",
+    medium:   "text-amber-400 border border-amber-700/40",
+    low:      "text-red-400 border border-red-700/40",
   };
 
   const TABS: { key: PanelTab; label: string; icon: React.ReactNode }[] = [
@@ -501,7 +501,7 @@ function CRMPanel({
           <div className="flex-1 min-w-0">
             {/* Stage pill + advance */}
             <div className="flex items-center gap-2 mb-2">
-              <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${stage?.color ?? "bg-zinc-800 text-zinc-400"}`}>
+              <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${stage?.color ?? "text-zinc-400"}`}>
                 {stage?.label ?? prospect.status}
               </span>
               {nextStage && (
@@ -545,7 +545,7 @@ function CRMPanel({
         {prospect.shows?.length ? (
           <div className="flex flex-wrap gap-1.5 mb-3">
             {prospect.shows.map(s => (
-              <span key={s} className="text-[11px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded border border-zinc-700/60 font-medium">
+              <span key={s} className="text-[11px] text-zinc-400 px-2 py-0.5 rounded border border-zinc-700/60 font-medium">
                 📍 {s}
               </span>
             ))}
@@ -566,7 +566,7 @@ function CRMPanel({
                 <Mail size={10} />
                 {prospect.contactEmail}
                 {prospect.emailConfidence && (
-                  <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${confidenceColor[prospect.emailConfidence] ?? "bg-zinc-800 text-zinc-400"}`}>
+                  <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${confidenceColor[prospect.emailConfidence] ?? "text-zinc-400"}`}>
                     {prospect.emailConfidence}
                   </span>
                 )}
@@ -643,7 +643,7 @@ function CRMPanel({
 
             {/* Why StageGate */}
             {briefData?.brief?.whyStageGate && (
-              <div className="bg-emerald-900/20 rounded-lg p-4 border border-emerald-700/30">
+              <div className="border border-emerald-700/30 rounded-lg p-4">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Zap size={11} className="text-emerald-400" />
                   <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Why StageGate</span>
@@ -775,7 +775,7 @@ function CRMPanel({
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               {dm.confidence && (
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${confidenceColor[dm.confidence] ?? "bg-zinc-800 text-zinc-400"}`}>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${confidenceColor[dm.confidence] ?? "text-zinc-400"}`}>
                                   {dm.confidence}
                                 </span>
                               )}
@@ -832,7 +832,7 @@ function CRMPanel({
                 <select
                   value={tone}
                   onChange={e => setTone(e.target.value as typeof tone)}
-                  className="text-[10px] border border-zinc-700 rounded px-1.5 py-1 bg-zinc-800 text-zinc-300 focus:outline-none focus:border-zinc-500"
+                  className="text-[10px] border border-zinc-700 rounded px-1.5 py-1 text-zinc-400 focus:outline-none focus:border-zinc-500"
                   disabled={regenerating}
                 >
                   <option value="professional">Professional</option>
@@ -1146,7 +1146,7 @@ export default function AdminPipeline() {
           <select
             value={filterShow}
             onChange={e => setFilterShow(e.target.value)}
-            className="text-[11px] border border-zinc-700 rounded-md px-2.5 py-1.5 bg-zinc-800 text-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+            className="text-[11px] border border-zinc-700 rounded-md px-2.5 py-1.5 text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-600"
           >
             <option value="all">All Events</option>
             {allShows.map(s => <option key={s} value={s}>{s}</option>)}

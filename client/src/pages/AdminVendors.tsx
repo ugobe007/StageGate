@@ -203,8 +203,8 @@ function WarehouseTab() {
                     key={bay.id}
                     className={`rounded-xl border p-4 space-y-2 transition-colors ${
                       isOccupied
-                        ? "border-amber-500/40 bg-amber-500/5"
-                        : "border-emerald-500/30 bg-emerald-500/5"
+                        ? "border-amber-500/40"
+                        : "border-emerald-500/30"
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -312,7 +312,7 @@ function WarehouseTab() {
                 </thead>
                 <tbody>
                   {bays.map(bay => (
-                    <tr key={bay.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <tr key={bay.id} className="border-b border-border/50 hover:bg-zinc-800/20 transition-colors">
                       <td className="px-4 py-3 font-medium">{bay.name}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{bay.sqft.toLocaleString()}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-amber-500">
@@ -402,7 +402,7 @@ function WarehouseTab() {
           </div>
 
           {runMatcher && matchResult && (
-            <div className={`rounded-lg border p-4 ${matchResult.match ? "border-amber-500/40 bg-amber-500/5" : "border-destructive/40 bg-destructive/5"}`}>
+            <div className={`rounded-lg border p-4 ${matchResult.match ? "border-amber-500/40" : "border-destructive/40"}`}>
               {matchResult.match ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -600,7 +600,7 @@ export default function AdminVendors() {
           <span className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             Vendors
-            <Badge variant="secondary" className="text-xs">{allVendors.length}</Badge>
+            <Badge variant="outline" className="text-xs">{allVendors.length}</Badge>
           </span>
         </button>
         <button

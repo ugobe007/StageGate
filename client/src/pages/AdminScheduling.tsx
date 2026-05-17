@@ -252,7 +252,7 @@ export default function AdminScheduling() {
               {upcomingSlots.map(slot => (
                 <div
                   key={slot.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/20 transition-colors group"
+                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-zinc-800/30 transition-colors group"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -268,7 +268,7 @@ export default function AdminScheduling() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {slot.isBooked ? (
-                      <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                      <Badge className="text-green-600 border-green-500/30">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         {slot.bookedByName}
                       </Badge>
@@ -344,7 +344,7 @@ export default function AdminScheduling() {
                     </div>
                   </div>
                   {slot.meetingNotes && (
-                    <div className="text-xs text-muted-foreground bg-muted/50 rounded p-2">
+                    <div className="text-xs text-muted-foreground text-zinc-500">
                       {slot.meetingNotes}
                     </div>
                   )}
@@ -364,7 +364,7 @@ export default function AdminScheduling() {
           </summary>
           <div className="mt-2 space-y-1">
             {pastSlots.slice(0, 20).map(slot => (
-              <div key={slot.id} className="flex items-center justify-between p-2 rounded border bg-muted/20 text-sm">
+              <div key={slot.id} className="flex items-center justify-between p-2 rounded border  text-sm">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" />
                   {formatSlotTime(slot.slotStart, slot.slotEnd)} · {slot.hostName}
@@ -471,7 +471,7 @@ export default function AdminScheduling() {
 
             {/* Preview */}
             {previewSlots.length > 0 && (
-              <div className="rounded-lg border bg-muted/30 p-3 space-y-1.5">
+              <div className="rounded-lg border border-zinc-800 p-3 space-y-1.5">
                 <p className="text-xs font-medium text-muted-foreground">Preview ({bulkDays} slot{bulkDays !== 1 ? "s" : ""})</p>
                 {previewSlots.map((s, i) => (
                   <div key={i} className="text-xs text-foreground">
