@@ -513,8 +513,14 @@ async function generateFrankEmail(
     .join("\n");
 
   const promptTemplate = STAGE_PROMPTS[stage] ?? STAGE_PROMPTS["discovery"]!;
+  const contactFirstName = prospect.contactName
+    ? prospect.contactName.split(" ")[0] ?? prospect.contactName
+    : null;
+  const greetingName = contactFirstName ?? "there";
+
   const userPrompt = promptTemplate
     .replace(/\{\{companyName\}\}/g, prospect.company)
+    .replace(/\{\{contactName\}\}/g, greetingName)
     .replace(/\{\{showName\}\}/g, primaryShow)
     .replace(/\{\{showDates\}\}/g, "")
     .replace(/\{\{showLocation\}\}/g, "Las Vegas")
