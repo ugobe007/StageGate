@@ -10,9 +10,27 @@ import { CheckCircle, ArrowRight, Loader2, Building2, Bot } from "lucide-react";
 import { toast } from "sonner";
 
 const ROBOT_TYPES = [
-  "Humanoid Robot", "Industrial Robot", "Collaborative Robot (Cobot)",
-  "Delivery Robot", "Service Robot", "Drone / UAV", "Medical Robot",
-  "Agricultural Robot", "Security Robot", "Other",
+  "Humanoid Robot",
+  "Industrial Robot / Arm",
+  "Collaborative Robot (Cobot)",
+  "Autonomous Mobile Robot (AMR)",
+  "Automated Guided Vehicle (AGV)",
+  "Delivery Robot",
+  "Service Robot",
+  "Drone / UAV",
+  "Medical / Surgical Robot",
+  "Rehabilitation / Exoskeleton",
+  "Agricultural Robot",
+  "Security & Inspection Robot",
+  "Logistics & Warehouse Robot",
+  "Manufacturing Robot",
+  "Material Handling Robot",
+  "3D Printing / Additive System",
+  "Autonomous Vehicle / AV",
+  "Underwater / Marine Robot",
+  "Space / Exploration Robot",
+  "Educational Robot",
+  "Other",
 ];
 
 const labelStyle: React.CSSProperties = {
@@ -86,7 +104,7 @@ export default function Register() {
               <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "2rem" }}>
                 Create a free StageGate account to register your company and access our full service catalog.
               </p>
-              <a href={getLoginUrl()} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#00ff87", color: "#fff", fontWeight: 700, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+              <a href={getLoginUrl()} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.75rem 1.5rem", background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.12)", color: "#f1f5f9", fontWeight: 600, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                 Sign In to Continue <ArrowRight size={16} />
               </a>
               <p style={{ marginTop: "1rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.30)" }}>Free forever · No credit card required</p>
@@ -116,12 +134,12 @@ export default function Register() {
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 <Link href="/dashboard">
-                  <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", background: "#00ff87", color: "#fff", fontWeight: 700, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+                  <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.12)", color: "#f1f5f9", fontWeight: 600, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                     Go to My Dashboard <ArrowRight size={15} />
                   </a>
                 </Link>
                 <Link href="/order">
-                  <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111", color: "rgba(255,255,255,0.55)", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+                  <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "rgba(255,255,255,0.45)", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                     Book Services
                   </a>
                 </Link>
@@ -215,10 +233,10 @@ export default function Register() {
                         padding: "0.3125rem 0.75rem",
                         fontSize: "0.8125rem",
                         fontWeight: selected ? 500 : 400,
-                        border: `1px solid ${selected ? "#00ff87" : "rgba(255,255,255,0.08)"}`,
+                        border: `1px solid ${selected ? "#00ff87" : "rgba(255,255,255,0.12)"}`,
                         borderRadius: "0.25rem",
-                        background: selected ? "rgba(62,207,142,0.08)" : "#fff",
-                        color: selected ? "#00ff87" : "#64748b",
+                        background: selected ? "rgba(62,207,142,0.10)" : "#1a1a1a",
+                        color: selected ? "#00ff87" : "#94a3b8",
                         cursor: "pointer",
                         transition: "all 0.1s",
                       }}
@@ -235,12 +253,12 @@ export default function Register() {
               <button
                 type="submit"
                 disabled={upsertProfile.isPending}
-                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", background: "#00ff87", color: "#fff", fontWeight: 700, fontSize: "0.9375rem", borderRadius: "0.375rem", border: "none", cursor: "pointer", opacity: upsertProfile.isPending ? 0.7 : 1 }}
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", background: "transparent", color: "#00ff87", fontWeight: 600, fontSize: "0.9375rem", borderRadius: "0.375rem", border: "1px solid #00ff87", cursor: "pointer", opacity: upsertProfile.isPending ? 0.7 : 1 }}
               >
                 {upsertProfile.isPending ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Saving…</> : <>Complete Registration <ArrowRight size={15} /></>}
               </button>
               <Link href="/">
-                <a style={{ display: "flex", alignItems: "center", padding: "0.75rem 1.25rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111", color: "rgba(255,255,255,0.45)", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+                <a style={{ display: "flex", alignItems: "center", padding: "0.75rem 1.25rem", border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "rgba(255,255,255,0.40)", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                   Cancel
                 </a>
               </Link>
