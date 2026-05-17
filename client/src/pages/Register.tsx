@@ -31,8 +31,8 @@ export default function Register() {
   const [form, setForm] = useState({
     companyName: "",
     website: "",
-    contactName: user?.name ?? "",
-    contactEmail: user?.email ?? "",
+    contactName: "",
+    contactEmail: "",
     contactPhone: "",
     country: "",
     description: "",
