@@ -139,17 +139,16 @@ export default function ProspectCRMCard({
   const [tone, setTone] = useState<"professional" | "friendly" | "concise" | "bold">("professional");
   const [regenerating, setRegenerating] = useState(false);
 
-  // Populate draft: prefer Cal's draft_emails entry, fall back to AI brief
+  // Populate draft from Cal's draft_emails entry ONLY — no generic LLM fallback.
+  // All email drafts must go through Cal's voice (frankPlaybook / salesAgentPreviewCore).
   useEffect(() => {
     if (draftEdited) return;
     if (calDraft?.body) {
       setDraftMessage(calDraft.body);
       setDraftSubject(calDraft.subject ?? `StageGate — ${prospect.company}`);
-    } else if (briefData?.brief?.draftMessage) {
-      setDraftMessage(briefData.brief.draftMessage);
-      setDraftSubject(`StageGate Logistics for ${prospect.company} at ${(prospect.shows ?? []).join(", ") || "your next show"}`);
     }
-  }, [calDraft, briefData, draftEdited, prospect.company, prospect.shows]);
+    // Intentionally no briefData.draftMessage fallback — that's a generic LLM, not Cal.
+  }, [calDraft, draftEdited, prospect.company]);
 
   // Reset when prospect changes
   useEffect(() => {
@@ -171,9 +170,12 @@ export default function ProspectCRMCard({
     onMutate: () => setRegenerating(true),
     onSuccess: (data) => {
       setDraftMessage(data.draft);
+      if ((data as { subject?: string }).subject) {
+        setDraftSubject((data as { subject?: string }).subject!);
+      }
       setDraftEdited(true);
       setRegenerating(false);
-      toast.success("Draft rewritten");
+      toast.success("Cal draft generated");
     },
     onError: (e) => { setRegenerating(false); toast.error(e.message); },
   });
@@ -333,7 +335,7 @@ export default function ProspectCRMCard({
           {/* Quick action: Send Email */}
           <button
             onClick={() => { setActiveTab("email"); handleSendDraft(); }}
-            disabled={sendDraftWithWorkflow.isPending || briefLoading || sendSuccess}
+            disabled={sendDraftWithWorkflow.isPending || sendSuccess}
             className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-bold transition-all duration-300 disabled:cursor-not-allowed ${
               sendSuccess
                 ? "bg-emerald-600 text-white"
@@ -657,9 +659,10 @@ export default function ProspectCRMCard({
                 onClick={() => regenerateDraftMutation.mutate({ id: prospect.id, tone })}
                 disabled={regenerating}
                 className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-400 hover:text-amber-300 border border-amber-800/60 hover:border-amber-600 rounded px-2.5 py-1.5 transition-colors disabled:opacity-40"
+                title="Generate using Cal's voice and frankPlaybook template"
               >
                 {regenerating ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                Regenerate
+                {draftMessage ? "Regenerate (Cal)" : "Generate Cal Draft"}
               </button>
             </div>
 
@@ -673,7 +676,7 @@ export default function ProspectCRMCard({
                   </div>
                 </div>
               )}
-              {(briefLoading || calDraftsLoading) && !draftMessage ? (
+              {calDraftsLoading && !draftMessage ? (
                 <div className="space-y-2 p-3 bg-zinc-800/60 rounded-lg border border-zinc-700 min-h-[180px]">
                   <div className="h-3 bg-zinc-700 rounded animate-pulse w-full" />
                   <div className="h-3 bg-zinc-700 rounded animate-pulse w-4/5" />
@@ -687,7 +690,7 @@ export default function ProspectCRMCard({
                   onChange={e => { setDraftMessage(e.target.value); setDraftEdited(true); }}
                   rows={10}
                   className="w-full bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-3 text-[13px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 resize-y leading-relaxed font-sans"
-                  placeholder="AI draft will appear here… or write your own message."
+                  placeholder="Cal's draft will appear here. Click Regenerate to generate one now."
                 />
               )}
             </div>
