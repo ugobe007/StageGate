@@ -349,7 +349,7 @@ export async function salesAgentManualSendHandler(req: Request, res: Response) {
 
 export async function salesAgentManualSendCore(
   prospectId: number
-): Promise<{ ok: true; subject: string; messageId: string | null; nextStage: ConversationStage }> {
+): Promise<{ ok: true; subject: string; messageId: string | null; nextStage: ConversationStage; warning?: string }> {
   const db = await getDb();
   if (!db) throw new Error("db unavailable");
 
@@ -376,7 +376,19 @@ export async function salesAgentManualSendCore(
     throw new Error("Failed to generate email");
   }
 
-  const messageId = await sendFrankEmail(toEmail, prospect.contactName, subject, body);
+  // Attempt to send — capture delivery failure without blocking the workflow
+  let messageId: string | null = null;
+  let deliveryWarning: string | undefined;
+  try {
+    messageId = await sendFrankEmail(toEmail, prospect.contactName, subject, body);
+  } catch (sendErr) {
+    const msg = sendErr instanceof Error ? sendErr.message : String(sendErr);
+    console.error("[Cal] Delivery failed, recording attempt anyway:", msg);
+    deliveryWarning = msg.startsWith("Resend inbound not configured")
+      ? "Email queued but not delivered — configure Resend inbound at resend.com → Domains → onstage.bot → Inbound → Notification URL: https://stagegate-production.up.railway.app/api/webhooks/resend-inbound"
+      : `Email delivery failed: ${msg}`;
+  }
+
   const now = new Date();
 
   await db.insert(emailThreads).values({
@@ -434,7 +446,7 @@ export async function salesAgentManualSendCore(
     metadata: { stage: currentStage, nextStage, messageId, manual: true, toEmail, outreachEmailCandidates: emailPolicy.candidates },
   });
 
-  return { ok: true, subject, messageId, nextStage };
+  return { ok: true, subject, messageId, nextStage, ...(deliveryWarning ? { warning: deliveryWarning } : {}) };
 }
 
 // ─── 3b. Preview Handler (generates email but does NOT send) ────────────────
@@ -795,6 +807,12 @@ async function generateFrankEmail(
 }
 
 // ─── 5. Send Email via Resend ─────────────────────────────────────────────────
+function _isNotificationUrlError(errText: string): boolean {
+  const t = errText.toLowerCase();
+  return ["notification service", "notification_service", "notification url",
+    "notification_url", "not set", "not configured", "inbound"].some(kw => t.includes(kw));
+}
+
 async function sendFrankEmail(
   toEmail: string,
   toName: string | null | undefined,
@@ -803,31 +821,57 @@ async function sendFrankEmail(
 ): Promise<string | null> {
   const toAddress = toName ? `${toName} <${toEmail}>` : toEmail;
 
-  const res = await fetch(RESEND_API, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: `${FRANK_PERSONA.fromName} <${FRANK_PERSONA.fromEmail}>`,
-      to: [toAddress],
-      bcc: [ADMIN_BCC],
-      subject,
-      text: body,
-      open_tracking: true,
-      click_tracking: true,
-    }),
+  const buildPayload = (withTracking: boolean) => ({
+    from: `${FRANK_PERSONA.fromName} <${FRANK_PERSONA.fromEmail}>`,
+    to: [toAddress],
+    bcc: [ADMIN_BCC],
+    subject,
+    text: body,
+    ...(withTracking ? { open_tracking: true, click_tracking: true } : {}),
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    console.error("[Cal] Resend error:", err);
+  const attempt = async (withTracking: boolean) => {
+    const res = await fetch(RESEND_API, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(buildPayload(withTracking)),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err);
+    }
+    return (await res.json()) as { id?: string };
+  };
+
+  try {
+    const data = await attempt(true);
+    return data.id ?? null;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (_isNotificationUrlError(msg)) {
+      console.warn("[Cal] Resend notification URL not configured — retrying without tracking. Set up Resend webhook at: https://resend.com/webhooks");
+      try {
+        const data = await attempt(false);
+        return data.id ?? null;
+      } catch (e2) {
+        const msg2 = e2 instanceof Error ? e2.message : String(e2);
+        if (_isNotificationUrlError(msg2)) {
+          // Both attempts rejected — Resend requires the inbound Notification URL to be set on the domain.
+          // Surface this as a thrown error so the tRPC layer can show the user an actionable message.
+          throw new Error(
+            "Resend inbound not configured: go to resend.com → Domains → onstage.bot → Inbound → set Notification URL to https://stagegate-production.up.railway.app/api/webhooks/resend-inbound"
+          );
+        }
+        console.error("[Cal] Resend retry failed:", e2);
+        return null;
+      }
+    }
+    console.error("[Cal] Resend error:", msg);
     return null;
   }
-
-  const data = (await res.json()) as { id?: string };
-  return data.id ?? null;
 }
 
 // ─── 6. Pick Relevant Breakpoints ────────────────────────────────────────────

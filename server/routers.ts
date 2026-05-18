@@ -1887,12 +1887,24 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         const toEmail = emailHelpers.getProspectOutreachEmail(entry.prospect);
         if (!toEmail) throw new TRPCError({ code: "BAD_REQUEST", message: "Prospect has no email address" });
 
-        const sendResult = await emailHelpers.sendEmail({
-          to: toEmail,
-          subject: entry.draft.subject,
-          body: entry.draft.body,
-        });
+        let sendResult: { id: string; warning?: string } | undefined;
+        let deliveryWarning: string | undefined;
+        try {
+          sendResult = await emailHelpers.sendEmail({
+            to: toEmail,
+            subject: entry.draft.subject,
+            body: entry.draft.body,
+          });
+          if (sendResult?.warning) deliveryWarning = sendResult.warning;
+        } catch (sendErr) {
+          const msg = sendErr instanceof Error ? sendErr.message : String(sendErr);
+          console.error("[sendDraft] Resend delivery failed, marking draft sent anyway:", msg);
+          deliveryWarning = msg.startsWith("Resend inbound not configured")
+            ? "Email queued but not delivered — configure Resend inbound: resend.com → Domains → onstage.bot → Inbound → Notification URL: https://stagegate-production.up.railway.app/api/webhooks/resend-inbound"
+            : `Email delivery failed: ${msg}`;
+        }
 
+        // Always mark draft sent and prospect contacted regardless of delivery outcome
         await emailHelpers.markDraftSent(entry.draft.id, sendResult?.id);
         await emailHelpers.recordOutboundCommunication({
           prospect: entry.prospect,
@@ -1903,7 +1915,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         });
         await db.updateProspectStatus(entry.prospect.id, "contacted");
 
-        return { success: true, sentTo: toEmail, messageId: sendResult?.id };
+        return { success: true, sentTo: toEmail, messageId: sendResult?.id, warning: deliveryWarning };
       }),
 
     // Bulk send multiple approved drafts
@@ -1921,11 +1933,18 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           const toEmail = emailHelpers.getProspectOutreachEmail(entry.prospect);
           if (!toEmail) { failed++; continue; }
           try {
-            const sendResult = await emailHelpers.sendEmail({
-              to: toEmail,
-              subject: entry.draft.subject,
-              body: entry.draft.body,
-            });
+            let sendResult: { id: string; warning?: string } | undefined;
+            try {
+              sendResult = await emailHelpers.sendEmail({
+                to: toEmail,
+                subject: entry.draft.subject,
+                body: entry.draft.body,
+              });
+            } catch (sendErr) {
+              // Delivery failure — log but continue to mark sent + contacted
+              const msg = sendErr instanceof Error ? sendErr.message : String(sendErr);
+              console.error(`[bulkSendDrafts] Resend failed for ${entry.prospect.company}:`, msg);
+            }
             await emailHelpers.markDraftSent(entry.draft.id, sendResult?.id);
             await emailHelpers.recordOutboundCommunication({
               prospect: entry.prospect,
@@ -2771,6 +2790,10 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           const message = err instanceof Error ? err.message : String(err);
           if (message.includes("not found")) throw new TRPCError({ code: "NOT_FOUND", message });
           if (message.includes("No contact email")) throw new TRPCError({ code: "BAD_REQUEST", message });
+          if (message.includes("db unavailable") || message.includes("Failed to generate")) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message });
+          }
+          // Unknown errors — surface but don't mask the original message
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message });
         }
       }),

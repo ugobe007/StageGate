@@ -20,6 +20,12 @@ type ProspectEmailTarget = {
 
 // ─── Resend send helper ───────────────────────────────────────────────────────
 
+function _isNotificationUrlError(errText: string): boolean {
+  const t = errText.toLowerCase();
+  return ["notification service", "notification_service", "notification url",
+    "notification_url", "not set", "not configured", "inbound"].some(kw => t.includes(kw));
+}
+
 export async function sendEmail({
   to,
   subject,
@@ -31,35 +37,64 @@ export async function sendEmail({
   body: string;
   /** Optional: provide a full HTML document to send instead of auto-converting body */
   htmlBody?: string;
-}): Promise<{ id: string }> {
+}): Promise<{ id: string; warning?: string }> {
   const toArray = Array.isArray(to) ? to : [to];
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: `${FROM_NAME} <${FROM_ADDRESS}>`,
-      to: toArray,
-      subject,
-      text: body,
-      html: htmlBody ?? body
-        .split("\n\n")
-        .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
-        .join(""),
-      // v35: enable Resend native open + click tracking
-      open_tracking: true,
-      click_tracking: true,
-    }),
+  const htmlFallback = htmlBody ?? body
+    .split("\n\n")
+    .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+    .join("");
+
+  const buildPayload = (withTracking: boolean) => ({
+    from: `${FROM_NAME} <${FROM_ADDRESS}>`,
+    to: toArray,
+    subject,
+    text: body,
+    html: htmlFallback,
+    ...(withTracking ? { open_tracking: true, click_tracking: true } : {}),
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Resend error ${res.status}: ${err}`);
-  }
+  const attempt = async (withTracking: boolean) => {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(buildPayload(withTracking)),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Resend error ${res.status}: ${err}`);
+    }
+    return res.json() as Promise<{ id: string }>;
+  };
 
-  return res.json();
+  try {
+    return await attempt(true);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (_isNotificationUrlError(msg)) {
+      console.warn("[email] Resend notification URL not configured — retrying without tracking. Configure webhook at: https://resend.com/webhooks");
+      try {
+        const result = await attempt(false);
+        return {
+          ...result,
+          warning: "Email sent without open/click tracking. Configure Resend webhook to enable tracking.",
+        };
+      } catch (e2) {
+        const msg2 = e2 instanceof Error ? e2.message : String(e2);
+        // Both attempts failed — root cause is the domain inbound notification URL not set in Resend.
+        // Throw a clear user-facing message so the caller can surface it properly.
+        if (_isNotificationUrlError(msg2)) {
+          throw new Error(
+            "Resend inbound not configured: go to resend.com → Domains → onstage.bot → Inbound → set Notification URL to https://stagegate-production.up.railway.app/api/webhooks/resend-inbound"
+          );
+        }
+        throw e2;
+      }
+    }
+    throw e;
+  }
 }
 
 // ─── Draft DB helpers ─────────────────────────────────────────────────────────

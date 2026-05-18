@@ -322,15 +322,35 @@ function PendingDraftsTab() {
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [discardingId, setDiscardingId] = useState<number | null>(null);
   const [bulkResult, setBulkResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
+  const [draftAllResult, setDraftAllResult] = useState<{ generated: number; skipped: number; errors: string[]; total: number } | null>(null);
 
   const { data: drafts = [], isLoading, refetch } = trpc.admin.getDrafts.useQuery(
     { statuses: ["pending"] }
   );
 
+  const generateDrafts = trpc.admin.generateDrafts.useMutation({
+    onSuccess: (data) => {
+      const r = data as { generated: number; skipped: number; errors: string[]; total: number };
+      setDraftAllResult(r);
+      toast.success(`Cal drafted ${r.generated} new email${r.generated !== 1 ? "s" : ""} (${r.skipped} skipped)`);
+      utils.admin.getDraftCount.invalidate();
+      refetch();
+    },
+    onError: (err: { message: string }) => {
+      toast.error(`Draft generation failed: ${err.message}`);
+    },
+  });
+
   const sendDraft = trpc.admin.sendDraft.useMutation({
     onSuccess: (data) => {
-      toast.success(`Sent to ${(data as { sentTo?: string }).sentTo ?? "prospect"}`);
+      const d = data as { sentTo?: string; warning?: string };
+      if (d.warning) {
+        toast.warning(`Prospect marked contacted — but email not delivered. ${d.warning}`);
+      } else {
+        toast.success(`Sent to ${d.sentTo ?? "prospect"}`);
+      }
       setSendingId(null);
+      utils.admin.getDraftCount.invalidate();
       refetch();
     },
     onError: (err: { message: string }) => {
@@ -413,6 +433,18 @@ function PendingDraftsTab() {
           </Button>
           <Button
             size="sm"
+            variant="outline"
+            className="border-amber-700 text-amber-300 hover:bg-amber-950/40 gap-1.5"
+            disabled={generateDrafts.isPending}
+            onClick={() => { setDraftAllResult(null); generateDrafts.mutate({}); }}
+          >
+            {generateDrafts.isPending
+              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Drafting all…</>
+              : <><Bot className="w-3.5 h-3.5" /> Draft All Prospects</>
+            }
+          </Button>
+          <Button
+            size="sm"
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-1.5"
             disabled={bulkSend.isPending || drafts.length === 0}
             onClick={() => bulkSend.mutate({})}
@@ -424,6 +456,22 @@ function PendingDraftsTab() {
           </Button>
         </div>
       </div>
+
+      {draftAllResult && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
+          <Bot className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <span className="text-amber-300">
+              Cal drafted <strong>{draftAllResult.generated}</strong> new email{draftAllResult.generated !== 1 ? "s" : ""}.{" "}
+              <span className="text-zinc-400">{draftAllResult.skipped} prospects skipped (already have a draft or no email address).</span>
+            </span>
+            {draftAllResult.errors.length > 0 && (
+              <p className="text-red-400 text-xs mt-1">{draftAllResult.errors.length} error{draftAllResult.errors.length !== 1 ? "s" : ""}: {draftAllResult.errors[0]}</p>
+            )}
+          </div>
+          <button onClick={() => setDraftAllResult(null)} className="text-zinc-500 hover:text-zinc-300 text-xs flex-shrink-0">Dismiss</button>
+        </div>
+      )}
 
       {bulkResult && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm">
@@ -655,9 +703,14 @@ export default function AdminSalesAgent() {
 
   const manualSend = trpc.salesAgent.manualSend.useMutation({
     onSuccess: (data, vars) => {
-      toast.success(`Cal sent: ${data.subject}`);
+      if ((data as { warning?: string }).warning) {
+        toast.warning(`Workflow updated — but email not delivered. ${(data as { warning?: string }).warning}`);
+      } else {
+        toast.success(`Cal sent: ${data.subject}`);
+      }
       setSendingId(null);
       refetchConvs();
+      utils.admin.getDraftCount.invalidate();
       if (selectedProspectId === vars.prospectId) {
         utils.salesAgent.getEmailThread.invalidate({ prospectId: vars.prospectId });
       }
