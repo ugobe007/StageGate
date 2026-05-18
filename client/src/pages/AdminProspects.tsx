@@ -74,6 +74,21 @@ export default function AdminProspects() {
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
   const [failedIds, setFailedIds] = useState<Set<number>>(new Set());
   const [selectedProspectId, setSelectedProspectId] = useState<number | null>(null);
+  const [generatingDrafts, setGeneratingDrafts] = useState(false);
+
+  const generateDraftsMutation = trpc.admin.generateDrafts.useMutation({
+    onSuccess: (res) => {
+      const r = res.result as { generated?: number; skipped?: number; conversationsSeeded?: number; errors?: string[] } | undefined;
+      const generated = r?.generated ?? 0;
+      const seeded = r?.conversationsSeeded ?? 0;
+      let msg = `Cal drafted ${generated} email${generated !== 1 ? "s" : ""}`;
+      if (seeded > 0) msg += ` · queued ${seeded} new prospect${seeded !== 1 ? "s" : ""} for follow-ups`;
+      toast.success(msg);
+      void utils.prospects.list.invalidate();
+      setGeneratingDrafts(false);
+    },
+    onError: (e) => { toast.error(e.message); setGeneratingDrafts(false); },
+  });
   const [editNotes, setEditNotes] = useState<Record<number, string>>({});
   const [editContact, setEditContact] = useState<Record<number, {
     contactName?: string;
@@ -584,6 +599,32 @@ export default function AdminProspects() {
               <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.55)" }}>
                 {prospects.length}{hideContacted && statusFilter === "" ? ` of ${(allData?.prospects ?? []).length}` : ""} prospects{hideContacted && statusFilter === "" ? " (contacted hidden)" : ""}
               </span>
+              {/* Generate Cal Drafts for all prospects */}
+              <button
+                onClick={() => {
+                  setGeneratingDrafts(true);
+                  generateDraftsMutation.mutate({});
+                }}
+                disabled={generatingDrafts}
+                title="Have Cal pre-draft intro emails for every prospect that doesn't have one yet"
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.4rem",
+                  fontSize: "0.8125rem", fontWeight: 600,
+                  padding: "0.375rem 0.875rem",
+                  border: "1px solid rgba(251,191,36,0.35)",
+                  color: generatingDrafts ? "rgba(251,191,36,0.40)" : "#fbbf24",
+                  background: generatingDrafts ? "rgba(251,191,36,0.04)" : "rgba(251,191,36,0.08)",
+                  cursor: generatingDrafts ? "wait" : "pointer",
+                  borderRadius: "0.375rem",
+                  transition: "all 0.15s",
+                  opacity: generatingDrafts ? 0.7 : 1,
+                }}
+              >
+                {generatingDrafts
+                  ? <><RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> Drafting…</>
+                  : <><Zap size={12} /> Draft All with Cal</>
+                }
+              </button>
               <button
                 onClick={exportCSV}
                 title="Download CSV"
