@@ -90,6 +90,63 @@ function nextActionLabel(state: string, nextAt: Date | string | null | undefined
   return `In ${days}d`;
 }
 
+// ─── Inline Draft Panel ───────────────────────────────────────────────────────
+function InlineDraftPanel({ prospectId }: { prospectId: number }) {
+  const [expanded, setExpanded] = useState(true);
+
+  const { data: draft, isLoading } = trpc.salesAgent.getDraftForProspect.useQuery(
+    { prospectId },
+    { enabled: !!prospectId }
+  );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-zinc-600 py-2">
+        <RefreshCw className="w-3 h-3 animate-spin" /> Loading Cal's draft…
+      </div>
+    );
+  }
+
+  if (!draft?.body) {
+    return (
+      <div className="rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-3 py-2.5">
+        <div className="flex items-center gap-1.5 text-xs text-zinc-600">
+          <FileText className="w-3 h-3" />
+          <span>No draft yet — click "Send Cal's Next Email" or Regenerate in Preview.</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-amber-900/40 bg-amber-950/10 overflow-hidden">
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full flex items-center justify-between px-3 py-2 hover:bg-amber-950/20 transition-colors"
+      >
+        <div className="flex items-center gap-1.5">
+          <Bot className="w-3 h-3 text-amber-400" />
+          <span className="text-xs font-medium text-amber-400">Cal's Draft</span>
+          {draft.subject && (
+            <span className="text-xs text-zinc-500 truncate max-w-[140px]">— {draft.subject}</span>
+          )}
+        </div>
+        <span className="text-zinc-600 text-[10px]">{expanded ? "▴" : "▾"}</span>
+      </button>
+      {expanded && (
+        <div className="px-3 pb-3 space-y-2 border-t border-amber-900/30">
+          {draft.subject && (
+            <p className="text-[11px] text-zinc-400 font-medium pt-2">{draft.subject}</p>
+          )}
+          <pre className="text-[11px] text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans max-h-56 overflow-y-auto">
+            {draft.body}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Preview Email Modal ──────────────────────────────────────────────────────
 interface PreviewModalProps {
   open: boolean;
@@ -1203,6 +1260,9 @@ export default function AdminSalesAgent() {
                         </p>
                       )}
                     </div>
+
+                    {/* Inline Cal draft — auto-loads, no click needed */}
+                    <InlineDraftPanel prospectId={selectedConv.prospect.id} />
 
                     <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Email Thread</h3>
                     {threadLoading ? (
