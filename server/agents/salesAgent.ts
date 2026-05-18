@@ -499,23 +499,26 @@ export async function salesAgentPreviewCore(
  * and never formulaic. Follow-up stages still use LLM with a minimal prompt.
  */
 function buildDiscoveryEmail(
-  prospect: typeof prospects.$inferSelect
+  prospect: typeof prospects.$inferSelect,
+  showName: string,
+  showCity: string
 ): { subject: string; body: string } {
   const contactFirstName = prospect.contactName
     ? prospect.contactName.split(" ")[0] ?? prospect.contactName
     : null;
   const greetingName = contactFirstName ?? "there";
 
-  const primaryShow = Array.isArray(prospect.shows) && prospect.shows.length > 0
-    ? prospect.shows[0]!
-    : "the upcoming show";
+  const isVegas = /las vegas/i.test(showCity);
+  const showLine = isVegas
+    ? `I noticed ${showName} is coming up in Las Vegas and wanted to reach out. Are you planning to attend the show and do you need help with warehousing and staging of your robots at the show?`
+    : `I noticed ${showName} is coming up in ${showCity} and wanted to reach out. Are you planning to attend, and do you need help with warehousing and staging of your robots — either at the show or during a Las Vegas stop?`;
 
   const body = [
     `Hi ${greetingName},`,
     ``,
     `This is Cal from StageGate. We help companies like yours with robot logistics and technical support during their visit to Las Vegas conferences and with customer demos.`,
     ``,
-    `I noticed ${primaryShow} is coming up in Las Vegas and wanted to reach out. Are you planning to attend the show and do you need help with warehousing and staging of your robots at the show?`,
+    showLine,
     ``,
     `We operate fully bonded warehouses for robot storage and have teams that can help unpack, test, and fix technical issues that may have occurred during transit. We care for your robots so they are ready to go when you arrive at the conference.`,
     ``,
@@ -525,7 +528,7 @@ function buildDiscoveryEmail(
     FRANK_PERSONA.signature,
   ].join("\n");
 
-  const subject = `Quick note — ${prospect.company} at ${primaryShow}`;
+  const subject = `Quick note — ${prospect.company} at ${showName}`;
 
   return { subject, body };
 }
@@ -539,7 +542,24 @@ async function generateFrankEmail(
 
   // Discovery: template only — no LLM, guaranteed Cal's voice
   if (stage === "discovery") {
-    const { subject, body } = buildDiscoveryEmail(prospect);
+    // Look up the show city so the email is accurate for non-Vegas shows
+    let showCity = "Las Vegas";
+    if (primaryShow !== "the upcoming show") {
+      try {
+        const db = await getDb();
+        if (db) {
+          const [showRow] = await db
+            .select({ city: tradeShows.city, location: tradeShows.location })
+            .from(tradeShows)
+            .where(eq(tradeShows.name, primaryShow))
+            .limit(1);
+          showCity = showRow?.city ?? showRow?.location ?? "Las Vegas";
+        }
+      } catch {
+        // default to Las Vegas if lookup fails
+      }
+    }
+    const { subject, body } = buildDiscoveryEmail(prospect, primaryShow, showCity);
     return { subject, body, nextStage };
   }
 
