@@ -98,7 +98,17 @@ export default function ProspectCRMCard({
   const nextStageIdx = PIPELINE_STAGES.findIndex(s => s.key === prospect.status) + 1;
   const nextStage = nextStageIdx < PIPELINE_STAGES.length - 1 ? PIPELINE_STAGES[nextStageIdx] : undefined;
 
-  // AI brief — auto-fetches on open
+  // Cal's draft from draft_emails table — highest priority for Email tab
+  const { data: calDrafts, isLoading: calDraftsLoading, refetch: refetchCalDrafts } = trpc.admin.getDraftsForProspect.useQuery(
+    { prospectId: prospect.id },
+    { staleTime: 60 * 1000 }
+  );
+  type CalDraft = { id: number; subject: string; body: string; status: string };
+  const calDraft: CalDraft | undefined = (calDrafts as CalDraft[] | undefined)?.find(
+    (d) => d.status === "approved" || d.status === "pending"
+  ) ?? (calDrafts as CalDraft[] | undefined)?.[0];
+
+  // AI brief — used for overview tab + fallback draft when no Cal draft
   const { data: briefData, isLoading: briefLoading } = trpc.prospects.getBrief.useQuery(
     { id: prospect.id },
     { staleTime: 5 * 60 * 1000 }
@@ -129,13 +139,17 @@ export default function ProspectCRMCard({
   const [tone, setTone] = useState<"professional" | "friendly" | "concise" | "bold">("professional");
   const [regenerating, setRegenerating] = useState(false);
 
-  // Populate draft from AI brief once loaded
+  // Populate draft: prefer Cal's draft_emails entry, fall back to AI brief
   useEffect(() => {
-    if (briefData?.brief?.draftMessage && !draftEdited) {
+    if (draftEdited) return;
+    if (calDraft?.body) {
+      setDraftMessage(calDraft.body);
+      setDraftSubject(calDraft.subject ?? `StageGate — ${prospect.company}`);
+    } else if (briefData?.brief?.draftMessage) {
       setDraftMessage(briefData.brief.draftMessage);
       setDraftSubject(`StageGate Logistics for ${prospect.company} at ${(prospect.shows ?? []).join(", ") || "your next show"}`);
     }
-  }, [briefData, draftEdited, prospect.company, prospect.shows]);
+  }, [calDraft, briefData, draftEdited, prospect.company, prospect.shows]);
 
   // Reset when prospect changes
   useEffect(() => {
@@ -577,6 +591,38 @@ export default function ProspectCRMCard({
         {/* ── EMAIL TAB ── */}
         {activeTab === "email" && (
           <div className="space-y-4">
+            {/* Cal draft source banner */}
+            {calDraftsLoading ? (
+              <div className="h-7 bg-zinc-800/60 rounded animate-pulse" />
+            ) : calDraft ? (
+              <div className="flex items-center justify-between bg-indigo-950/50 border border-indigo-800/50 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={11} className="text-indigo-400" />
+                  <span className="text-[11px] font-semibold text-indigo-300">Cal draft</span>
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                    calDraft.status === "approved"
+                      ? "text-emerald-400 border-emerald-700/50 bg-emerald-950/40"
+                      : calDraft.status === "sent"
+                      ? "text-blue-400 border-blue-700/50 bg-blue-950/40"
+                      : "text-amber-400 border-amber-700/50 bg-amber-950/40"
+                  }`}>
+                    {calDraft.status}
+                  </span>
+                </div>
+                <button
+                  onClick={() => refetchCalDrafts()}
+                  className="text-[10px] text-indigo-500 hover:text-indigo-300 transition-colors"
+                >
+                  Refresh
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-[11px] text-zinc-600 bg-zinc-800/40 border border-zinc-700/40 rounded-lg px-3 py-2">
+                <AlertCircle size={11} />
+                No Cal draft yet — generate one below or use the AI brief fallback
+              </div>
+            )}
+
             {/* Subject */}
             <div>
               <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-widest block mb-1.5">Subject</label>
@@ -627,7 +673,7 @@ export default function ProspectCRMCard({
                   </div>
                 </div>
               )}
-              {briefLoading && !draftMessage ? (
+              {(briefLoading || calDraftsLoading) && !draftMessage ? (
                 <div className="space-y-2 p-3 bg-zinc-800/60 rounded-lg border border-zinc-700 min-h-[180px]">
                   <div className="h-3 bg-zinc-700 rounded animate-pulse w-full" />
                   <div className="h-3 bg-zinc-700 rounded animate-pulse w-4/5" />
