@@ -18,7 +18,7 @@
 
 import type { Request, Response } from "express";
 import { eq, and, lte, inArray } from "drizzle-orm";
-import { getDb } from "../db.js";
+import { getDb, getUpcomingLasVegasShows } from "../db.js";
 import {
   prospects,
   tradeShows,
@@ -656,7 +656,8 @@ async function resolveShowCity(showName: string): Promise<string> {
 function buildDiscoveryEmail(
   prospect: typeof prospects.$inferSelect,
   showName: string,
-  showCity: string
+  showCity: string,
+  upcomingLvShows: string[] = []
 ): { subject: string; body: string } {
   const contactFirstName = prospect.contactName
     ? prospect.contactName.split(" ")[0] ?? prospect.contactName
@@ -668,11 +669,15 @@ function buildDiscoveryEmail(
   // Context-aware intro + show hook
   const introLine = isVegas
     ? `This is Cal from StageGate. We're based in Las Vegas and help robotics companies with logistics and technical support during trade shows — warehousing, staging, on-site tech support, and customer demos.`
-    : `This is Cal from StageGate. We're the robot logistics and technical operations team in Las Vegas — we help robotics companies warehouse, stage, and support their robots at shows across the country and at LV events.`;
+    : `This is Cal from StageGate. We're the robot logistics and technical operations team here in Las Vegas — we help robotics companies warehouse, stage, and run their robots at shows.`;
 
   const showLine = isVegas
     ? `I noticed ${showName} is coming up and wanted to reach out. Are you planning to exhibit, and do you need help with warehousing and staging your robots before and during the show?`
-    : `I noticed you're heading to ${showName} in ${showCity}. Are you also planning any Las Vegas shows this year? We'd love to help with warehousing, robot prep, and on-site support whenever you're in town.`;
+    : `I noticed you're heading to ${showName} in ${showCity}. Are you planning any Las Vegas shows this year?${
+        upcomingLvShows.length > 0
+          ? ` We have teams ready for ${upcomingLvShows.join(", ")}${upcomingLvShows.length > 1 ? "," : ""} and more — so if you're attending any of those, we can handle everything on the ground.`
+          : ` We have teams ready for upcoming LV shows and would love to be your ground crew.`
+      }`;
 
   const body = [
     `Hi ${greetingName},`,
@@ -708,7 +713,13 @@ async function generateFrankEmail(
   // Discovery: template only — no LLM, guaranteed Cal's voice
   if (stage === "discovery") {
     const showCity = await resolveShowCity(primaryShow);
-    const { subject, body } = buildDiscoveryEmail(prospect, primaryShow, showCity);
+    // Fetch upcoming LV shows so Cal can name them in non-LV emails
+    const lvShows = await getUpcomingLasVegasShows(6);
+    const lvShowNames = lvShows
+      .filter(s => s.name !== primaryShow)
+      .map(s => s.name)
+      .slice(0, 3);
+    const { subject, body } = buildDiscoveryEmail(prospect, primaryShow, showCity, lvShowNames);
     return { subject, body, nextStage };
   }
 
