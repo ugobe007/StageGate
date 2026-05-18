@@ -26,12 +26,13 @@ export async function sendEmail({
   body,
   htmlBody,
 }: {
-  to: string;
+  to: string | string[];
   subject: string;
   body: string;
   /** Optional: provide a full HTML document to send instead of auto-converting body */
   htmlBody?: string;
 }): Promise<{ id: string }> {
+  const toArray = Array.isArray(to) ? to : [to];
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -40,7 +41,7 @@ export async function sendEmail({
     },
     body: JSON.stringify({
       from: `${FROM_NAME} <${FROM_ADDRESS}>`,
-      to: [to],
+      to: toArray,
       subject,
       text: body,
       html: htmlBody ?? body

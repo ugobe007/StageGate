@@ -1,4 +1,4 @@
-const PREFERRED_ROLE_INBOXES = ["sales", "events", "marketing"] as const;
+const PREFERRED_ROLE_INBOXES = ["marketing", "sales"] as const;
 const DEPRECATED_ROLE_INBOXES = new Set(["partnerships", "info", "support", "hello", "contact"]);
 
 type ProspectLike = {

@@ -137,8 +137,18 @@ export default function ProspectCRMCard({
   const [draftEdited, setDraftEdited] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  const [emailInput, setEmailInput] = useState<string>("");
-  const [savingEmail, setSavingEmail] = useState(false);
+  // Derived role-based fallback addresses when no specific contact email
+  const derivedDomain = (() => {
+    const site = prospect.website?.trim();
+    if (!site) return null;
+    try { return new URL(site.startsWith("http") ? site : `https://${site}`).hostname.replace(/^www\./, "").toLowerCase(); }
+    catch { return site.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0]?.toLowerCase() ?? null; }
+  })();
+  const effectiveEmails: string[] = prospect.contactEmail
+    ? [prospect.contactEmail]
+    : derivedDomain
+    ? [`marketing@${derivedDomain}`, `sales@${derivedDomain}`]
+    : [];
 
   // Populate draft from Cal's draft_emails entry ONLY — no generic LLM fallback.
   // All email drafts must go through Cal's voice (frankPlaybook / salesAgentPreviewCore).
@@ -182,23 +192,6 @@ export default function ProspectCRMCard({
     onError: (e) => toast.error(e.message),
   });
 
-  const updateProspect = trpc.prospects.update.useMutation({
-    onSuccess: () => {
-      ctx.prospects.list.invalidate();
-      setSavingEmail(false);
-      toast.success("Email saved — ready to send");
-    },
-    onError: (e) => { setSavingEmail(false); toast.error(e.message); },
-  });
-
-  function handleSaveEmail() {
-    if (!emailInput.trim() || !/\S+@\S+\.\S+/.test(emailInput)) {
-      toast.error("Enter a valid email address");
-      return;
-    }
-    setSavingEmail(true);
-    updateProspect.mutate({ id: prospect.id, contactEmail: emailInput.trim().toLowerCase() });
-  }
 
   const regenerateDraftMutation = trpc.prospects.regenerateDraft.useMutation({
     onMutate: () => setRegenerating(true),
@@ -242,8 +235,8 @@ export default function ProspectCRMCard({
   }
 
   function handleSendDraft() {
-    if (!prospect.contactEmail) {
-      toast.error("No email on file — add a contact email first");
+    if (effectiveEmails.length === 0) {
+      toast.error("No email or website on file — add one to this prospect first");
       return;
     }
     if (!draftMessage.trim()) {
@@ -369,7 +362,7 @@ export default function ProspectCRMCard({
           {/* Quick action: Send Email */}
           <button
             onClick={() => { setActiveTab("email"); handleSendDraft(); }}
-            disabled={sendDraftWithWorkflow.isPending || sendSuccess || !prospect.contactEmail}
+            disabled={sendDraftWithWorkflow.isPending || sendSuccess || effectiveEmails.length === 0}
             className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-bold transition-all duration-300 disabled:cursor-not-allowed ${
               sendSuccess
                 ? "bg-emerald-600 text-white"
@@ -692,43 +685,36 @@ export default function ProspectCRMCard({
               {" "}for prospects to register for StageGate services.
             </div>
 
-            {/* Missing email — inline capture */}
-            {!prospect.contactEmail && (
-              <div className="bg-amber-950/40 border border-amber-700/50 rounded-lg p-3.5 space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <AlertCircle size={12} className="text-amber-400 shrink-0" />
-                  <span className="text-[12px] font-semibold text-amber-300">No contact email on file</span>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="email"
-                    value={emailInput}
-                    onChange={e => setEmailInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") handleSaveEmail(); }}
-                    placeholder="contact@company.com"
-                    className="flex-1 bg-zinc-900 border border-zinc-600 rounded px-3 py-1.5 text-[12px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-amber-600"
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleSaveEmail}
-                    disabled={savingEmail || !emailInput.trim()}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-[12px] font-semibold rounded transition-colors disabled:opacity-40"
-                  >
-                    {savingEmail ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
-                    Save
-                  </button>
-                </div>
+            {/* Sending to: display */}
+            {effectiveEmails.length > 0 ? (
+              <div className="flex items-start gap-2 text-[11px] text-zinc-500">
+                <Mail size={11} className="mt-0.5 shrink-0 text-zinc-600" />
+                <span>
+                  Sending to:{" "}
+                  {effectiveEmails.map((e, i) => (
+                    <span key={e}>
+                      <span className={prospect.contactEmail ? "text-zinc-300" : "text-blue-400"}>{e}</span>
+                      {i < effectiveEmails.length - 1 && <span className="text-zinc-600"> and </span>}
+                    </span>
+                  ))}
+                  {!prospect.contactEmail && <span className="text-zinc-600 ml-1">(derived from website)</span>}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-[11px] text-amber-500 bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
+                <AlertCircle size={11} />
+                No email or website on file — add one to send
               </div>
             )}
 
             {/* Send button */}
             <button
               onClick={handleSendDraft}
-              disabled={sendDraftWithWorkflow.isPending || !draftMessage.trim() || sendSuccess || !prospect.contactEmail}
+              disabled={sendDraftWithWorkflow.isPending || !draftMessage.trim() || sendSuccess || effectiveEmails.length === 0}
               className={`w-full flex items-center justify-center gap-2 rounded-lg py-3 text-[13px] font-bold transition-all duration-300 disabled:cursor-not-allowed ${
                 sendSuccess
                   ? "bg-emerald-600 text-white"
-                  : prospect.contactEmail
+                  : effectiveEmails.length > 0
                   ? "bg-white text-zinc-900 hover:bg-zinc-100 disabled:opacity-40"
                   : "bg-zinc-700 text-zinc-500 cursor-not-allowed"
               }`}

@@ -14,6 +14,7 @@ import { draftEmails, prospectResearch, prospectActivities, bookingRequests, pro
 import crypto from "crypto";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
+import { roleBasedOutreachEmails, isDeprecatedRoleInbox } from "./outreachContacts";
 import { salesAgentManualSendCore, salesAgentPreviewCore } from "./agents/salesAgent";
 
 // Admin-only middleware
@@ -1621,8 +1622,18 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
         const prospect = await db.getProspectById(input.prospectId);
         if (!prospect) throw new TRPCError({ code: "NOT_FOUND" });
-        const toEmail = emailHelpers.getProspectOutreachEmail(prospect);
-        if (!toEmail) throw new TRPCError({ code: "BAD_REQUEST", message: "Prospect has no email address" });
+
+        // Use specific contact email if set; otherwise default to marketing@ + sales@
+        const specificEmail = prospect.contactEmail?.trim() && !isDeprecatedRoleInbox(prospect.contactEmail)
+          ? prospect.contactEmail.trim()
+          : null;
+        const toAddresses: string[] = specificEmail
+          ? [specificEmail]
+          : roleBasedOutreachEmails(prospect);
+        if (toAddresses.length === 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot derive an email address — add a website or contact email to this prospect" });
+        }
+        const primaryToEmail = toAddresses[0]!;
 
         // 1. Save draft email record
         await dbConn.insert(draftEmails).values({
@@ -1633,11 +1644,19 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           sentAt: new Date(),
         });
 
-        // 2. Log communication in the unified thread/timeline tables.
+        // 2. Send via Resend (to: [marketing@, sales@] or specific contact)
+        const sendResult = await emailHelpers.sendEmail({
+          to: toAddresses,
+          subject: input.subject,
+          body: input.body,
+        });
+
+        // 3. Log communication in the unified thread/timeline tables.
         await emailHelpers.recordOutboundCommunication({
           prospect,
           subject: input.subject,
           body: input.body,
+          resendMessageId: sendResult?.id,
           source: "workflow_send",
         });
 
@@ -1668,10 +1687,10 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         // 5. Notify owner
         await notifyOwner({
           title: `📧 Outreach sent: ${prospect.company}`,
-          content: `Email sent to ${prospect.company} (${prospect.contactName ?? toEmail}).\n\nSubject: ${input.subject}\n\nFollow-up scheduled in ${input.followUpDays} days.`,
+          content: `Email sent to ${prospect.company} → ${toAddresses.join(", ")}.\n\nSubject: ${input.subject}\n\nFollow-up scheduled in ${input.followUpDays} days.`,
         });
 
-        return { success: true };
+        return { success: true, sentTo: toAddresses };
       }),
   }),
   // ─── Video Message Intake (public — for prospects to submit) ─────────────────
