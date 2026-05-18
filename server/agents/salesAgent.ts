@@ -493,6 +493,59 @@ export async function salesAgentPreviewCore(
 
 // ─── 4. Generate Cal's Email ──────────────────────────────────────────────────
 
+// Known show → city for shows that don't match trade_shows table exactly
+const KNOWN_SHOW_CITIES: Record<string, string> = {
+  // Chicago
+  "MHI ProMat": "Chicago", "ProMat": "Chicago", "MODEX": "Atlanta",
+  "Automate": "Chicago", "IMTS": "Chicago", "NRA Show": "Chicago",
+  "Pack Expo": "Chicago",
+  // Las Vegas
+  "CES": "Las Vegas", "NAB": "Las Vegas", "NAB Show": "Las Vegas",
+  "Manifest": "Las Vegas", "SEMA Show": "Las Vegas", "ISC West": "Las Vegas",
+  "G2E": "Las Vegas", "PACK EXPO Las Vegas": "Las Vegas",
+  "World of Concrete": "Las Vegas", "HDExpo": "Las Vegas",
+  "MINExpo": "Las Vegas", "CONEXPO": "Las Vegas",
+  // Other
+  "ICRA": "varies", "HITEC": "varies", "CEDIA": "Denver",
+  "ACTExpo": "Long Beach", "Hannover Messe": "Hannover, Germany",
+};
+
+async function resolveShowCity(showName: string): Promise<string> {
+  if (!showName || showName === "the upcoming show") return "Las Vegas";
+
+  // 1. Hardcoded map — fastest, most reliable for common names
+  for (const [key, city] of Object.entries(KNOWN_SHOW_CITIES)) {
+    if (showName.toLowerCase().includes(key.toLowerCase())) return city;
+  }
+
+  // 2. Exact DB match
+  try {
+    const db = await getDb();
+    if (db) {
+      const [exact] = await db
+        .select({ city: tradeShows.city, location: tradeShows.location })
+        .from(tradeShows)
+        .where(eq(tradeShows.name, showName))
+        .limit(1);
+      if (exact?.city ?? exact?.location) return exact.city ?? exact.location ?? "Las Vegas";
+
+      // 3. Fuzzy DB match — show name contains or is contained by DB name
+      const all = await db
+        .select({ name: tradeShows.name, city: tradeShows.city, location: tradeShows.location })
+        .from(tradeShows);
+      const nameLower = showName.toLowerCase();
+      for (const row of all) {
+        const dbLower = row.name.toLowerCase();
+        if (dbLower.includes(nameLower) || nameLower.includes(dbLower)) {
+          return row.city ?? row.location ?? "Las Vegas";
+        }
+      }
+    }
+  } catch { /* fall through */ }
+
+  return "Las Vegas";
+}
+
 /**
  * For the discovery stage we use the user's exact example as a fill-in-the-blank
  * template — no LLM for the body. This guarantees Cal's voice is always natural
@@ -542,23 +595,7 @@ async function generateFrankEmail(
 
   // Discovery: template only — no LLM, guaranteed Cal's voice
   if (stage === "discovery") {
-    // Look up the show city so the email is accurate for non-Vegas shows
-    let showCity = "Las Vegas";
-    if (primaryShow !== "the upcoming show") {
-      try {
-        const db = await getDb();
-        if (db) {
-          const [showRow] = await db
-            .select({ city: tradeShows.city, location: tradeShows.location })
-            .from(tradeShows)
-            .where(eq(tradeShows.name, primaryShow))
-            .limit(1);
-          showCity = showRow?.city ?? showRow?.location ?? "Las Vegas";
-        }
-      } catch {
-        // default to Las Vegas if lookup fails
-      }
-    }
+    const showCity = await resolveShowCity(primaryShow);
     const { subject, body } = buildDiscoveryEmail(prospect, primaryShow, showCity);
     return { subject, body, nextStage };
   }
