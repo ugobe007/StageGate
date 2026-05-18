@@ -158,6 +158,22 @@ export default function ProspectCRMCard({
     setSendSuccess(false);
   }, [prospect.id]);
 
+  // Auto-generate Cal's draft the moment the Email tab is opened and no draft exists yet.
+  // This replaces the old getBrief.draftMessage behaviour — Cal's voice, no extra clicks.
+  useEffect(() => {
+    if (
+      activeTab === "email" &&
+      !calDraftsLoading &&
+      !calDraft &&
+      !draftMessage &&
+      !draftEdited &&
+      !regenerating
+    ) {
+      regenerateDraftMutation.mutate({ id: prospect.id });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, calDraftsLoading, calDraft]);
+
   const updateStatus = trpc.prospects.bulkUpdateStatus.useMutation({
     onSuccess: () => {
       ctx.prospects.list.invalidate();

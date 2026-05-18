@@ -664,20 +664,26 @@ function buildDiscoveryEmail(
   const greetingName = contactFirstName ?? "there";
 
   const isVegas = /las vegas/i.test(showCity);
+
+  // Context-aware intro + show hook
+  const introLine = isVegas
+    ? `This is Cal from StageGate. We're based in Las Vegas and help robotics companies with logistics and technical support during trade shows — warehousing, staging, on-site tech support, and customer demos.`
+    : `This is Cal from StageGate. We're the robot logistics and technical operations team in Las Vegas — we help robotics companies warehouse, stage, and support their robots at shows across the country and at LV events.`;
+
   const showLine = isVegas
-    ? `I noticed ${showName} is coming up in Las Vegas and wanted to reach out. Are you planning to attend the show and do you need help with warehousing and staging of your robots at the show?`
-    : `I noticed ${showName} is coming up in ${showCity} and wanted to reach out. Are you planning to attend, and do you need help with warehousing and staging of your robots — either at the show or during a Las Vegas stop?`;
+    ? `I noticed ${showName} is coming up and wanted to reach out. Are you planning to exhibit, and do you need help with warehousing and staging your robots before and during the show?`
+    : `I noticed you're heading to ${showName} in ${showCity}. Are you also planning any Las Vegas shows this year? We'd love to help with warehousing, robot prep, and on-site support whenever you're in town.`;
 
   const body = [
     `Hi ${greetingName},`,
     ``,
-    `This is Cal from StageGate. We help companies like yours with robot logistics and technical support during their visit to Las Vegas conferences and with customer demos.`,
+    introLine,
     ``,
     showLine,
     ``,
-    `We operate fully bonded warehouses for robot storage and have teams that can help unpack, test, and fix technical issues that may have occurred during transit. We care for your robots so they are ready to go when you arrive at the conference.`,
+    `We operate fully bonded warehouses for robot storage and have teams that can help unpack, test, and fix technical issues that may have occurred during transit. We care for your robots so they are show-ready the moment you arrive.`,
     ``,
-    `Check out onstage.bot and register — it's free and takes about 2 minutes. Or, if you would like to discuss your plans for visiting ${showName}, just reply and I will send a calendar invite to connect.`,
+    `Check out onstage.bot and register — it's free and takes about 2 minutes. Or just reply and I'll send a calendar invite so we can talk through your show plans.`,
     ``,
     `Thanks,`,
     FRANK_PERSONA.signature,
