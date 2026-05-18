@@ -2751,7 +2751,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           const [existing] = await dbConn
             .select()
             .from(draftEmails)
-            .where(eq(draftEmails.prospectId, input.prospectId))
+            .where(and(eq(draftEmails.prospectId, input.prospectId), eq(draftEmails.status, "pending")))
             .orderBy(desc(draftEmails.createdAt))
             .limit(1);
           if (existing?.body && existing.body.trim().length > 0) {
@@ -2764,6 +2764,13 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
             const NEXT: Record<string, string> = { discovery: "intro_sent", intro_sent: "followup_1", followup_1: "followup_2", followup_2: "robot_guild", robot_guild: "robot_guild" };
             return { subject: existing.subject ?? "", body: existing.body, stage, nextStage: NEXT[stage] ?? "intro_sent", fromCache: true };
           }
+        }
+
+        // When regenerating, delete all existing pending drafts so the fresh one loads cleanly
+        if (input.forceRegenerate) {
+          await dbConn
+            .delete(draftEmails)
+            .where(and(eq(draftEmails.prospectId, input.prospectId), eq(draftEmails.status, "pending")));
         }
 
         // 2. No cached draft — attempt LLM generation

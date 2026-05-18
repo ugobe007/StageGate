@@ -93,11 +93,20 @@ function nextActionLabel(state: string, nextAt: Date | string | null | undefined
 // ─── Inline Draft Panel ───────────────────────────────────────────────────────
 function InlineDraftPanel({ prospectId }: { prospectId: number }) {
   const [expanded, setExpanded] = useState(true);
+  const utils = trpc.useUtils();
 
   const { data: draft, isLoading } = trpc.salesAgent.getDraftForProspect.useQuery(
     { prospectId },
     { enabled: !!prospectId }
   );
+
+  const regenerate = trpc.salesAgent.previewEmail.useMutation({
+    onSuccess: () => {
+      utils.salesAgent.getDraftForProspect.invalidate({ prospectId });
+      toast.success("Draft regenerated");
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
   if (isLoading) {
     return (
@@ -109,11 +118,19 @@ function InlineDraftPanel({ prospectId }: { prospectId: number }) {
 
   if (!draft?.body) {
     return (
-      <div className="rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-3 py-2.5">
+      <div className="rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-3 py-2.5 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-xs text-zinc-600">
           <FileText className="w-3 h-3" />
-          <span>No draft yet — click "Send Cal's Next Email" or Regenerate in Preview.</span>
+          <span>No draft yet</span>
         </div>
+        <button
+          onClick={() => regenerate.mutate({ prospectId, forceRegenerate: true })}
+          disabled={regenerate.isPending}
+          className="text-[10px] text-amber-500 hover:text-amber-400 flex items-center gap-1 disabled:opacity-50"
+        >
+          {regenerate.isPending ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <RefreshCw className="w-2.5 h-2.5" />}
+          Generate
+        </button>
       </div>
     );
   }
@@ -128,10 +145,23 @@ function InlineDraftPanel({ prospectId }: { prospectId: number }) {
           <Bot className="w-3 h-3 text-amber-400" />
           <span className="text-xs font-medium text-amber-400">Cal's Draft</span>
           {draft.subject && (
-            <span className="text-xs text-zinc-500 truncate max-w-[140px]">— {draft.subject}</span>
+            <span className="text-xs text-zinc-500 truncate max-w-[120px]">— {draft.subject}</span>
           )}
         </div>
-        <span className="text-zinc-600 text-[10px]">{expanded ? "▴" : "▾"}</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              regenerate.mutate({ prospectId, forceRegenerate: true });
+            }}
+            disabled={regenerate.isPending}
+            className="text-[10px] text-zinc-500 hover:text-amber-400 flex items-center gap-1 disabled:opacity-50"
+          >
+            {regenerate.isPending ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <RefreshCw className="w-2.5 h-2.5" />}
+            Regenerate
+          </button>
+          <span className="text-zinc-600 text-[10px]">{expanded ? "▴" : "▾"}</span>
+        </div>
       </button>
       {expanded && (
         <div className="px-3 pb-3 space-y-2 border-t border-amber-900/30">

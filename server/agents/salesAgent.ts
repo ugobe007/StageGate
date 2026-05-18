@@ -492,6 +492,44 @@ export async function salesAgentPreviewCore(
 }
 
 // ─── 4. Generate Cal's Email ──────────────────────────────────────────────────
+
+/**
+ * For the discovery stage we use the user's exact example as a fill-in-the-blank
+ * template — no LLM for the body. This guarantees Cal's voice is always natural
+ * and never formulaic. Follow-up stages still use LLM with a minimal prompt.
+ */
+function buildDiscoveryEmail(
+  prospect: typeof prospects.$inferSelect
+): { subject: string; body: string } {
+  const contactFirstName = prospect.contactName
+    ? prospect.contactName.split(" ")[0] ?? prospect.contactName
+    : null;
+  const greetingName = contactFirstName ?? "there";
+
+  const primaryShow = Array.isArray(prospect.shows) && prospect.shows.length > 0
+    ? prospect.shows[0]!
+    : "the upcoming show";
+
+  const body = [
+    `Hi ${greetingName},`,
+    ``,
+    `This is Cal from StageGate. We help companies like yours with robot logistics and technical support during their visit to Las Vegas conferences and with customer demos.`,
+    ``,
+    `I noticed ${primaryShow} is coming up in Las Vegas and wanted to reach out. Are you planning to attend the show and do you need help with warehousing and staging of your robots at the show?`,
+    ``,
+    `We operate fully bonded warehouses for robot storage and have teams that can help unpack, test, and fix technical issues that may have occurred during transit. We care for your robots so they are ready to go when you arrive at the conference.`,
+    ``,
+    `Let me know if this sounds interesting and I'll send a calendar invite for a time to chat. In the meantime, check out onstage.bot and register — it's free.`,
+    ``,
+    `Thanks,`,
+    FRANK_PERSONA.signature,
+  ].join("\n");
+
+  const subject = `Quick note — ${prospect.company} at ${primaryShow}`;
+
+  return { subject, body };
+}
+
 async function generateFrankEmail(
   prospect: typeof prospects.$inferSelect,
   conv: typeof salesAgentConversations.$inferSelect | null,
@@ -499,6 +537,13 @@ async function generateFrankEmail(
 ): Promise<{ subject: string; body: string; nextStage: ConversationStage }> {
   const nextStage = NEXT_STAGE[stage] ?? "robot_guild";
 
+  // Discovery: template only — no LLM, guaranteed Cal's voice
+  if (stage === "discovery") {
+    const { subject, body } = buildDiscoveryEmail(prospect);
+    return { subject, body, nextStage };
+  }
+
+  // Follow-up stages: LLM with a tight, minimal prompt
   const primaryShow = Array.isArray(prospect.shows) && prospect.shows.length > 0
     ? prospect.shows[0]!
     : "the upcoming show";
@@ -507,16 +552,12 @@ async function generateFrankEmail(
     .filter(Boolean)
     .join(" — ") || "your robot";
 
-  const breakpoints = pickBreakpoints(prospect.robotType ?? "", prospect.robotCategory ?? "light");
-  const venueOptions = DEMO_VENUES.slice(0, 2)
-    .map((v) => `${v.name}: ${v.description}`)
-    .join("\n");
-
-  const promptTemplate = STAGE_PROMPTS[stage] ?? STAGE_PROMPTS["discovery"]!;
   const contactFirstName = prospect.contactName
     ? prospect.contactName.split(" ")[0] ?? prospect.contactName
     : null;
   const greetingName = contactFirstName ?? "there";
+
+  const promptTemplate = STAGE_PROMPTS[stage] ?? STAGE_PROMPTS["followup_1"]!;
 
   const userPrompt = promptTemplate
     .replace(/\{\{companyName\}\}/g, prospect.company)
@@ -525,8 +566,6 @@ async function generateFrankEmail(
     .replace(/\{\{showDates\}\}/g, "")
     .replace(/\{\{showLocation\}\}/g, "Las Vegas")
     .replace(/\{\{robotDescription\}\}/g, robotDesc)
-    .replace(/\{\{breakpoints\}\}/g, breakpoints.map((b) => `${b.label}: ${b.frankAngle}`).join("\n"))
-    .replace(/\{\{venueOptions\}\}/g, venueOptions)
     .replace(/\{\{robotGuildPitch\}\}/g, `${ROBOT_GUILD_PITCH.pitch}\n${ROBOT_GUILD_PITCH.cta}`);
 
   const result = await invokeLLM({
@@ -543,7 +582,7 @@ async function generateFrankEmail(
           type: "object",
           properties: {
             subject: { type: "string", description: "Short specific subject line, no clickbait" },
-            body: { type: "string", description: "Email body only, no subject line, Cal's voice, under 150 words" },
+            body: { type: "string", description: "Email body only, no subject line, Cal's voice, under 130 words" },
           },
           required: ["subject", "body"],
           additionalProperties: false,
@@ -564,11 +603,15 @@ async function generateFrankEmail(
     parsed.body = lines.slice(1).join("\n").trim();
   }
 
-  const signature = `\n\n${FRANK_PERSONA.signature}`;
-  const body = (parsed.body ?? "").replace(/\n*(Cal|Frank)\s*$/, "").trimEnd() + signature;
+  // Strip any LLM-generated sign-off and append the canonical signature
+  const bodyClean = (parsed.body ?? "")
+    .replace(/\n*(Thanks[,.]?|Best[,.]?|Cheers[,.]?)[\s\S]*$/i, "")
+    .trimEnd();
+
+  const body = bodyClean + `\n\nThanks,\n${FRANK_PERSONA.signature}`;
 
   return {
-    subject: parsed.subject ?? `${prospect.company} — a note from StageGate`,
+    subject: parsed.subject ?? `Following up — ${prospect.company}`,
     body,
     nextStage,
   };
