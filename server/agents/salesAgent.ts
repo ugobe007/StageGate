@@ -505,6 +505,7 @@ const KNOWN_SHOW_CITIES: Record<string, string> = {
   "Manifest 2026": "Las Vegas", "Manifest 2027": "Las Vegas",
   "HIMSS 2026": "Las Vegas", "HIMSS26": "Las Vegas",   // 2026 = Las Vegas
   "ISC West": "Las Vegas",
+  "ISSA Show": "Las Vegas", "ISSA Show North America": "Las Vegas", "ISSA Show North America 2026": "Las Vegas",
   "G2E": "Las Vegas", "G2E — Global Gaming Expo": "Las Vegas",
   "PACK EXPO Las Vegas": "Las Vegas",
   "World of Concrete": "Las Vegas",
