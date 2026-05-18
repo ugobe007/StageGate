@@ -165,7 +165,9 @@ const DISCOVERY_SCHEMA = {
 async function extractProspectsWithLLM(
   showContext: string,
   page: FetchedPage,
-  showName: string
+  showName: string,
+  lvShowList?: string,
+  topOtherShowList?: string,
 ): Promise<DiscoveredProspect[]> {
   let prompt: string;
 
@@ -193,20 +195,46 @@ For each company found, return:
 - robotType: one of "humanoid", "quadruped", "wheeled_amr", "industrial_arm", "cobot", "mobile_manipulator", "drone", "service_robot", "surgical_robot", "exoskeleton", "other"
 - robotCategory: "light" | "heavy_industrial" | "mixed"
 - shows: ["${showName}"]
-- notes: why they are a good StageGate prospect (logistics, staging, warehouse support needs)
+- notes: why they are a good StageGate prospect — prioritize: international companies with no US ops team, first-time US exhibitors, humanoids needing calibration, battery-powered robots with Li-ion shipping risk, medical/surgical robots needing precision handling, hospitality robots with customer-facing demo risk
 - emailConfidence: "high" | "medium" | "low"
 
 Return ONLY valid JSON with "prospects" array and empty "shows" array. No markdown.`;
   } else {
-    // Fallback: LLM web knowledge
-    prompt = `You are a research assistant for StageGate, a robotics activation infrastructure company in Las Vegas.
+    // Fallback: LLM web knowledge — built from live DB show list
+    const resolvedLvShows = lvShowList ?? "CES, NAB Show, Manifest, HIMSS, Ai4, FABTECH, PACK EXPO Las Vegas, G2E, MINExpo, AWS re:Invent";
+    const resolvedOtherShows = topOtherShowList ?? "Automate 2026 (Chicago), MODEX 2026 (Atlanta), IMTS 2026 (Chicago), Humanoids 2026 (Santa Clara), RoboBusiness 2026 (Santa Clara)";
 
-Find up to 15 robot companies that exhibit at ${showContext}.
+    prompt = `You are a research assistant for StageGate — robot operational infrastructure based in Las Vegas.
 
-Focus on: humanoid robots, quadruped robots, wheeled AMRs, service robots, industrial arms, cobots, and drones.
-Well-known exhibitors include: Boston Dynamics, Agility Robotics, Figure AI, 1X Technologies, Unitree, UBTECH, Bear Robotics, Keenon, Aethon, Savioke, Apptronik, Sanctuary AI, Fourier Intelligence, Universal Robots, Fanuc, KUKA, ABB Robotics, Fetch Robotics, Clearpath, Ghost Robotics, Skydio.
+StageGate is NOT a logistics company. StageGate provides:
+• Bonded warehouse receiving and storage for robots
+• Safe power-up, diagnostics, and sensor/IMU recalibration after transit
+• Battery charge cycle management (Li-ion, large format)
+• On-site robot technicians during live demos
+• Demo failure recovery and unit repair at show
+• Return crating and outbound shipping
 
-NOTE: We do NOT require confirmation of attendance at this specific show. If a company has robots and operates at scale, we assume they will come to Las Vegas for one of the many shows (CES, NAB, MODEX, Automate, ICRA, ROSCon, PACK EXPO, etc.).
+The companies that need StageGate MOST are those with the highest operational risk:
+1. CES Eureka Park startups — tiny team, first US show, no support
+2. Foreign humanoid robot companies — no US ops, calibration-intensive
+3. Medical robot companies — precision-critical, regulatory-sensitive
+4. Hospitality / service robots — customer-facing, public failure risk
+5. Security robots — autonomous navigation, liability-sensitive
+6. Warehouse AMR companies — fleet mapping, charging infrastructure
+7. Chinese robot firms entering the US — no US team, language barrier, customs risk
+
+Las Vegas shows (StageGate's home market — highest priority):
+${resolvedLvShows}
+
+Other major upcoming shows (secondary priority):
+${resolvedOtherShows}
+
+Find up to 20 robot companies that are likely to attend these shows.
+Prioritize: Chinese humanoid companies, Korean exoskeleton companies, European robot OEMs, Eureka Park startups, medical robot companies, security robot companies.
+
+Known high-value targets: Unitree Robotics, UBTECH, Agibot, Fourier Intelligence, WIRobotics, Realbotix, Geekplus, Hikrobot, Richtech Robotics, Figure AI, Agility Robotics, 1X Technologies, Apptronik, Sanctuary AI, Boston Dynamics, Ghost Robotics, Skydio, Knightscope, Cobalt Robotics, Bear Robotics, Keenon, Pudu Robotics, Savioke, Aethon, Universal Robots, Fanuc, KUKA, ABB Robotics, Rapyuta Robotics.
+
+NOTE: We do NOT require confirmation of attendance at a specific show. If a company has robots and operates at scale, they will come to Las Vegas for one of the many shows.
 
 Return ONLY valid JSON with "prospects" array and empty "shows" array. No markdown.`;
   }
@@ -214,10 +242,23 @@ Return ONLY valid JSON with "prospects" array and empty "shows" array. No markdo
   try {
     const result = await invokeLLM({
       messages: [
-        {
-          role: "system",
-          content: `You are a research assistant identifying robot companies for StageGate's sales outreach. StageGate provides warehouse receiving, unpacking, staging, calibration, booth delivery, show-floor support, and return shipping for robot companies at trade shows. Return ONLY valid JSON, no markdown.`,
-        },
+      {
+        role: "system",
+        content: `You are a research assistant identifying robot companies for StageGate's sales outreach.
+
+StageGate is robot operational infrastructure — the only company in Las Vegas that can safely receive robots off the truck, power them up, run diagnostics, recalibrate sensors and IMUs after transit, manage battery cycles, staff qualified technicians on the show floor, and recover failed units during live demos.
+
+Prioritize these 7 ICP types (highest need = highest score):
+1. Foreign humanoid companies (Chinese, Korean, Japanese) — no US ops team, highest calibration risk
+2. Eureka Park / CES startups — tiny team, first US show, zero support infrastructure
+3. Medical / surgical robots — precision-critical, demo failure has regulatory consequences
+4. Hospitality / service robots — customer-facing, public failure = brand damage
+5. Security robots — autonomous navigation needs map recalibration after transit
+6. Warehouse AMR companies — fleet mapping, charging infrastructure setup at new venue
+7. Chinese robot firms entering US — language barrier + customs + no English-speaking support
+
+Return ONLY valid JSON, no markdown.`,
+      },
         { role: "user", content: prompt },
       ],
       response_format: {
@@ -328,11 +369,22 @@ async function runDiscoveryCore(
 
   // ── Get all upcoming shows for fallback context ──────────────────────────
   const allUpcomingShows = await db
-    .select({ name: tradeShows.name, city: tradeShows.city })
+    .select({ name: tradeShows.name, city: tradeShows.city, roboticsRelevance: tradeShows.roboticsRelevance })
     .from(tradeShows)
     .where(eq(tradeShows.status, "upcoming"))
-    .limit(25);
+    .limit(89);  // we have 89 upcoming shows — get them all
 
+  // Sort: Las Vegas shows first (highest StageGate value), then by robotics relevance
+  allUpcomingShows.sort((a, b) => {
+    const aLV = /las vegas/i.test(a.city ?? "") ? 1 : 0;
+    const bLV = /las vegas/i.test(b.city ?? "") ? 1 : 0;
+    if (aLV !== bLV) return bLV - aLV;
+    return (b.roboticsRelevance ?? 0) - (a.roboticsRelevance ?? 0);
+  });
+
+  // Build a structured show context string for the LLM fallback
+  const lvShows = allUpcomingShows.filter(s => /las vegas/i.test(s.city ?? "")).map(s => s.name);
+  const otherShows = allUpcomingShows.filter(s => !/las vegas/i.test(s.city ?? "")).map(s => `${s.name} (${s.city})`);
   const fallbackShowNames = allUpcomingShows.map(s => s.name).join(", ");
 
   let allRawProspects: DiscoveredProspect[] = [];
@@ -346,7 +398,7 @@ async function runDiscoveryCore(
     const showContext = `${show.name} at ${show.venue ?? "Las Vegas"}, ${show.city ?? "NV"}`;
     const page = await fetchExhibitorPage(show.exhibitorListUrl);
 
-    const prospects = await extractProspectsWithLLM(showContext, page, show.name);
+    const prospects = await extractProspectsWithLLM(showContext, page, show.name, lvShows.slice(0, 20).join(", "), otherShows.slice(0, 15).join("; "));
     allRawProspects = allRawProspects.concat(prospects);
 
     scrapeLog[show.name] = {
@@ -366,7 +418,7 @@ async function runDiscoveryCore(
     console.log(`[Discovery] Fallback triggered (only ${allRawProspects.length} prospects so far)`);
     const fallbackPage: FetchedPage = { rawText: "", structuredNames: [], pagesFetched: 0, success: false };
     const fallbackContext = `upcoming Las Vegas trade shows: ${fallbackShowNames || "CES, NAB Show, MODEX, Automate, ICRA, ROSCon"}`;
-    const fallbackProspects = await extractProspectsWithLLM(fallbackContext, fallbackPage, "Las Vegas shows");
+    const fallbackProspects = await extractProspectsWithLLM(fallbackContext, fallbackPage, "Las Vegas shows", lvShows.slice(0, 20).join(", "), otherShows.slice(0, 15).join("; "));
     allRawProspects = allRawProspects.concat(fallbackProspects);
     console.log(`[Discovery] Fallback: ${fallbackProspects.length} additional prospects`);
   }

@@ -495,76 +495,110 @@ export async function salesAgentPreviewCore(
 
 // Known show → city. Covers full names, abbreviated names, and year-stripped variants.
 // Source: Master Conference Calendar 2026–2027
+// Source of truth: trade_shows DB (116 shows, cleaned May 2026).
+// Year-specific entries take precedence over base-name entries via resolveShowCity().
 const KNOWN_SHOW_CITIES: Record<string, string> = {
-  // ── Las Vegas ────────────────────────────────────────────────────────────────
-  "CES": "Las Vegas", "NAB": "Las Vegas", "NAB Show": "Las Vegas",
+  // ── Las Vegas — home market (highest StageGate priority) ─────────────────────
+  "CES": "Las Vegas",
+  "NAB": "Las Vegas", "NAB Show": "Las Vegas",
   "Manifest": "Las Vegas", "Manifest Vegas": "Las Vegas",
-  "HIMSS": "Las Vegas", "HIMSS26": "Las Vegas",
-  "SEMA Show": "Las Vegas", "SEMA": "Las Vegas",
-  "ISC West": "Las Vegas", "G2E": "Las Vegas",
+  "Manifest 2026": "Las Vegas", "Manifest 2027": "Las Vegas",
+  "HIMSS 2026": "Las Vegas", "HIMSS26": "Las Vegas",   // 2026 = Las Vegas
+  "ISC West": "Las Vegas",
+  "G2E": "Las Vegas", "G2E — Global Gaming Expo": "Las Vegas",
   "PACK EXPO Las Vegas": "Las Vegas",
   "World of Concrete": "Las Vegas",
-  "HDExpo": "Las Vegas", "MINExpo": "Las Vegas",
+  "HDExpo": "Las Vegas", "HDExpo + Conference": "Las Vegas",
+  "MINExpo": "Las Vegas",
   "CONEXPO": "Las Vegas", "CONEXPO-CON/AGG": "Las Vegas",
   "Ai4": "Las Vegas", "Ai4 Conference": "Las Vegas",
-  "FABTECH": "Las Vegas", "SHOT Show": "Las Vegas",
-  "SAGES": "Las Vegas", "SAGES Annual Meeting": "Las Vegas",
-  "Transform": "Las Vegas", "Interop": "Las Vegas",
-  "Automate 2027": "Las Vegas",  // moves to Las Vegas for 2027
+  "AI4": "Las Vegas",
+  "FABTECH 2026": "Las Vegas",
+  "SHOT Show": "Las Vegas",
+  "SEMA Show": "Las Vegas", "SEMA": "Las Vegas",
+  "SAGES Annual Meeting 2027": "Las Vegas",  // 2027 moves to LV
+  "Transform": "Las Vegas", "Transform 2027": "Las Vegas",
+  "Interop": "Las Vegas",
+  "Automate 2027": "Las Vegas",              // confirmed: moves LV for 2027
+  "PACK EXPO Las Vegas 2027": "Las Vegas",
+  "AWS re:Invent": "Las Vegas",
+  "MJBizCon": "Las Vegas",
+  "ACT Expo": "Las Vegas", "ACT Expo 2027": "Las Vegas",
+  "Fastmarkets Global Lithium": "Las Vegas",
   // ── Chicago ──────────────────────────────────────────────────────────────────
-  "IMTS": "Chicago", "MHI ProMat": "Chicago", "ProMat": "Chicago",
+  "IMTS": "Chicago", "IMTS 2026": "Chicago",
+  "ProMat": "Chicago", "MHI ProMat": "Chicago", "ProMat 2027": "Chicago",
   "Automate": "Chicago", "Automate 2026": "Chicago",
-  "NRA Show": "Chicago", "PACK EXPO International": "Chicago",
-  "PACK EXPO": "Chicago", "Pack Expo": "Chicago",
-  "Assembly Show": "Chicago", "RSNA": "Chicago",
-  "FABTECH 2027": "Chicago", "HIMSS27": "Chicago",
+  "PACK EXPO International": "Chicago", "PACK EXPO International 2026": "Chicago",
+  "Assembly Show": "Rosemont, IL", "Assembly Show 2026": "Rosemont, IL",
+  "Assembly Show 2027": "Rosemont, IL",
+  "RSNA": "Chicago", "RSNA 2026": "Chicago", "RSNA 2027": "Chicago",
+  "FABTECH 2027": "Chicago",
+  "HIMSS 2027": "Chicago", "HIMSS27": "Chicago",  // 2027 moved to Chicago
+  "CoRL": "Austin, TX", "CoRL 2026": "Austin, TX",
   // ── Atlanta ──────────────────────────────────────────────────────────────────
-  "MODEX": "Atlanta", "SPS Americas": "Atlanta",
+  "MODEX": "Atlanta", "MODEX 2026": "Atlanta",
+  "SPS Americas": "Atlanta", "SPS Americas 2027": "Atlanta",
   // ── Other US ─────────────────────────────────────────────────────────────────
   "NVIDIA GTC": "San Jose, CA", "GTC": "San Jose, CA",
+  "NVIDIA GTC 2026": "San Jose, CA", "NVIDIA GTC 2027": "San Jose, CA",
   "World Agri-Tech": "San Francisco, CA", "World Agri-Tech Summit": "San Francisco, CA",
-  "SXSW": "Austin, TX", "CoRL": "Austin, TX",
+  "SXSW": "Austin, TX", "SXSW 2026": "Austin, TX", "SXSW 2027": "Austin, TX",
   "Robotics Summit": "Boston, MA", "Robotics Summit & Expo": "Boston, MA",
-  "RoboBusiness": "Santa Clara, CA", "Humanoids": "Santa Clara, CA",
-  "VB Transform": "Menlo Park, CA", "ACTExpo": "Long Beach, CA",
-  "FIRA USA": "Yakima, WA", "AUVSI XPONENTIAL": "Detroit, MI",
-  "AUVSI": "Detroit, MI", "XPONENTIAL": "Detroit, MI",
+  "RoboBusiness": "Santa Clara, CA", "RoboBusiness 2026": "Santa Clara, CA",
+  "RoboBusiness 2027": "Santa Clara, CA",
+  "Humanoids": "Santa Clara, CA", "Humanoids 2026": "Santa Clara, CA",
+  "VB Transform": "Menlo Park, CA",
+  "FIRA USA": "Yakima, WA", "FIRA USA 2026": "Yakima, WA",
+  "AUVSI XPONENTIAL": "Detroit, MI", "AUVSI XPONENTIAL 2026": "Detroit, MI",
+  "AUVSI XPONENTIAL 2027": "Miami Beach, FL",  // moves to Miami Beach
+  "AUVSI": "Detroit, MI",
   "Sea-Air-Space": "National Harbor, MD",
-  "Modern Day Marine": "Washington, DC", "AUSA": "Washington, DC",
-  "AUSA Annual Meeting": "Washington, DC",
+  "Modern Day Marine": "Washington, DC",
+  "AUSA": "Washington, DC", "AUSA Annual Meeting": "Washington, DC",
   "IROS": "Pittsburgh, PA", "IROS 2026": "Pittsburgh, PA",
+  "IROS 2027": "Florence, Italy",
   "PARCEL Forum": "Orlando, FL",
   "Home Delivery World": "Nashville, TN",
-  "ISMR": "Knoxville, TN", "ATX West": "Anaheim, CA",
+  "ISMR": "Knoxville, TN", "ISMR 2026": "Knoxville, TN",
+  "ATX West": "Anaheim, CA",
+  "ICRA": "Vienna, Austria", "ICRA 2026": "Vienna, Austria",
+  "ICRA 2027": "Seoul, South Korea",
+  "SAGES Annual Meeting": "Tampa, FL",       // base = Tampa (2026 location)
+  "SAGES Annual Meeting 2026": "Tampa, FL",
+  "AI Summit New York": "New York, NY",
   "CEDIA": "Denver, CO",
   // ── Europe ───────────────────────────────────────────────────────────────────
   "Hannover Messe": "Hannover, Germany",
   "SPS Nuremberg": "Nuremberg, Germany", "SPS": "Nuremberg, Germany",
-  "MEDICA": "Düsseldorf, Germany", "Agritechnica": "Hannover, Germany",
-  "Automatica": "Munich, Germany", "EMO Milan": "Milan, Italy",
-  "Eurosatory": "Paris, France", "DSEI": "London, UK",
+  "MEDICA": "Düsseldorf, Germany",
+  "Agritechnica": "Hannover, Germany",
+  "Automatica": "Munich, Germany", "Automatica 2027": "Munich, Germany",
+  "EMO Milan": "Milan, Italy", "EMO Milan 2027": "Milan, Italy",
+  "Eurosatory": "Paris, France",
+  "DSEI": "London, UK", "DSEI 2027": "London, UK",
   "AI Summit London": "London, UK",
   "LogiMAT": "Stuttgart, Germany",
-  "ICRA": "Vienna, Austria", "ICRA 2026": "Vienna, Austria",
-  "IROS 2027": "Florence, Italy",
   "Web Summit Lisbon": "Lisbon, Portugal", "Web Summit": "Lisbon, Portugal",
-  "NeurIPS": "Sydney, Australia", "RSS": "Sydney, Australia",
-  "ICML 2026": "Seoul, South Korea", "RoboCup 2026": "Incheon, South Korea",
+  "NeurIPS": "Sydney, Australia", "NeurIPS 2026": "Sydney, Australia",
+  "RSS": "Sydney, Australia", "RSS 2026": "Sydney, Australia",
+  "ICML 2026": "Seoul, South Korea",
+  "RoboCup 2026": "Incheon, South Korea",
+  "RoboCup 2027": "Nuremberg, Germany",
   // ── Asia / International ──────────────────────────────────────────────────────
-  "Manufacturing World Tokyo": "Tokyo, Japan", "iREX": "Tokyo, Japan",
+  "Manufacturing World Tokyo": "Tokyo, Japan",
+  "iREX": "Tokyo, Japan", "iREX 2027": "Tokyo, Japan",
   "Smart Factory Expo Tokyo": "Tokyo, Japan",
-  "WAIC": "Shanghai, China", "CIIF": "Shanghai, China",
+  "WAIC": "Shanghai, China", "WAIC Shanghai": "Shanghai, China",
+  "CIIF": "Shanghai, China",
   "World Robot Conference": "Beijing, China",
-  "IDEX": "Abu Dhabi, UAE",
-  "ITAP": "Singapore", "AAAI": "Singapore",
+  "IDEX": "Abu Dhabi, UAE", "IDEX 2027": "Abu Dhabi, UAE",
+  "ITAP": "Singapore",
+  "AAAI": "Singapore", "AAAI-26": "Singapore",
+  "AAAI-27": "Montréal, Canada",
   "Web Summit Vancouver": "Vancouver, Canada",
   "ICLR 2026": "Rio de Janeiro, Brazil",
-  "AI Summit New York": "New York, NY",
-  // ── Academic / Varies ────────────────────────────────────────────────────────
-  "ICRA 2027": "Seoul, South Korea",
-  "RoboCup 2027": "Nuremberg, Germany",
-  "AUVSI XPONENTIAL 2027": "Miami Beach, FL",
-  "HIMSS 2027": "Las Vegas",
+  // ── Academic varies by year ───────────────────────────────────────────────────
   "HITEC": "varies",
 };
 
@@ -660,6 +694,10 @@ async function generateFrankEmail(
 ): Promise<{ subject: string; body: string; nextStage: ConversationStage }> {
   const nextStage = NEXT_STAGE[stage] ?? "robot_guild";
 
+  const primaryShow = Array.isArray(prospect.shows) && prospect.shows.length > 0
+    ? prospect.shows[0]!
+    : "the upcoming show";
+
   // Discovery: template only — no LLM, guaranteed Cal's voice
   if (stage === "discovery") {
     const showCity = await resolveShowCity(primaryShow);
@@ -668,9 +706,6 @@ async function generateFrankEmail(
   }
 
   // Follow-up stages: LLM with a tight, minimal prompt
-  const primaryShow = Array.isArray(prospect.shows) && prospect.shows.length > 0
-    ? prospect.shows[0]!
-    : "the upcoming show";
 
   const robotDesc = [prospect.robotName, prospect.robotType]
     .filter(Boolean)
