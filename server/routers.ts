@@ -1744,68 +1744,75 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     }),
     // ─── Outreach / Draft Email procedures ──────────────────────────────────
 
-    // Generate AI draft emails for all prospects that don't have a pending draft
+    // Generate Cal's discovery drafts for all prospects that don't have a pending draft.
+    // Routes exclusively through salesAgentPreviewCore (frankPlaybook / buildDiscoveryEmail).
+    // Also seeds salesAgentConversations rows for any prospects that don't have one,
+    // so the nightly cron will pick them up for automated follow-ups.
     generateDrafts: adminProcedure
       .input(z.object({ prospectIds: z.array(z.number()).optional() }))
       .mutation(async ({ input, ctx }) => {
         return workflows.withAgentRun(
-          { agentName: "Draft Email Generator", triggeredBy: ctx.user?.name ?? "admin", inputSummary: input.prospectIds ? `${input.prospectIds.length} selected prospects` : "all prospects" },
+          { agentName: "Cal Draft Generator", triggeredBy: ctx.user?.name ?? "admin", inputSummary: input.prospectIds ? `${input.prospectIds.length} selected prospects` : "all prospects" },
           async () => {
             const allProspects = await db.listProspects();
             const targets = input.prospectIds
               ? allProspects.filter((p: { id: number }) => input.prospectIds!.includes(p.id))
               : allProspects;
 
-            const upcomingShows = await workflows.getUpcomingShows();
-            const showNames = upcomingShows.map((s: { name: string }) => s.name).join(", ") || "upcoming trade shows";
+            const dbConn = await getDb();
+            if (!dbConn) throw new Error("DB unavailable");
 
             let generated = 0;
-            for (const prospect of targets as Array<{ id: number; company: string; contactName: string | null; contactEmail: string | null; robotName: string | null; robotType: string | null; shows: string[] | null; notes: string | null; outreachAngle?: string | null; vendorType?: string | null }>) {
-              const toEmail = emailHelpers.getProspectOutreachEmail(prospect);
-              if (!toEmail) continue;
+            let skipped = 0;
+            let conversationsSeeded = 0;
+            const errors: string[] = [];
 
-              // Check if a pending/approved draft already exists
+            for (const prospect of targets as Array<{ id: number; company: string; contactEmail: string | null; status: string }>) {
+              const toEmail = emailHelpers.getProspectOutreachEmail(prospect);
+              if (!toEmail) { skipped++; continue; }
+
+              // Skip prospects that already have a pending or approved draft
               const existing = await emailHelpers.getDraftsForProspect(prospect.id);
               const hasPending = existing.some((d: { status: string }) => d.status === "pending" || d.status === "approved");
-              if (hasPending) continue;
+              if (hasPending) { skipped++; continue; }
 
-              const showContext = prospect.shows?.length ? `They service trade shows including: ${prospect.shows.join(", ")}.` : "";
-              const robotContext = prospect.robotName ? `Their robot is the ${prospect.robotName}${prospect.robotType ? ` (${prospect.robotType})` : ""}.` : "";
-              const isPartner = (prospect.outreachAngle === "partner") || (prospect.vendorType && prospect.vendorType !== "robot_oem");
-              const vendorLabel = prospect.vendorType ? prospect.vendorType.replace(/_/g, " ") : "trade show vendor";
+              // Seed a conversation record if none exists so the nightly cron picks this
+              // prospect up for future follow-ups after Cal's draft is sent.
+              const [existingConv] = await dbConn
+                .select({ id: salesAgentConversations.id })
+                .from(salesAgentConversations)
+                .where(eq(salesAgentConversations.prospectId, prospect.id))
+                .limit(1);
 
-              // ── Partner pitch (exhibit houses, freight, AV, venues) ──────────────
-              // ── Customer pitch (robot OEMs) ──────────────────────────────────────
-              const systemPrompt = isPartner
-                ? `You are an outreach specialist for StageGate — the robotics technical operations layer for trade shows. StageGate is NOT a competitor to exhibit houses, freight companies, AV firms, or venues. We are a specialist subcontractor that handles robot-specific logistics: receiving, customs, staging, testing, and on-site robot support. We plug into the existing workflow of ${vendorLabel} companies to handle the robot-specific complexity they are not equipped for. Write concise, professional B2B partnership emails. Under 150 words. No fluff. Sign off as "Bob Christopher, StageGate".`
-                : `You are an outreach specialist for StageGate, the first warehouse, staging, and activation service built for robotics companies exhibiting at trade shows. Write concise, professional cold outreach emails. Be specific about the company's robot. Keep emails under 150 words. No fluff, no marketing speak. Sign off as "Bob Christopher, StageGate".`;
+              if (!existingConv) {
+                await dbConn.insert(salesAgentConversations).values({
+                  prospectId: prospect.id,
+                  state: "discovery",
+                  nextFollowUpAt: new Date(), // ready immediately
+                  lastActivityAt: new Date(),
+                });
+                conversationsSeeded++;
+              }
 
-              const userPrompt = isPartner
-                ? `Write a cold outreach email to ${prospect.contactName ?? "the team"} at ${prospect.company} (a ${vendorLabel} company). ${showContext} StageGate is the robotics technical operations layer that plugs into your workflow — we handle all robot-specific logistics (receiving, customs, staging, testing, on-site support) so your team can focus on what you do best. We want to introduce ourselves as a specialist partner for your robotics clients at ${showNames}. Subject line and email body only. Format: SUBJECT: ...\n\nBODY: ...`
-                : `Write a cold outreach email to ${prospect.contactName ?? "the team"} at ${prospect.company}. ${robotContext} ${showContext} We are reaching out because StageGate handles all trade show logistics for robotics companies — shipping, customs, warehousing, booth setup, and on-site support — at ${showNames}. Subject line and email body only. Format: SUBJECT: ...\n\nBODY: ...`;
+              // Generate Cal's discovery draft via his actual pipeline
+              try {
+                const preview = await salesAgentPreviewCore(prospect.id, "discovery");
+                await emailHelpers.createDraft({
+                  prospectId: prospect.id,
+                  subject: preview.subject,
+                  body: preview.body,
+                  agentReasoning: `Cal discovery draft — stage: discovery → ${preview.nextStage}`,
+                });
+                generated++;
+              } catch (e) {
+                errors.push(`${prospect.company}: ${String(e).slice(0, 100)}`);
+              }
 
-              const llmRes = await invokeLLM({
-                messages: [
-                  { role: "system", content: systemPrompt },
-                  { role: "user", content: userPrompt },
-                ],
-              });
-              const rawContent = llmRes.choices?.[0]?.message?.content;
-              const content: string = typeof rawContent === "string" ? rawContent : "";
-              const subjectMatch = content.match(/SUBJECT:\s*(.+)/i);
-              const bodyMatch = content.match(/BODY:\s*([\s\S]+)/i);
-
-              const subject = subjectMatch?.[1]?.trim() ?? (isPartner ? `Partnership Opportunity — StageGate × ${prospect.company}` : `Trade Show Logistics for ${prospect.company}`);
-              const body = bodyMatch?.[1]?.trim() ?? content.trim();
-              const reasoning = isPartner
-                ? `${prospect.company} is a ${vendorLabel} partner prospect. Pitch: robotics technical operations layer. ${showContext}`.trim()
-                : `${prospect.company} matched because: ${robotContext} ${showContext} Outreach for ${showNames}.`.trim();
-
-              await emailHelpers.createDraft({ prospectId: prospect.id, subject, body, agentReasoning: reasoning });
-              generated++;
+              // Small delay to avoid rate-limiting on the LLM
+              await new Promise(r => setTimeout(r, 300));
             }
 
-            return { generated, total: targets.length };
+            return { generated, skipped, conversationsSeeded, errors: errors.slice(0, 20), total: targets.length };
           }
         );
       }),

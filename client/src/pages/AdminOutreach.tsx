@@ -42,8 +42,14 @@ export default function AdminOutreach() {
 
   const generateMutation = trpc.admin.generateDrafts.useMutation({
     onSuccess: (res) => {
-      const generated = res.result?.generated ?? 0;
-      toast.success(`Generated ${generated} draft${generated !== 1 ? "s" : ""}`);
+      const r = res.result as { generated?: number; skipped?: number; conversationsSeeded?: number; errors?: string[] } | undefined;
+      const generated = r?.generated ?? 0;
+      const seeded = r?.conversationsSeeded ?? 0;
+      const errs = r?.errors?.length ?? 0;
+      let msg = `Cal drafted ${generated} email${generated !== 1 ? "s" : ""}`;
+      if (seeded > 0) msg += ` · queued ${seeded} new prospect${seeded !== 1 ? "s" : ""} for follow-ups`;
+      if (errs > 0) msg += ` · ${errs} error${errs !== 1 ? "s" : ""}`;
+      toast.success(msg);
       utils.admin.getDrafts.invalidate();
       setGenerating(false);
     },
@@ -152,7 +158,7 @@ export default function AdminOutreach() {
             {generating || generateMutation.isPending ? (
               <><RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} /> Generating…</>
             ) : (
-              "⚡ Generate Drafts"
+              "⚡ Generate Cal Drafts"
             )}
           </button>
         </div>
@@ -244,7 +250,7 @@ export default function AdminOutreach() {
             {activeTab === "pending" ? (
               <div>
                 <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.55)", marginBottom: "0.5rem" }}>No pending drafts</p>
-                <p>Click "⚡ Generate Drafts" to have XBOT write personalized emails for all prospects.</p>
+                <p>Click "⚡ Generate Cal Drafts" to have Cal write personalized intro emails for all prospects.</p>
               </div>
             ) : activeTab === "approved" ? (
               <p>No approved drafts. Approve drafts from the Pending tab first.</p>

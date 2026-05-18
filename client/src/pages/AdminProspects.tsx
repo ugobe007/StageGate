@@ -332,7 +332,7 @@ export default function AdminProspects() {
   const generateDraftMutation = trpc.prospects.regenerateDraft.useMutation({
     onSuccess: (data, vars) => {
       setDraftGeneratingId(null);
-      createDraftMutation.mutate({ prospectId: vars.id, subject: "StageGate — Let's Talk Robots", body: data.draft });
+      createDraftMutation.mutate({ prospectId: vars.id, subject: data.subject ?? "StageGate — Let's Talk Robots", body: data.draft });
     },
     onError: () => setDraftGeneratingId(null),
   });
