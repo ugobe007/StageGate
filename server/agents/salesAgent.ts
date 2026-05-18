@@ -522,7 +522,7 @@ function buildDiscoveryEmail(
     ``,
     `We operate fully bonded warehouses for robot storage and have teams that can help unpack, test, and fix technical issues that may have occurred during transit. We care for your robots so they are ready to go when you arrive at the conference.`,
     ``,
-    `Let me know if this sounds interesting and I'll send a calendar invite for a time to chat. In the meantime, check out onstage.bot and register — it's free.`,
+    `Check out onstage.bot and register — it's free and takes about 2 minutes. Or, if you would like to discuss your plans for visiting ${showName}, just reply and I will send a calendar invite to connect.`,
     ``,
     `Thanks,`,
     FRANK_PERSONA.signature,
