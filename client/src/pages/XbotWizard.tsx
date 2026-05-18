@@ -840,7 +840,7 @@ export default function XbotWizard() {
     <div className="min-h-screen bg-[#0d0f14] text-white">
       <Navbar />
 
-      <div className="max-w-3xl mx-auto px-4 pt-24 pb-20">
+      <div className="max-w-3xl mx-auto px-4 pt-32 pb-20">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">

@@ -40,6 +40,7 @@ import {
   calendarEvents,
   CalendarEvent,
   InsertCalendarEvent,
+  newsletterSubscriptions,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -225,6 +226,50 @@ export async function getLasVegasShows2026() {
     return isLasVegas && year === 2026;
   });
 }
+
+export async function getOtherShows() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(tradeShows).orderBy(tradeShows.startDate);
+  return rows.filter((show) => {
+    const isLasVegas = (show.city ?? "").toLowerCase().includes("las vegas");
+    return !isLasVegas;
+  });
+}
+
+export async function getUpcomingLasVegasShows(limit = 6) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(tradeShows).orderBy(tradeShows.startDate);
+  const now = new Date();
+  return rows
+    .filter((show) => {
+      const isLasVegas = (show.city ?? "").toLowerCase().includes("las vegas");
+      const isFuture = show.startDate ? new Date(show.startDate) > now : false;
+      return isLasVegas && isFuture;
+    })
+    .slice(0, limit);
+}
+export async function subscribeNewsletter(email: string, firstName?: string, interests?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  // Upsert — if email already exists, update name/interests
+  const existing = await db.select({ id: newsletterSubscriptions.id })
+    .from(newsletterSubscriptions)
+    .where(eq(newsletterSubscriptions.email, email.toLowerCase().trim()))
+    .limit(1);
+  if (existing.length > 0) {
+    return { alreadySubscribed: true };
+  }
+  await db.insert(newsletterSubscriptions).values({
+    email: email.toLowerCase().trim(),
+    firstName: firstName?.trim() || null,
+    interests: interests || null,
+    source: "website",
+  });
+  return { alreadySubscribed: false };
+}
+
 export async function searchTradeShows(query: string, city?: string) {
   const db = await getDb();
   if (!db) return [];

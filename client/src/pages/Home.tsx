@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
 import DemoRequestModal from "@/components/DemoRequestModal";
+import NewsTicker from "@/components/NewsTicker";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
@@ -169,6 +170,7 @@ export default function Home() {
           </div>
         </div>
       </nav>
+      <NewsTicker />
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <section style={{ position: "relative", minHeight: "100svh", display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
@@ -205,6 +207,13 @@ export default function Home() {
               )}
               <a href="#how-it-works" className="btn-default">How It Works</a>
             </div>
+            <p style={{ marginTop: "0.75rem", fontSize: "0.75rem" }}>
+              <Link href="/newsletter">
+                <span style={{ color: "oklch(0.72 0.20 262)", cursor: "pointer", opacity: 0.85 }}>
+                  Get show alerts &amp; robotics news →
+                </span>
+              </Link>
+            </p>
           </div>
 
           {/* Right column — service index (editorial list, no cards) */}
@@ -535,6 +544,13 @@ export default function Home() {
               </button>
             </Link>
           </div>
+          <p style={{ marginTop: "1.25rem", fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)" }}>
+            <Link href="/newsletter">
+              <span style={{ color: "oklch(0.72 0.20 262)", cursor: "pointer", opacity: 0.85 }}>
+                Get show alerts &amp; robotics news →
+              </span>
+            </Link>
+          </p>
         </div>
       </section>
 

@@ -110,7 +110,7 @@ export default function ServiceOrder() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
-      <div className="pt-24 pb-16">
+      <div className="pt-32 pb-16">
         <div className="container max-w-4xl mx-auto">
           <div className="mb-10">
             <Badge className="mb-3 bg-primary/10 text-primary border-primary/30">Book Services</Badge>

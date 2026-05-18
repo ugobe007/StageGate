@@ -4,6 +4,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Menu, X } from "lucide-react";
 import GetQuoteModal from "@/components/GetQuoteModal";
+import NewsTicker from "@/components/NewsTicker";
 
 export default function Navbar({ darkBg = false }: { darkBg?: boolean }) {
   const { user, isAuthenticated, logout } = useAuth();
@@ -316,6 +317,7 @@ export default function Navbar({ darkBg = false }: { darkBg?: boolean }) {
         </div>
       )}
     </nav>
+    <NewsTicker />
     <GetQuoteModal open={quoteOpen} onOpenChange={setQuoteOpen} />
     </>
   );

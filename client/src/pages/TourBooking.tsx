@@ -139,7 +139,7 @@ export default function TourBooking() {
       <Navbar darkBg />
       {/* Hero */}
       <div className="border-b border-zinc-800 bg-zinc-900/50">
-        <div className="max-w-4xl mx-auto px-6 pt-28 pb-16">
+        <div className="max-w-4xl mx-auto px-6 pt-36 pb-16">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <Bot className="w-5 h-5 text-amber-400" />

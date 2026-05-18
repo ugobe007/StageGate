@@ -180,6 +180,10 @@ export const appRouter = router({
       return db.getLasVegasShows2026();
     }),
 
+    otherShows: publicProcedure.query(async () => {
+      return db.getOtherShows();
+    }),
+
     search: publicProcedure
       .input(
         z.object({
@@ -284,6 +288,55 @@ export const appRouter = router({
         }
         return db.getAllShowNotifications();
       }),
+  }),
+
+  // ─── Newsletter ────────────────────────────────────────────────────────────
+  newsletter: router({
+    subscribe: publicProcedure
+      .input(z.object({
+        email: z.string().email({ message: "Please enter a valid email address" }),
+        firstName: z.string().optional(),
+        interests: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await db.subscribeNewsletter(input.email, input.firstName, input.interests);
+        if (!result.alreadySubscribed) {
+          await notifyOwner({
+            title: "New Newsletter Subscriber",
+            content: `${input.email} subscribed to the StageGate newsletter.${input.firstName ? ` Name: ${input.firstName}.` : ""}${input.interests ? ` Interests: ${input.interests}.` : ""}`,
+          }).catch(() => {});
+        }
+        return { success: true, alreadySubscribed: result.alreadySubscribed };
+      }),
+  }),
+
+  // ─── News Ticker ───────────────────────────────────────────────────────────
+  news: router({
+    ticker: publicProcedure.query(async () => {
+      // Pull next 6 upcoming LV shows from DB
+      const upcomingShows = await db.getUpcomingLasVegasShows(6);
+      const showItems = upcomingShows.map((s) => ({
+        type: "show" as const,
+        text: `${s.name}${s.startDate ? " — " + new Date(s.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}`,
+        city: s.city ?? "Las Vegas",
+      }));
+
+      // Curated robot/conference headlines (updated periodically)
+      const headlines = [
+        { type: "news" as const, text: "Unitree G1 cleared US customs — new operators in Las Vegas market" },
+        { type: "news" as const, text: "Figure AI raises Series B — deploying humanoids at BMW and US facilities" },
+        { type: "news" as const, text: "CES 2027 Eureka Park: record humanoid robot applications expected" },
+        { type: "news" as const, text: "UBTECH Walker S confirmed for MODEX 2026 demo floor" },
+        { type: "news" as const, text: "Agility Robotics Digit now shipping to 3PL partners across North America" },
+        { type: "news" as const, text: "Richtech Robotics ADAM bartender robot expanding to Las Vegas casinos" },
+        { type: "news" as const, text: "Ghost Robotics Vision 60 demoed at AUSA 2026 — new defense contracts" },
+        { type: "news" as const, text: "NAB Show 2026: AI-powered broadcast robots draw record exhibitor count" },
+        { type: "news" as const, text: "MINExpo 2026: autonomous mining robots — 40+ OEMs confirmed" },
+        { type: "news" as const, text: "StageGate now supports bonded warehouse receiving for international robot shipments" },
+      ];
+
+      return { shows: showItems, headlines };
+    }),
   }),
 
   // ─── Services ──────────────────────────────────────────────────────────────

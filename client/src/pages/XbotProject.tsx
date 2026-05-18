@@ -149,7 +149,7 @@ export default function XbotProject() {
     return (
       <div className="min-h-screen bg-[#0d0f14] text-white">
         <Navbar />
-        <div className="max-w-4xl mx-auto px-4 pt-28 pb-20">
+        <div className="max-w-4xl mx-auto px-4 pt-36 pb-20">
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-32 bg-white/5 rounded-xl animate-pulse" />
@@ -164,7 +164,7 @@ export default function XbotProject() {
     return (
       <div className="min-h-screen bg-[#0d0f14] text-white">
         <Navbar />
-        <div className="max-w-4xl mx-auto px-4 pt-28 pb-20 text-center">
+        <div className="max-w-4xl mx-auto px-4 pt-36 pb-20 text-center">
           <p className="text-white/50 mb-4">Unable to load this project.</p>
           <Button
             variant="ghost"
@@ -198,7 +198,7 @@ export default function XbotProject() {
     <div className="min-h-screen bg-[#0d0f14] text-white">
       <Navbar />
 
-      <div className="max-w-4xl mx-auto px-4 pt-24 pb-20">
+      <div className="max-w-4xl mx-auto px-4 pt-32 pb-20">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-8">
           <div>

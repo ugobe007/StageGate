@@ -707,3 +707,14 @@ export const calendarEvents = pgTable("calendar_events", {
 });
 export type CalendarEvent = typeof calendarEvents.$inferSelect;
 export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
+
+// ─── Newsletter Subscriptions ─────────────────────────────────────────────────
+export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  firstName: varchar("first_name", { length: 128 }),
+  interests: text("interests"),  // comma-separated robot type interests
+  source: varchar("source", { length: 64 }).default("website"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+});
+export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;

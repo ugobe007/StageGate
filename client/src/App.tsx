@@ -47,6 +47,7 @@ import AuthRedirect from "./pages/AuthRedirect";
 import AdminServiceRequests from "./pages/AdminServiceRequests";
 import AdminCalendar from "./pages/AdminCalendar";
 import CalendarEventPage from "./pages/CalendarEventPage";
+import Newsletter from "./pages/Newsletter";
 
 /** Wraps admin pages in the shared DashboardLayout sidebar shell */
 function AdminShell({ children }: { children: React.ReactNode }) {
@@ -64,6 +65,7 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/get-started" component={GetStarted} />
       <Route path="/about" component={About} />
+      <Route path="/newsletter" component={Newsletter} />
       <Route path="/shows" component={ShowsCalendar} />
       <Route path="/shows/:id" component={ShowDetail} />
 

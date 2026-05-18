@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
-import { Calendar, MapPin, ExternalLink, ArrowRight, Search, Filter } from "lucide-react";
+import { Calendar, MapPin, ExternalLink, ArrowRight, Search, Filter, Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import GetQuoteModal from "@/components/GetQuoteModal";
 import Navbar from "@/components/Navbar";
@@ -11,6 +11,7 @@ const BG     = "oklch(0.11 0.012 262)";
 const CARD   = "oklch(0.14 0.014 262)";
 const BORDER = "oklch(0.22 0.016 262)";
 const INDIGO = "oklch(0.72 0.20 262)";
+const AMBER  = "oklch(0.78 0.18 75)";
 const TEXT_HI  = "oklch(0.93 0.005 240)";
 const TEXT_MID = "oklch(0.70 0.008 240)";
 const TEXT_DIM = "oklch(0.50 0.010 240)";
@@ -26,6 +27,8 @@ const STATUS_COLORS: Record<string, { color: string; label: string }> = {
   completed: { color: TEXT_DIM,                  label: "Completed" },
 };
 
+type CalendarMode = "lasvegas" | "other";
+
 function formatDateRange(start: Date | string | null, end: Date | string | null): string {
   if (!start) return "Date TBD";
   const s = new Date(start);
@@ -40,18 +43,32 @@ function formatDateRange(start: Date | string | null, end: Date | string | null)
 }
 
 export default function ShowsCalendar() {
-  const [quoteOpen, setQuoteOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [selectedVenue, setSelectedVenue] = useState<string>("all");
-  const [selectedMonth, setSelectedMonth] = useState<number | "all">("all");
+  const [quoteOpen, setQuoteOpen]     = useState(false);
+  const [search, setSearch]           = useState("");
+  const [selectedVenue, setSelectedVenue]   = useState<string>("all");
+  const [selectedMonth, setSelectedMonth]   = useState<number | "all">("all");
+  const [mode, setMode]               = useState<CalendarMode>("lasvegas");
 
-  const { data: shows = [], isLoading } = trpc.shows.lasVegas2026.useQuery();
+  const { data: lvShows = [], isLoading: lvLoading } = trpc.shows.lasVegas2026.useQuery();
+  const { data: otherShows = [], isLoading: otherLoading } = trpc.shows.otherShows.useQuery();
 
+  const shows = mode === "lasvegas" ? lvShows : otherShows;
+  const isLoading = mode === "lasvegas" ? lvLoading : otherLoading;
+
+  // For Las Vegas mode: group by venue; for other mode: group by city
   const venues = useMemo(() => {
+    if (mode !== "lasvegas") return [];
     const set = new Set<string>();
-    shows.forEach((s) => { if (s.venue) set.add(s.venue); });
+    lvShows.forEach((s) => { if (s.venue) set.add(s.venue); });
     return Array.from(set).sort();
-  }, [shows]);
+  }, [lvShows, mode]);
+
+  const cities = useMemo(() => {
+    if (mode !== "other") return [];
+    const set = new Set<string>();
+    otherShows.forEach((s) => { if (s.city) set.add(s.city); });
+    return Array.from(set).sort();
+  }, [otherShows, mode]);
 
   const activeMonths = useMemo(() => {
     const set = new Set<number>();
@@ -64,9 +81,14 @@ export default function ShowsCalendar() {
       .filter((s) => {
         if (search.trim()) {
           const q = search.toLowerCase();
-          if (!s.name.toLowerCase().includes(q) && !(s.venue ?? "").toLowerCase().includes(q) && !(s.city ?? "").toLowerCase().includes(q)) return false;
+          if (
+            !s.name.toLowerCase().includes(q) &&
+            !(s.venue ?? "").toLowerCase().includes(q) &&
+            !(s.city ?? "").toLowerCase().includes(q)
+          ) return false;
         }
-        if (selectedVenue !== "all" && s.venue !== selectedVenue) return false;
+        if (mode === "lasvegas" && selectedVenue !== "all" && s.venue !== selectedVenue) return false;
+        if (mode === "other" && selectedVenue !== "all" && (s.city ?? "") !== selectedVenue) return false;
         if (selectedMonth !== "all" && s.startDate) {
           if (new Date(s.startDate).getMonth() !== selectedMonth) return false;
         }
@@ -77,19 +99,34 @@ export default function ShowsCalendar() {
         const db = b.startDate ? new Date(b.startDate).getTime() : Infinity;
         return da - db;
       });
-  }, [shows, search, selectedVenue, selectedMonth]);
+  }, [shows, search, selectedVenue, selectedMonth, mode]);
 
+  // Group by month for LV; group by city then month for other
   const grouped = useMemo(() => {
     const map = new Map<string, typeof filtered>();
     filtered.forEach((s) => {
-      const key = s.startDate
-        ? new Date(s.startDate).toLocaleString("en-US", { month: "long", year: "numeric" })
-        : "Date TBD";
+      let key: string;
+      if (mode === "other") {
+        key = s.city ?? "Location TBD";
+      } else {
+        key = s.startDate
+          ? new Date(s.startDate).toLocaleString("en-US", { month: "long", year: "numeric" })
+          : "Date TBD";
+      }
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(s);
     });
     return map;
-  }, [filtered]);
+  }, [filtered, mode]);
+
+  function switchMode(next: CalendarMode) {
+    setMode(next);
+    setSearch("");
+    setSelectedVenue("all");
+    setSelectedMonth("all");
+  }
+
+  const accentColor = mode === "lasvegas" ? INDIGO : AMBER;
 
   return (
     <>
@@ -97,13 +134,13 @@ export default function ShowsCalendar() {
       <div className="min-h-screen" style={{ background: BG, color: TEXT_HI }}>
 
         {/* ── Page Header ── */}
-        <section className="border-b pt-28 pb-12" style={{ borderColor: BORDER, background: CARD }}>
+        <section className="border-b pt-36 pb-12" style={{ borderColor: BORDER, background: CARD }}>
           <div className="max-w-6xl mx-auto px-6">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div>
                 <p className="section-label mb-3 flex items-center gap-2">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: INDIGO }} />
-                  2026 Las Vegas Show Calendar
+                  <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accentColor }} />
+                  {mode === "lasvegas" ? "2026 Las Vegas Show Calendar" : "National & International Shows"}
                 </p>
                 <h1
                   className="text-4xl md:text-5xl font-bold leading-tight"
@@ -112,21 +149,60 @@ export default function ShowsCalendar() {
                   Trade Shows &amp; Events
                 </h1>
                 <p className="mt-3 text-base max-w-xl" style={{ color: TEXT_MID }}>
-                  Every major Las Vegas trade show where robots are exhibited in 2026. Find your show, book StageGate services, and arrive ready.
+                  {mode === "lasvegas"
+                    ? "Every major Las Vegas trade show where robots are exhibited in 2026. Find your show, book StageGate services, and arrive ready."
+                    : "National and international trade shows with significant robotics presence. We can support your team wherever you exhibit."}
                 </p>
               </div>
-              <button className="btn-primary flex-shrink-0" onClick={() => setQuoteOpen(true)}>
-                Get a quote <ArrowRight size={14} />
-              </button>
+
+              <div className="flex flex-col items-start md:items-end gap-3">
+                {/* ── Calendar mode toggle ── */}
+                <div
+                  className="flex rounded-lg border p-0.5 gap-0.5"
+                  style={{ borderColor: BORDER, background: BG }}
+                >
+                  <button
+                    onClick={() => switchMode("lasvegas")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all"
+                    style={{
+                      background: mode === "lasvegas" ? `${INDIGO}18` : "transparent",
+                      color: mode === "lasvegas" ? INDIGO : TEXT_DIM,
+                      borderRight: `1px solid ${BORDER}`,
+                    }}
+                  >
+                    <MapPin size={11} />
+                    Las Vegas Shows
+                  </button>
+                  <button
+                    onClick={() => switchMode("other")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all"
+                    style={{
+                      background: mode === "other" ? `${AMBER}18` : "transparent",
+                      color: mode === "other" ? AMBER : TEXT_DIM,
+                    }}
+                  >
+                    <Globe size={11} />
+                    All Other Shows
+                  </button>
+                </div>
+
+                <button className="btn-primary flex-shrink-0" onClick={() => setQuoteOpen(true)}>
+                  Get a quote <ArrowRight size={14} />
+                </button>
+              </div>
             </div>
 
             {/* Stats strip */}
             <div className="flex flex-wrap gap-8 mt-8 pt-8 border-t" style={{ borderColor: BORDER }}>
-              {[
-                { label: "Shows Listed", value: shows.length },
+              {(mode === "lasvegas" ? [
+                { label: "Shows Listed", value: lvShows.length },
                 { label: "Unique Venues", value: venues.length },
-                { label: "Las Vegas, NV", value: "2026" },
-              ].map((stat) => (
+                { label: "Location", value: "Las Vegas, NV" },
+              ] : [
+                { label: "Shows Listed", value: otherShows.length },
+                { label: "Cities", value: cities.length },
+                { label: "Coverage", value: "US & International" },
+              ]).map((stat) => (
                 <div key={stat.label}>
                   <p className="text-2xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.03em" }}>
                     {stat.value}
@@ -142,7 +218,7 @@ export default function ShowsCalendar() {
 
         {/* ── Filters ── */}
         <section
-          className="sticky top-14 z-30 border-b"
+          className="sticky top-20 z-30 border-b"
           style={{ background: `${CARD}f5`, backdropFilter: "blur(12px)", borderColor: BORDER }}
         >
           <div className="max-w-6xl mx-auto px-6 py-3 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -150,7 +226,7 @@ export default function ShowsCalendar() {
             <div className="relative flex-1 max-w-xs">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: TEXT_DIM }} />
               <Input
-                placeholder="Search shows, venues..."
+                placeholder={mode === "lasvegas" ? "Search shows, venues..." : "Search shows, cities..."}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8 h-8 text-sm"
@@ -158,10 +234,10 @@ export default function ShowsCalendar() {
               />
             </div>
 
-            {/* Venue filter */}
+            {/* Venue / City filter pills */}
             <div className="flex items-center gap-2 flex-wrap">
               <Filter size={12} style={{ color: TEXT_DIM }} className="flex-shrink-0" />
-              {["all", ...venues].map((v) => {
+              {["all", ...(mode === "lasvegas" ? venues : cities)].map((v) => {
                 const active = selectedVenue === v;
                 return (
                   <button
@@ -169,12 +245,16 @@ export default function ShowsCalendar() {
                     onClick={() => setSelectedVenue(v)}
                     className="px-2.5 py-1 rounded-full text-xs font-mono border transition-all"
                     style={{
-                      borderColor: active ? `${INDIGO}55` : BORDER,
-                      background: active ? `${INDIGO}0d` : "transparent",
-                      color: active ? INDIGO : TEXT_DIM,
+                      borderColor: active ? `${accentColor}55` : BORDER,
+                      background: active ? `${accentColor}0d` : "transparent",
+                      color: active ? accentColor : TEXT_DIM,
                     }}
                   >
-                    {v === "all" ? "All Venues" : v.replace(" & Convention Center", "").replace(" Convention Center", "").replace(" Expo & Convention Center", " Expo")}
+                    {v === "all"
+                      ? (mode === "lasvegas" ? "All Venues" : "All Cities")
+                      : mode === "lasvegas"
+                        ? v.replace(" & Convention Center", "").replace(" Convention Center", "").replace(" Expo & Convention Center", " Expo")
+                        : v}
                   </button>
                 );
               })}
@@ -194,9 +274,9 @@ export default function ShowsCalendar() {
                   disabled={disabled}
                   className="px-2.5 py-1 rounded-full text-xs font-mono border transition-all disabled:opacity-25 disabled:cursor-not-allowed"
                   style={{
-                    borderColor: active ? `${INDIGO}55` : BORDER,
-                    background: active ? `${INDIGO}0d` : "transparent",
-                    color: active ? INDIGO : TEXT_DIM,
+                    borderColor: active ? `${accentColor}55` : BORDER,
+                    background: active ? `${accentColor}0d` : "transparent",
+                    color: active ? accentColor : TEXT_DIM,
                   }}
                 >
                   {label}
@@ -215,12 +295,13 @@ export default function ShowsCalendar() {
               ))}
             </div>
           ) : filtered.length === 0 && shows.length === 0 ? (
-            /* No shows in database at all */
             <div className="text-center py-20">
               <p className="text-4xl mb-4">📅</p>
-              <p className="font-semibold text-lg" style={{ color: TEXT_HI }}>2026 Show Calendar Coming Soon</p>
+              <p className="font-semibold text-lg" style={{ color: TEXT_HI }}>
+                {mode === "lasvegas" ? "2026 Show Calendar Coming Soon" : "Other Shows Coming Soon"}
+              </p>
               <p className="text-sm mt-2 max-w-sm mx-auto" style={{ color: TEXT_DIM }}>
-                We're adding Las Vegas trade shows for 2026. Get a quote now and we'll confirm availability for your specific event.
+                Get a quote now and we'll confirm availability for your specific event.
               </p>
               <div className="flex items-center justify-center gap-3 mt-6 flex-wrap">
                 <button className="btn-primary" onClick={() => setQuoteOpen(true)}>
@@ -235,7 +316,7 @@ export default function ShowsCalendar() {
             <div className="text-center py-20">
               <p className="text-4xl mb-4">📅</p>
               <p className="font-semibold text-lg" style={{ color: TEXT_HI }}>No shows match your filters</p>
-              <p className="text-sm mt-2" style={{ color: TEXT_DIM }}>Try adjusting the venue or month filter, or clear the search.</p>
+              <p className="text-sm mt-2" style={{ color: TEXT_DIM }}>Try adjusting the filters, or clear the search.</p>
               <button
                 className="btn-default mt-5"
                 onClick={() => { setSearch(""); setSelectedVenue("all"); setSelectedMonth("all"); }}
@@ -245,29 +326,29 @@ export default function ShowsCalendar() {
             </div>
           ) : (
             <div className="space-y-10">
-              {Array.from(grouped.entries()).map(([monthLabel, monthShows]) => (
-                <div key={monthLabel}>
-                  {/* Month divider */}
+              {Array.from(grouped.entries()).map(([groupLabel, groupShows]) => (
+                <div key={groupLabel}>
+                  {/* Group divider */}
                   <div className="flex items-center gap-3 mb-5">
                     <span className="font-bold text-base" style={{ color: TEXT_HI, letterSpacing: "-0.02em" }}>
-                      {monthLabel}
+                      {groupLabel}
                     </span>
                     <div className="flex-1 h-px" style={{ background: BORDER }} />
                     <span className="text-xs font-mono" style={{ color: TEXT_DIM }}>
-                      {monthShows.length} show{monthShows.length !== 1 ? "s" : ""}
+                      {groupShows.length} show{groupShows.length !== 1 ? "s" : ""}
                     </span>
                   </div>
 
                   {/* Cards grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {monthShows.map((show) => {
+                    {groupShows.map((show) => {
                       const statusStyle = STATUS_COLORS[show.status] ?? STATUS_COLORS.upcoming;
                       return (
                         <div
                           key={show.id}
                           className="rounded-xl border p-5 flex flex-col gap-4 transition-colors"
                           style={{ background: CARD, borderColor: BORDER }}
-                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${INDIGO}44`; }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${accentColor}44`; }}
                           onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = BORDER; }}
                         >
                           {/* Top row: name + status */}
@@ -297,6 +378,12 @@ export default function ShowsCalendar() {
                                 <span>{show.venue}{show.city ? `, ${show.city}` : ""}</span>
                               </div>
                             )}
+                            {!show.venue && show.city && (
+                              <div className="flex items-start gap-2 text-xs" style={{ color: TEXT_DIM }}>
+                                <MapPin size={11} className="flex-shrink-0 mt-0.5" />
+                                <span>{show.city}</span>
+                              </div>
+                            )}
                           </div>
 
                           {/* Actions */}
@@ -304,7 +391,7 @@ export default function ShowsCalendar() {
                             <Link
                               href={`/order?showId=${show.id}`}
                               className="flex-1 text-center text-xs font-medium py-1.5 rounded border transition-all"
-                              style={{ borderColor: `${INDIGO}44`, color: INDIGO, background: `${INDIGO}0d` }}
+                              style={{ borderColor: `${accentColor}44`, color: accentColor, background: `${accentColor}0d` }}
                             >
                               Book services
                             </Link>
@@ -345,7 +432,9 @@ export default function ShowsCalendar() {
               Don't see your show?
             </h2>
             <p className="mb-6 text-sm" style={{ color: TEXT_DIM }}>
-              We support events across Las Vegas, Orlando, Chicago, and more. Get a quote and we'll confirm availability for your specific event.
+              {mode === "lasvegas"
+                ? "We support events across Las Vegas, Orlando, Chicago, and more. Get a quote and we'll confirm availability for your specific event."
+                : "We can support your robot at any show, anywhere. Get a quote and we'll build a logistics plan for your team."}
             </p>
             <div className="flex items-center justify-center gap-3 flex-wrap">
               <button className="btn-primary" onClick={() => setQuoteOpen(true)}>
@@ -355,6 +444,13 @@ export default function ShowsCalendar() {
                 <span className="btn-default">Register free <ArrowRight size={14} /></span>
               </Link>
             </div>
+            <p className="mt-5 text-xs" style={{ color: TEXT_DIM }}>
+              <Link href="/newsletter">
+                <span className="cursor-pointer hover:opacity-80 transition-opacity" style={{ color: INDIGO }}>
+                  Get show alerts &amp; robotics news →
+                </span>
+              </Link>
+            </p>
           </div>
         </section>
       </div>

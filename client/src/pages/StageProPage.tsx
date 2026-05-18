@@ -74,7 +74,7 @@ export default function StageProPage() {
       <Navbar />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="pt-28 pb-20 border-b" style={{ borderColor: BORDER, background: CARD }}>
+      <section className="pt-36 pb-20 border-b" style={{ borderColor: BORDER, background: CARD }}>
         <div className="max-w-5xl mx-auto px-6 text-center">
           {/* Icon — stroke only */}
           <div
