@@ -73,7 +73,7 @@ export default function AdminProspects() {
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
   const [failedIds, setFailedIds] = useState<Set<number>>(new Set());
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [selectedProspectId, setSelectedProspectId] = useState<number | null>(null);
   const [editNotes, setEditNotes] = useState<Record<number, string>>({});
   const [editContact, setEditContact] = useState<Record<number, {
     contactName?: string;
@@ -524,6 +524,11 @@ export default function AdminProspects() {
     }
     return sortDir === "asc" ? cmp : -cmp;
   });
+
+  // The prospect whose CRM card is showing in the right panel
+  const selectedProspect = selectedProspectId !== null
+    ? (prospects.find(p => p.id === selectedProspectId) ?? null)
+    : null;
 
   // Helpers for selection
   const allVisibleIds = prospects.map(p => p.id);
@@ -1459,7 +1464,7 @@ export default function AdminProspects() {
 
             {sortedProspects.map((p, i) => {
               const cfg = STATUS_CONFIG[p.status as ProspectStatus] ?? STATUS_CONFIG.new;
-              const isExpanded = expandedId === p.id;
+              const isPanelSelected = selectedProspectId === p.id;
               const shows = (p.shows as string[] | null) ?? [];
               const isSelected = selectedIds.has(p.id);
               const isSent = sentIds.has(p.id);
@@ -1481,14 +1486,16 @@ export default function AdminProspects() {
                       ? "rgba(62,207,142,0.04)"
                       : isFailed && bulkResults.some(r => r.id === p.id && !r.success)
                       ? "rgba(239,68,68,0.04)"
+                      : isPanelSelected
+                      ? "rgba(0,255,135,0.07)"
                       : isSelected
                       ? "rgba(62,207,142,0.05)"
                       : isHighlighted
                       ? "rgba(0,255,135,0.06)"
                       : "transparent",
-                    outline: isHighlighted ? "2px solid rgba(0,255,135,0.55)" : "none",
+                    outline: isPanelSelected ? "2px solid rgba(0,255,135,0.30)" : isHighlighted ? "2px solid rgba(0,255,135,0.55)" : "none",
                     outlineOffset: "-2px",
-                    borderRadius: isHighlighted ? "0.25rem" : undefined,
+                    borderRadius: (isPanelSelected || isHighlighted) ? "0.25rem" : undefined,
                     transition: "background 0.15s, outline 0.15s",
                   }}
                 >
@@ -1502,7 +1509,7 @@ export default function AdminProspects() {
                       padding: "0.75rem 1rem",
                       cursor: "pointer",
                     }}
-                    onClick={() => setExpandedId(isExpanded ? null : p.id)}
+                    onClick={() => setSelectedProspectId(isPanelSelected ? null : p.id)}
                   >
                     {/* Checkbox */}
                     <div onClick={e => { e.stopPropagation(); toggleRow(p.id); }} style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
@@ -1757,26 +1764,63 @@ export default function AdminProspects() {
                           </button>
                         </div>
                       )}
-                      <ChevronDown size={14} style={{ color: "rgba(255,255,255,0.30)", transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+                      <ArrowRight size={14} style={{ color: isPanelSelected ? "#00ff87" : "rgba(255,255,255,0.20)", transition: "color 0.15s" }} />
                     </div>
                   </div>
 
-                  {/* Expanded detail */}
-                  {isExpanded && (
-                    <ProspectCRMCard
-                      prospect={p}
-                      onStatusChange={(id, status) => {
-                        // Optimistically update local state by invalidating
-                        void utils.prospects.list.invalidate();
-                      }}
-                    />
-                  )}
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* ─── CRM Side Panel ────────────────────────────────────────────────────── */}
+      {selectedProspect && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: "480px",
+          background: "#0a0a0a",
+          borderLeft: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "-8px 0 40px rgba(0,0,0,0.55)",
+          zIndex: 45,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}>
+          {/* Panel header */}
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "0.75rem 1rem",
+            borderBottom: "1px solid rgba(255,255,255,0.08)",
+            background: "#111",
+            flexShrink: 0,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#00ff87" }}>CRM</span>
+              <span style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.30)" }}>·</span>
+              <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#ececec" }}>{selectedProspect.company}</span>
+            </div>
+            <button
+              onClick={() => setSelectedProspectId(null)}
+              title="Close panel"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.30)", display: "flex", alignItems: "center", padding: "0.25rem", borderRadius: "0.25rem" }}
+            >
+              <X size={15} />
+            </button>
+          </div>
+          {/* Scrollable CRM card */}
+          <div style={{ flex: 1, overflow: "auto" }}>
+            <ProspectCRMCard
+              prospect={selectedProspect}
+              onStatusChange={() => { void utils.prospects.list.invalidate(); }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* CSV Import Preview Modal */}
       {csvPreview && (
