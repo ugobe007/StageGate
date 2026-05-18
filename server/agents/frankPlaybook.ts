@@ -241,23 +241,15 @@ Thanks,
 Cal — Robot Ready Team @ StageGate
 ---
 
-EMAIL FORMAT — follow this exactly:
-- Subject: short, specific, references the show or the company. No clickbait.
-- Greeting: "Hi [first name or company name],"
-- Line 1: "This is Cal from StageGate." Then one sentence on what StageGate does in plain English.
-- Body: 2–3 short paragraphs. Reference the specific show. Ask a genuine question. Explain what we do simply.
-- CTA: ask them to reply or schedule a call. Offer to send a calendar invite.
-- Close: "In the meantime, check out onstage.bot and register — it's free."
-- Sign-off: "Thanks,\nCal — Robot Ready Team @ StageGate"
-- Max 150 words. No bullet points. No exclamation points.
-
-NEVER:
-- Sound like marketing copy or AI
-- Use words like: synergy, leverage, ecosystem, cutting-edge, innovative solution, zero-risk, precision, elite
-- Say "I hope this email finds you well"
-- Use exclamation points
-- Write long sentences
-- Make it sound like a pitch — it should sound like a person reaching out`;
+RULES:
+- Max 130 words in the body. Short sentences.
+- No bullet points. No exclamation points. No numbered lists.
+- Mention what StageGate does ONCE. Do not repeat or rephrase it.
+- Subject line: short, specific, references the show or company. No clickbait.
+- Sign-off always: "Thanks,\nCal\nRobot Ready Team @ StageGate\nonstage.bot"
+- Never sound like marketing copy or AI.
+- Never say "I hope this email finds you well", "leverage", "ecosystem", "cutting-edge", "innovative", "precision", "elite", "zero-risk".
+- Sound like a person, not a pitch.`;
 
 // ─── Stage Types ──────────────────────────────────────────────────────────────
 
@@ -295,70 +287,59 @@ export const STAGE_DELAYS_DAYS: Record<ConversationStage, number> = {
 // ─── Stage Prompts ────────────────────────────────────────────────────────────
 
 export const STAGE_PROMPTS: Record<string, string> = {
-  discovery: `Write the first cold email from Cal at StageGate to {{companyName}}.
+  discovery: `Write Cal's first email to {{companyName}}.
 
-Context:
-- Company: {{companyName}}
-- Show: {{showName}}, {{showDates}}, {{showLocation}}
-- Their robot: {{robotDescription}}
-- Contact name (if known): {{contactName}}
+Company: {{companyName}}
+Show: {{showName}}, {{showLocation}}, {{showDates}}
+Their robot: {{robotDescription}}
+Contact: {{contactName}}
 
-Write this in Cal's actual voice — warm, direct, simple. Follow this structure exactly:
+Write it exactly like this example — fill in the blanks for this specific company and show. Do not add extra paragraphs, bullet points, or services lists. One mention of what we do. One question. One reason why. One ask.
 
-1. Greeting: "Hi [contact name or team name],"
-2. "This is Cal from StageGate." One sentence on what StageGate does — plain English, not marketing copy. Something like: "We help robot companies with warehousing, technical support, and staging during their Las Vegas shows."
-3. One short paragraph: mention the specific show and city. Ask genuinely if they are planning to attend and if they need help with warehousing or staging their robot.
-4. One short paragraph: explain what we actually do in simple terms — bonded warehouses, unpack, test, fix transit issues, make sure they're ready before the doors open. Use the phrase "we care for your robots."
-5. CTA: "Let me know if this sounds interesting and I'll send a calendar invite."
-6. Close: "In the meantime, check out onstage.bot and register — it's free."
-7. Sign-off: "Thanks,\nCal — Robot Ready Team @ StageGate"
+---
+Hi [first name or "there" if unknown],
 
-Max 150 words in the body. No bullet points. No exclamation points. Sound like Cal, not like a pitch.`,
+This is Cal from StageGate. We help companies like yours with robot logistics and technical support during their visit to Las Vegas conferences and with customer demos.
 
-  intro_sent: `Write a follow-up email from Cal at StageGate to {{companyName}}.
-They haven't replied to his first email about {{showName}}.
+I noticed [show name] is coming up in [city] and wanted to reach out. Are you planning to attend, and do you need help with warehousing and staging of your robots at the show?
+
+We operate fully bonded warehouses for robot storage and have teams that can help unpack, test, and fix technical issues that may have occurred during transit. We care for your robots so they are ready to go when you arrive at the conference.
+
+Let me know if this sounds interesting and I'll send a calendar invite for a time to chat. In the meantime, check out onstage.bot and register — it's free.
+
+Thanks,
+Cal
+Robot Ready Team @ StageGate
+onstage.bot
+---
+
+Max 130 words. No exclamation points. No bullet points. Do not mention services more than once.`,
+
+  intro_sent: `Write a short follow-up email from Cal at StageGate to {{companyName}}.
+They didn't reply to his first email about {{showName}}.
 Their robot: {{robotDescription}}
 
-Cal should:
-- Not apologize for following up — just check back naturally, like a real person would
-- Mention the show is coming up and he wanted to make sure they saw his note
-- Ask one genuine question: something about their travel plans or whether they're shipping the robot out there
-- Keep the explanation simple: "we handle the warehousing and tech support side so your team doesn't have to worry about it when you land"
-- One soft CTA: reply if interested or happy to jump on a 15-minute call
-- Close with: "In the meantime, check out onstage.bot and register — it's free."
-- Sign-off: "Thanks,\nCal — Robot Ready Team @ StageGate"
+Cal just checks back naturally. He mentions the show is coming up and he wanted to make sure his note landed. He asks one real question — something about whether they're shipping the robot out or need hands-on help when they arrive. He keeps it simple: "we handle the warehousing and tech support side so your team doesn't have to think about it when you land." One soft ask — reply or get on a quick call. Close with onstage.bot line. Sign off as Cal.
 
-Under 120 words. Sound like a human check-in, not a sales follow-up.`,
+Under 100 words. Sound like a person, not a follow-up sequence.`,
 
-  followup_1: `Write a second follow-up email from Cal at StageGate to {{companyName}}.
-Still no reply. {{showName}} is getting closer.
+  followup_1: `Write Cal's second follow-up to {{companyName}} about {{showName}}.
+No reply yet. Their robot: {{robotDescription}}
+
+Cal keeps it very short. He's not pushing — he just mentions one real thing that trips up robot teams at shows (something specific: transit damage, a robot that won't boot on the floor, battery issues, a network problem). He says his team can be there during the show if they need backup. One sentence CTA — connect before the show. Close with onstage.bot line. Sign off as Cal.
+
+Under 80 words. Warm, brief, no pitch language.`,
+
+  followup_2: `Write Cal's last email to {{companyName}}.
 Their robot: {{robotDescription}}
 
-Cal should:
-- Keep it short — 3 short paragraphs max
-- Acknowledge he's followed up before and keeps it light, not desperate
-- Mention one specific thing that could go wrong at shows — transit damage, battery issues, network problems, something real and relatable
-- Explain that his team can be on-site during the show to help if anything comes up — not just pre-show prep
-- CTA: "Let me know if you want to connect before the show."
-- Close with: "Check out onstage.bot and register — it's free."
-- Sign-off: "Thanks,\nCal — Robot Ready Team @ StageGate"
+Two things, short and casual:
 
-Under 100 words. Warm but brief.`,
+First — Cal mentions that if they ever want to do a demo in Las Vegas outside of a show (investors, customers, press), StageGate can set that up. One sentence, no pitch.
 
-  followup_2: `Write the final email from Cal at StageGate to {{companyName}}.
-Their robot: {{robotDescription}}
+Second — Cal mentions The Robot Guild like he's mentioning a friend: they work with robot companies on brand partnerships and cultural activations, selective, he thinks they'd be a good fit, happy to make a warm intro.
 
-This is the last email in the outreach sequence. It has two short parts:
+Soft close: "Either way, let me know if the timing ever works out." Close with onstage.bot line. Sign off as Cal.
 
-PART 1 — Vegas demos year-round:
-Cal mentions briefly that StageGate isn't just for trade shows. If they ever want to set up a demo in Las Vegas for investors, customers, or press — the city has the venues, the audience, and StageGate has the space and team to support it. One or two sentences, no pitch.
-
-PART 2 — The Robot Guild:
-Cal introduces The Robot Guild naturally, like mentioning a friend. Something like: "I also want to mention a group called The Robot Guild — they work with robot companies on brand partnerships, cultural activations, and the kind of press that builds real awareness. They're selective but I think you'd be a good fit. I can make a warm intro if you're interested." Keep it genuinely casual — not a pitch. Just planting a seed.
-
-Wrap up with a soft CTA: "Either way, let me know if the timing ever works out."
-Close with: "Check out onstage.bot and register — it's free."
-Sign-off: "Thanks,\nCal — Robot Ready Team @ StageGate"
-
-Under 100 words total. Warm. No pressure.`,
+Under 90 words. Casual. No pressure at all.`,
 };
