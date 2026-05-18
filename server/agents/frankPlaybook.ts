@@ -16,7 +16,7 @@ export const FRANK_PERSONA = {
   name: "Cal",
   fromName: "Cal at StageGate",
   fromEmail: "cal@onstage.bot",
-  signature: "Cal — Robot Ready Team @ StageGate\nonstage.bot",
+  signature: "Cal\nRobot Ready Team @ StageGate\nonstage.bot",
   robotGuildEmail: "start@therobotguild.com",
   robotGuildUrl: "https://www.therobotguild.com/",
   title: "Lead Solutions Engineer & Commercial Partner",
