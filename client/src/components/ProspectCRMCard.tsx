@@ -93,7 +93,7 @@ export default function ProspectCRMCard({
   onStatusChange?: (id: number, status: string) => void;
 }) {
   const ctx = trpc.useUtils();
-  const [activeTab, setActiveTab] = useState<PanelTab>("overview");
+  const [activeTab, setActiveTab] = useState<PanelTab>("email");
   const stage = PIPELINE_STAGES.find(s => s.key === prospect.status);
   const nextStageIdx = PIPELINE_STAGES.findIndex(s => s.key === prospect.status) + 1;
   const nextStage = nextStageIdx < PIPELINE_STAGES.length - 1 ? PIPELINE_STAGES[nextStageIdx] : undefined;
@@ -150,19 +150,18 @@ export default function ProspectCRMCard({
     // Intentionally no briefData.draftMessage fallback — that's a generic LLM, not Cal.
   }, [calDraft, draftEdited, prospect.company]);
 
-  // Reset when prospect changes
+  // Reset when prospect changes — land on the Email tab every time
   useEffect(() => {
     setDraftMessage("");
     setDraftEdited(false);
-    setActiveTab("overview");
+    setActiveTab("email");
     setSendSuccess(false);
   }, [prospect.id]);
 
-  // Auto-generate Cal's draft the moment the Email tab is opened and no draft exists yet.
-  // This replaces the old getBrief.draftMessage behaviour — Cal's voice, no extra clicks.
+  // Auto-generate Cal's draft as soon as the draft query resolves with no result.
+  // Fires on mount and whenever calDraft/calDraftsLoading changes — no tab click needed.
   useEffect(() => {
     if (
-      activeTab === "email" &&
       !calDraftsLoading &&
       !calDraft &&
       !draftMessage &&
@@ -172,7 +171,7 @@ export default function ProspectCRMCard({
       regenerateDraftMutation.mutate({ id: prospect.id });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, calDraftsLoading, calDraft]);
+  }, [calDraftsLoading, calDraft]);
 
   const updateStatus = trpc.prospects.bulkUpdateStatus.useMutation({
     onSuccess: () => {
@@ -609,38 +608,6 @@ export default function ProspectCRMCard({
         {/* ── EMAIL TAB ── */}
         {activeTab === "email" && (
           <div className="space-y-4">
-            {/* Cal draft source banner */}
-            {calDraftsLoading ? (
-              <div className="h-7 bg-zinc-800/60 rounded animate-pulse" />
-            ) : calDraft ? (
-              <div className="flex items-center justify-between bg-indigo-950/50 border border-indigo-800/50 rounded-lg px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={11} className="text-indigo-400" />
-                  <span className="text-[11px] font-semibold text-indigo-300">Cal draft</span>
-                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
-                    calDraft.status === "approved"
-                      ? "text-emerald-400 border-emerald-700/50 bg-emerald-950/40"
-                      : calDraft.status === "sent"
-                      ? "text-blue-400 border-blue-700/50 bg-blue-950/40"
-                      : "text-amber-400 border-amber-700/50 bg-amber-950/40"
-                  }`}>
-                    {calDraft.status}
-                  </span>
-                </div>
-                <button
-                  onClick={() => refetchCalDrafts()}
-                  className="text-[10px] text-indigo-500 hover:text-indigo-300 transition-colors"
-                >
-                  Refresh
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-[11px] text-zinc-600 bg-zinc-800/40 border border-zinc-700/40 rounded-lg px-3 py-2">
-                <AlertCircle size={11} />
-                No Cal draft yet — generate one below or use the AI brief fallback
-              </div>
-            )}
-
             {/* Subject */}
             <div>
               <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-widest block mb-1.5">Subject</label>
@@ -653,32 +620,16 @@ export default function ProspectCRMCard({
               />
             </div>
 
-            {/* Tone + Regenerate */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] text-zinc-500">Tone:</span>
-                {(["professional", "friendly", "concise", "bold"] as const).map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setTone(t)}
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded border transition-colors capitalize ${
-                      tone === t
-                        ? "border-zinc-400 text-zinc-200 bg-zinc-700"
-                        : "border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300"
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
+            {/* Regenerate */}
+            <div className="flex items-center justify-end">
               <button
-                onClick={() => regenerateDraftMutation.mutate({ id: prospect.id, tone })}
+                onClick={() => regenerateDraftMutation.mutate({ id: prospect.id })}
                 disabled={regenerating}
-                className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-400 hover:text-amber-300 border border-amber-800/60 hover:border-amber-600 rounded px-2.5 py-1.5 transition-colors disabled:opacity-40"
-                title="Generate using Cal's voice and frankPlaybook template"
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-500 rounded px-2.5 py-1.5 transition-colors disabled:opacity-40"
+                title="Re-generate using Cal's voice"
               >
-                {regenerating ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                {draftMessage ? "Regenerate (Cal)" : "Generate Cal Draft"}
+                {regenerating ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
+                Regenerate
               </button>
             </div>
 
@@ -692,13 +643,10 @@ export default function ProspectCRMCard({
                   </div>
                 </div>
               )}
-              {calDraftsLoading && !draftMessage ? (
-                <div className="space-y-2 p-3 bg-zinc-800/60 rounded-lg border border-zinc-700 min-h-[180px]">
-                  <div className="h-3 bg-zinc-700 rounded animate-pulse w-full" />
-                  <div className="h-3 bg-zinc-700 rounded animate-pulse w-4/5" />
-                  <div className="h-3 bg-zinc-700 rounded animate-pulse w-full" />
-                  <div className="h-3 bg-zinc-700 rounded animate-pulse w-3/5" />
-                  <div className="h-3 bg-zinc-700 rounded animate-pulse w-full" />
+              {(calDraftsLoading || regenerating) && !draftMessage ? (
+                <div className="space-y-2 p-4 bg-zinc-800/60 rounded-lg border border-zinc-700 min-h-[220px] flex flex-col justify-center items-center gap-3">
+                  <Loader2 size={16} className="animate-spin text-amber-400" />
+                  <span className="text-[12px] text-zinc-500">Cal is writing your draft…</span>
                 </div>
               ) : (
                 <textarea
