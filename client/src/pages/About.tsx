@@ -72,8 +72,12 @@ export default function About() {
         zIndex: 50,
       }}>
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 2rem" }}>
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "1rem", color: "#00ff87", letterSpacing: "0.04em" }}>STAGEGATE</span>
+          <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+            <svg width="26" height="26" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 88 L4 6 L76 6 L76 88" stroke="#00ff87" strokeWidth="7" strokeLinejoin="miter" fill="none"/>
+              <path d="M19 88 L19 22 L64 22 L64 88" stroke="#00ff87" strokeWidth="5" strokeLinejoin="miter" fill="none"/>
+              <path d="M34 52 L42 62 L56 46" stroke="#00ff87" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            </svg>
           </Link>
           <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
             <Link href="/shows" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Shows</Link>

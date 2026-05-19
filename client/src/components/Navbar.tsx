@@ -55,12 +55,17 @@ export default function Navbar({ darkBg = false }: { darkBg?: boolean }) {
       <div className="container">
         <div className="flex items-center justify-between" style={{ height: "3.5rem" }}>
 
-          {/* ── Logo ── */}
+          {/* ── Logo mark ── */}
           <Link href="/">
-            <div className="flex items-center gap-2 cursor-pointer">
-              <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "0.9375rem", color: "#00ff87", letterSpacing: "0.06em" }}>
-                STAGEGATE
-              </span>
+            <div className="flex items-center cursor-pointer" style={{ padding: "2px 0" }}>
+              <svg width="28" height="28" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Outer gate arch */}
+                <path d="M4 88 L4 6 L76 6 L76 88" stroke="#00ff87" strokeWidth="7" strokeLinejoin="miter" fill="none"/>
+                {/* Inner arch — inset, creates depth */}
+                <path d="M19 88 L19 22 L64 22 L64 88" stroke="#00ff87" strokeWidth="5" strokeLinejoin="miter" fill="none"/>
+                {/* Chevron — activation mark */}
+                <path d="M34 52 L42 62 L56 46" stroke="#00ff87" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              </svg>
             </div>
           </Link>
 
