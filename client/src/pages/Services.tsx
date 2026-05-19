@@ -22,27 +22,27 @@ const TIERS = [
   {
     key: "tier1",
     label: "Tier 1",
-    name: "Critical Operational Services",
-    tagline: "The robot must work tomorrow morning.",
-    description: "Entry-point services that solve immediate pain, close deals quickly, and get StageGate embedded into operations. These are painkillers customers already need.",
+    name: "Deployment Essentials",
+    tagline: "Everything your robot needs to go live.",
+    description: "The core services every deployment requires — receiving, activation, live technical support, and storage. If your robot is shipping to a show or a new facility, this is where you start.",
     accent: "#3b82f6",
     pillColor: "#1d4ed8",
   },
   {
     key: "tier2",
     label: "Tier 2",
-    name: "High-Margin Recurring Infrastructure",
-    tagline: "The real business.",
-    description: "The infrastructure layer where StageGate becomes valuable and hard to replace. Creates recurring revenue, operational data, and deep lock-in.",
+    name: "Ongoing Operations Infrastructure",
+    tagline: "Always on. Always ready.",
+    description: "The services that keep your robots deployment-ready between activations — remote monitoring, certification, charging infrastructure, insurance coordination, and a permanent Las Vegas showroom. Built for operators running multiple deployments per year.",
     accent: GREEN,
     pillColor: "#065f46",
   },
   {
     key: "tier3",
     label: "Tier 3",
-    name: "Strategic Platform Services",
-    tagline: "The venture-scale moat.",
-    description: "Services that transform StageGate from a vendor into an operating system for the robot economy. This is where the valuation expands.",
+    name: "Workforce & Market Development",
+    tagline: "Build the team. Reach the market.",
+    description: "Training programs that build certified robot technicians, and go-to-market services that connect your brand with US buyers, media, and distribution partners. For companies scaling beyond a single deployment.",
     accent: "#a78bfa",
     pillColor: "#4c1d95",
   },
@@ -498,13 +498,13 @@ export default function Services() {
             fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase",
             color: GREEN, fontFamily: "'JetBrains Mono', monospace", marginBottom: "1rem",
           }}>
-            What to avoid
+            Ready to deploy?
           </p>
           <h2 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.025em", color: TEXT_HI, marginBottom: "0.75rem" }}>
-            We never position around generic logistics.
+            One partner. Every deployment.
           </h2>
           <p style={{ fontSize: "0.9375rem", color: TEXT_MID, lineHeight: 1.7, maxWidth: "36rem", margin: "0 auto 2rem" }}>
-            Generic logistics, warehousing, labor staffing, AV support, and "event services" are low-multiple businesses. StageGate is always framed around <strong style={{ color: TEXT_HI }}>robot operational infrastructure</strong>.
+            Whether it's your first trade show or your tenth enterprise deployment, StageGate handles the operational complexity so your team can focus on the robot.
           </p>
           <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/order">
