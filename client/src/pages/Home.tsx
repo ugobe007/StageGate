@@ -47,19 +47,20 @@ function useInView(threshold = 0.3) {
 
 /* ── Services list ──────────────────────────────────────────────────────────── */
 const SERVICES = [
-  { num: "01", title: "Warehousing", desc: "Climate-controlled Las Vegas storage, year-round. Your robots stay ready between shows." },
-  { num: "02", title: "Shipping & Receiving", desc: "End-to-end freight, customs clearance, and white-glove crate handling." },
-  { num: "03", title: "Staging & Activation", desc: "Full booth setup, robot positioning, power, connectivity, and pre-show testing." },
-  { num: "04", title: "Technical Support", desc: "Max leads certified technicians on the floor during show hours. Zero dark demos." },
-  { num: "05", title: "Promotion", desc: "Showroom events, media days, and buyer introductions via The Robot Guild." },
+  { num: "01", title: "Receiving & Intake",     desc: "Airport pickup, inspection, chain-of-custody logging, and secure storage — any city, any robot type." },
+  { num: "02", title: "Customs & Freight",      desc: "ATA Carnets, cross-border coordination, and white-glove crate handling. We speak customs for robots." },
+  { num: "03", title: "Staging & Activation",   desc: "Unpacking, calibration, connectivity, and pre-deployment testing. Every robot goes live ready." },
+  { num: "04", title: "Field Technical Support", desc: "Certified technicians on-site — trade show floor, factory floor, or retail environment. Zero dark deployments." },
+  { num: "05", title: "Fleet Management",       desc: "Long-term storage, charging, firmware maintenance, and redeployment coordination across your fleet." },
+  { num: "06", title: "Deployment Planning",    desc: "XBOT generates the full logistics brief for any robot, any route, any deployment type — in under 60 seconds." },
 ];
 
 /* ── How It Works ───────────────────────────────────────────────────────────── */
 const STEPS = [
-  { num: "01", title: "Ship to Us", desc: "Send your robot to our Las Vegas warehouse. We handle receiving, inspection, and secure storage." },
-  { num: "02", title: "We Stage It", desc: "Our team sets up your booth, positions your robot, runs power and connectivity, and tests everything." },
-  { num: "03", title: "It Performs", desc: "Your robot is live on the show floor. Our technicians are on-site throughout the event." },
-  { num: "04", title: "We Return It", desc: "After the show, we pack, store, or ship your robot — wherever it needs to go next." },
+  { num: "01", title: "Define the Deployment", desc: "Tell us your robot, origin, destination, and deployment type — trade show, enterprise pilot, permanent install, or fleet op." },
+  { num: "02", title: "We Build the Plan",     desc: "XBOT generates a full logistics brief: customs checklist, timeline, service scope, risk notes, and partner assignments." },
+  { num: "03", title: "We Activate On-Site",   desc: "Our team handles receiving, staging, commissioning, and go-live. Your robot is operational when the doors open." },
+  { num: "04", title: "We Own the Field",      desc: "Ongoing technical support, remote diagnostics, fleet management, and redeployment — for as long as you need us." },
 ];
 
 export default function Home() {
@@ -197,14 +198,16 @@ export default function Home() {
               />
             </div>
             <h1 style={{ fontSize: "clamp(3.5rem, 8vw, 7.5rem)", fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em", marginBottom: "2rem" }}>
-              Your Robot<br />
-              <span style={{ color: "#00ff87" }}>Performs.</span><br />
-              <span style={{ color: "rgba(255,255,255,0.70)" }}>We Handle</span><br />
-              <span style={{ color: "rgba(255,255,255,0.70)" }}>Everything Else.</span>
+              Robots go<br />
+              <span style={{ color: "#00ff87" }}>anywhere.</span><br />
+              <span style={{ color: "rgba(255,255,255,0.70)" }}>We make them</span><br />
+              <span style={{ color: "rgba(255,255,255,0.70)" }}>work when</span><br />
+              <span style={{ color: "rgba(255,255,255,0.70)" }}>they get there.</span>
             </h1>
             <p style={{ fontSize: "clamp(1rem, 1.5vw, 1.125rem)", color: "rgba(255,255,255,0.75)", maxWidth: "46ch", lineHeight: 1.65, marginBottom: "3rem" }}>
-              The first warehouse, staging, and activation service built for robots.
-              From crate to show floor — one partner, zero surprises.
+              StageGate is the deployment infrastructure layer for robot companies —
+              the operating stack between factory output and field performance.
+              Trade shows, enterprise pilots, permanent deployments, fleet operations.
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
               <Link href="/register">
@@ -269,8 +272,88 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ── INFRASTRUCTURE LAYER ─────────────────────────────────────────────── */}
+      <section style={{ padding: "7rem 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="container">
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: "1rem" }}>
+            The Stack
+          </p>
+          <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: "1rem", maxWidth: "28ch" }}>
+            Robot logistics isn't freight.{" "}
+            <span style={{ color: "#00ff87" }}>It's a layer above freight.</span>
+          </h2>
+          <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.55)", maxWidth: "56ch", lineHeight: 1.7, marginBottom: "3.5rem" }}>
+            DHL moves boxes. FedEx moves pallets. StageGate moves robots — and activates them wherever they land.
+            We're the infrastructure layer robot companies use to plan, deploy, and support their hardware in the field.
+          </p>
+
+          {/* Stack diagram */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1px", borderRadius: "12px", overflow: "hidden", marginBottom: "3rem", border: "1px solid rgba(255,255,255,0.07)" }}>
+            {[
+              {
+                layer: "Layer 3",
+                name: "Robot OEM",
+                desc: "Manufactures the robot. Ships it to the first destination.",
+                color: "rgba(255,255,255,0.06)",
+                labelColor: "rgba(255,255,255,0.20)",
+                highlight: false,
+              },
+              {
+                layer: "Layer 2",
+                name: "StageGate",
+                desc: "Plans the deployment. Activates the robot. Owns the field.",
+                color: "rgba(0,255,135,0.06)",
+                labelColor: "#00ff87",
+                highlight: true,
+              },
+              {
+                layer: "Layer 1",
+                name: "DHL / FedEx / UPS",
+                desc: "Moves crates from A to B. Does not know what's inside.",
+                color: "rgba(255,255,255,0.03)",
+                labelColor: "rgba(255,255,255,0.18)",
+                highlight: false,
+              },
+            ].map((item) => (
+              <div key={item.layer} style={{ padding: "2rem", background: item.color, borderLeft: item.highlight ? "2px solid #00ff87" : "none" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: item.labelColor, marginBottom: "0.625rem" }}>
+                  {item.layer}
+                </div>
+                <div style={{ fontSize: "1rem", fontWeight: 700, color: item.highlight ? "#00ff87" : "rgba(255,255,255,0.70)", marginBottom: "0.5rem", letterSpacing: "-0.02em" }}>
+                  {item.name}
+                </div>
+                <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.45)", lineHeight: 1.65 }}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Deployment type grid */}
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.20)", marginBottom: "1.25rem" }}>
+            Deployment Types
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0" }}>
+            {[
+              { type: "Trade Shows", examples: "CES · NAB · MODEX · NVIDIA GTC", status: "Live" },
+              { type: "Enterprise Pilots", examples: "Factory floor · Warehouse · Logistics hub", status: "Expanding" },
+              { type: "Permanent Installs", examples: "Airport · Hotel · Retail · Campus", status: "Expanding" },
+              { type: "Fleet Operations", examples: "Multi-city · Multi-robot · Ongoing support", status: "Coming" },
+            ].map((item, i) => (
+              <div key={item.type} style={{ padding: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.07)", borderLeft: i === 0 ? "none" : "1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.625rem" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.1em", textTransform: "uppercase", color: item.status === "Live" ? "#00ff87" : item.status === "Expanding" ? "#f59e0b" : "rgba(255,255,255,0.25)", padding: "0.125rem 0.5rem", border: `1px solid ${item.status === "Live" ? "rgba(0,255,135,0.30)" : item.status === "Expanding" ? "rgba(245,158,11,0.30)" : "rgba(255,255,255,0.10)"}`, borderRadius: "100px" }}>
+                    {item.status}
+                  </span>
+                </div>
+                <div style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#fff", marginBottom: "0.375rem", letterSpacing: "-0.02em" }}>{item.type}</div>
+                <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.6 }}>{item.examples}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── WHAT IS STAGEGATE ────────────────────────────────────────────────── */}
-      <section style={{ padding: "8rem 0" }}>
+      <section style={{ padding: "8rem 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="container">
           <div style={{ display: "grid", gridTemplateColumns: "5fr 4fr", gap: "6rem", alignItems: "start" }}>
             {/* Left — editorial statement */}
@@ -279,14 +362,14 @@ export default function Home() {
                 What is StageGate
               </p>
               <h2 style={{ fontSize: "clamp(2.25rem, 4vw, 3.5rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: "2rem" }}>
-                The first end-to-end logistics partner{" "}
+                The deployment OS{" "}
                 <span style={{ color: "#00ff87" }}>built for robots.</span>
               </h2>
               <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.75, marginBottom: "1.25rem", maxWidth: "52ch" }}>
-                Robotics companies spend months preparing for trade shows — and then scramble at the last minute with freight, storage, setup, and support. StageGate eliminates that chaos.
+                Every robot sold needs to get from factory to field. It needs customs clearance, receiving, commissioning, and ongoing support. No freight company does that. No OEM wants to build it.
               </p>
               <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.75, marginBottom: "2.5rem", maxWidth: "52ch" }}>
-                We warehouse your robots in Las Vegas year-round, stage them for each show, activate them on the floor, and Max leads certified technical support throughout. One partner. Zero surprises.
+                StageGate is the infrastructure layer in between — handling everything from crate receipt to live deployment, with certified technical support in the field for as long as you need it. One partner. Every deployment.
               </p>
               <Link href="/register">
                 <button className="btn-primary">Get Started <ArrowRight size={14} /></button>
@@ -321,7 +404,7 @@ export default function Home() {
             How It Works
           </p>
           <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: "4rem", maxWidth: "22ch" }}>
-            Four steps from your facility to the show floor.
+            Four steps from factory output to field performance.
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0" }}>
             {STEPS.map((step, i) => (
@@ -420,14 +503,14 @@ export default function Home() {
             </p>
             <h2 style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: "2rem" }}>
               Your robot is sitting in a crate somewhere.<br />
-              <span style={{ color: "rgba(255,255,255,0.75)" }}>Customs paperwork is missing.</span><br />
-              <span style={{ color: "rgba(255,255,255,0.75)" }}>The show opens in 72 hours.</span>
+              <span style={{ color: "rgba(255,255,255,0.75)" }}>Nobody knows how to commission it.</span><br />
+              <span style={{ color: "rgba(255,255,255,0.75)" }}>The client goes live in 72 hours.</span>
             </h2>
             <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: "0.75rem" }}>
-              This is the situation most robotics teams face before every major trade show. Freight brokers who don't understand robot hardware. Customs agents who've never seen an ATA Carnet for a humanoid. Ground transport that shows up late.
+              This is the situation robot companies face at every deployment — trade show or enterprise. Freight brokers who don't understand robot hardware. Customs agents who've never seen an ATA Carnet for a humanoid. Field teams with no commissioning protocol.
             </p>
             <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
-              <span style={{ color: "#00ff87", fontWeight: 600 }}>XBOT</span> is StageGate's AI logistics planner. Tell it about your robot, your origin, and your target show. In under 60 seconds it generates a complete logistics brief — customs checklist, timeline, service package, and ground transport options — tailored to your specific hardware and route.
+              <span style={{ color: "#00ff87", fontWeight: 600 }}>XBOT</span> is StageGate's AI deployment planner. Tell it your robot, origin, destination, and deployment type. In under 60 seconds it generates a complete operational brief — customs checklist, activation timeline, service package, and field support plan — tailored to your hardware and route.
             </p>
           </div>
 
@@ -437,9 +520,9 @@ export default function Home() {
               { num: "01", label: "Robot Profile" },
               { num: "02", label: "Origin & Shipping" },
               { num: "03", label: "Customs" },
-              { num: "04", label: "Target Show" },
-              { num: "05", label: "Services" },
-              { num: "06", label: "Contacts" },
+              { num: "04", label: "Deployment Type" },
+              { num: "05", label: "Activation Plan" },
+              { num: "06", label: "Field Support" },
             ].map((step, i) => (
               <div key={i} style={{ borderRight: i < 5 ? "1px solid rgba(255,255,255,0.07)" : "none", padding: "1.5rem 1.5rem 1.5rem 0" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(0,255,135,0.50)", marginBottom: "0.5rem" }}>{step.num}</div>
@@ -527,11 +610,11 @@ export default function Home() {
             Ready to get started?
           </p>
           <h2 style={{ fontSize: "clamp(3rem, 7vw, 6rem)", fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em", marginBottom: "2rem", maxWidth: "16ch" }}>
-            Schedule your robot for{" "}
-            <span style={{ color: "#00ff87" }}>Las Vegas.</span>
+            Deploy your robot{" "}
+            <span style={{ color: "#00ff87" }}>anywhere.</span>
           </h2>
           <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.75)", maxWidth: "48ch", lineHeight: 1.65, marginBottom: "3rem" }}>
-            Register free, select your show, and let StageGate handle the rest. Warehousing, staging, activation, and support — all in one place.
+            Register free, tell us about your robot and your next deployment, and let StageGate handle the rest — from customs clearance to go-live activation to ongoing field support.
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
             <Link href="/register">
