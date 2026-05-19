@@ -198,16 +198,15 @@ export default function Home() {
               />
             </div>
             <h1 style={{ fontSize: "clamp(3.5rem, 8vw, 7.5rem)", fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em", marginBottom: "2rem" }}>
-              Robots go<br />
-              <span style={{ color: "#00ff87" }}>anywhere.</span><br />
-              <span style={{ color: "rgba(255,255,255,0.70)" }}>We make them</span><br />
-              <span style={{ color: "rgba(255,255,255,0.70)" }}>work when</span><br />
-              <span style={{ color: "rgba(255,255,255,0.70)" }}>they get there.</span>
+              Your Robot<br />
+              <span style={{ color: "#00ff87" }}>Performs.</span><br />
+              <span style={{ color: "rgba(255,255,255,0.70)" }}>Any City.</span><br />
+              <span style={{ color: "rgba(255,255,255,0.70)" }}>Every Deployment.</span>
             </h1>
             <p style={{ fontSize: "clamp(1rem, 1.5vw, 1.125rem)", color: "rgba(255,255,255,0.75)", maxWidth: "46ch", lineHeight: 1.65, marginBottom: "3rem" }}>
               StageGate is the deployment infrastructure layer for robot companies —
-              the operating stack between factory output and field performance.
-              Trade shows, enterprise pilots, permanent deployments, fleet operations.
+              customs, receiving, activation, and field support for every deployment.
+              Trade shows today. Enterprise, permanent installs, and fleet ops next.
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
               <Link href="/register">
