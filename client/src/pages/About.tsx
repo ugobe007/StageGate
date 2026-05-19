@@ -72,8 +72,8 @@ export default function About() {
         zIndex: 50,
       }}>
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 2rem" }}>
-          <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <img src="/stagegate-logo.png" alt="StageGate" style={{ height: "30px", width: "auto", display: "block" }} />
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "1rem", color: "#00ff87", letterSpacing: "0.04em" }}>STAGEGATE</span>
           </Link>
           <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
             <Link href="/shows" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Shows</Link>
@@ -308,12 +308,7 @@ export default function About() {
       <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "3rem 0" }}>
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1.5rem" }}>
           <div>
-            <div style={{ fontSize: "1rem", fontWeight: 800, letterSpacing: "-0.04em", color: "#fff", marginBottom: "0.3rem" }}>
-              Stage<span style={{ color: "#00ff87" }}>Gate</span>
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.6875rem", letterSpacing: "0.06em", color: "rgba(255,255,255,0.20)" }}>
-              Las Vegas · Robotics Activation Infrastructure
-            </div>
+            <img src="/stagegate-logo.png" alt="StageGate" style={{ height: "48px", width: "auto", display: "block", opacity: 0.85 }} />
           </div>
           <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
             {[

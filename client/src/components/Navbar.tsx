@@ -57,12 +57,10 @@ export default function Navbar({ darkBg = false }: { darkBg?: boolean }) {
 
           {/* ── Logo ── */}
           <Link href="/">
-            <div className="flex items-center cursor-pointer">
-              <img
-                src="/stagegate-logo.png"
-                alt="StageGate"
-                style={{ height: "34px", width: "auto", display: "block" }}
-              />
+            <div className="flex items-center gap-2 cursor-pointer">
+              <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "0.9375rem", color: "#00ff87", letterSpacing: "0.06em" }}>
+                STAGEGATE
+              </span>
             </div>
           </Link>
 

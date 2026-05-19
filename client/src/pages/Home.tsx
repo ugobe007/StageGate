@@ -88,7 +88,7 @@ export default function Home() {
         zIndex: 50,
       }}>
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 2rem" }}>
-          {/* Logo */}
+          {/* Logo — text only in thin nav */}
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
             <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "1rem", color: "#00ff87", letterSpacing: "0.04em" }}>STAGEGATE</span>
           </Link>
@@ -184,9 +184,14 @@ export default function Home() {
         <div className="container" style={{ position: "relative", zIndex: 10, paddingBottom: "7rem", paddingTop: "5rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "flex-end" }}>
           {/* Left column — editorial type */}
           <div>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.6875rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", marginBottom: "2rem" }}>
-              Las Vegas · Robotics Activation Infrastructure
-            </p>
+            {/* Logo — large, upper-left of hero */}
+            <div style={{ marginBottom: "2.5rem" }}>
+              <img
+                src="/stagegate-logo.png"
+                alt="StageGate"
+                style={{ height: "90px", width: "auto", display: "block" }}
+              />
+            </div>
             <h1 style={{ fontSize: "clamp(3.5rem, 8vw, 7.5rem)", fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em", marginBottom: "2rem" }}>
               Your Robot<br />
               <span style={{ color: "#00ff87" }}>Performs.</span><br />
@@ -605,12 +610,7 @@ export default function Home() {
       <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "3rem 0" }}>
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1.5rem" }}>
           <div>
-            <div style={{ fontSize: "1rem", fontWeight: 800, letterSpacing: "-0.04em", color: "#fff", marginBottom: "0.3rem" }}>
-              Stage<span style={{ color: "#00ff87" }}>Gate</span>
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.6875rem", letterSpacing: "0.06em", color: "rgba(255,255,255,0.20)" }}>
-              Las Vegas · Robotics Activation Infrastructure
-            </div>
+            <img src="/stagegate-logo.png" alt="StageGate" style={{ height: "48px", width: "auto", display: "block", opacity: 0.85 }} />
           </div>
           <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
             {[
