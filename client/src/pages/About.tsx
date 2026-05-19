@@ -112,7 +112,7 @@ export default function About() {
       </nav>
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <section style={{ padding: "8rem 0 6rem" }}>
+      <section style={{ padding: "8rem 0 0", overflow: "hidden" }}>
         <div className="container">
           <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", marginBottom: "2rem" }}>
             Our Story
@@ -122,9 +122,29 @@ export default function About() {
             <span style={{ color: "#00ff87" }}>Las Vegas</span><br />
             robotics community.
           </h1>
-          <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.65)", maxWidth: "56ch", lineHeight: 1.75 }}>
+          <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.65)", maxWidth: "56ch", lineHeight: 1.75, marginBottom: "4rem" }}>
             StageGate didn't start as a logistics company. It started as a community of roboticists who kept watching the same problem unfold on the show floor — and decided to fix it from the inside.
           </p>
+        </div>
+        {/* Full-bleed hero image */}
+        <div style={{ position: "relative", width: "100%", height: "clamp(280px, 42vw, 600px)", overflow: "hidden" }}>
+          <img
+            src="/photos/fleet-robots.png"
+            alt="Fleet of humanoid robots ready for deployment"
+            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%", display: "block" }}
+          />
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(to bottom, rgba(8,8,8,0.35) 0%, rgba(8,8,8,0) 40%, rgba(8,8,8,0) 60%, rgba(8,8,8,0.85) 100%)",
+          }} />
+          <div style={{
+            position: "absolute", bottom: "2rem", left: 0, right: 0,
+            paddingLeft: "max(1.5rem, calc((100% - 72rem) / 2 + 1.5rem))",
+          }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.40)" }}>
+              Fleet-scale readiness · Every robot, every show
+            </span>
+          </div>
         </div>
       </section>
 
@@ -163,6 +183,41 @@ export default function About() {
                   A single Las Vegas partner that handles everything from crate receipt to show close — warehousing, staging, activation, and certified on-floor technical support. Built by people who know robots, not just freight.
                 </p>
               </div>
+              {/* Show floor photo */}
+              <div style={{ borderRadius: "12px", overflow: "hidden", position: "relative", height: "220px", marginTop: "0.5rem" }}>
+                <img
+                  src="/photos/tradeshow-floor.png"
+                  alt="Robots deployed at a trade show floor"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
+                />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.6) 0%, transparent 60%)" }} />
+                <span style={{ position: "absolute", bottom: "0.875rem", left: "1rem", fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.40)" }}>
+                  Trade show floor · Las Vegas
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── PHOTO STRIP ──────────────────────────────────────────────────────── */}
+      <section style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "4rem 0" }}>
+        <div className="container">
+          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.75rem", borderRadius: "12px", overflow: "hidden" }}>
+            <div style={{ position: "relative", height: "260px" }}>
+              <img src="/photos/rokae-demo.png" alt="Robot demo at trade show" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" }} />
+              <span style={{ position: "absolute", bottom: "0.875rem", left: "1rem", fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)" }}>Live demo activation</span>
+            </div>
+            <div style={{ position: "relative", height: "260px" }}>
+              <img src="/photos/engineai-ces.png" alt="Humanoid robots at CES" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" }} />
+              <span style={{ position: "absolute", bottom: "0.875rem", left: "1rem", fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)" }}>CES floor presence</span>
+            </div>
+            <div style={{ position: "relative", height: "260px" }}>
+              <img src="/photos/rokae-booth.png" alt="Full robot booth setup" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" }} />
+              <span style={{ position: "absolute", bottom: "0.875rem", left: "1rem", fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)" }}>Booth-ready systems</span>
             </div>
           </div>
         </div>

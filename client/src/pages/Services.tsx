@@ -403,6 +403,29 @@ export default function Services() {
         </div>
       </div>
 
+      {/* ── Photo strip ── */}
+      <div style={{ borderBottom: `1px solid ${BORDER}`, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", height: "clamp(160px, 22vw, 280px)" }}>
+          {[
+            { src: "/photos/fleet-robots.png", alt: "Humanoid robot fleet", caption: "Fleet deployment" },
+            { src: "/photos/rokae-demo.png",   alt: "Robot demo activation",  caption: "Show activation" },
+            { src: "/photos/tesla-optimus.png", alt: "Tesla Optimus operating", caption: "Live operations" },
+            { src: "/photos/tradeshow-floor.png", alt: "Trade show floor", caption: "Show-floor support" },
+          ].map((img, i) => (
+            <div key={i} style={{ position: "relative", overflow: "hidden", borderLeft: i === 0 ? "none" : `1px solid ${BORDER}` }}>
+              <img src={img.src} alt={img.alt} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block", transition: "transform 0.4s ease" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.04)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
+              />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.7) 0%, rgba(8,8,8,0.1) 50%, transparent 100%)" }} />
+              <span style={{ position: "absolute", bottom: "0.75rem", left: "0.875rem", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.5rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.38)" }}>
+                {img.caption}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="container" style={{ paddingTop: "3.5rem", paddingBottom: "5rem" }}>
 
         {/* ── Highest-value callout ── */}

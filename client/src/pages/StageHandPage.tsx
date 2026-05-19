@@ -65,8 +65,8 @@ export default function StageHandPage() {
       <Navbar />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="pt-36 pb-20 border-b" style={{ borderColor: BORDER, background: CARD }}>
-        <div className="max-w-5xl mx-auto px-6 text-center">
+      <section className="pt-36 pb-0 border-b" style={{ borderColor: BORDER, background: CARD, overflow: "hidden" }}>
+        <div className="max-w-5xl mx-auto px-6 text-center pb-16">
           {/* Icon — stroke only */}
           <div
             className="w-12 h-12 rounded flex items-center justify-center mx-auto mb-6"
@@ -104,12 +104,41 @@ export default function StageHandPage() {
             </Link>
           </div>
         </div>
+
+        {/* Hero image — service robot in field */}
+        <div style={{ position: "relative", width: "100%", height: "clamp(220px, 30vw, 400px)", overflow: "hidden" }}>
+          <img
+            src="/photos/service-robot.png"
+            alt="Service robot interacting with a person in a public venue"
+            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 40%", display: "block" }}
+          />
+          <div style={{
+            position: "absolute", inset: 0,
+            background: `linear-gradient(to bottom, ${CARD} 0%, transparent 18%, transparent 65%, ${BG} 100%)`,
+          }} />
+          <div style={{
+            position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+            textAlign: "center", pointerEvents: "none",
+          }}>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: "0.5rem",
+              padding: "0.375rem 0.875rem", borderRadius: "100px",
+              border: `1px solid ${AMBER}44`, background: "rgba(8,8,8,0.65)",
+              backdropFilter: "blur(8px)",
+            }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: AMBER }} />
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: AMBER }}>
+                Deployed · Active Support
+              </span>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ── Definition ─────────────────────────────────────────────────────── */}
       <section className="py-16 border-b" style={{ borderColor: BORDER }}>
         <div className="max-w-5xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-[0.8fr_1.2fr] gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-[0.8fr_1.2fr] gap-10 mb-10">
             <div>
               <p className="section-label mb-3" style={{ color: AMBER }}>Definition</p>
               <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
@@ -126,6 +155,44 @@ export default function StageHandPage() {
                 Max handles the technical question first: what failed, who needs to act, what can be solved
                 remotely, and when a technician needs to be on site.
               </p>
+            </div>
+          </div>
+
+          {/* Side-by-side operational photos */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "220px" }}>
+              <img
+                src="/photos/tesla-optimus.png"
+                alt="Tesla Optimus robot performing a task"
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
+              />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.65) 0%, transparent 60%)" }} />
+              <div style={{
+                position: "absolute", bottom: "1rem", left: "1rem", right: "1rem",
+                display: "flex", alignItems: "center", gap: "0.5rem",
+              }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: AMBER, flexShrink: 0 }} />
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.5625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.50)" }}>
+                  Operational readiness · Any robot model
+                </span>
+              </div>
+            </div>
+            <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "220px" }}>
+              <img
+                src="/photos/kuka-demo.png"
+                alt="Industrial robot arm demonstrating precision tasks"
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }}
+              />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.65) 0%, transparent 60%)" }} />
+              <div style={{
+                position: "absolute", bottom: "1rem", left: "1rem", right: "1rem",
+                display: "flex", alignItems: "center", gap: "0.5rem",
+              }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: AMBER, flexShrink: 0 }} />
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.5625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.50)" }}>
+                  Industrial & humanoid · All platforms
+                </span>
+              </div>
             </div>
           </div>
         </div>
