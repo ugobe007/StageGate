@@ -200,8 +200,8 @@ export default function Home() {
             <h1 style={{ fontSize: "clamp(3.5rem, 8vw, 7.5rem)", fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em", marginBottom: "2rem" }}>
               Your Robot<br />
               <span style={{ color: "#00ff87" }}>Performs.</span><br />
-              <span style={{ color: "rgba(255,255,255,0.70)" }}>Any City.</span><br />
-              <span style={{ color: "rgba(255,255,255,0.70)" }}>Every Deployment.</span>
+              <span style={{ color: "rgba(255,255,255,0.70)" }}>We make them work</span><br />
+              <span style={{ color: "rgba(255,255,255,0.70)" }}>when they get there.</span>
             </h1>
             <p style={{ fontSize: "clamp(1rem, 1.5vw, 1.125rem)", color: "rgba(255,255,255,0.75)", maxWidth: "46ch", lineHeight: 1.65, marginBottom: "3rem" }}>
               StageGate is the deployment infrastructure layer for robot companies —
