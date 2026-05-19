@@ -57,33 +57,12 @@ export default function Navbar({ darkBg = false }: { darkBg?: boolean }) {
 
           {/* ── Logo ── */}
           <Link href="/">
-            <div className="flex items-center gap-2 cursor-pointer">
-              <div
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 5,
-                  border: "1.5px solid rgba(255,255,255,0.35)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "rgba(255,255,255,0.70)",
-                }}
-              >
-                <svg width="10" height="10" viewBox="0 0 14 14" fill="none">
-                  <path d="M7 1L2 8h5l-1 5 6-7H7l1-5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
-                </svg>
-              </div>
-              <span
-                style={{
-                  fontSize: "0.9375rem",
-                  fontWeight: 700,
-                  color: "#fff",
-                  letterSpacing: "-0.025em",
-                }}
-              >
-                StageGate
-              </span>
+            <div className="flex items-center cursor-pointer">
+              <img
+                src="/stagegate-logo.png"
+                alt="StageGate"
+                style={{ height: "34px", width: "auto", display: "block" }}
+              />
             </div>
           </Link>
 

@@ -72,8 +72,8 @@ export default function About() {
         zIndex: 50,
       }}>
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 2rem" }}>
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "1rem", color: "#00ff87", letterSpacing: "0.04em" }}>STAGEGATE</span>
+          <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+            <img src="/stagegate-logo.png" alt="StageGate" style={{ height: "30px", width: "auto", display: "block" }} />
           </Link>
           <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
             <Link href="/shows" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Shows</Link>
