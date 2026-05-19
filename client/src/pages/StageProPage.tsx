@@ -74,9 +74,9 @@ export default function StageProPage() {
       <Navbar />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="pt-36 pb-20 border-b" style={{ borderColor: BORDER, background: CARD }}>
-        <div className="max-w-5xl mx-auto px-6 text-center">
-          {/* Icon — stroke only */}
+      <section className="pt-36 pb-0 border-b" style={{ borderColor: BORDER, background: CARD, overflow: "hidden" }}>
+        <div className="max-w-5xl mx-auto px-6 text-center pb-16">
+          {/* Icon */}
           <div
             className="w-12 h-12 rounded flex items-center justify-center mx-auto mb-6"
             style={{ border: `1px solid ${PURPLE}55`, background: `${PURPLE}0d` }}
@@ -84,7 +84,7 @@ export default function StageProPage() {
             <GraduationCap size={22} style={{ color: PURPLE }} />
           </div>
 
-          {/* Eyebrow — stroke badge */}
+          {/* Eyebrow */}
           <div
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full border mb-6"
             style={{ color: PURPLE, borderColor: `${PURPLE}55`, background: `${PURPLE}0d` }}
@@ -115,12 +115,42 @@ export default function StageProPage() {
             </Link>
           </div>
         </div>
+
+        {/* Hero image — fleet of robots, the scale of what students train on */}
+        <div style={{ position: "relative", width: "100%", height: "clamp(220px, 30vw, 400px)", overflow: "hidden" }}>
+          <img
+            src="/photos/fleet-robots.png"
+            alt="Fleet of humanoid robots being prepared for deployment"
+            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 25%", display: "block" }}
+          />
+          <div style={{
+            position: "absolute", inset: 0,
+            background: `linear-gradient(to bottom, ${CARD} 0%, transparent 18%, transparent 62%, oklch(0.11 0.012 262) 100%)`,
+          }} />
+          {/* Center overlay badge */}
+          <div style={{
+            position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+            textAlign: "center", pointerEvents: "none",
+          }}>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: "0.5rem",
+              padding: "0.375rem 0.875rem", borderRadius: "100px",
+              border: `1px solid ${PURPLE}44`, background: "rgba(14,14,22,0.70)",
+              backdropFilter: "blur(8px)",
+            }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: PURPLE }} />
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: PURPLE }}>
+                Train on real robots · Every brand
+              </span>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ── Definition ─────────────────────────────────────────────────────── */}
       <section className="py-16 border-b" style={{ borderColor: BORDER }}>
         <div className="max-w-5xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-[0.8fr_1.2fr] gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-[0.8fr_1.2fr] gap-10 mb-10">
             <div>
               <p className="section-label mb-3" style={{ color: PURPLE }}>Definition</p>
               <h2 className="text-3xl font-bold" style={{ color: TEXT_HI, letterSpacing: "-0.025em" }}>
@@ -137,6 +167,52 @@ export default function StageProPage() {
                 It is built for robot manufacturers, service companies, venue operators,
                 logistics teams, and sales engineers who need confident technical fluency.
               </p>
+            </div>
+          </div>
+
+          {/* Hands-on training photos */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "200px" }}>
+              <img
+                src="/photos/rokae-demo.png"
+                alt="Technician working directly on a robot"
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
+              />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.70) 0%, transparent 55%)" }} />
+              <div style={{ position: "absolute", bottom: "0.875rem", left: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: PURPLE, flexShrink: 0 }} />
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.5rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)" }}>
+                  Live repair lab
+                </span>
+              </div>
+            </div>
+            <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "200px" }}>
+              <img
+                src="/photos/unitree-show.png"
+                alt="Students interacting hands-on with a Unitree robot"
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
+              />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.70) 0%, transparent 55%)" }} />
+              <div style={{ position: "absolute", bottom: "0.875rem", left: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: PURPLE, flexShrink: 0 }} />
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.5rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)" }}>
+                  Hands-on diagnostics
+                </span>
+              </div>
+            </div>
+            <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "200px" }}>
+              <img
+                src="/photos/apollo-warehouse.png"
+                alt="Instructor presenting a humanoid robot in a warehouse environment"
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%" }}
+              />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.70) 0%, transparent 55%)" }} />
+              <div style={{ position: "absolute", bottom: "0.875rem", left: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: PURPLE, flexShrink: 0 }} />
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.5rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)" }}>
+                  Master technician instruction
+                </span>
+              </div>
             </div>
           </div>
         </div>
