@@ -179,9 +179,9 @@ export default function StageHandPage() {
             </div>
             <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "220px" }}>
               <img
-                src="/photos/kuka-demo.png"
-                alt="Industrial robot arm demonstrating precision tasks"
-                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }}
+                src="/photos/apollo-warehouse.png"
+                alt="Humanoid robot being demonstrated in a warehouse setting"
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%" }}
               />
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.65) 0%, transparent 60%)" }} />
               <div style={{
@@ -190,7 +190,7 @@ export default function StageHandPage() {
               }}>
                 <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: AMBER, flexShrink: 0 }} />
                 <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.5625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.50)" }}>
-                  Industrial & humanoid · All platforms
+                  Enterprise deployment · Warehouse & field
                 </span>
               </div>
             </div>
