@@ -32,8 +32,181 @@ const PHASE_LABELS: Record<number, string> = {
   7: "Show Delivery", 8: "Live Support", 9: "Packdown & Storage",
 };
 
-const PANEL_TABS = ["Checkpoints", "Costs", "Robot Specs", "Carrier Tracking"] as const;
+const PANEL_TABS = ["Schedule", "Checkpoints", "Costs", "Robot Specs", "Carrier Tracking"] as const;
 type PanelTab = typeof PANEL_TABS[number];
+
+// Default durations (business days) per checkpoint type used when dueAt is null
+const CP_DEFAULT_DAYS: Record<string, number> = {
+  shipping_out:       0,
+  customs:            4,
+  airport_arrival:    7,
+  receiving:          8,
+  warehouse_in:       8,
+  staging:            12,
+  activation_test:    14,
+  booth_delivery:     17,
+  show_floor_checkin: 18,
+  show_end:           21,
+  return_pickup:      22,
+  warehouse_return:   23,
+  completed:          25,
+};
+
+const CP_PHASE: Record<string, number> = {
+  shipping_out: 2, customs: 3, airport_arrival: 4, receiving: 4,
+  warehouse_in: 5, staging: 6, activation_test: 6, booth_delivery: 7,
+  show_floor_checkin: 8, show_end: 8, return_pickup: 9, warehouse_return: 9, completed: 9,
+};
+
+const STATUS_BG: Record<string, string> = {
+  pending:     "#1a1a1a",
+  in_progress: "rgba(245,158,11,0.18)",
+  completed:   "rgba(0,255,135,0.15)",
+  blocked:     "rgba(239,68,68,0.18)",
+  escalated:   "rgba(239,68,68,0.18)",
+  skipped:     "#111111",
+};
+
+function ScheduleChart({ checkpoints, showStartDate, createdAt }: {
+  checkpoints: Array<{ id: number; type: string; title: string; status: string; dueAt: string | null; completedAt: string | null; phaseNumber?: number | null }>;
+  showStartDate: string | null;
+  createdAt: string;
+}) {
+  const anchor = showStartDate ? new Date(showStartDate) : new Date(createdAt);
+  // Build a date for each checkpoint — use dueAt if set, otherwise estimate from anchor
+  const rows = checkpoints.map(cp => {
+    const estimated = cp.dueAt ? new Date(cp.dueAt) : (() => {
+      const d = new Date(anchor);
+      d.setDate(d.getDate() - (CP_DEFAULT_DAYS[CP_DEFAULT_DAYS["show_end"]] - (CP_DEFAULT_DAYS[cp.type] ?? 14)));
+      return d;
+    })();
+    const completed = cp.completedAt ? new Date(cp.completedAt) : null;
+    const isNull = !cp.dueAt;
+    return { ...cp, estimated, completed, isNull };
+  });
+
+  // Timeline range: earliest to latest + 3 days buffer
+  const dates = rows.map(r => r.estimated);
+  const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+  const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+  maxDate.setDate(maxDate.getDate() + 3);
+  const totalMs = maxDate.getTime() - minDate.getTime() || 1;
+
+  function pct(d: Date) {
+    return Math.max(0, Math.min(100, ((d.getTime() - minDate.getTime()) / totalMs) * 100));
+  }
+
+  // Generate week markers
+  const weekMarkers: Date[] = [];
+  const cursor = new Date(minDate);
+  cursor.setDate(cursor.getDate() - cursor.getDay()); // start of week
+  while (cursor <= maxDate) {
+    weekMarkers.push(new Date(cursor));
+    cursor.setDate(cursor.getDate() + 7);
+  }
+
+  const today = new Date();
+  const todayPct = pct(today);
+  const showToday = today >= minDate && today <= maxDate;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      {/* Timeline header */}
+      <div style={{ position: "relative", height: "1.75rem", marginLeft: "12rem", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: "0.25rem" }}>
+        {weekMarkers.map((wk, i) => (
+          <div key={i} style={{ position: "absolute", left: `${pct(wk)}%`, top: 0, bottom: 0, display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+            <div style={{ width: "1px", height: "100%", background: "rgba(255,255,255,0.06)", position: "absolute" }} />
+            <span style={{ fontSize: "0.625rem", color: "rgba(255,255,255,0.25)", whiteSpace: "nowrap", paddingTop: "0.25rem", paddingLeft: "0.25rem" }}>
+              {wk.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            </span>
+          </div>
+        ))}
+        {showToday && (
+          <div style={{ position: "absolute", left: `${todayPct}%`, top: 0, bottom: 0, width: "1px", background: "#f59e0b", zIndex: 2 }}>
+            <span style={{ position: "absolute", top: 0, left: "2px", fontSize: "0.5625rem", color: "#f59e0b", whiteSpace: "nowrap" }}>Today</span>
+          </div>
+        )}
+      </div>
+
+      {/* Rows */}
+      {rows.map((row, i) => {
+        const barColor = CHECKPOINT_STATUS_COLORS[row.status] ?? "rgba(255,255,255,0.30)";
+        const phase = row.phaseNumber ?? CP_PHASE[row.type] ?? 1;
+        return (
+          <div key={row.id} style={{ display: "flex", alignItems: "center", minHeight: "2rem", borderBottom: `1px solid rgba(255,255,255,${i % 2 === 0 ? "0.03" : "0"})` }}>
+            {/* Label */}
+            <div style={{ width: "12rem", flexShrink: 0, paddingRight: "0.75rem", display: "flex", alignItems: "center", gap: "0.375rem" }}>
+              <span style={{ fontSize: "0.5625rem", color: "#64748b", flexShrink: 0 }}>P{phase}</span>
+              <span style={{ fontSize: "0.75rem", color: row.status === "pending" ? "rgba(255,255,255,0.35)" : "#ececec", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.title}</span>
+            </div>
+
+            {/* Bar area */}
+            <div style={{ flex: 1, position: "relative", height: "1.75rem" }}>
+              {/* Today line */}
+              {showToday && (
+                <div style={{ position: "absolute", left: `${todayPct}%`, top: 0, bottom: 0, width: "1px", background: "rgba(245,158,11,0.3)", pointerEvents: "none" }} />
+              )}
+              {/* Bar */}
+              <div style={{
+                position: "absolute",
+                left: `${pct(row.estimated)}%`,
+                top: "50%", transform: "translateY(-50%)",
+                width: "max(0.75rem, 1%)",
+                height: "1rem",
+                background: STATUS_BG[row.status] ?? "#1a1a1a",
+                border: `1px solid ${barColor}`,
+                borderRadius: "0.25rem",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                {row.status === "completed" && (
+                  <div style={{ width: "0.375rem", height: "0.375rem", borderRadius: "9999px", background: "#00ff87" }} />
+                )}
+                {row.status === "in_progress" && (
+                  <div style={{ width: "0.375rem", height: "0.375rem", borderRadius: "9999px", background: "#f59e0b" }} />
+                )}
+              </div>
+
+              {/* Date label */}
+              <span style={{
+                position: "absolute",
+                left: `calc(${pct(row.estimated)}% + 0.875rem)`,
+                top: "50%", transform: "translateY(-50%)",
+                fontSize: "0.6875rem",
+                color: row.isNull ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.45)",
+                whiteSpace: "nowrap",
+              }}>
+                {row.isNull
+                  ? "Pending"
+                  : row.estimated.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                {row.completedAt && (
+                  <span style={{ color: "#00ff87", marginLeft: "0.375rem" }}>
+                    ✓ {new Date(row.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                )}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Legend */}
+      <div style={{ display: "flex", gap: "1rem", paddingTop: "0.75rem", marginTop: "0.5rem", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        {[
+          { color: "rgba(255,255,255,0.30)", label: "Pending" },
+          { color: "#f59e0b", label: "In Progress" },
+          { color: "#00ff87", label: "Completed" },
+          { color: "#ef4444", label: "Blocked" },
+        ].map(l => (
+          <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+            <div style={{ width: "0.625rem", height: "0.625rem", borderRadius: "9999px", background: l.color }} />
+            <span style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.40)" }}>{l.label}</span>
+          </div>
+        ))}
+        <span style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.20)", marginLeft: "auto" }}>Dates shown are estimates when dueAt is null</span>
+      </div>
+    </div>
+  );
+}
 
 function fmt$(v: string | null | undefined) {
   const n = parseFloat(v ?? "0");
@@ -173,7 +346,7 @@ export default function AdminLogistics() {
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           {filtered.map(w => {
             const isExpanded = expandedWorkflow === w.workflow.id;
-            const currentTab: PanelTab = activeTab[w.workflow.id] ?? "Checkpoints";
+            const currentTab: PanelTab = activeTab[w.workflow.id] ?? "Schedule";
             const progress = w.checkpoints.length > 0 ? Math.round((w.completedCount / w.checkpoints.length) * 100) : 0;
             const assignedBay = w.workflow.warehouseBayId ? bayMap.get(w.workflow.warehouseBayId) : null;
             const wf = w.workflow as typeof w.workflow & {
@@ -262,6 +435,32 @@ export default function AdminLogistics() {
                     </div>
 
                     <div style={{ padding: "1rem" }}>
+                      {/* ── Schedule tab ─────────────────────────────────── */}
+                      {currentTab === "Schedule" && (
+                        <div>
+                          {w.checkpoints.length === 0 ? (
+                            <div style={{ textAlign: "center", padding: "2rem", color: "rgba(255,255,255,0.30)" }}>
+                              <Calendar size={24} style={{ margin: "0 auto 0.5rem" }} />
+                              <p style={{ fontSize: "0.875rem" }}>No checkpoints yet. Create a workflow to auto-generate the schedule.</p>
+                            </div>
+                          ) : (
+                            <>
+                              {/* Show date info bar */}
+                              <div style={{ display: "flex", gap: "1.5rem", marginBottom: "1rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.40)", flexWrap: "wrap" }}>
+                                {w.workflow.showStartDate && <span><Calendar size={11} style={{ display: "inline", marginRight: "0.25rem" }} />Show starts: {new Date(w.workflow.showStartDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>}
+                                {(w.workflow as typeof w.workflow & { targetArrivalDate?: string | null }).targetArrivalDate && <span>Target arrival: {new Date((w.workflow as typeof w.workflow & { targetArrivalDate?: string | null }).targetArrivalDate!).toLocaleDateString("en-US", { month: "long", day: "numeric" })}</span>}
+                                <span style={{ marginLeft: "auto", color: "rgba(255,255,255,0.25)" }}>{w.checkpoints.filter(c => c.status === "completed").length}/{w.checkpoints.length} complete · {w.checkpoints.filter(c => !c.dueAt).length} pending dates</span>
+                              </div>
+                              <ScheduleChart
+                                checkpoints={w.checkpoints as Array<{ id: number; type: string; title: string; status: string; dueAt: string | null; completedAt: string | null; phaseNumber?: number | null }>}
+                                showStartDate={w.workflow.showStartDate ? String(w.workflow.showStartDate) : null}
+                                createdAt={String(w.workflow.createdAt)}
+                              />
+                            </>
+                          )}
+                        </div>
+                      )}
+
                       {/* ── Checkpoints tab ──────────────────────────────── */}
                       {currentTab === "Checkpoints" && (
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>

@@ -563,6 +563,101 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── DEPLOYMENT TRACKER ───────────────────────────────────────────────── */}
+      <section style={{ padding: "7rem 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="container">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6rem", alignItems: "center" }}>
+            {/* Left — live tracker preview mockup */}
+            <div style={{ position: "relative" }}>
+              <div style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.10)", borderRadius: "0.75rem", padding: "1.5rem", fontFamily: "var(--font-mono)" }}>
+                {/* Fake browser chrome */}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginBottom: "1rem", paddingBottom: "0.75rem", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "9999px", background: "#ef4444" }} />
+                  <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "9999px", background: "#f59e0b" }} />
+                  <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "9999px", background: "#00ff87" }} />
+                  <span style={{ marginLeft: "0.5rem", fontSize: "0.6875rem", color: "rgba(255,255,255,0.20)" }}>onstage.bot/track/abc123</span>
+                </div>
+                {/* Robot identity */}
+                <div style={{ marginBottom: "1rem" }}>
+                  <p style={{ fontSize: "0.5625rem", color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "0.25rem" }}>DEPLOYMENT TRACKING</p>
+                  <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", margin: 0 }}>Unitree G1 <span style={{ color: "#f59e0b" }}>— CES 2027</span></p>
+                  <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.40)", marginTop: "0.125rem" }}>Las Vegas Convention Center · Jan 6 – Jan 9</p>
+                </div>
+                {/* Progress bar */}
+                <div style={{ marginBottom: "1.25rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.6875rem", color: "rgba(255,255,255,0.35)", marginBottom: "0.375rem" }}>
+                    <span>Overall Progress</span><span style={{ color: "#f59e0b" }}>62%</span>
+                  </div>
+                  <div style={{ height: "0.375rem", background: "#1a1a1a", borderRadius: "9999px", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: "62%", background: "#f59e0b", borderRadius: "9999px" }} />
+                  </div>
+                </div>
+                {/* Phase rows */}
+                {[
+                  { ph: 1, label: "Origin Country",        status: "done",    date: "Nov 12" },
+                  { ph: 2, label: "International Freight",  status: "done",    date: "Nov 19" },
+                  { ph: 3, label: "U.S. Customs",           status: "done",    date: "Nov 24" },
+                  { ph: 4, label: "Airport Recovery",       status: "done",    date: "Nov 25" },
+                  { ph: 5, label: "Warehouse & Storage",    status: "active",  date: "Dec 8" },
+                  { ph: 6, label: "Staging & Activation",   status: "pending", date: "Dec 20" },
+                  { ph: 7, label: "Show Delivery",          status: "pending", date: "Jan 4" },
+                  { ph: 8, label: "Live Show Support",      status: "pending", date: "Jan 6–9" },
+                ].map((row) => (
+                  <div key={row.ph} style={{ display: "flex", alignItems: "center", gap: "0.625rem", padding: "0.3125rem 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                    <div style={{ width: "0.875rem", height: "0.875rem", borderRadius: "9999px", flexShrink: 0, background: row.status === "done" ? "rgba(0,255,135,0.15)" : row.status === "active" ? "rgba(245,158,11,0.15)" : "#1a1a1a", border: `1px solid ${row.status === "done" ? "#00ff87" : row.status === "active" ? "#f59e0b" : "rgba(255,255,255,0.12)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {row.status === "done" && <div style={{ width: "0.25rem", height: "0.25rem", borderRadius: "9999px", background: "#00ff87" }} />}
+                      {row.status === "active" && <div style={{ width: "0.25rem", height: "0.25rem", borderRadius: "9999px", background: "#f59e0b" }} />}
+                    </div>
+                    <span style={{ flex: 1, fontSize: "0.6875rem", color: row.status === "pending" ? "rgba(255,255,255,0.30)" : "#ececec" }}>Phase {row.ph} — {row.label}</span>
+                    <span style={{ fontSize: "0.6875rem", color: row.status === "done" ? "#00ff87" : row.status === "active" ? "#f59e0b" : "rgba(255,255,255,0.20)", flexShrink: 0 }}>{row.date}</span>
+                  </div>
+                ))}
+                {/* Cost acceptance bar */}
+                <div style={{ marginTop: "0.875rem", padding: "0.625rem 0.75rem", background: "rgba(0,255,135,0.06)", border: "1px solid rgba(0,255,135,0.15)", borderRadius: "0.375rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <p style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.40)", margin: 0 }}>Deployment Estimate</p>
+                    <p style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#fff", margin: 0 }}>$24,800</p>
+                  </div>
+                  <div style={{ fontSize: "0.6875rem", fontWeight: 600, padding: "0.25rem 0.625rem", background: "#00ff87", color: "#080808", borderRadius: "0.25rem" }}>Accepted ✓</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right — copy */}
+            <div>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: "1.5rem" }}>
+                New — Live Deployment Tracking
+              </p>
+              <h2 style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: "1.5rem" }}>
+                Your robot. Every step.<br />
+                <span style={{ color: "#00ff87" }}>Visible from anywhere.</span>
+              </h2>
+              <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.65)", lineHeight: 1.7, marginBottom: "2rem", maxWidth: "44ch" }}>
+                StageGate generates a live tracking link for every deployment. Your team sees exactly where the robot is — from customs clearance to warehouse activation to show-floor go-live.
+              </p>
+              {[
+                { num: "01", label: "9-Phase journey map", desc: "Origin country through packdown — every milestone timestamped." },
+                { num: "02", label: "Live carrier updates", desc: "DHL and FedEx status pulled automatically. No manual check-ins." },
+                { num: "03", label: "Cost estimate sign-off", desc: "Review and accept the deployment budget in one click." },
+              ].map((item, i) => (
+                <div key={i} style={{ display: "flex", gap: "1.25rem", padding: "1rem 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(0,255,135,0.50)", paddingTop: "0.125rem", flexShrink: 0 }}>{item.num}</span>
+                  <div>
+                    <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec", margin: "0 0 0.25rem" }}>{item.label}</p>
+                    <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.45)", margin: 0 }}>{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+              <div style={{ marginTop: "2rem" }}>
+                <Link href="/register" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "#080808", background: "#00ff87", padding: "0.75rem 1.5rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+                  Get a tracking link <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── ROBOT GUILD ──────────────────────────────────────────────────────── */}
       <section style={{ padding: "7rem 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="container">
