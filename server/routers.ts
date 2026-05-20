@@ -9,8 +9,8 @@ import { notifyOwner } from "./_core/notification";
 import * as db from "./db";
 import * as workflows from "./workflows";
 import * as emailHelpers from "./email";
-import { eq, desc, count, sql, inArray } from "drizzle-orm";
-import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems, schedulingSlots, salesAgentConversations, salesAgentRuns, vendors, emailThreads, logisticsWorkflows, logisticsCheckpoints, warehouseBays, warehouseBayEvents, tradeShows, services as servicesTable, logisticsPartners, xbotProjects, agentRuns, outreachCampaigns, serviceRequests } from "../drizzle/schema";
+import { eq, desc, count, sql, inArray, and } from "drizzle-orm";
+import { draftEmails, prospectResearch, prospectActivities, bookingRequests, prospects as prospectsTable, serviceOrders, emailTrackingEvents, orderItems, schedulingSlots, salesAgentConversations, salesAgentRuns, vendors, emailThreads, logisticsWorkflows, logisticsCheckpoints, logisticsCosts, carrierTrackingEvents, warehouseBays, warehouseBayEvents, tradeShows, services as servicesTable, logisticsPartners, xbotProjects, agentRuns, outreachCampaigns, serviceRequests } from "../drizzle/schema";
 import crypto from "crypto";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
@@ -3966,6 +3966,325 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           estimatedTotal: estimatedTotal.toFixed(2),
           message: `${match.name} (${match.sqft} sqft) @ $${rate}/sqft/day × ${input.robotSqft} sqft × ${input.days} days = $${estimatedTotal.toFixed(2)}`,
         };
+      }),
+
+    // ── Robot specs + customer fields ─────────────────────────────────────────
+    updateRobotSpecs: adminProcedure
+      .input(z.object({
+        workflowId: z.number(),
+        robotModel: z.string().optional(),
+        robotSerialNumber: z.string().optional(),
+        originCountry: z.string().optional(),
+        robotWeightKg: z.string().optional(),
+        robotLengthCm: z.string().optional(),
+        robotWidthCm: z.string().optional(),
+        robotHeightCm: z.string().optional(),
+        declaredValueUsd: z.string().optional(),
+        batteryType: z.string().optional(),
+        batteryWh: z.string().optional(),
+        hasWirelessRadio: z.boolean().optional(),
+        hasCameras: z.boolean().optional(),
+        requiresFccDocs: z.boolean().optional(),
+        requiresFdaDocs: z.boolean().optional(),
+        ataCarnetRequired: z.boolean().optional(),
+        hsTariffCode: z.string().optional(),
+        customerEmail: z.string().optional(),
+        customerName: z.string().optional(),
+        showEndDate: z.string().optional(),
+        targetArrivalDate: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const { workflowId, ...fields } = input;
+        const updateData: Record<string, unknown> = { updatedAt: new Date() };
+        for (const [k, v] of Object.entries(fields)) {
+          if (v !== undefined) updateData[k] = k.endsWith("Date") ? new Date(v as string) : v;
+        }
+        await dbConn.update(logisticsWorkflows).set(updateData).where(eq(logisticsWorkflows.id, workflowId));
+        return { success: true };
+      }),
+
+    // ── Generate tracking token for a workflow ────────────────────────────────
+    generateTrackingToken: adminProcedure
+      .input(z.object({ workflowId: z.number() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const token = crypto.randomBytes(24).toString("hex");
+        await dbConn.update(logisticsWorkflows)
+          .set({ trackingToken: token, updatedAt: new Date() })
+          .where(eq(logisticsWorkflows.id, input.workflowId));
+        return { token };
+      }),
+
+    // ── Generate cost estimate for a workflow ─────────────────────────────────
+    generateCostEstimate: adminProcedure
+      .input(z.object({ workflowId: z.number() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const [wf] = await dbConn.select().from(logisticsWorkflows).where(eq(logisticsWorkflows.id, input.workflowId));
+        if (!wf) throw new TRPCError({ code: "NOT_FOUND" });
+
+        const declaredValue = parseFloat(wf.declaredValueUsd ?? "0");
+        const weightKg = parseFloat(wf.robotWeightKg ?? "50");
+        const originCountry = (wf.originCountry ?? "China").toLowerCase();
+        const hasLithium = ["lithium-ion", "lithium-polymer"].includes((wf.batteryType ?? "").toLowerCase());
+
+        const isAir = weightKg < 200; // heuristic: air for robots under 200 kg
+        const insurancePct = 0.02; // 2% of declared value
+        const airFreightBase = isAir ? Math.max(2500, weightKg * 18) : Math.max(4000, weightKg * 8);
+        const customsBroker = hasLithium ? 600 : 350;
+        const liveSupport = 4500; // per-show default
+
+        const estimates: Array<{ phaseNumber: number; phaseName: string; costType: string; description: string; estimatedAmountUsd: number }> = [
+          { phaseNumber: 1, phaseName: "Origin Country", costType: "crating", description: "Custom crate design & shock protection", estimatedAmountUsd: weightKg > 100 ? 3500 : 1200 },
+          { phaseNumber: 1, phaseName: "Origin Country", costType: "export_prep", description: "Export docs, HS codes, serial registration", estimatedAmountUsd: 750 },
+          { phaseNumber: 1, phaseName: "Origin Country", costType: "freight_forwarding", description: "Origin freight forwarder coordination", estimatedAmountUsd: 2000 },
+          { phaseNumber: 1, phaseName: "Origin Country", costType: "insurance", description: `Cargo insurance (2% of $${declaredValue.toLocaleString()})`, estimatedAmountUsd: Math.max(500, declaredValue * insurancePct) },
+          ...(wf.ataCarnetRequired ? [{ phaseNumber: 1, phaseName: "Origin Country", costType: "ata_carnet", description: "ATA Carnet bond & processing", estimatedAmountUsd: 700 }] : []),
+          { phaseNumber: 2, phaseName: "International Freight", costType: isAir ? "air_freight" : "ocean_freight", description: `${isAir ? "Air" : "Ocean"} freight — ${originCountry} to Las Vegas`, estimatedAmountUsd: airFreightBase },
+          ...(hasLithium ? [{ phaseNumber: 2, phaseName: "International Freight", costType: "lithium_surcharge", description: "Lithium battery DG surcharge", estimatedAmountUsd: 600 }] : []),
+          { phaseNumber: 3, phaseName: "U.S. Customs", costType: "customs_brokerage", description: "Licensed customs broker — entry filing", estimatedAmountUsd: customsBroker },
+          { phaseNumber: 3, phaseName: "U.S. Customs", costType: "customs_exam", description: "Customs exam & inspection (estimated)", estimatedAmountUsd: 800 },
+          { phaseNumber: 3, phaseName: "U.S. Customs", costType: "airport_handling", description: "Airport cargo handling & drayage to terminal", estimatedAmountUsd: 500 },
+          { phaseNumber: 4, phaseName: "Airport Recovery", costType: "airport_recovery", description: "StageGate airport pickup, intake & transport", estimatedAmountUsd: 1200 },
+          { phaseNumber: 5, phaseName: "Warehouse & Storage", costType: "warehouse_storage", description: "Climate-controlled storage (estimated 14 days)", estimatedAmountUsd: 1400 },
+          { phaseNumber: 5, phaseName: "Warehouse & Storage", costType: "charging_infrastructure", description: "Charging setup & battery monitoring", estimatedAmountUsd: 350 },
+          { phaseNumber: 6, phaseName: "Staging & Activation", costType: "activation", description: "Full activation: mechanical, electrical, software, demo", estimatedAmountUsd: 4500 },
+          { phaseNumber: 7, phaseName: "Show Delivery", costType: "drayage", description: "Convention center drayage & floor placement", estimatedAmountUsd: 2500 },
+          { phaseNumber: 8, phaseName: "Live Show Support", costType: "live_support", description: "StageGate on-site support (per show)", estimatedAmountUsd: liveSupport },
+          { phaseNumber: 9, phaseName: "Packdown & Storage", costType: "packdown", description: "Packdown, recrating & return coordination", estimatedAmountUsd: 1500 },
+        ];
+
+        // Clear existing estimated costs for this workflow, then insert fresh
+        await dbConn.delete(logisticsCosts).where(eq(logisticsCosts.workflowId, input.workflowId));
+        await dbConn.insert(logisticsCosts).values(
+          estimates.map(e => ({ ...e, workflowId: input.workflowId, estimatedAmountUsd: e.estimatedAmountUsd.toFixed(2) }))
+        );
+
+        const total = estimates.reduce((s, e) => s + e.estimatedAmountUsd, 0);
+        await dbConn.update(logisticsWorkflows)
+          .set({ totalEstimatedCostUsd: total.toFixed(2), updatedAt: new Date() })
+          .where(eq(logisticsWorkflows.id, input.workflowId));
+
+        return { total: total.toFixed(2), lineItems: estimates.length };
+      }),
+
+    // ── Cost CRUD ─────────────────────────────────────────────────────────────
+    getCosts: adminProcedure
+      .input(z.object({ workflowId: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        return dbConn.select().from(logisticsCosts)
+          .where(eq(logisticsCosts.workflowId, input.workflowId))
+          .orderBy(logisticsCosts.phaseNumber);
+      }),
+
+    updateCostItem: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        actualAmountUsd: z.string().optional(),
+        vendorName: z.string().optional(),
+        invoiceNumber: z.string().optional(),
+        notes: z.string().optional(),
+        paidAt: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const { id, paidAt, ...rest } = input;
+        await dbConn.update(logisticsCosts)
+          .set({ ...rest, ...(paidAt ? { paidAt: new Date(paidAt) } : {}), updatedAt: new Date() })
+          .where(eq(logisticsCosts.id, id));
+        return { success: true };
+      }),
+
+    acceptCostEstimate: adminProcedure
+      .input(z.object({ workflowId: z.number(), acceptedBy: z.string() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        await dbConn.update(logisticsWorkflows)
+          .set({ costEstimateAcceptedAt: new Date(), costEstimateAcceptedBy: input.acceptedBy, updatedAt: new Date() })
+          .where(eq(logisticsWorkflows.id, input.workflowId));
+        return { success: true };
+      }),
+
+    // ── Carrier tracking ──────────────────────────────────────────────────────
+    addTrackingNumber: adminProcedure
+      .input(z.object({
+        workflowId: z.number(),
+        checkpointId: z.number().optional(),
+        carrier: z.enum(["dhl", "fedex", "ups", "manual", "other"]),
+        trackingNumber: z.string().min(1),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (input.checkpointId) {
+          await dbConn.update(logisticsCheckpoints)
+            .set({ trackingNumber: input.trackingNumber, carrierName: input.carrier, updatedAt: new Date() })
+            .where(eq(logisticsCheckpoints.id, input.checkpointId));
+        }
+        await dbConn.insert(carrierTrackingEvents).values({
+          workflowId: input.workflowId,
+          checkpointId: input.checkpointId ?? null,
+          carrier: input.carrier,
+          trackingNumber: input.trackingNumber,
+          statusSummary: "Tracking number registered — awaiting first scan",
+          polledAt: new Date(),
+        });
+        return { success: true };
+      }),
+
+    pollCarrierTracking: adminProcedure
+      .input(z.object({ workflowId: z.number(), trackingNumber: z.string(), carrier: z.string() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        let statusSummary = "Status unavailable — check carrier site";
+        let location = "";
+        let eventCode = "";
+
+        // DHL Tracking API (requires SHIPPING_DHL_API_KEY in env)
+        if (input.carrier === "dhl" && process.env.SHIPPING_DHL_API_KEY) {
+          try {
+            const res = await fetch(
+              `https://api.dhl.com/track/shipments?trackingNumber=${encodeURIComponent(input.trackingNumber)}`,
+              { headers: { "DHL-API-Key": process.env.SHIPPING_DHL_API_KEY, Accept: "application/json" } }
+            );
+            if (res.ok) {
+              const data = await res.json() as Record<string, unknown>;
+              const shipments = (data as { shipments?: unknown[] }).shipments ?? [];
+              const first = shipments[0] as Record<string, unknown> | undefined;
+              const events = first ? (first.events as unknown[]) ?? [] : [];
+              const latest = events[0] as Record<string, unknown> | undefined;
+              statusSummary = (latest?.description as string) ?? "In transit";
+              location = ((latest?.location as Record<string, unknown>)?.address as Record<string, unknown>)?.addressLocality as string ?? "";
+              eventCode = (latest?.typeCode as string) ?? "";
+            }
+          } catch { /* fall through to manual */ }
+        }
+
+        // FedEx Tracking API (requires SHIPPING_FEDEX_API_KEY + SHIPPING_FEDEX_SECRET)
+        if (input.carrier === "fedex" && process.env.SHIPPING_FEDEX_API_KEY) {
+          try {
+            const tokenRes = await fetch("https://apis.fedex.com/oauth/token", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: `grant_type=client_credentials&client_id=${process.env.SHIPPING_FEDEX_API_KEY}&client_secret=${process.env.SHIPPING_FEDEX_SECRET}`,
+            });
+            const tokenData = await tokenRes.json() as { access_token?: string };
+            if (tokenData.access_token) {
+              const trackRes = await fetch("https://apis.fedex.com/track/v1/trackingnumbers", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${tokenData.access_token}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ trackingInfo: [{ trackingNumberInfo: { trackingNumber: input.trackingNumber } }] }),
+              });
+              if (trackRes.ok) {
+                const td = await trackRes.json() as Record<string, unknown>;
+                const pkg = ((td.output as Record<string, unknown>)?.completeTrackResults as unknown[])?.[0] as Record<string, unknown> | undefined;
+                const events = (pkg?.trackResults as Record<string, unknown>[])?.[0]?.dateAndTimes as unknown[];
+                statusSummary = ((pkg?.trackResults as Record<string, unknown>[])?.[0]?.latestStatusDetail as Record<string, unknown>)?.description as string ?? "In transit";
+                eventCode = ((pkg?.trackResults as Record<string, unknown>[])?.[0]?.latestStatusDetail as Record<string, unknown>)?.code as string ?? "";
+              }
+            }
+          } catch { /* fall through */ }
+        }
+
+        await dbConn.insert(carrierTrackingEvents).values({
+          workflowId: input.workflowId,
+          carrier: input.carrier,
+          trackingNumber: input.trackingNumber,
+          statusSummary,
+          location: location || null,
+          eventCode: eventCode || null,
+          eventTimestamp: new Date(),
+          polledAt: new Date(),
+        });
+
+        return { statusSummary, location, eventCode };
+      }),
+
+    getTrackingHistory: adminProcedure
+      .input(z.object({ workflowId: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return [];
+        return dbConn.select().from(carrierTrackingEvents)
+          .where(eq(carrierTrackingEvents.workflowId, input.workflowId))
+          .orderBy(desc(carrierTrackingEvents.polledAt));
+      }),
+
+    // ── Public tracker (no auth — token-gated) ────────────────────────────────
+    getPublicTracker: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const [wf] = await dbConn.select().from(logisticsWorkflows)
+          .where(eq(logisticsWorkflows.trackingToken, input.token));
+        if (!wf) throw new TRPCError({ code: "NOT_FOUND", message: "Tracking link not found or expired" });
+        const checkpoints = await dbConn.select().from(logisticsCheckpoints)
+          .where(eq(logisticsCheckpoints.workflowId, wf.id))
+          .orderBy(logisticsCheckpoints.dueAt);
+        const costs = wf.costEstimateAcceptedAt
+          ? await dbConn.select().from(logisticsCosts)
+              .where(eq(logisticsCosts.workflowId, wf.id))
+              .orderBy(logisticsCosts.phaseNumber)
+          : [];
+        const latestTracking = await dbConn.select().from(carrierTrackingEvents)
+          .where(eq(carrierTrackingEvents.workflowId, wf.id))
+          .orderBy(desc(carrierTrackingEvents.polledAt))
+          .limit(5);
+        return {
+          workflow: {
+            id: wf.id,
+            robotCompany: wf.robotCompany,
+            robotName: wf.robotName,
+            robotModel: wf.robotModel,
+            showName: wf.showName,
+            showStartDate: wf.showStartDate,
+            showEndDate: wf.showEndDate,
+            targetArrivalDate: wf.targetArrivalDate,
+            status: wf.status,
+            totalEstimatedCostUsd: wf.totalEstimatedCostUsd,
+            costEstimateAcceptedAt: wf.costEstimateAcceptedAt,
+          },
+          checkpoints: checkpoints.map(cp => ({
+            id: cp.id,
+            type: cp.type,
+            phaseNumber: cp.phaseNumber,
+            title: cp.title,
+            status: cp.status,
+            dueAt: cp.dueAt,
+            completedAt: cp.completedAt,
+            responsibleParty: cp.responsibleParty,
+            customerVisibleNote: cp.customerVisibleNote,
+          })),
+          costs,
+          latestTracking,
+        };
+      }),
+
+    // ── Customer accepts cost estimate (public, token-gated) ─────────────────
+    acceptCostEstimatePublic: publicProcedure
+      .input(z.object({ token: z.string(), acceptedBy: z.string() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const [wf] = await dbConn.select().from(logisticsWorkflows)
+          .where(eq(logisticsWorkflows.trackingToken, input.token));
+        if (!wf) throw new TRPCError({ code: "NOT_FOUND" });
+        if (wf.costEstimateAcceptedAt) return { success: true, alreadyAccepted: true };
+        await dbConn.update(logisticsWorkflows)
+          .set({ costEstimateAcceptedAt: new Date(), costEstimateAcceptedBy: input.acceptedBy, updatedAt: new Date() })
+          .where(eq(logisticsWorkflows.id, wf.id));
+        return { success: true, alreadyAccepted: false };
       }),
   }),
 

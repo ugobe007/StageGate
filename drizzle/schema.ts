@@ -584,17 +584,94 @@ export const logisticsWorkflows = pgTable("logistics_workflows", {
   showName: varchar("showName", { length: 255 }),
   showStartDate: timestamp("showStartDate", { withTimezone: true }),
   notes: text("notes"),
-  warehouseBayId: integer("warehouseBayId"), // assigned bay (v21)
+  warehouseBayId: integer("warehouseBayId"),
+  // ── Robot specifications ──────────────────────────────────────────────────
+  robotModel: varchar("robotModel", { length: 255 }),
+  robotSerialNumber: varchar("robotSerialNumber", { length: 255 }),
+  originCountry: varchar("originCountry", { length: 100 }),
+  robotWeightKg: decimal("robotWeightKg", { precision: 8, scale: 2 }),
+  robotLengthCm: decimal("robotLengthCm", { precision: 8, scale: 2 }),
+  robotWidthCm: decimal("robotWidthCm", { precision: 8, scale: 2 }),
+  robotHeightCm: decimal("robotHeightCm", { precision: 8, scale: 2 }),
+  declaredValueUsd: decimal("declaredValueUsd", { precision: 12, scale: 2 }),
+  batteryType: varchar("batteryType", { length: 100 }), // lithium-ion | lithium-polymer | nimh | lead-acid | none
+  batteryWh: decimal("batteryWh", { precision: 8, scale: 2 }),
+  hasWirelessRadio: boolean("hasWirelessRadio").default(false),
+  hasCameras: boolean("hasCameras").default(false),
+  requiresFccDocs: boolean("requiresFccDocs").default(false),
+  requiresFdaDocs: boolean("requiresFdaDocs").default(false),
+  ataCarnetRequired: boolean("ataCarnetRequired").default(false),
+  hsTariffCode: varchar("hsTariffCode", { length: 20 }),
+  // ── Cost summary ─────────────────────────────────────────────────────────
+  totalEstimatedCostUsd: decimal("totalEstimatedCostUsd", { precision: 12, scale: 2 }),
+  totalActualCostUsd: decimal("totalActualCostUsd", { precision: 12, scale: 2 }),
+  costEstimateAcceptedAt: timestamp("costEstimateAcceptedAt", { withTimezone: true }),
+  costEstimateAcceptedBy: varchar("costEstimateAcceptedBy", { length: 255 }),
+  // ── Public customer tracking ──────────────────────────────────────────────
+  trackingToken: varchar("trackingToken", { length: 64 }).unique(), // public /track/:token
+  customerEmail: varchar("customerEmail", { length: 320 }),
+  customerName: varchar("customerName", { length: 255 }),
+  // ── Show dates ────────────────────────────────────────────────────────────
+  showEndDate: timestamp("showEndDate", { withTimezone: true }),
+  targetArrivalDate: timestamp("targetArrivalDate", { withTimezone: true }), // when robot must be at StageGate warehouse
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 export type LogisticsWorkflow = typeof logisticsWorkflows.$inferSelect;
 export type InsertLogisticsWorkflow = typeof logisticsWorkflows.$inferInsert;
 
+// ─── Logistics Phase Costs (itemized costs per 9-phase breakdown) ─────────────
+// One row per cost line item per workflow phase.
+export const logisticsCosts = pgTable("logistics_costs", {
+  id: serial("id").primaryKey(),
+  workflowId: integer("workflowId").notNull(),
+  phaseNumber: integer("phaseNumber").notNull(), // 1–9
+  phaseName: varchar("phaseName", { length: 100 }).notNull(),
+  costType: varchar("costType", { length: 100 }).notNull(),
+  // Types: crating | export_prep | freight_forwarding | insurance | ata_carnet |
+  //        air_freight | ocean_freight | customs_brokerage | customs_exam |
+  //        demurrage | airport_handling | airport_recovery | warehouse_storage |
+  //        activation | staging | show_delivery | drayage | live_support |
+  //        packdown | return_shipping | other
+  description: varchar("description", { length: 500 }).notNull(),
+  estimatedAmountUsd: decimal("estimatedAmountUsd", { precision: 10, scale: 2 }),
+  actualAmountUsd: decimal("actualAmountUsd", { precision: 10, scale: 2 }),
+  vendorName: varchar("vendorName", { length: 255 }),
+  vendorId: integer("vendorId"),
+  isPaidByClient: boolean("isPaidByClient").default(true), // false = StageGate absorbs
+  invoiceNumber: varchar("invoiceNumber", { length: 100 }),
+  paidAt: timestamp("paidAt", { withTimezone: true }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+});
+export type LogisticsCost = typeof logisticsCosts.$inferSelect;
+export type InsertLogisticsCost = typeof logisticsCosts.$inferInsert;
+
+// ─── Carrier Tracking Events (polled or webhook from DHL/FedEx/UPS) ───────────
+export const carrierTrackingEvents = pgTable("carrier_tracking_events", {
+  id: serial("id").primaryKey(),
+  workflowId: integer("workflowId").notNull(),
+  checkpointId: integer("checkpointId"), // linked checkpoint if applicable
+  carrier: varchar("carrier", { length: 50 }).notNull(), // dhl | fedex | ups | manual | other
+  trackingNumber: varchar("trackingNumber", { length: 255 }).notNull(),
+  eventCode: varchar("eventCode", { length: 50 }),
+  statusSummary: varchar("statusSummary", { length: 255 }),
+  location: varchar("location", { length: 255 }),
+  eventTimestamp: timestamp("eventTimestamp", { withTimezone: true }),
+  isDelivered: boolean("isDelivered").default(false),
+  rawPayload: jsonb("rawPayload").$type<Record<string, unknown>>(),
+  polledAt: timestamp("polledAt", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+});
+export type CarrierTrackingEvent = typeof carrierTrackingEvents.$inferSelect;
+export type InsertCarrierTrackingEvent = typeof carrierTrackingEvents.$inferInsert;
+
 // ─── Logistics Checkpoints (individual steps in a workflow) ──────────────────
 export const logisticsCheckpoints = pgTable("logistics_checkpoints", {
   id: serial("id").primaryKey(),
   workflowId: integer("workflowId").notNull(),
+  phaseNumber: integer("phaseNumber"), // 1–9 (maps to 9-phase workflow)
   type: text("type").notNull(),
   // Types: shipping_out | customs | airport_arrival | receiving | warehouse_in |
   //        staging | activation_test | problem_report | booth_delivery |
@@ -609,7 +686,8 @@ export const logisticsCheckpoints = pgTable("logistics_checkpoints", {
   trackingNumber: varchar("trackingNumber", { length: 255 }),
   carrierName: varchar("carrierName", { length: 100 }),
   notes: text("notes"),
-  problemDescription: text("problemDescription"), // for problem_report type
+  customerVisibleNote: text("customerVisibleNote"), // shown on public tracker
+  problemDescription: text("problemDescription"),
   problemSeverity: text("problemSeverity"), // low | medium | high | critical
   escalatedAt: timestamp("escalatedAt", { withTimezone: true }),
   resolvedAt: timestamp("resolvedAt", { withTimezone: true }),

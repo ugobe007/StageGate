@@ -48,6 +48,7 @@ import AdminServiceRequests from "./pages/AdminServiceRequests";
 import AdminCalendar from "./pages/AdminCalendar";
 import CalendarEventPage from "./pages/CalendarEventPage";
 import Newsletter from "./pages/Newsletter";
+import RobotTracker from "./pages/RobotTracker";
 
 /** Wraps admin pages in the shared DashboardLayout sidebar shell */
 function AdminShell({ children }: { children: React.ReactNode }) {
@@ -107,6 +108,7 @@ function Router() {
 
       {/* Public calendar share link */}
       <Route path="/calendar/:token" component={CalendarEventPage} />
+      <Route path="/track/:token" component={RobotTracker} />
 
       {/* Video intake */}
       <Route path="/xbot/video" component={VideoIntake} />

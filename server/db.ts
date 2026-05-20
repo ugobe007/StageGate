@@ -41,6 +41,12 @@ import {
   CalendarEvent,
   InsertCalendarEvent,
   newsletterSubscriptions,
+  logisticsCosts,
+  LogisticsCost,
+  InsertLogisticsCost,
+  carrierTrackingEvents,
+  CarrierTrackingEvent,
+  InsertCarrierTrackingEvent,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
