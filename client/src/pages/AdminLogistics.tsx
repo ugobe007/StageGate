@@ -218,6 +218,8 @@ export default function AdminLogistics() {
   const [expandedWorkflow, setExpandedWorkflow] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<Record<number, PanelTab>>({});
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "overdue">("active");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newWf, setNewWf] = useState({ clientName: "", robotModel: "", showName: "", showCity: "", showStartDate: "" });
   const [assigningBay, setAssigningBay] = useState<number | null>(null);
   const [copiedToken, setCopiedToken] = useState<number | null>(null);
   const [trackingInput, setTrackingInput] = useState<Record<number, { carrier: string; number: string }>>({});
@@ -254,6 +256,12 @@ export default function AdminLogistics() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pollTracking = (trpc.logistics as any).pollCarrierTracking.useMutation({
     onSuccess: (d: { statusSummary: string }) => toast.success(`Carrier status: ${d.statusSummary}`),
+    onError: (e: { message: string }) => toast.error(e.message),
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const createWorkflow = (trpc.logistics as any).createWorkflow.useMutation({
+    onSuccess: () => { toast.success("Workflow created"); setShowCreateForm(false); setNewWf({ clientName: "", robotModel: "", showName: "", showCity: "", showStartDate: "" }); void refetch(); },
     onError: (e: { message: string }) => toast.error(e.message),
   });
 
@@ -305,10 +313,59 @@ export default function AdminLogistics() {
           </h1>
           <p style={{ fontSize: "0.875rem", color: "#64748b", margin: "0.25rem 0 0" }}>Workflows · Costs · Checkpoints · Carrier Tracking</p>
         </div>
-        <button onClick={() => refetch()} style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", color: "#64748b", background: "#fff", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem", padding: "0.375rem 0.75rem", cursor: "pointer" }}>
-          <RefreshCw size={12} /> Refresh
-        </button>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button onClick={() => setShowCreateForm(v => !v)} style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 600, color: "#080808", background: "#f59e0b", border: "none", borderRadius: "0.375rem", padding: "0.375rem 0.875rem", cursor: "pointer" }}>
+            + New Workflow
+          </button>
+          <button onClick={() => refetch()} style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", color: "#64748b", background: "#fff", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem", padding: "0.375rem 0.75rem", cursor: "pointer" }}>
+            <RefreshCw size={12} /> Refresh
+          </button>
+        </div>
       </div>
+
+      {/* ── Create Workflow Form ──────────────────────────────────────────────── */}
+      {showCreateForm && (
+        <div style={{ background: "#111", border: "1px solid rgba(245,158,11,0.30)", borderRadius: "0.5rem", padding: "1.25rem", marginBottom: "1.5rem" }}>
+          <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#f59e0b", margin: "0 0 1rem" }}>New Deployment Workflow</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+            {([
+              { key: "clientName",    label: "Client / Company",  placeholder: "Unitree Robotics" },
+              { key: "robotModel",    label: "Robot Model",       placeholder: "G1 Humanoid" },
+              { key: "showName",      label: "Event / Show Name", placeholder: "CES 2027" },
+              { key: "showCity",      label: "City",              placeholder: "Las Vegas" },
+              { key: "showStartDate", label: "Show Start Date",   placeholder: "", type: "date" },
+            ] as const).map(f => (
+              <div key={f.key}>
+                <label style={{ display: "block", fontSize: "0.6875rem", color: "rgba(255,255,255,0.35)", marginBottom: "0.25rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>{f.label}</label>
+                <input
+                  type={(f as { type?: string }).type ?? "text"}
+                  value={newWf[f.key]}
+                  onChange={e => setNewWf(v => ({ ...v, [f.key]: e.target.value }))}
+                  placeholder={(f as { placeholder: string }).placeholder}
+                  style={{ width: "100%", background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.25rem", padding: "0.5rem 0.625rem", fontSize: "0.875rem", color: "#ececec", boxSizing: "border-box" }}
+                />
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+            <button onClick={() => setShowCreateForm(false)} style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.40)", background: "none", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.25rem", padding: "0.375rem 0.875rem", cursor: "pointer" }}>Cancel</button>
+            <button
+              disabled={!newWf.clientName || !newWf.showName || createWorkflow.isPending}
+              onClick={() => createWorkflow.mutate({
+                robotCompany: newWf.clientName,
+                clientName: newWf.clientName,
+                robotModel: newWf.robotModel || undefined,
+                showName: newWf.showName,
+                showCity: newWf.showCity || undefined,
+                showStartDate: newWf.showStartDate || undefined,
+              })}
+              style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#080808", background: createWorkflow.isPending ? "#888" : "#f59e0b", border: "none", borderRadius: "0.25rem", padding: "0.375rem 1rem", cursor: "pointer" }}
+            >
+              {createWorkflow.isPending ? "Creating…" : "Create Workflow"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
@@ -338,9 +395,14 @@ export default function AdminLogistics() {
       {isLoading ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "10rem" }}><Loader2 size={20} style={{ color: "rgba(255,255,255,0.30)", animation: "spin 1s linear infinite" }} /></div>
       ) : filtered.length === 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "10rem", gap: "0.75rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "12rem", gap: "0.75rem" }}>
           <Truck size={28} style={{ color: "#cbd5e1" }} />
           <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.30)" }}>{filterStatus === "overdue" ? "No overdue checkpoints — all workflows on track." : "No logistics workflows yet."}</p>
+          {filterStatus !== "overdue" && (
+            <button onClick={() => setShowCreateForm(true)} style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#080808", background: "#f59e0b", border: "none", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", cursor: "pointer" }}>
+              + Create First Workflow
+            </button>
+          )}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>

@@ -3390,25 +3390,33 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     // P5: Create a workflow from a committed order (triggered after meeting handoff)
     createWorkflow: adminProcedure
       .input(z.object({
-        orderId: z.number(),
+        orderId: z.number().optional(),        // optional — auto-generated if omitted
         prospectId: z.number().optional(),
         robotCompany: z.string(),
+        clientName: z.string().optional(),     // alias for robotCompany display name
         robotName: z.string().optional(),
+        robotModel: z.string().optional(),     // alias for robotName
         showName: z.string().optional(),
-        showStartDate: z.string().optional(), // ISO date string
+        showCity: z.string().optional(),
+        showStartDate: z.string().optional(),  // ISO date string
         notes: z.string().optional(),
-        warehouseBayId: z.number().optional(), // v21: pre-assign a bay
+        warehouseBayId: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
         const dbConn = await getDb();
         if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
+        // Auto-generate a synthetic orderId if not supplied (admin quick-create flow)
+        const orderId = input.orderId ?? (Date.now() % 2_000_000_000);
+        const robotCompany = input.clientName || input.robotCompany;
+        const robotName = input.robotModel || input.robotName;
+
         // Create the workflow
         const [workflow] = await dbConn.insert(logisticsWorkflows).values({
-          orderId: input.orderId,
+          orderId,
           prospectId: input.prospectId,
-          robotCompany: input.robotCompany,
-          robotName: input.robotName,
+          robotCompany,
+          robotName,
           showName: input.showName,
           showStartDate: input.showStartDate ? new Date(input.showStartDate) : undefined,
           notes: input.notes,
