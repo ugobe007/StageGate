@@ -22,18 +22,22 @@ export type SocialPostDraft = {
   cta: string;
 };
 
-function milestoneLine(sent: number): string {
-  if (sent >= 200) return "We're deep in show season outreach.";
-  if (sent >= 100) return "Crossed 100 robot OEM conversations this cycle.";
-  if (sent >= 50) return "Momentum is building with Vegas show season approaching.";
-  return "Kicking off outreach to robot companies heading to major trade shows.";
+function weekNote(sent: number, replied: number, opens: number): string {
+  if (replied > 0) {
+    return `Been reaching out to robot teams all week (${sent} notes sent). Already got ${replied} ${replied === 1 ? "reply" : "replies"} back — that’s the part I care about.`;
+  }
+  if (opens > 0) {
+    return `Sent ${sent} notes to robot companies this week. A few opens trickling in. Waiting on the first real reply.`;
+  }
+  if (sent > 0) {
+    return `Sent ${sent} notes to robot companies this week. Show season is coming fast.`;
+  }
+  return "Show season is coming fast.";
 }
 
 export function buildCalSocialPosts(stats: OutreachHubStats): SocialPostDraft[] {
-  const { emailsSent, opens, replied, responseRatePct } = stats;
-  const replyNote = replied > 0
-    ? `${replied} repl${replied !== 1 ? "ies" : "y"} already in — real conversations, not just opens.`
-    : "Watching for replies — the interesting part starts when someone writes back.";
+  const { emailsSent, opens, replied } = stats;
+  const week = weekNote(emailsSent, replied, opens);
 
   return [
     {
@@ -41,43 +45,48 @@ export function buildCalSocialPosts(stats: OutreachHubStats): SocialPostDraft[] 
       label: "LinkedIn",
       charLimit: 3000,
       cta: "Post on LinkedIn",
-      text: `Robot companies shipping to CES, Automate, and Vegas shows face the same problem: transit damage, last-minute boot failures, and nobody on the ground when something breaks.
+      text: `This is Cal from StageGate.
 
-At StageGate we warehouse, stage, and tech-support robots during Las Vegas shows — so your team focuses on the demo, not the dock paperwork.
+Last CES I watched a team spend their first morning on the floor with a robot that worked fine in the lab and wouldn’t boot in the hall. Turned out to be a connector that shook loose in transit. Twenty-minute fix — if someone local had been there at 6am.
 
-${milestoneLine(emailsSent)} ${replyNote}
+${week}
 
-If you're exhibiting this season and want a local crew before you land → onstage.bot
+I run robot logistics in Las Vegas — warehouse, staging, hands-on tech when something breaks before your team lands. If you’re heading to a Vegas show and that sounds useful, I’m easy to find at onstage.bot.
 
-#robotics #CES #tradeshows #automation #LasVegas`,
+#robotics #CES`,
     },
     {
       channel: "x",
       label: "X",
       charLimit: 280,
       cta: "Post on X",
-      text: emailsSent >= 100
-        ? `Cal update: ${emailsSent}+ outreach emails to robot OEMs this cycle. ${replied > 0 ? `${replied} replies.` : "Inboxes warming up."} Show season logistics is a team sport — we stage & fix bots in Vegas before you hit the floor. onstage.bot`
-        : `Robot in a cardboard box is not a shipping plan. We help OEMs warehouse, stage & fix bots during Vegas shows. ${emailsSent} convos started this week. onstage.bot 🤖`,
+      text: replied > 0
+        ? `Cal here. ${emailsSent} outreach emails this week, ${replied} ${replied === 1 ? "reply" : "replies"} so far. One guy’s robot died in transit last year and he missed day one of CES. We fix that stuff in Vegas now. onstage.bot`
+        : emailsSent >= 50
+        ? `Show season note: sent ${emailsSent} emails to robot OEMs this week. The good news always comes back as a reply, not an open. onstage.bot`
+        : `A humanoid in a cardboard box is not a shipping plan. (Learned that one the hard way.) We stage robots in Vegas now. onstage.bot`,
     },
     {
       channel: "substack",
       label: "Substack",
       charLimit: 5000,
       cta: "Open in Substack",
-      text: `What breaks before the booth opens
+      text: `Notes from the outreach desk
 
-I sent ${emailsSent} intro emails this week to robot companies heading to major trade shows. ${opens > 0 ? `${opens} opens so far (${stats.openRatePct}% open rate).` : "Tracking opens and replies now."} ${replyNote}
+${week}
 
-The pattern I keep seeing: teams fly in, the robot worked in the lab, and something small from freight — a loose connector, a misaligned joint — eats the first morning on the floor.
+I’m not going to give you a deck on “robot logistics.” You’ve seen those. Here’s what I actually see.
 
-That's why we built StageGate in Las Vegas. Bonded warehouse. Engineers who've handled real hardware. Unpack, diagnose, charge, and roll to the hall when you're ready.
+Someone ships a robot cross-country. It arrives. Looks fine. Demo day, it glitches — sensor, connector, software that doesn’t love show-floor Wi‑Fi. The founder is running the meeting and also trying to debug at the same time. Nobody wins.
 
-If you're planning CES, NAB, or any Vegas show this year, register free at onstage.bot — takes two minutes.
+I used to be in the lab at UNLV. I’ve prepped robots for live demos. I know that feeling in your stomach when the thing won’t move and the crowd is already walking up.
 
-— Cal, Robot Ready Team @ StageGate
+That’s the whole reason StageGate exists in Las Vegas. We hold the robot before you get there. Unpack it. Charge it. Run it. If freight knocked something loose, we fix it before your first meeting.
 
-P.S. ${responseRatePct > 0 ? `Response rate sitting at ${responseRatePct}% —` : "Still early, but"} the best conversations are always off-floor anyway.`,
+If you’re exhibiting at CES, NAB, or anything in Vegas this year and want a local crew — onstage.bot. Register’s free. Or just reply to one of my emails. I read them.
+
+— Cal
+Robot Ready Team @ StageGate`,
     },
   ];
 }
