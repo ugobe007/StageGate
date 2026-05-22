@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useSearch } from "wouter";
+import { useSearch, useLocation } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import ProspectCRMCard from "@/components/ProspectCRMCard";
-import { ExternalLink, Mail, RefreshCw, ChevronDown, Check, X, Clock, Phone, AlertCircle, Square, CheckSquare, Zap, ArrowUpDown, ArrowUp, ArrowDown, Download, Upload, Calendar, ArrowRight } from "lucide-react";
+import { ExternalLink, Mail, RefreshCw, ChevronDown, Check, X, Clock, Phone, AlertCircle, Square, CheckSquare, Zap, ArrowUpDown, ArrowUp, ArrowDown, Download, Upload, Calendar, ArrowRight, Send } from "lucide-react";
 
 type ProspectStatus = "new" | "contacted" | "responded" | "scheduled" | "converted" | "not_interested";
 
@@ -59,6 +59,7 @@ const CONFIDENCE_BORDERS: Record<string, string> = {
 export default function AdminProspects() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
+  const [, setLocation] = useLocation();
 
   // ?highlight=email — deep-link from AdminServiceRequests
   const search = useSearch();
@@ -66,10 +67,9 @@ export default function AdminProspects() {
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("new");
   const [hideContacted, setHideContacted] = useState(false);
   const [hotFilter, setHotFilter] = useState(false);
-  const [vendorTypeFilter, setVendorTypeFilter] = useState<string>("");
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
   const [failedIds, setFailedIds] = useState<Set<number>>(new Set());
@@ -166,6 +166,11 @@ export default function AdminProspects() {
     { status: statusFilter || undefined },
     { enabled: !!user && user.role === "admin" }
   );
+
+  const { data: draftCount } = trpc.admin.getDraftCount.useQuery(undefined, {
+    enabled: !!user && user.role === "admin",
+    refetchInterval: 30_000,
+  });
 
   // Scroll to and highlight the row matching ?highlight=email
   useEffect(() => {
@@ -509,10 +514,6 @@ export default function AdminProspects() {
   const prospects = (data?.prospects ?? []).filter(p => {
     if (hotFilter && Number((p as Record<string, unknown>).engagementScore ?? 0) < 3) return false;
     if (hideContacted && statusFilter === "" && !hotFilter && p.status === "contacted") return false;
-    if (vendorTypeFilter) {
-      const pVendorType = String((p as Record<string, unknown>).vendorType ?? "robot_oem");
-      if (pVendorType !== vendorTypeFilter) return false;
-    }
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const matchCompany = p.company.toLowerCase().includes(q);
@@ -599,31 +600,21 @@ export default function AdminProspects() {
               <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.55)" }}>
                 {prospects.length}{hideContacted && statusFilter === "" ? ` of ${(allData?.prospects ?? []).length}` : ""} prospects{hideContacted && statusFilter === "" ? " (contacted hidden)" : ""}
               </span>
-              {/* Generate Cal Drafts for all prospects */}
               <button
-                onClick={() => {
-                  setGeneratingDrafts(true);
-                  generateDraftsMutation.mutate({});
-                }}
-                disabled={generatingDrafts}
-                title="Have Cal pre-draft intro emails for every prospect that doesn't have one yet"
+                onClick={() => { setEnrichingPartners(true); triggerPartnerEnrichment.mutate(); }}
+                disabled={enrichingPartners}
+                title="Refresh partner contact data from Apollo"
                 style={{
-                  display: "flex", alignItems: "center", gap: "0.4rem",
-                  fontSize: "0.8125rem", fontWeight: 600,
-                  padding: "0.375rem 0.875rem",
-                  border: "1px solid rgba(251,191,36,0.35)",
-                  color: generatingDrafts ? "rgba(251,191,36,0.40)" : "#fbbf24",
-                  background: generatingDrafts ? "rgba(251,191,36,0.04)" : "rgba(251,191,36,0.08)",
-                  cursor: generatingDrafts ? "wait" : "pointer",
-                  borderRadius: "0.375rem",
-                  transition: "all 0.15s",
-                  opacity: generatingDrafts ? 0.7 : 1,
+                  display: "flex", alignItems: "center", gap: "0.3rem",
+                  fontSize: "0.8125rem", fontWeight: 500,
+                  padding: "0.375rem 0.75rem",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: enrichingPartners ? "rgba(255,255,255,0.30)" : "rgba(255,255,255,0.55)",
+                  background: "#111111", cursor: enrichingPartners ? "not-allowed" : "pointer", borderRadius: "0.375rem",
                 }}
               >
-                {generatingDrafts
-                  ? <><RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> Drafting…</>
-                  : <><Zap size={12} /> Draft All with Cal</>
-                }
+                <RefreshCw size={12} style={{ animation: enrichingPartners ? "spin 1s linear infinite" : "none" }} />
+                {enrichingPartners ? "Enriching…" : "Enrich"}
               </button>
               <button
                 onClick={exportCSV}
@@ -694,51 +685,122 @@ export default function AdminProspects() {
           </div>
         </div>
 
-        {/* Outreach Stats Summary Bar */}
+        {/* Outreach workflow — primary focus when you land here */}
         {(() => {
-          const all = allData?.prospects ?? [];
-          const total = all.length;
-          const contacted = all.filter(p => p.status === "contacted" || p.status === "responded" || p.status === "scheduled" || p.status === "converted").length;
-          const responded = all.filter(p => p.status === "responded" || p.status === "scheduled" || p.status === "converted").length;
-          const converted = all.filter(p => p.status === "converted").length;
-          const responseRate = contacted > 0 ? Math.round((responded / contacted) * 100) : 0;
-          const conversionRate = responded > 0 ? Math.round((converted / responded) * 100) : 0;
-          const stats = [
-            { label: "Total", value: total, color: "#ececec" },
-            { label: "Contacted", value: contacted, color: "#f59e0b" },
-            { label: "Responded", value: responded, color: "#00ff87" },
-            { label: "Converted", value: converted, color: "#8b5cf6" },
-            { label: "Response Rate", value: `${responseRate}%`, color: responded > 0 ? "#00ff87" : "rgba(255,255,255,0.30)" },
-            { label: "Conv. Rate", value: `${conversionRate}%`, color: converted > 0 ? "#8b5cf6" : "rgba(255,255,255,0.30)" },
-          ];
+          const pendingDrafts = draftCount?.pending ?? 0;
+          const approvedDrafts = draftCount?.approved ?? 0;
+          const sentDrafts = draftCount?.sent ?? 0;
+          const newCount = statusCounts["new"] ?? 0;
+          const contactedCount = statusCounts["contacted"] ?? 0;
+          const respondedCount = (statusCounts["responded"] ?? 0) + (statusCounts["scheduled"] ?? 0) + (statusCounts["converted"] ?? 0);
+
+          const focusLine = pendingDrafts > 0
+            ? `${pendingDrafts} draft${pendingDrafts !== 1 ? "s" : ""} ready — review on Outreach, then Bulk Send`
+            : approvedDrafts > 0
+            ? `${approvedDrafts} approved — go to Outreach and Bulk Send`
+            : newCount > 0
+            ? `${newCount} new robot companies — start with Draft All with Cal`
+            : "Pipeline caught up — check responses and follow-ups";
+
           return (
             <div style={{
-              display: "flex",
-              alignItems: "stretch",
-              gap: 0,
               marginBottom: "1.5rem",
-              border: "1px solid rgba(255,255,255,0.08)",
+              border: `1px solid ${pendingDrafts > 0 ? "rgba(251,191,36,0.35)" : "rgba(0,255,135,0.20)"}`,
               borderRadius: "0.5rem",
-              overflow: "hidden",
-              background: "#111111",
+              background: pendingDrafts > 0 ? "rgba(251,191,36,0.04)" : "rgba(0,255,135,0.03)",
+              padding: "1rem 1.25rem",
             }}>
-              {stats.map((s, i) => (
-                <div key={s.label} style={{
-                  flex: 1,
-                  padding: "0.875rem 1rem",
-                  borderRight: i < stats.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.25rem",
-                }}>
-                  <span style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)" }}>
-                    {s.label}
-                  </span>
-                  <span style={{ fontSize: "1.25rem", fontWeight: 700, color: s.color, lineHeight: 1 }}>
-                    {s.value}
-                  </span>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
+                <div style={{ flex: 1, minWidth: "16rem" }}>
+                  <p style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: pendingDrafts > 0 ? "#fbbf24" : "#00ff87", margin: "0 0 0.35rem" }}>
+                    Cal Outreach Workflow
+                  </p>
+                  <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec", margin: 0, lineHeight: 1.4 }}>
+                    {focusLine}
+                  </p>
+                  <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.40)", margin: "0.4rem 0 0" }}>
+                    1 · Draft with Cal &nbsp;→&nbsp; 2 · Review drafts &nbsp;→&nbsp; 3 · Send / Bulk Send
+                  </p>
                 </div>
-              ))}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => {
+                      setGeneratingDrafts(true);
+                      generateDraftsMutation.mutate({});
+                    }}
+                    disabled={generatingDrafts}
+                    title="Step 1 — Have Cal pre-draft intro emails"
+                    style={{
+                      display: "flex", alignItems: "center", gap: "0.4rem",
+                      fontSize: "0.8125rem", fontWeight: 600,
+                      padding: "0.5rem 1rem",
+                      border: "1px solid rgba(251,191,36,0.35)",
+                      color: generatingDrafts ? "rgba(251,191,36,0.40)" : "#fbbf24",
+                      background: generatingDrafts ? "rgba(251,191,36,0.04)" : "rgba(251,191,36,0.08)",
+                      cursor: generatingDrafts ? "wait" : "pointer",
+                      borderRadius: "0.375rem",
+                      opacity: generatingDrafts ? 0.7 : 1,
+                    }}
+                  >
+                    {generatingDrafts
+                      ? <><RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> Drafting…</>
+                      : <><Zap size={12} /> ① Draft All with Cal</>
+                    }
+                  </button>
+                  <button
+                    onClick={() => setLocation("/admin/outreach")}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "0.4rem",
+                      fontSize: "0.8125rem", fontWeight: 700,
+                      padding: "0.5rem 1rem",
+                      border: pendingDrafts > 0 ? "none" : "1px solid rgba(255,255,255,0.15)",
+                      color: pendingDrafts > 0 ? "#080808" : "rgba(255,255,255,0.70)",
+                      background: pendingDrafts > 0 ? "#fbbf24" : "transparent",
+                      cursor: "pointer",
+                      borderRadius: "0.375rem",
+                    }}
+                  >
+                    <Mail size={13} />
+                    ② Review Drafts
+                    {pendingDrafts > 0 && (
+                      <span style={{ fontSize: "0.6875rem", fontWeight: 700, background: "rgba(8,8,8,0.20)", padding: "0.1rem 0.4rem", borderRadius: "9999px" }}>
+                        {pendingDrafts}
+                      </span>
+                    )}
+                  </button>
+                  {(pendingDrafts > 0 || approvedDrafts > 0) && (
+                    <button
+                      onClick={() => setLocation("/admin/outreach")}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "0.4rem",
+                        fontSize: "0.8125rem", fontWeight: 700,
+                        padding: "0.5rem 1rem",
+                        border: "none",
+                        color: "#080808",
+                        background: "#00ff87",
+                        cursor: "pointer",
+                        borderRadius: "0.375rem",
+                        boxShadow: "0 0 20px rgba(0,255,135,0.15)",
+                      }}
+                    >
+                      <Send size={13} />
+                      ③ Bulk Send ({pendingDrafts + approvedDrafts})
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div style={{
+                display: "flex", flexWrap: "wrap", gap: "1.25rem",
+                marginTop: "0.875rem", paddingTop: "0.875rem",
+                borderTop: "1px solid rgba(255,255,255,0.06)",
+                fontSize: "0.75rem", color: "rgba(255,255,255,0.45)",
+              }}>
+                <span><strong style={{ color: "#3b82f6" }}>{newCount}</strong> new</span>
+                <span><strong style={{ color: "#f59e0b" }}>{contactedCount}</strong> contacted</span>
+                <span><strong style={{ color: "#00ff87" }}>{respondedCount}</strong> replied</span>
+                <span><strong style={{ color: "#fbbf24" }}>{pendingDrafts}</strong> drafts pending</span>
+                <span><strong style={{ color: "#60a5fa" }}>{sentDrafts}</strong> sent</span>
+              </div>
             </div>
           );
         })()}
@@ -843,63 +905,6 @@ export default function AdminProspects() {
               <span style={{ fontSize: "0.6875rem", color: hotFilter ? "#f59e0b" : "rgba(255,255,255,0.30)", fontVariantNumeric: "tabular-nums" }}>{hotCount}</span>
             )}
           </button>
-
-          {/* Enrich Partners action button */}
-          <button
-            onClick={() => { setEnrichingPartners(true); triggerPartnerEnrichment.mutate(); }}
-            disabled={enrichingPartners}
-            style={{
-              fontSize: "0.8125rem",
-              fontWeight: 500,
-              padding: "0.375rem 0.75rem",
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "#111111",
-              color: enrichingPartners ? "rgba(255,255,255,0.30)" : "rgba(255,255,255,0.55)",
-              cursor: enrichingPartners ? "not-allowed" : "pointer",
-              borderRadius: "0.375rem",
-              transition: "all 0.1s",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.35rem",
-              marginLeft: "auto",
-            }}
-          >
-            <RefreshCw size={12} style={{ animation: enrichingPartners ? "spin 1s linear infinite" : "none" }} />
-            {enrichingPartners ? "Enriching..." : "Enrich Partners"}
-          </button>
-
-          {/* Vendor Type filter pills */}
-          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginLeft: "0.5rem", paddingLeft: "0.75rem", borderLeft: "1px solid rgba(255,255,255,0.08)" }}>
-            <span style={{ fontSize: "0.6875rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.30)", marginRight: "0.1rem" }}>Type:</span>
-            {Object.entries(VENDOR_TYPE_CONFIG).map(([key, cfg]) => {
-              const count = (allData?.prospects ?? []).filter(p => String((p as Record<string, unknown>).vendorType ?? "robot_oem") === key).length;
-              if (count === 0) return null;
-              const isActive = vendorTypeFilter === key;
-              return (
-                <button
-                  key={key}
-                  onClick={() => { setVendorTypeFilter(isActive ? "" : key); setSelectedIds(new Set()); }}
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: isActive ? 500 : 400,
-                    padding: "0.25rem 0.625rem",
-                    border: `1px solid ${isActive ? cfg.color : "rgba(255,255,255,0.08)"}`,
-                    background: isActive ? `${cfg.color}15` : "#111111",
-                    color: isActive ? cfg.color : "rgba(255,255,255,0.55)",
-                    cursor: "pointer",
-                    borderRadius: "0.25rem",
-                    transition: "all 0.1s",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.3rem",
-                  }}
-                >
-                  {cfg.label}
-                  <span style={{ fontSize: "0.6875rem", color: isActive ? cfg.color : "rgba(255,255,255,0.30)", fontVariantNumeric: "tabular-nums" }}>{count}</span>
-                </button>
-              );
-            })}
-          </div>
 
           {/* Hide Contacted quick-toggle */}
           {statusFilter === "" && !hotFilter && (
@@ -1706,9 +1711,21 @@ export default function AdminProspects() {
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }} onClick={e => e.stopPropagation()}>
                       {/* Status-aware outreach action button */}
                       {p.status === "contacted" || isSent ? (
-                        <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", color: "#00ff87" }}>
-                          <Check size={12} /> Sent
-                        </span>
+                        <button
+                          onClick={() => setLocation("/admin/outreach")}
+                          title="View in Outreach queue"
+                          style={{
+                            display: "flex", alignItems: "center", gap: "0.3rem",
+                            fontSize: "0.8125rem", fontWeight: 500,
+                            padding: "0.25rem 0.625rem",
+                            border: "1px solid rgba(0,255,135,0.25)",
+                            color: "#00ff87",
+                            background: "transparent", cursor: "pointer",
+                            borderRadius: "0.25rem",
+                          }}
+                        >
+                          <Check size={12} /> Sent · Outreach
+                        </button>
                       ) : p.status === "responded" ? (
                         <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", color: "#00ff87" }}>
                           <Check size={12} /> Replied

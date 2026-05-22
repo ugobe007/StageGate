@@ -8,6 +8,7 @@ import { createContext } from "./context";
 import { followupDigestHandler, nightlyResearchHandler } from "../scheduledHandlers";
 import { resendWebhookHandler } from "../webhooks/resend";
 import { resendInboundHandler } from "../webhooks/resend-inbound";
+import { mountWebhookRoute } from "../webhooks/webhookRawBody";
 import { stripeWebhookHandler, createCheckoutSession, stripeConfigured } from "./stripe";
 import {
   salesAgentIngestHandler,
@@ -23,6 +24,12 @@ import { runCalendarReminderPoller } from "../agents/calendarReminderPoller";
 
 export async function createStageGateApp(): Promise<Express> {
   const app = express();
+
+  // Webhooks require raw body for HMAC verification — mount before express.json()
+  mountWebhookRoute(app, "/api/webhooks/resend", resendWebhookHandler);
+  mountWebhookRoute(app, "/api/webhooks/resend-inbound", resendInboundHandler);
+  mountWebhookRoute(app, "/api/webhooks/stripe", stripeWebhookHandler);
+
   const rawJsonBody = express.json({
     limit: "50mb",
     verify: (req, _res, buf) => {
@@ -111,10 +118,6 @@ export async function createStageGateApp(): Promise<Express> {
       res.status(500).json({ error: msg });
     }
   });
-
-  app.post("/api/webhooks/resend", resendWebhookHandler);
-  app.post("/api/webhooks/resend-inbound", resendInboundHandler);
-  app.post("/api/webhooks/stripe", stripeWebhookHandler);
 
   // Stripe checkout session — called from the client with an orderId
   app.post("/api/payments/checkout", async (req: Request, res: Response) => {

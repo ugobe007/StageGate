@@ -41,6 +41,7 @@ import {
   type ConversationStage,
 } from "./frankPlaybook.js";
 import { outreachEmailPolicySummary, selectOutreachEmail } from "../outreachContacts.js";
+import { pickCalInsight } from "./calInsights.js";
 
 const OUTREACH_BATCH_SIZE = 8;
 const RESEND_API = "https://api.resend.com/emails";
@@ -691,12 +692,21 @@ function buildDiscoveryEmail(
           : ` We have teams ready for upcoming LV shows and would love to be your ground crew.`
       }`;
 
+  const insight = pickCalInsight({
+    showName,
+    robotType: prospect.robotType,
+    companyName: prospect.company,
+    allowHumor: true,
+  });
+
   const body = [
     `Hi ${greetingName},`,
     ``,
     introLine,
     ``,
     showLine,
+    ``,
+    insight,
     ``,
     `We operate fully bonded warehouses for robot storage and have teams that can help unpack, test, and fix technical issues that may have occurred during transit. We care for your robots so they are show-ready the moment you arrive.`,
     ``,
@@ -748,6 +758,14 @@ async function generateFrankEmail(
 
   const promptTemplate = STAGE_PROMPTS[stage] ?? STAGE_PROMPTS["followup_1"]!;
 
+  const calInsight = pickCalInsight({
+    showName: primaryShow,
+    robotType: prospect.robotType,
+    companyName: prospect.company,
+    seed: `${prospect.company}:${stage}`,
+    allowHumor: true,
+  });
+
   const userPrompt = promptTemplate
     .replace(/\{\{companyName\}\}/g, prospect.company)
     .replace(/\{\{contactName\}\}/g, greetingName)
@@ -755,7 +773,8 @@ async function generateFrankEmail(
     .replace(/\{\{showDates\}\}/g, "")
     .replace(/\{\{showLocation\}\}/g, "Las Vegas")
     .replace(/\{\{robotDescription\}\}/g, robotDesc)
-    .replace(/\{\{robotGuildPitch\}\}/g, `${ROBOT_GUILD_PITCH.pitch}\n${ROBOT_GUILD_PITCH.cta}`);
+    .replace(/\{\{robotGuildPitch\}\}/g, `${ROBOT_GUILD_PITCH.pitch}\n${ROBOT_GUILD_PITCH.cta}`)
+    .replace(/\{\{calInsight\}\}/g, calInsight);
 
   const result = await invokeLLM({
     messages: [

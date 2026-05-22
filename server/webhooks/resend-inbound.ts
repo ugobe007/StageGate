@@ -35,7 +35,6 @@
  *   → Cal's draft acknowledges and asks how he can help
  */
 import type { Request, Response } from "express";
-import crypto from "crypto";
 import { getDb } from "../db.js";
 import {
   emailThreads,
@@ -50,7 +49,7 @@ import { invokeLLM } from "../_core/llm.js";
 import { FRANK_PERSONA, FRANK_SYSTEM_PROMPT } from "../agents/frankPlaybook.js";
 import { classifyEmailIntent } from "../agents/intentClassifier.js";
 import type { IntentCategory } from "../agents/intentClassifier.js";
-import crypto_v2 from "crypto";
+import { verifyResendSignature } from "./resendVerify.js";
 
 const FRANK_FROM_NAME = FRANK_PERSONA.fromName;
 const FRANK_FROM_EMAIL = FRANK_PERSONA.fromEmail;
@@ -63,35 +62,11 @@ const OUTREACH_STAGES = new Set([
   "robot_guild", "email_opened", "link_clicked", "awaiting_reply",
 ]);
 
-// ─── Signature verification ───────────────────────────────────────────────────
-
-function verifyInboundSignature(req: Request): boolean {
-  const secret = process.env.RESEND_WEBHOOK_SECRET;
-  if (!secret) return process.env.NODE_ENV !== "production";
-  const svixId = req.headers["svix-id"] as string | undefined;
-  const svixTimestamp = req.headers["svix-timestamp"] as string | undefined;
-  const svixSignature = req.headers["svix-signature"] as string | undefined;
-  if (!svixId || !svixTimestamp || !svixSignature) return false;
-  try {
-    const rawSecret = secret.startsWith("whsec_")
-      ? Buffer.from(secret.slice(6), "base64")
-      : Buffer.from(secret, "base64");
-    const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
-    const body = rawBody ? rawBody.toString("utf8") : JSON.stringify(req.body);
-    const hmac = crypto.createHmac("sha256", rawSecret)
-      .update(`${svixId}.${svixTimestamp}.${body}`)
-      .digest("base64");
-    return svixSignature.split(" ").some(sig => sig === `v1,${hmac}`);
-  } catch {
-    return false;
-  }
-}
-
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 export async function resendInboundHandler(req: Request, res: Response) {
   try {
-    if (!verifyInboundSignature(req)) {
+    if (!verifyResendSignature(req)) {
       return res.status(401).json({ error: "Invalid signature" });
     }
 

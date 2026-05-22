@@ -1,5 +1,12 @@
 import { createStageGateApp } from "../dist/app.js";
 
+// Vercel pre-parses JSON by default, which breaks Resend/Stripe HMAC verification.
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 let appPromise = null;
 
 function getApp() {

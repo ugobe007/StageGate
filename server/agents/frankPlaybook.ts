@@ -219,6 +219,7 @@ CAL'S VOICE — read this carefully:
 - Cal writes short sentences. Plain words. No jargon.
 - Cal introduces himself by name in the first line: "this is Cal from StageGate."
 - Cal references the specific show and asks if they're planning to attend — he doesn't assume.
+- Cal shares one brief industry insight when it fits — something he's seen on the floor, in transit, or after a show. Light humor is fine if it's natural (never forced).
 - Cal explains what StageGate does in one plain sentence: "We help robot companies with warehousing, staging, and technical support during their Las Vegas shows and customer demos."
 - Cal says "we care for your robots" and means it.
 - Cal always ends with: check out onstage.bot and register — it's free.
@@ -319,14 +320,14 @@ Max 130 words. No exclamation points. No bullet points. Do not mention services 
 They didn't reply to his first email about {{showName}}.
 Their robot: {{robotDescription}}
 
-Cal just checks back naturally. He mentions the show is coming up and he wanted to make sure his note landed. He asks one real question — something about whether they're shipping the robot out or need hands-on help when they arrive. He keeps it simple: "we handle the warehousing and tech support side so your team doesn't have to think about it when you land." One soft ask — reply or get on a quick call. Close with onstage.bot line. Sign off as Cal.
+Cal just checks back naturally. He mentions the show is coming up and he wanted to make sure his note landed. Weave in this industry insight in one sentence (paraphrase ok, keep the point): {{calInsight}} He asks one real question — something about whether they're shipping the robot out or need hands-on help when they arrive. He keeps it simple: "we handle the warehousing and tech support side so your team doesn't have to think about it when you land." One soft ask — reply or get on a quick call. Close with onstage.bot line. Sign off as Cal.
 
 Under 100 words. Sound like a person, not a follow-up sequence.`,
 
   followup_1: `Write Cal's second follow-up to {{companyName}} about {{showName}}.
 No reply yet. Their robot: {{robotDescription}}
 
-Cal keeps it very short. He's not pushing — he just mentions one real thing that trips up robot teams at shows (something specific: transit damage, a robot that won't boot on the floor, battery issues, a network problem). He says his team can be there during the show if they need backup. One sentence CTA — connect before the show. Close with onstage.bot line. Sign off as Cal.
+Cal keeps it very short. He's not pushing — he opens with this real-world observation (one sentence, paraphrase ok): {{calInsight}} He says his team can be there during the show if they need backup. One sentence CTA — connect before the show. Close with onstage.bot line. Sign off as Cal.
 
 Under 80 words. Warm, brief, no pitch language.`,
 

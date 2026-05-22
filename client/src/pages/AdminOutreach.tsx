@@ -1,12 +1,14 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import DbStatusBanner from "@/components/DbStatusBanner";
-import { ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, RefreshCw, Send, Zap, Check, Users } from "lucide-react";
 
 type DraftStatus = "pending" | "approved" | "sent" | "discarded";
+type WorkflowTab = "pending" | "approved" | "sent";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DraftEntry = any;
@@ -18,15 +20,22 @@ const STATUS_COLORS: Record<string, string> = {
   discarded: "rgba(255,255,255,0.30)",
 };
 
+const TAB_LABELS: Record<WorkflowTab, string> = {
+  pending: "Review",
+  approved: "Ready to Send",
+  sent: "Sent",
+};
+
 export default function AdminOutreach() {
-  const [activeTab, setActiveTab] = useState<"pending" | "approved" | "sent">("pending");
+  const [, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState<WorkflowTab>("pending");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editSubject, setEditSubject] = useState("");
   const [editBody, setEditBody] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [generating, setGenerating] = useState(false);
-  const [confirmBulkSend, setConfirmBulkSend] = useState(false);
+  const [confirmBulkSend, setConfirmBulkSend] = useState<{ count: number; ids: number[] } | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -40,6 +49,18 @@ export default function AdminOutreach() {
     { refetchInterval: 15_000 }
   );
 
+  const { data: draftCount } = trpc.admin.getDraftCount.useQuery(undefined, { refetchInterval: 15_000 });
+
+  const pendingCount = draftCount?.pending ?? 0;
+  const approvedCount = draftCount?.approved ?? 0;
+  const sentCount = draftCount?.sent ?? 0;
+  const sendableCount = pendingCount + approvedCount;
+
+  const { data: allSendableDrafts = [] } = trpc.admin.getDrafts.useQuery(
+    { statuses: ["pending", "approved"] },
+    { refetchInterval: 15_000, enabled: sendableCount > 0 }
+  );
+
   const generateMutation = trpc.admin.generateDrafts.useMutation({
     onSuccess: (res) => {
       const r = res.result as { generated?: number; skipped?: number; conversationsSeeded?: number; errors?: string[] } | undefined;
@@ -51,18 +72,27 @@ export default function AdminOutreach() {
       if (errs > 0) msg += ` · ${errs} error${errs !== 1 ? "s" : ""}`;
       toast.success(msg);
       utils.admin.getDrafts.invalidate();
+      utils.admin.getDraftCount.invalidate();
       setGenerating(false);
     },
     onError: (e) => { toast.error(e.message); setGenerating(false); },
   });
 
   const approveMutation = trpc.admin.approveDraft.useMutation({
-    onSuccess: () => { toast.success("Draft approved"); utils.admin.getDrafts.invalidate(); },
+    onSuccess: () => {
+      toast.success("Draft approved");
+      utils.admin.getDrafts.invalidate();
+      utils.admin.getDraftCount.invalidate();
+    },
     onError: (e) => toast.error(e.message),
   });
 
   const discardMutation = trpc.admin.discardDraft.useMutation({
-    onSuccess: () => { toast.success("Draft discarded"); utils.admin.getDrafts.invalidate(); },
+    onSuccess: () => {
+      toast.success("Draft discarded");
+      utils.admin.getDrafts.invalidate();
+      utils.admin.getDraftCount.invalidate();
+    },
     onError: (e) => toast.error(e.message),
   });
 
@@ -79,6 +109,7 @@ export default function AdminOutreach() {
     onSuccess: (res) => {
       toast.success(`Email sent to ${res.sentTo}`);
       utils.admin.getDrafts.invalidate();
+      utils.admin.getDraftCount.invalidate();
       utils.prospects.listWithEngagement.invalidate();
       setExpandedId(null);
     },
@@ -90,11 +121,12 @@ export default function AdminOutreach() {
       toast.success(`Sent ${res.sent} email${res.sent !== 1 ? "s" : ""}${res.failed > 0 ? `, ${res.failed} failed` : ""}`);
       if (res.errors.length > 0) toast.error(res.errors.slice(0, 3).join("; "));
       setSelectedIds(new Set());
-      setConfirmBulkSend(false);
+      setConfirmBulkSend(null);
       utils.admin.getDrafts.invalidate();
+      utils.admin.getDraftCount.invalidate();
       utils.prospects.listWithEngagement.invalidate();
     },
-    onError: (e) => { toast.error(e.message); setConfirmBulkSend(false); },
+    onError: (e) => { toast.error(e.message); setConfirmBulkSend(null); },
   });
 
   const handleGenerate = () => {
@@ -129,68 +161,192 @@ export default function AdminOutreach() {
     }
   };
 
+  const draftIdsOnTab = (drafts as DraftEntry[]).map((d) => d.draft.id as number);
+  const allSendableIds = (allSendableDrafts as DraftEntry[]).map((d) => d.draft.id as number);
+
+  const handleApproveAll = () => {
+    if (activeTab !== "pending" || drafts.length === 0) return;
+    draftIdsOnTab.forEach((id) => approveMutation.mutate({ draftId: id }));
+    toast.success(`Approved ${draftIdsOnTab.length} draft${draftIdsOnTab.length !== 1 ? "s" : ""}`);
+    setSelectedIds(new Set());
+  };
+
+  const requestBulkSend = (ids: number[]) => {
+    if (ids.length === 0) return;
+    setConfirmBulkSend({ count: ids.length, ids });
+  };
+
+  const executeBulkSend = () => {
+    if (!confirmBulkSend) return;
+    bulkSendMutation.mutate({ draftIds: confirmBulkSend.ids });
+  };
+
+  const tabCounts: Record<WorkflowTab, number> = {
+    pending: pendingCount,
+    approved: approvedCount,
+    sent: sentCount,
+  };
+
   return (
     <>
       <DbStatusBanner />
       <div style={{ padding: "2rem", maxWidth: "56rem", margin: "0 auto", color: "#ececec" }}>
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "2rem" }}>
-          <div>
-            <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.30)", margin: "0 0 0.25rem" }}>XBOT / OUTREACH</p>
-            <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0 }}>Email Drafts</h1>
-            <p style={{ fontSize: "0.875rem", color: "#64748b", margin: "0.25rem 0 0" }}>
-              Review AI-generated outreach emails before sending via Resend from outreach@onstage.bot
-            </p>
-          </div>
-          <button
-            onClick={handleGenerate}
-            disabled={generating || generateMutation.isPending}
-            style={{
-              display: "flex", alignItems: "center", gap: "0.375rem",
-              fontSize: "0.875rem", fontWeight: 600,
-              padding: "0.5rem 1rem",
-              border: "none",
-              background: "#f59e0b", color: "#000",
-              borderRadius: "0.375rem", cursor: "pointer",
-              opacity: generating || generateMutation.isPending ? 0.7 : 1,
-            }}
-          >
-            {generating || generateMutation.isPending ? (
-              <><RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} /> Generating…</>
-            ) : (
-              "⚡ Generate Cal Drafts"
-            )}
-          </button>
+        <div style={{ marginBottom: "1.5rem" }}>
+          <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.30)", margin: "0 0 0.25rem" }}>XBOT / OUTREACH</p>
+          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0 }}>Cal Outreach — Review &amp; Send</h1>
+          <p style={{ fontSize: "0.875rem", color: "#64748b", margin: "0.25rem 0 0" }}>
+            Step 3 of 3 · Approve drafts, then send via outreach@onstage.bot
+          </p>
         </div>
 
+        {/* 3-step workflow */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "0.5rem",
+          marginBottom: "1.5rem",
+        }}>
+          {([
+            { step: 1, label: "Draft", desc: "Cal writes intro emails", action: () => setLocation("/admin/prospects"), actionLabel: "Prospects", icon: Zap, active: false, count: null as number | null },
+            { step: 2, label: "Review", desc: "Edit & approve drafts", action: () => setActiveTab("pending"), actionLabel: "Review tab", icon: Check, active: activeTab === "pending", count: pendingCount },
+            { step: 3, label: "Send", desc: "Send one or bulk", action: null, actionLabel: "", icon: Send, active: activeTab !== "sent", count: sendableCount },
+          ] as const).map((s) => {
+            const Icon = s.icon;
+            const isCurrent = s.step === 2 && activeTab === "pending" || s.step === 3 && activeTab !== "sent";
+            return (
+              <div
+                key={s.step}
+                style={{
+                  padding: "0.875rem 1rem",
+                  borderRadius: "0.5rem",
+                  border: `1px solid ${isCurrent ? (s.step === 3 ? "rgba(0,255,135,0.35)" : "rgba(251,191,36,0.35)") : "rgba(255,255,255,0.08)"}`,
+                  background: isCurrent ? (s.step === 3 ? "rgba(0,255,135,0.05)" : "rgba(251,191,36,0.04)") : "#111111",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.35rem" }}>
+                  <span style={{
+                    width: "1.25rem", height: "1.25rem", borderRadius: "50%",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "0.6875rem", fontWeight: 700,
+                    background: isCurrent ? (s.step === 3 ? "#00ff87" : "#fbbf24") : "rgba(255,255,255,0.10)",
+                    color: isCurrent ? "#080808" : "rgba(255,255,255,0.45)",
+                  }}>{s.step}</span>
+                  <Icon size={13} style={{ color: isCurrent ? (s.step === 3 ? "#00ff87" : "#fbbf24") : "rgba(255,255,255,0.35)" }} />
+                  <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: isCurrent ? "#ececec" : "rgba(255,255,255,0.55)" }}>{s.label}</span>
+                  {s.count != null && s.count > 0 && (
+                    <span style={{ marginLeft: "auto", fontSize: "0.6875rem", fontWeight: 700, color: isCurrent ? "#fbbf24" : "rgba(255,255,255,0.35)" }}>{s.count}</span>
+                  )}
+                </div>
+                <p style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.35)", margin: "0 0 0.5rem" }}>{s.desc}</p>
+                {s.step === 1 && (
+                  <button
+                    onClick={s.action!}
+                    style={{ fontSize: "0.6875rem", fontWeight: 600, padding: "0.2rem 0.5rem", border: "1px solid rgba(251,191,36,0.30)", color: "#fbbf24", background: "transparent", borderRadius: "0.25rem", cursor: "pointer" }}
+                  >
+                    ← Draft on Prospects
+                  </button>
+                )}
+                {s.step === 1 && (
+                  <button
+                    onClick={handleGenerate}
+                    disabled={generating || generateMutation.isPending}
+                    style={{ fontSize: "0.6875rem", fontWeight: 600, padding: "0.2rem 0.5rem", marginLeft: "0.35rem", border: "none", color: "#080808", background: "#fbbf24", borderRadius: "0.25rem", cursor: "pointer", opacity: generating ? 0.6 : 1 }}
+                  >
+                    {generating ? "Drafting…" : "Generate Drafts"}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Step 3 — primary send actions (always visible when sendable) */}
+        {sendableCount > 0 && (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "0.75rem",
+            marginBottom: "1.25rem",
+            padding: "0.875rem 1rem",
+            border: "1px solid rgba(0,255,135,0.30)",
+            borderRadius: "0.5rem",
+            background: "rgba(0,255,135,0.04)",
+          }}>
+            <div>
+              <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#00ff87", margin: "0 0 0.25rem" }}>Step 3 · Send</p>
+              <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec", margin: 0 }}>
+                {sendableCount} email{sendableCount !== 1 ? "s" : ""} ready to send
+                {selectedIds.size > 0 && <span style={{ color: "rgba(255,255,255,0.45)", fontWeight: 400 }}> · {selectedIds.size} selected</span>}
+              </p>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+              {confirmBulkSend ? (
+                <>
+                  <span style={{ fontSize: "0.8125rem", color: "#fbbf24" }}>Send {confirmBulkSend.count} emails?</span>
+                  <button
+                    onClick={executeBulkSend}
+                    disabled={bulkSendMutation.isPending}
+                    style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.5rem 1rem", border: "none", background: "#00ff87", color: "#080808", borderRadius: "0.375rem", cursor: "pointer" }}
+                  >
+                    <Send size={13} />
+                    {bulkSendMutation.isPending ? "Sending…" : "Confirm Bulk Send"}
+                  </button>
+                  <button onClick={() => setConfirmBulkSend(null)} style={{ fontSize: "0.8125rem", padding: "0.5rem 0.75rem", border: "1px solid rgba(255,255,255,0.12)", background: "#111111", color: "#cbd5e1", borderRadius: "0.375rem", cursor: "pointer" }}>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  {selectedIds.size > 0 && (
+                    <button
+                      onClick={() => requestBulkSend(Array.from(selectedIds))}
+                      style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid rgba(0,255,135,0.40)", color: "#00ff87", background: "transparent", borderRadius: "0.375rem", cursor: "pointer" }}
+                    >
+                      <Send size={13} /> Send Selected ({selectedIds.size})
+                    </button>
+                  )}
+                  <button
+                    onClick={() => requestBulkSend(allSendableIds.length > 0 ? allSendableIds : draftIdsOnTab)}
+                    style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.5rem 1.25rem", border: "none", background: "#00ff87", color: "#080808", borderRadius: "0.375rem", cursor: "pointer", boxShadow: "0 0 20px rgba(0,255,135,0.20)" }}
+                  >
+                    <Users size={13} />
+                    Bulk Send All ({allSendableIds.length || sendableCount})
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Tabs */}
-        <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: "1.5rem" }}>
+        <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: "1rem" }}>
           {(["pending", "approved", "sent"] as const).map((tab) => (
             <button
               key={tab}
-              onClick={() => { setActiveTab(tab); setSelectedIds(new Set()); setExpandedId(null); setEditingId(null); }}
+              onClick={() => { setActiveTab(tab); setSelectedIds(new Set()); setExpandedId(null); setEditingId(null); setConfirmBulkSend(null); }}
               style={{
                 padding: "0.625rem 1rem",
                 fontSize: "0.875rem", fontWeight: 500,
                 background: "none", border: "none",
-                borderBottom: `2px solid ${activeTab === tab ? "#f59e0b" : "transparent"}`,
+                borderBottom: `2px solid ${activeTab === tab ? (tab === "sent" ? "#60a5fa" : tab === "approved" ? "#00ff87" : "#f59e0b") : "transparent"}`,
                 color: activeTab === tab ? "#ececec" : "#64748b",
                 cursor: "pointer",
-                textTransform: "capitalize",
                 marginBottom: "-1px",
+                display: "flex", alignItems: "center", gap: "0.4rem",
               }}
             >
-              {tab}
-              {activeTab === tab && (
-                <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", background: "#1a1a1a", color: "#64748b", padding: "0.125rem 0.375rem", borderRadius: "0.25rem" }}>
-                  {drafts.length}
-                </span>
-              )}
+              {TAB_LABELS[tab]}
+              <span style={{ fontSize: "0.75rem", background: activeTab === tab ? "#1a1a1a" : "transparent", color: activeTab === tab ? "#64748b" : "rgba(255,255,255,0.25)", padding: "0.125rem 0.375rem", borderRadius: "0.25rem" }}>
+                {tabCounts[tab]}
+              </span>
             </button>
           ))}
         </div>
 
-        {/* Bulk toolbar */}
+        {/* Row selection toolbar */}
         {activeTab !== "sent" && drafts.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", padding: "0.625rem 0.875rem", background: "#080808", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem" }}>
             <input
@@ -200,44 +356,15 @@ export default function AdminOutreach() {
               style={{ width: "1rem", height: "1rem", accentColor: "#f59e0b" }}
             />
             <span style={{ fontSize: "0.875rem", color: "#64748b" }}>
-              {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
+              {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all on this tab"}
             </span>
-            {selectedIds.size > 0 && (
-              <>
-                {activeTab === "pending" && (
-                  <button
-                    onClick={() => {
-                      selectedIds.forEach((id) => approveMutation.mutate({ draftId: id }));
-                      setSelectedIds(new Set());
-                    }}
-                    style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00ff87", background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
-                  >
-                    ✓ Approve {selectedIds.size}
-                  </button>
-                )}
-                {confirmBulkSend ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginLeft: "auto" }}>
-                    <span style={{ fontSize: "0.875rem", color: "#ef4444" }}>Send {selectedIds.size} emails?</span>
-                    <button
-                      onClick={() => bulkSendMutation.mutate({ draftIds: Array.from(selectedIds) })}
-                      disabled={bulkSendMutation.isPending}
-                      style={{ fontSize: "0.875rem", fontWeight: 600, padding: "0.25rem 0.75rem", border: "none", background: "#ef4444", color: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
-                    >
-                      {bulkSendMutation.isPending ? "Sending…" : "Confirm Send"}
-                    </button>
-                    <button onClick={() => setConfirmBulkSend(false)} style={{ fontSize: "0.875rem", padding: "0.25rem 0.75rem", border: "1px solid rgba(255,255,255,0.12)", background: "#111111", color: "#cbd5e1", borderRadius: "0.25rem", cursor: "pointer" }}>
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setConfirmBulkSend(true)}
-                    style={{ marginLeft: "auto", fontSize: "0.875rem", fontWeight: 600, padding: "0.25rem 0.875rem", border: "none", background: "#f59e0b", color: "#000", borderRadius: "0.25rem", cursor: "pointer" }}
-                  >
-                    ✉ Send {selectedIds.size} Now
-                  </button>
-                )}
-              </>
+            {activeTab === "pending" && drafts.length > 0 && (
+              <button
+                onClick={handleApproveAll}
+                style={{ marginLeft: "auto", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00ff87", background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
+              >
+                ✓ Approve All ({drafts.length})
+              </button>
             )}
           </div>
         )}
@@ -249,11 +376,14 @@ export default function AdminOutreach() {
           <div style={{ textAlign: "center", padding: "4rem 0", color: "rgba(255,255,255,0.30)", fontSize: "0.875rem" }}>
             {activeTab === "pending" ? (
               <div>
-                <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.55)", marginBottom: "0.5rem" }}>No pending drafts</p>
-                <p>Click "⚡ Generate Cal Drafts" to have Cal write personalized intro emails for all prospects.</p>
+                <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.55)", marginBottom: "0.5rem" }}>No drafts to review</p>
+                <p style={{ marginBottom: "1rem" }}>Go to Prospects and click &quot;Draft All with Cal&quot; — or generate here.</p>
+                <button onClick={() => setLocation("/admin/prospects")} style={{ fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid rgba(251,191,36,0.35)", color: "#fbbf24", background: "transparent", borderRadius: "0.375rem", cursor: "pointer" }}>
+                  ← Go to Prospects (Step 1)
+                </button>
               </div>
             ) : activeTab === "approved" ? (
-              <p>No approved drafts. Approve drafts from the Pending tab first.</p>
+              <p>No approved drafts. Review pending drafts first, or send directly from Review tab.</p>
             ) : (
               <p>No emails sent yet.</p>
             )}
@@ -276,7 +406,6 @@ export default function AdminOutreach() {
                     transition: "border-color 0.1s",
                   }}
                 >
-                  {/* Row header */}
                   <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.875rem 1rem" }}>
                     {activeTab !== "sent" && (
                       <input
@@ -324,16 +453,16 @@ export default function AdminOutreach() {
                           </button>
                         </>
                       )}
-                      {(activeTab === "pending" || activeTab === "approved") && (
+                      {activeTab !== "sent" && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             sendMutation.mutate({ draftId: entry.draft.id });
                           }}
                           disabled={sendMutation.isPending}
-                          style={{ fontSize: "0.875rem", fontWeight: 600, padding: "0.25rem 0.75rem", border: "none", background: "#f59e0b", color: "#000", borderRadius: "0.25rem", cursor: "pointer" }}
+                          style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.375rem 0.875rem", border: "none", background: "#00ff87", color: "#080808", borderRadius: "0.25rem", cursor: "pointer" }}
                         >
-                          ✉ Send
+                          <Send size={12} /> Send
                         </button>
                       )}
                       <button
@@ -345,10 +474,8 @@ export default function AdminOutreach() {
                     </div>
                   </div>
 
-                  {/* Expanded panel */}
                   {isExpanded && (
                     <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                      {/* Agent reasoning */}
                       {entry.draft.agentReasoning && (
                         <div style={{ fontSize: "0.8125rem", color: "#64748b", background: "#080808", borderRadius: "0.375rem", padding: "0.625rem 0.875rem", border: "1px solid rgba(255,255,255,0.08)" }}>
                           <span style={{ color: "#f59e0b", fontWeight: 600 }}>Agent reasoning: </span>
@@ -398,12 +525,21 @@ export default function AdminOutreach() {
                             {entry.draft.body}
                           </pre>
                           {activeTab !== "sent" && (
-                            <button
-                              onClick={() => handleEdit(entry)}
-                              style={{ alignSelf: "flex-start", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(255,255,255,0.12)", background: "#111111", color: "#cbd5e1", borderRadius: "0.25rem", cursor: "pointer" }}
-                            >
-                              ✏ Edit Draft
-                            </button>
+                            <div style={{ display: "flex", gap: "0.5rem" }}>
+                              <button
+                                onClick={() => handleEdit(entry)}
+                                style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(255,255,255,0.12)", background: "#111111", color: "#cbd5e1", borderRadius: "0.25rem", cursor: "pointer" }}
+                              >
+                                ✏ Edit Draft
+                              </button>
+                              <button
+                                onClick={() => sendMutation.mutate({ draftId: entry.draft.id })}
+                                disabled={sendMutation.isPending}
+                                style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.25rem 0.875rem", border: "none", background: "#00ff87", color: "#080808", borderRadius: "0.25rem", cursor: "pointer" }}
+                              >
+                                <Send size={12} /> Send Now
+                              </button>
+                            </div>
                           )}
                         </div>
                       )}
