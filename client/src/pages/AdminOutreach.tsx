@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import DbStatusBanner from "@/components/DbStatusBanner";
+import OutreachCommandCenter from "@/components/OutreachCommandCenter";
 import { ChevronDown, ChevronUp, RefreshCw, Send, Zap, Check, Users } from "lucide-react";
 
 type DraftStatus = "pending" | "approved" | "sent" | "discarded";
@@ -55,6 +56,19 @@ export default function AdminOutreach() {
   const approvedCount = draftCount?.approved ?? 0;
   const sentCount = draftCount?.sent ?? 0;
   const sendableCount = pendingCount + approvedCount;
+  const queueClear = sendableCount === 0;
+  const lastSentAt = draftCount?.lastSentAt ?? null;
+
+  const { data: hubStats } = trpc.admin.getOutreachHubStats.useQuery(undefined, {
+    refetchInterval: 20_000,
+  });
+
+  // Land on Sent tab when queue is clear and we have sent history
+  useEffect(() => {
+    if (queueClear && sentCount > 0 && activeTab === "pending") {
+      setActiveTab("sent");
+    }
+  }, [queueClear, sentCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: allSendableDrafts = [] } = trpc.admin.getDrafts.useQuery(
     { statuses: ["pending", "approved"] },
@@ -73,6 +87,7 @@ export default function AdminOutreach() {
       toast.success(msg);
       utils.admin.getDrafts.invalidate();
       utils.admin.getDraftCount.invalidate();
+      utils.admin.getOutreachHubStats.invalidate();
       setGenerating(false);
     },
     onError: (e) => { toast.error(e.message); setGenerating(false); },
@@ -83,6 +98,7 @@ export default function AdminOutreach() {
       toast.success("Draft approved");
       utils.admin.getDrafts.invalidate();
       utils.admin.getDraftCount.invalidate();
+      utils.admin.getOutreachHubStats.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });
@@ -92,6 +108,7 @@ export default function AdminOutreach() {
       toast.success("Draft discarded");
       utils.admin.getDrafts.invalidate();
       utils.admin.getDraftCount.invalidate();
+      utils.admin.getOutreachHubStats.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });
@@ -110,6 +127,7 @@ export default function AdminOutreach() {
       toast.success(`Email sent to ${res.sentTo}`);
       utils.admin.getDrafts.invalidate();
       utils.admin.getDraftCount.invalidate();
+      utils.admin.getOutreachHubStats.invalidate();
       utils.prospects.listWithEngagement.invalidate();
       setExpandedId(null);
     },
@@ -124,6 +142,7 @@ export default function AdminOutreach() {
       setConfirmBulkSend(null);
       utils.admin.getDrafts.invalidate();
       utils.admin.getDraftCount.invalidate();
+      utils.admin.getOutreachHubStats.invalidate();
       utils.prospects.listWithEngagement.invalidate();
     },
     onError: (e) => { toast.error(e.message); setConfirmBulkSend(null); },
@@ -190,7 +209,7 @@ export default function AdminOutreach() {
   return (
     <>
       <DbStatusBanner />
-      <div style={{ padding: "2rem", maxWidth: "56rem", margin: "0 auto", color: "#ececec" }}>
+      <div style={{ padding: "2rem", maxWidth: "52rem", margin: "0 auto", color: "#ececec" }}>
         {/* Header */}
         <div style={{ marginBottom: "1.5rem" }}>
           <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.30)", margin: "0 0 0.25rem" }}>XBOT / OUTREACH</p>
@@ -321,6 +340,16 @@ export default function AdminOutreach() {
           </div>
         )}
 
+        {/* Post-send command center — gamified feedback loops */}
+        {hubStats && (sentCount > 0 || queueClear) && (
+          <OutreachCommandCenter
+            stats={hubStats}
+            draftsSent={sentCount}
+            lastSentAt={lastSentAt}
+            queueClear={queueClear}
+          />
+        )}
+
         {/* Tabs */}
         <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: "1rem" }}>
           {(["pending", "approved", "sent"] as const).map((tab) => (
@@ -373,15 +402,19 @@ export default function AdminOutreach() {
         {isLoading ? (
           <div style={{ textAlign: "center", padding: "4rem 0", color: "rgba(255,255,255,0.30)", fontSize: "0.875rem" }}>Loading drafts…</div>
         ) : drafts.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "4rem 0", color: "rgba(255,255,255,0.30)", fontSize: "0.875rem" }}>
+          <div style={{ textAlign: "center", padding: "2rem 0", color: "rgba(255,255,255,0.30)", fontSize: "0.875rem" }}>
             {activeTab === "pending" ? (
-              <div>
-                <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.55)", marginBottom: "0.5rem" }}>No drafts to review</p>
-                <p style={{ marginBottom: "1rem" }}>Go to Prospects and click &quot;Draft All with Cal&quot; — or generate here.</p>
-                <button onClick={() => setLocation("/admin/prospects")} style={{ fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid rgba(251,191,36,0.35)", color: "#fbbf24", background: "transparent", borderRadius: "0.375rem", cursor: "pointer" }}>
-                  ← Go to Prospects (Step 1)
-                </button>
-              </div>
+              queueClear && sentCount > 0 ? (
+                <p style={{ color: "rgba(255,255,255,0.45)" }}>Queue clear — stats and next actions are above. Browse sent emails on the Sent tab.</p>
+              ) : (
+                <div>
+                  <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.55)", marginBottom: "0.5rem" }}>No drafts to review</p>
+                  <p style={{ marginBottom: "1rem" }}>Go to Prospects and click &quot;Draft All with Cal&quot; — or generate here.</p>
+                  <button onClick={() => setLocation("/admin/prospects")} style={{ fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid rgba(251,191,36,0.35)", color: "#fbbf24", background: "transparent", borderRadius: "0.375rem", cursor: "pointer" }}>
+                    ← Go to Prospects (Step 1)
+                  </button>
+                </div>
+              )
             ) : activeTab === "approved" ? (
               <p>No approved drafts. Review pending drafts first, or send directly from Review tab.</p>
             ) : (

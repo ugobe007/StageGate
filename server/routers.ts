@@ -1990,6 +1990,79 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       };
     }),
 
+    /** Gamified outreach hub — sent/received/opens/replies for post-send command center */
+    getOutreachHubStats: adminProcedure.query(async () => {
+      const pgDb = await getDb();
+      const empty = {
+        emailsSent: 0,
+        emailsReceived: 0,
+        opens: 0,
+        clicks: 0,
+        contacted: 0,
+        replied: 0,
+        awaitingInbox: 0,
+        responseRatePct: 0,
+        openRatePct: 0,
+        lastSentAt: null as Date | null,
+        newLeads: 0,
+      };
+      if (!pgDb) return empty;
+
+      const [
+        outboundRows,
+        inboundRows,
+        openRows,
+        clickRows,
+        contactedRows,
+        repliedRows,
+        awaitingRows,
+        lastSentRows,
+        leadRows,
+      ] = await Promise.all([
+        pgDb.select({ n: count() }).from(emailThreads).where(eq(emailThreads.direction, "outbound")),
+        pgDb.select({ n: count() }).from(emailThreads).where(eq(emailThreads.direction, "inbound")),
+        pgDb.select({ n: count() }).from(emailTrackingEvents).where(eq(emailTrackingEvents.eventType, "email.opened")),
+        pgDb.select({ n: count() }).from(emailTrackingEvents).where(eq(emailTrackingEvents.eventType, "email.clicked")),
+        pgDb.select({ n: count() }).from(prospectsTable).where(eq(prospectsTable.status, "contacted")),
+        pgDb.select({ n: count() }).from(prospectsTable).where(
+          inArray(prospectsTable.status, ["responded", "scheduled", "converted"])
+        ),
+        pgDb.select({ n: count() }).from(salesAgentConversations).where(eq(salesAgentConversations.state, "awaiting_reply")),
+        pgDb.select({ sentAt: draftEmails.sentAt }).from(draftEmails)
+          .where(eq(draftEmails.status, "sent"))
+          .orderBy(desc(draftEmails.sentAt))
+          .limit(1),
+        pgDb.select({ n: count() }).from(prospectsTable).where(eq(prospectsTable.status, "new")),
+      ]);
+
+      const emailsSent = Number(outboundRows[0]?.n ?? 0);
+      const emailsReceived = Number(inboundRows[0]?.n ?? 0);
+      const opens = Number(openRows[0]?.n ?? 0);
+      const clicks = Number(clickRows[0]?.n ?? 0);
+      const contacted = Number(contactedRows[0]?.n ?? 0);
+      const replied = Number(repliedRows[0]?.n ?? 0);
+      const awaitingInbox = Number(awaitingRows[0]?.n ?? 0);
+      const newLeads = Number(leadRows[0]?.n ?? 0);
+      const lastSentAt = lastSentRows[0]?.sentAt ?? null;
+
+      const responseRatePct = contacted > 0 ? Math.round((replied / contacted) * 100) : 0;
+      const openRatePct = emailsSent > 0 ? Math.round((opens / emailsSent) * 100) : 0;
+
+      return {
+        emailsSent,
+        emailsReceived,
+        opens,
+        clicks,
+        contacted,
+        replied,
+        awaitingInbox,
+        responseRatePct,
+        openRatePct,
+        lastSentAt,
+        newLeads,
+      };
+    }),
+
     getPipelineData: adminProcedure
       .input(z.object({ showFilter: z.string().optional() }))
       .query(async ({ input }) => {
