@@ -37,7 +37,7 @@ export default function OutreachCommandCenter({ stats, draftsSent, lastSentAt, q
 
   const sentTotal = Math.max(stats.emailsSent, draftsSent);
   const xp = outreachXpLevel(sentTotal);
-  const socialPosts = buildCalSocialPosts({ ...stats, emailsSent: sentTotal });
+  const socialPosts = buildCalSocialPosts({ ...stats, emailsSent: sentTotal, lastSentAt });
 
   const actionCards = [
     {
