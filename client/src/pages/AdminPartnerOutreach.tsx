@@ -1,6 +1,5 @@
 /**
- * AdminPartnerOutreach — review Cal drafts and send to partners/vendors.
- * No raw merge tokens in the send path.
+ * AdminPartnerOutreach — individual + bulk partner email send.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -14,19 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
   ArrowLeft, Loader2, Mail, Send, Sparkles, Building2, AlertCircle, User,
+  CheckSquare, Square, Users,
 } from "lucide-react";
 
-type Recipient = {
-  key: string;
-  source: string;
-  company: string;
-  contactName: string | null;
-  contactEmail: string | null;
-  partnerTypeLabel: string;
-  greetingName: string | null;
-  needsContactName: boolean;
-  isGenericInbox: boolean;
-  researchContactName: string | null;
+type DraftEntry = {
+  subject: string;
+  body: string;
+  contactName: string;
 };
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -40,15 +33,26 @@ function applyGreetingToBody(body: string, greetingName: string | null): string 
   return body.replace(/^Hi .+?,/m, line);
 }
 
+function resolveName(r: {
+  contactName: string | null;
+  researchContactName: string | null;
+  greetingName: string | null;
+}): string {
+  return r.contactName ?? r.researchContactName ?? r.greetingName ?? "";
+}
+
 export default function AdminPartnerOutreach() {
   const { user, isAuthenticated } = useAuth();
   const [location] = useLocation();
   const [filterSource, setFilterSource] = useState<"all" | "prospect" | "vendor" | "logistics_partner">("all");
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [drafts, setDrafts] = useState<Record<string, DraftEntry>>({});
   const [contactName, setContactName] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
   const utils = trpc.useUtils();
   const { data: recipients = [], isLoading } = trpc.partnerOutreach.listRecipients.useQuery(
@@ -65,6 +69,10 @@ export default function AdminPartnerOutreach() {
     onError: (e) => toast.error(e.message),
   });
 
+  const bulkDraftCal = trpc.partnerOutreach.bulkDraftCal.useMutation({
+    onError: (e) => toast.error(e.message),
+  });
+
   const updateContact = trpc.partnerOutreach.updateContact.useMutation({
     onSuccess: () => utils.partnerOutreach.listRecipients.invalidate(),
   });
@@ -78,6 +86,17 @@ export default function AdminPartnerOutreach() {
     onError: (e) => toast.error(e.message),
   });
 
+  const bulkSend = trpc.partnerOutreach.bulkSend.useMutation({
+    onSuccess: (res) => {
+      toast.success(`Sent ${res.sent}${res.failed ? ` · ${res.failed} failed` : ""}`);
+      if (res.errors.length) toast.error(res.errors.slice(0, 2).join("; "));
+      setBulkBusy(false);
+      setShowBulkConfirm(false);
+      utils.partnerOutreach.listRecipients.invalidate();
+    },
+    onError: (e) => { toast.error(e.message); setBulkBusy(false); },
+  });
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const key = params.get("key");
@@ -85,50 +104,173 @@ export default function AdminPartnerOutreach() {
     if (source === "vendor" || source === "logistics_partner" || source === "prospect") {
       setFilterSource(source);
     }
-    if (key) setActiveKey(key);
+    if (key) {
+      setActiveKey(key);
+      setSelected(new Set([key]));
+    }
   }, [location]);
 
+  // Load active recipient into compose (from drafts cache or Cal)
   useEffect(() => {
     if (!active) {
       setContactName("");
       setSubject("");
       setBody("");
-      setDraftLoaded(false);
       return;
     }
-    const name =
-      active.contactName ??
-      active.researchContactName ??
-      active.greetingName ??
-      "";
+    const cached = drafts[active.key];
+    if (cached) {
+      setContactName(cached.contactName);
+      setSubject(cached.subject);
+      setBody(cached.body);
+      return;
+    }
+    const name = resolveName(active);
     setContactName(name);
-    setDraftLoaded(false);
-    void loadCalDraft(active.key, name);
+    void loadCalDraft(active.key, name, false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.key]);
 
-  async function loadCalDraft(key: string, nameOverride?: string) {
+  function saveActiveDraft(overrides?: Partial<DraftEntry>) {
+    if (!activeKey) return;
+    setDrafts((prev) => ({
+      ...prev,
+      [activeKey]: {
+        subject: overrides?.subject ?? subject,
+        body: overrides?.body ?? body,
+        contactName: overrides?.contactName ?? contactName,
+      },
+    }));
+  }
+
+  async function loadCalDraft(key: string, nameOverride?: string, save = true) {
     const result = await previewCal.mutateAsync({
       recipientKey: key,
       contactName: nameOverride || undefined,
     });
-    setSubject(result.subject);
-    setBody(result.body);
-    setDraftLoaded(true);
-    if (result.greetingName && !nameOverride) {
-      setContactName((prev) => prev || result.greetingName || "");
+    if (key === activeKey) {
+      setSubject(result.subject);
+      setBody(result.body);
+      if (result.greetingName && !nameOverride) {
+        setContactName((prev) => prev || result.greetingName || "");
+      }
     }
+    const r = recipients.find((x) => x.key === key);
+    const entry: DraftEntry = {
+      subject: result.subject,
+      body: result.body,
+      contactName: nameOverride ?? (r ? resolveName(r) : "") ?? result.greetingName ?? "",
+    };
+    if (save) {
+      setDrafts((prev) => ({ ...prev, [key]: entry }));
+    }
+    return entry;
   }
 
   function onContactNameChange(name: string) {
     setContactName(name);
-    if (draftLoaded && body) {
-      const first = name.trim().split(/\s+/)[0] || null;
-      setBody(applyGreetingToBody(body, first));
+    const first = name.trim().split(/\s+/)[0] || null;
+    const nextBody = applyGreetingToBody(body, first);
+    setBody(nextBody);
+    saveActiveDraft({ contactName: name, body: nextBody });
+  }
+
+  function onSubjectChange(val: string) {
+    setSubject(val);
+    saveActiveDraft({ subject: val });
+  }
+
+  function onBodyChange(val: string) {
+    setBody(val);
+    saveActiveDraft({ body: val });
+  }
+
+  const selectedRecipients = useMemo(
+    () => recipients.filter((r) => selected.has(r.key)),
+    [recipients, selected],
+  );
+
+  const selectedWithDrafts = selectedRecipients.filter((r) => drafts[r.key]);
+  const selectedReady = selectedRecipients.filter((r) => {
+    const d = drafts[r.key];
+    if (!d?.subject || !d?.body) return false;
+    if (d.subject.includes("{{") || d.body.includes("{{")) return false;
+    if (r.needsContactName && !d.contactName.trim()) return true; // team greeting ok for bulk
+    return true;
+  });
+
+  function toggleSelect(key: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selected.size === recipients.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(recipients.map((r) => r.key)));
     }
   }
 
-  const canSend =
+  async function handleBulkDraft() {
+    if (selected.size === 0) {
+      toast.error("Select partners first");
+      return;
+    }
+    setBulkBusy(true);
+    try {
+      const keys = [...selected].slice(0, 50);
+      const res = await bulkDraftCal.mutateAsync({ recipientKeys: keys });
+      const next: Record<string, DraftEntry> = { ...drafts };
+      for (const d of res.drafts) {
+        next[d.recipientKey] = {
+          subject: d.subject,
+          body: d.body,
+          contactName: d.contactName,
+        };
+      }
+      setDrafts(next);
+      if (activeKey && next[activeKey]) {
+        setSubject(next[activeKey].subject);
+        setBody(next[activeKey].body);
+        setContactName(next[activeKey].contactName);
+      }
+      toast.success(`Cal drafted ${res.drafted} email${res.drafted !== 1 ? "s" : ""}`);
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function executeBulkSend() {
+    const sends = selectedRecipients
+      .filter((r) => drafts[r.key])
+      .map((r) => {
+        const d = drafts[r.key]!;
+        const needsTeam = r.needsContactName && !d.contactName.trim();
+        return {
+          recipientKey: r.key,
+          subject: d.subject,
+          body: d.body,
+          contactName: d.contactName.trim() || undefined,
+          allowTeamGreeting: needsTeam,
+        };
+      });
+
+    if (sends.length === 0) {
+      toast.error("Draft selected partners first (Cal draft selected)");
+      setShowBulkConfirm(false);
+      return;
+    }
+
+    setBulkBusy(true);
+    bulkSend.mutate({ sends });
+  }
+
+  const canSendIndividual =
     !!active?.contactEmail &&
     !!subject.trim() &&
     !!body.trim() &&
@@ -138,12 +280,13 @@ export default function AdminPartnerOutreach() {
 
   const needsName = active?.needsContactName && !contactName.trim();
 
-  async function handleSend() {
+  async function handleSendIndividual() {
     if (!active) return;
     if (needsName) {
       toast.error("Enter a contact first name before sending");
       return;
     }
+    saveActiveDraft();
     if (contactName.trim() && contactName !== active.contactName) {
       await updateContact.mutateAsync({ recipientKey: active.key, contactName: contactName.trim() });
     }
@@ -166,20 +309,69 @@ export default function AdminPartnerOutreach() {
 
   return (
     <div className="min-h-0 bg-background text-foreground flex flex-col h-[calc(100vh-0px)]">
-      <header className="border-b border-border px-5 py-3 flex items-center gap-3 shrink-0">
+      <header className="border-b border-border px-5 py-3 flex flex-wrap items-center gap-3 shrink-0">
         <Link href="/admin/partners">
           <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground h-8">
             <ArrowLeft size={14} /> Back
           </Button>
         </Link>
-        <div className="flex-1">
+        <div className="flex-1 min-w-[160px]">
           <h1 className="text-base font-semibold">Partner Outreach</h1>
-          <p className="text-xs text-muted-foreground">Cal drafts · review · send one at a time</p>
+          <p className="text-xs text-muted-foreground">Individual review or bulk send with Cal drafts</p>
         </div>
+        {selected.size > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">{selected.size} selected</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1"
+              disabled={bulkBusy}
+              onClick={handleBulkDraft}
+            >
+              {bulkBusy ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+              Cal draft selected
+            </Button>
+            <Button
+              size="sm"
+              className="h-8 text-xs gap-1"
+              disabled={bulkBusy || selectedWithDrafts.length === 0}
+              onClick={() => setShowBulkConfirm(true)}
+            >
+              <Send size={12} />
+              Send selected ({selectedWithDrafts.length})
+            </Button>
+          </div>
+        )}
       </header>
 
+      {showBulkConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-card border border-border rounded-xl p-5 max-w-md w-full space-y-4 shadow-xl">
+            <h3 className="font-semibold">Send {selectedWithDrafts.length} partner emails?</h3>
+            <p className="text-sm text-muted-foreground">
+              Cal&apos;s draft goes to each selected contact from outreach@onstage.bot.
+              Generic inboxes (info@) use &quot;Hi team,&quot; unless you added a name.
+            </p>
+            <ul className="text-xs text-muted-foreground max-h-32 overflow-y-auto space-y-1">
+              {selectedWithDrafts.map((r) => (
+                <li key={r.key}>· {r.company} → {r.contactEmail}</li>
+              ))}
+            </ul>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setShowBulkConfirm(false)} disabled={bulkBusy}>
+                Cancel
+              </Button>
+              <Button onClick={executeBulkSend} disabled={bulkBusy} className="gap-2">
+                {bulkBusy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                Confirm send
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 flex min-h-0">
-        {/* Recipient list */}
         <aside className="w-72 shrink-0 border-r border-border flex flex-col bg-card/20">
           <div className="p-3 border-b border-border space-y-2">
             <select
@@ -192,7 +384,14 @@ export default function AdminPartnerOutreach() {
               <option value="vendor">Vendor directory</option>
               <option value="logistics_partner">Logistics partners</option>
             </select>
-            <p className="text-[10px] text-muted-foreground">{recipients.length} with email</p>
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+            >
+              <Users size={11} />
+              {selected.size === recipients.length ? "Deselect all" : "Select all"}
+            </button>
           </div>
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
@@ -202,37 +401,62 @@ export default function AdminPartnerOutreach() {
             ) : recipients.length === 0 ? (
               <p className="text-xs text-muted-foreground p-4 text-center">No contacts with email</p>
             ) : (
-              recipients.map((r) => (
-                <button
-                  key={r.key}
-                  type="button"
-                  onClick={() => setActiveKey(r.key)}
-                  className={`w-full text-left px-3 py-2.5 border-b border-border/50 hover:bg-accent/40 transition-colors ${
-                    activeKey === r.key ? "bg-accent/60 border-l-2 border-l-primary" : ""
-                  }`}
-                >
-                  <div className="font-medium text-sm truncate">{r.company}</div>
-                  <div className="text-[10px] text-muted-foreground truncate mt-0.5">{r.contactEmail}</div>
-                  <div className="flex gap-1 mt-1 flex-wrap">
-                    <Badge variant="outline" className="text-[9px] px-1 py-0">{SOURCE_LABEL[r.source]}</Badge>
-                    {r.needsContactName && (
-                      <Badge variant="outline" className="text-[9px] px-1 py-0 text-amber-500 border-amber-500/40">
-                        Needs name
-                      </Badge>
-                    )}
+              recipients.map((r) => {
+                const isActive = activeKey === r.key;
+                const isSel = selected.has(r.key);
+                const hasDraft = !!drafts[r.key];
+                return (
+                  <div
+                    key={r.key}
+                    className={`flex items-start gap-2 px-2 py-2 border-b border-border/50 hover:bg-accent/30 ${
+                      isActive ? "bg-accent/50 border-l-2 border-l-primary" : ""
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      className="mt-1 shrink-0 text-muted-foreground hover:text-foreground"
+                      onClick={() => toggleSelect(r.key)}
+                    >
+                      {isSel ? <CheckSquare size={15} className="text-primary" /> : <Square size={15} />}
+                    </button>
+                    <button
+                      type="button"
+                      className="flex-1 text-left min-w-0"
+                      onClick={() => setActiveKey(r.key)}
+                    >
+                      <div className="font-medium text-sm truncate">{r.company}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{r.contactEmail}</div>
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        <Badge variant="outline" className="text-[9px] px-1 py-0">{SOURCE_LABEL[r.source]}</Badge>
+                        {hasDraft && (
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 text-emerald-500 border-emerald-500/40">
+                            Drafted
+                          </Badge>
+                        )}
+                        {r.needsContactName && !drafts[r.key]?.contactName && (
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 text-amber-500 border-amber-500/40">
+                            Team greeting
+                          </Badge>
+                        )}
+                      </div>
+                    </button>
                   </div>
-                </button>
-              ))
+                );
+              })
             )}
           </div>
         </aside>
 
-        {/* Compose */}
         <main className="flex-1 flex flex-col min-w-0">
           {!active ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2">
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3 px-6 text-center">
               <Building2 size={36} className="opacity-20" />
-              <p className="text-sm">Select a partner to review Cal&apos;s draft</p>
+              <p className="text-sm">Select a partner to review, or select many and use bulk actions in the header</p>
+              {selected.size > 1 && (
+                <Button variant="outline" size="sm" onClick={handleBulkDraft} disabled={bulkBusy} className="gap-1">
+                  <Sparkles size={12} /> Cal draft {selected.size} selected
+                </Button>
+              )}
             </div>
           ) : (
             <>
@@ -240,12 +464,12 @@ export default function AdminPartnerOutreach() {
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-lg font-semibold">{active.company}</h2>
                   <Badge variant="secondary" className="text-xs">{active.partnerTypeLabel}</Badge>
+                  {drafts[active.key] && (
+                    <Badge variant="outline" className="text-xs text-emerald-500">Draft saved</Badge>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                   <Mail size={13} /> {active.contactEmail}
-                  {active.isGenericInbox && (
-                    <span className="text-amber-500 text-xs">· generic inbox</span>
-                  )}
                 </p>
               </div>
 
@@ -253,7 +477,7 @@ export default function AdminPartnerOutreach() {
                 {needsName && (
                   <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 flex gap-2 text-xs text-amber-200">
                     <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                    <span>Add a contact first name — we won&apos;t send with a blank greeting.</span>
+                    <span>Add a first name for a personal greeting, or bulk-send uses &quot;Hi team,&quot;</span>
                   </div>
                 )}
 
@@ -264,19 +488,14 @@ export default function AdminPartnerOutreach() {
                   <Input
                     value={contactName}
                     onChange={(e) => onContactNameChange(e.target.value)}
-                    placeholder={active.isGenericInbox ? "e.g. Sarah" : "First name"}
+                    placeholder={active.isGenericInbox ? "Leave blank for Hi team," : "First name"}
                     className="max-w-xs"
                   />
-                  {active.researchContactName && !active.contactName && (
-                    <p className="text-[10px] text-muted-foreground">
-                      Suggested from research: {active.researchContactName}
-                    </p>
-                  )}
                 </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-xs">Subject</Label>
-                  <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
+                  <Input value={subject} onChange={(e) => onSubjectChange(e.target.value)} />
                 </div>
 
                 <div className="space-y-1.5">
@@ -289,17 +508,13 @@ export default function AdminPartnerOutreach() {
                       disabled={previewCal.isPending}
                       onClick={() => loadCalDraft(active.key, contactName || undefined)}
                     >
-                      {previewCal.isPending ? (
-                        <Loader2 size={12} className="animate-spin" />
-                      ) : (
-                        <Sparkles size={12} />
-                      )}
-                      Regenerate Cal draft
+                      {previewCal.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                      Regenerate
                     </Button>
                   </div>
                   <Textarea
                     value={body}
-                    onChange={(e) => setBody(e.target.value)}
+                    onChange={(e) => onBodyChange(e.target.value)}
                     rows={16}
                     className="text-sm leading-relaxed font-sans resize-y min-h-[280px]"
                   />
@@ -307,12 +522,10 @@ export default function AdminPartnerOutreach() {
               </div>
 
               <div className="px-5 py-3 border-t border-border flex items-center justify-between shrink-0 bg-card/30">
-                <p className="text-xs text-muted-foreground">
-                  From outreach@onstage.bot · includes {`https://onstage.bot/get-started`}
-                </p>
+                <p className="text-xs text-muted-foreground">outreach@onstage.bot</p>
                 <Button
-                  onClick={handleSend}
-                  disabled={!canSend || sendOne.isPending || updateContact.isPending}
+                  onClick={handleSendIndividual}
+                  disabled={!canSendIndividual || sendOne.isPending || updateContact.isPending}
                   className="gap-2"
                 >
                   {(sendOne.isPending || updateContact.isPending) ? (
@@ -320,7 +533,7 @@ export default function AdminPartnerOutreach() {
                   ) : (
                     <Send size={14} />
                   )}
-                  Send email
+                  Send to {active.contactEmail}
                 </Button>
               </div>
             </>

@@ -805,6 +805,7 @@ Subject line and body only.`,
           body: z.string().min(1),
           toEmail: z.string().email().optional(),
           contactName: z.string().optional(),
+          allowTeamGreeting: z.boolean().optional(),
         }),
       )
       .mutation(async ({ input }) => {
@@ -829,6 +830,7 @@ Subject line and body only.`,
               body: z.string().min(1),
               toEmail: z.string().email().optional(),
               contactName: z.string().optional(),
+              allowTeamGreeting: z.boolean().optional(),
             }),
           ).min(1).max(50),
         }),
@@ -851,6 +853,14 @@ Subject line and body only.`,
         }
 
         return { sent, failed, errors: errors.slice(0, 10) };
+      }),
+
+    bulkDraftCal: adminProcedure
+      .input(z.object({ recipientKeys: z.array(z.string()).min(1).max(50) }))
+      .mutation(async ({ input }) => {
+        const { bulkBuildCalPartnerDrafts } = await import("./services/partnerEmail");
+        const drafts = await bulkBuildCalPartnerDrafts(input.recipientKeys);
+        return { drafts, drafted: drafts.length };
       }),
   }),
 

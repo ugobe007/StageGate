@@ -410,12 +410,54 @@ export async function getPartnerRecipient(key: string): Promise<PartnerRecipient
   return all.find((r) => r.key === key) ?? null;
 }
 
+export type PartnerEmailDraft = {
+  recipientKey: string;
+  company: string;
+  contactEmail: string | null;
+  subject: string;
+  body: string;
+  contactName: string;
+  needsContactName: boolean;
+  readyToSend: boolean;
+};
+
+export async function bulkBuildCalPartnerDrafts(
+  recipientKeys: string[],
+): Promise<PartnerEmailDraft[]> {
+  const drafts: PartnerEmailDraft[] = [];
+  for (const key of recipientKeys) {
+    const recipient = await getPartnerRecipient(key);
+    if (!recipient?.contactEmail) continue;
+    const contactName =
+      recipient.contactName ?? recipient.researchContactName ?? recipient.greetingName ?? "";
+    const cal = buildCalPartnerEmail({
+      company: recipient.company,
+      contactName: contactName || undefined,
+      vendorType: recipient.partnerType,
+    });
+    const hasName = !!(contactName.trim() || cal.greetingName);
+    drafts.push({
+      recipientKey: key,
+      company: recipient.company,
+      contactEmail: recipient.contactEmail,
+      subject: cal.subject,
+      body: cal.body,
+      contactName,
+      needsContactName: recipient.needsContactName && !hasName,
+      readyToSend: !cal.body.includes("{{") && !cal.subject.includes("{{"),
+    });
+  }
+  return drafts;
+}
+
 export async function sendPartnerOutreachEmail(input: {
   recipientKey: string;
   subject: string;
   body: string;
   toEmail?: string;
   contactName?: string;
+  /** Bulk send: allow "Hi team," when no contact name (generic inbox) */
+  allowTeamGreeting?: boolean;
 }): Promise<{ sentTo: string; messageId?: string; warning?: string }> {
   const recipient = await getPartnerRecipient(input.recipientKey);
   if (!recipient) throw new Error("Recipient not found");
@@ -430,8 +472,11 @@ export async function sendPartnerOutreachEmail(input: {
     company: recipient.company,
     researchContactName: recipient.researchContactName,
   });
-  if (resolved.needsName) {
+  if (resolved.needsName && !input.allowTeamGreeting) {
     throw new Error(`Add a contact name for ${recipient.company} before sending`);
+  }
+  if (resolved.needsName && input.allowTeamGreeting && !/^Hi team,/m.test(input.body)) {
+    throw new Error(`${recipient.company}: use "Hi team," greeting or add a contact name`);
   }
 
   if (input.contactName?.trim() && input.contactName !== recipient.contactName) {
