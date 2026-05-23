@@ -3,7 +3,7 @@
  * Unified recipients from partner prospects, vendors directory, and logistics partners.
  */
 import { getDb, updateProspectStatus } from "../db";
-import { prospects, vendors, logisticsPartners } from "../../drizzle/schema";
+import { prospects, vendors, logisticsPartners, prospectResearch } from "../../drizzle/schema";
 import { eq, or, and, ne, isNotNull, isNull } from "drizzle-orm";
 import { pickCalInsight } from "../agents/calInsights";
 import { FRANK_PERSONA } from "../agents/frankPlaybook";
@@ -26,6 +26,11 @@ export type PartnerRecipient = {
   website: string | null;
   notes: string | null;
   prospectId?: number;
+  /** Resolved first name for greeting — null if admin must enter */
+  greetingName: string | null;
+  needsContactName: boolean;
+  isGenericInbox: boolean;
+  researchContactName: string | null;
 };
 
 const VENDOR_TYPE_LABELS: Record<string, string> = {
@@ -90,17 +95,75 @@ export function getPartnerHook(vendorType: string): string {
   return "When your clients or partners bring robots to Las Vegas shows, we're the local team for warehouse, staging, and robot tech support.";
 }
 
+export const PARTNER_SIGNUP_URL = "https://onstage.bot/get-started";
+
+const GENERIC_EMAIL_LOCALS = new Set([
+  "info", "contact", "sales", "marketing", "hello", "support", "admin",
+  "office", "inquiries", "enquiries", "team", "noreply", "no-reply",
+]);
+
+export function isGenericInbox(email: string | null | undefined): boolean {
+  if (!email) return true;
+  const local = email.split("@")[0]?.toLowerCase() ?? "";
+  return GENERIC_EMAIL_LOCALS.has(local) || local.startsWith("info");
+}
+
+export function firstNameFromFullName(name: string): string {
+  return name.trim().split(/\s+/)[0] ?? name;
+}
+
+/** Best greeting first name — null means admin must supply one. */
+export function resolveGreetingName(input: {
+  contactName?: string | null;
+  contactEmail?: string | null;
+  company: string;
+  researchContactName?: string | null;
+}): { greetingName: string | null; needsName: boolean; source: string } {
+  if (input.contactName?.trim()) {
+    return {
+      greetingName: firstNameFromFullName(input.contactName),
+      needsName: false,
+      source: "contact",
+    };
+  }
+  if (input.researchContactName?.trim()) {
+    return {
+      greetingName: firstNameFromFullName(input.researchContactName),
+      needsName: false,
+      source: "research",
+    };
+  }
+  const email = input.contactEmail?.trim();
+  if (email && !isGenericInbox(email)) {
+    const local = email.split("@")[0] ?? "";
+    const fromEmail = local.split(/[._-]/)[0];
+    if (fromEmail && fromEmail.length >= 2 && /^[a-z]+$/i.test(fromEmail)) {
+      return {
+        greetingName: fromEmail.charAt(0).toUpperCase() + fromEmail.slice(1).toLowerCase(),
+        needsName: false,
+        source: "email",
+      };
+    }
+  }
+  return { greetingName: null, needsName: true, source: "missing" };
+}
+
+export function greetingLine(greetingName: string | null): string {
+  return greetingName ? `Hi ${greetingName},` : "Hi team,";
+}
+
 export function buildCalPartnerEmail(input: {
   company: string;
   contactName?: string | null;
   vendorType?: string | null;
   showName?: string;
   showCity?: string;
-}): { subject: string; body: string } {
-  const contactFirstName = input.contactName
-    ? input.contactName.split(" ")[0] ?? input.contactName
-    : null;
-  const greetingName = contactFirstName ?? "there";
+}): { subject: string; body: string; greetingName: string | null; needsName: boolean } {
+  const resolved = resolveGreetingName({
+    contactName: input.contactName,
+    company: input.company,
+  });
+  const greetingName = resolved.greetingName;
   const vendorType = input.vendorType ?? "agency";
   const partnerHook = getPartnerHook(vendorType);
   const showName = input.showName ?? "CES";
@@ -116,7 +179,7 @@ export function buildCalPartnerEmail(input: {
   });
 
   const body = [
-    `Hi ${greetingName},`,
+    greetingLine(greetingName),
     ``,
     `This is Cal from StageGate. We're the robotics logistics and technical operations team here in Las Vegas.`,
     ``,
@@ -126,7 +189,7 @@ export function buildCalPartnerEmail(input: {
     ``,
     `We're not competing with your core services — we care for the robots so your team and your clients don't have to debug freight damage at midnight. Happy to talk about how a referral works.`,
     ``,
-    `Reply if useful, or check out onstage.bot for context.`,
+    `Register free at ${PARTNER_SIGNUP_URL} — takes about two minutes. Or reply here and we can find 15 minutes on the calendar.`,
     ``,
     `Thanks,`,
     FRANK_PERSONA.signature,
@@ -135,6 +198,8 @@ export function buildCalPartnerEmail(input: {
   return {
     subject: `Quick note — robotics support in Vegas (${input.company})`,
     body,
+    greetingName,
+    needsName: resolved.needsName,
   };
 }
 
@@ -155,13 +220,68 @@ Cal
 StageGate
 hello@onstage.bot`;
 
-export function applyPartnerMergeFields(template: string, recipient: PartnerRecipient): string {
+export function applyPartnerMergeFields(
+  template: string,
+  recipient: PartnerRecipient,
+  contactNameOverride?: string,
+): string {
+  const resolved = resolveGreetingName({
+    contactName: contactNameOverride ?? recipient.contactName,
+    contactEmail: recipient.contactEmail,
+    company: recipient.company,
+    researchContactName: recipient.researchContactName,
+  });
+  const name = resolved.greetingName ?? "team";
   return template
     .replace(/\{\{company\}\}/g, recipient.company)
-    .replace(/\{\{contact_name\}\}/g, recipient.contactName ?? "there")
+    .replace(/\{\{contact_name\}\}/g, name)
     .replace(/\{\{partner_type\}\}/g, recipient.partnerTypeLabel)
     .replace(/\{\{partner_hook\}\}/g, getPartnerHook(recipient.partnerType))
-    .replace(/\{\{city\}\}/g, recipient.city ?? "Las Vegas");
+    .replace(/\{\{city\}\}/g, recipient.city ?? "Las Vegas")
+    .replace(/\{\{signup_url\}\}/g, PARTNER_SIGNUP_URL);
+}
+
+function enrichRecipient(
+  base: Omit<
+    PartnerRecipient,
+    "greetingName" | "needsContactName" | "isGenericInbox" | "researchContactName"
+  >,
+  researchContactName: string | null,
+): PartnerRecipient {
+  const resolved = resolveGreetingName({
+    contactName: base.contactName,
+    contactEmail: base.contactEmail,
+    company: base.company,
+    researchContactName,
+  });
+  return {
+    ...base,
+    researchContactName,
+    greetingName: resolved.greetingName,
+    needsContactName: resolved.needsName,
+    isGenericInbox: isGenericInbox(base.contactEmail),
+  };
+}
+
+export async function updatePartnerContactName(
+  key: string,
+  contactName: string,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const [source, idStr] = key.split(":");
+  const id = Number(idStr);
+  if (!source || !id) throw new Error("Invalid recipient key");
+
+  if (source === "prospect") {
+    await db.update(prospects).set({ contactName }).where(eq(prospects.id, id));
+  } else if (source === "vendor") {
+    await db.update(vendors).set({ contactName, updatedAt: new Date() }).where(eq(vendors.id, id));
+  } else if (source === "logistics_partner") {
+    await db.update(logisticsPartners).set({ contactName, updatedAt: new Date() }).where(eq(logisticsPartners.id, id));
+  } else {
+    throw new Error("Unknown recipient source");
+  }
 }
 
 export async function listPartnerRecipients(filters?: {
@@ -177,8 +297,12 @@ export async function listPartnerRecipients(filters?: {
 
   if (source === "all" || source === "prospect") {
     const rows = await db
-      .select()
+      .select({
+        prospect: prospects,
+        research: prospectResearch,
+      })
       .from(prospects)
+      .leftJoin(prospectResearch, eq(prospectResearch.prospectId, prospects.id))
       .where(
         or(
           eq(prospects.outreachAngle, "partner"),
@@ -186,23 +310,30 @@ export async function listPartnerRecipients(filters?: {
         ),
       );
 
-    for (const p of rows) {
+    for (const { prospect: p, research } of rows) {
       const partnerType = p.vendorType ?? "agency";
-      recipients.push({
-        key: `prospect:${p.id}`,
-        source: "prospect",
-        id: p.id,
-        company: p.company,
-        contactName: p.contactName,
-        contactEmail: p.contactEmail,
-        contactPhone: null,
-        partnerType,
-        partnerTypeLabel: labelFor(partnerType),
-        city: null,
-        website: p.website,
-        notes: p.notes,
-        prospectId: p.id,
-      });
+      const dm = research?.decisionMakers as Array<{ name?: string }> | null | undefined;
+      const researchName = dm?.[0]?.name ?? null;
+      recipients.push(
+        enrichRecipient(
+          {
+            key: `prospect:${p.id}`,
+            source: "prospect",
+            id: p.id,
+            company: p.company,
+            contactName: p.contactName,
+            contactEmail: p.contactEmail,
+            contactPhone: null,
+            partnerType,
+            partnerTypeLabel: labelFor(partnerType),
+            city: null,
+            website: p.website,
+            notes: p.notes,
+            prospectId: p.id,
+          },
+          researchName,
+        ),
+      );
     }
   }
 
@@ -212,20 +343,25 @@ export async function listPartnerRecipients(filters?: {
       .from(vendors)
       .where(or(eq(vendors.isActive, true), isNull(vendors.isActive)));
     for (const v of rows) {
-      recipients.push({
-        key: `vendor:${v.id}`,
-        source: "vendor",
-        id: v.id,
-        company: v.name,
-        contactName: v.contactName,
-        contactEmail: v.contactEmail,
-        contactPhone: v.contactPhone,
-        partnerType: v.type,
-        partnerTypeLabel: labelFor(v.type),
-        city: v.city,
-        website: v.website,
-        notes: v.notes,
-      });
+      recipients.push(
+        enrichRecipient(
+          {
+            key: `vendor:${v.id}`,
+            source: "vendor",
+            id: v.id,
+            company: v.name,
+            contactName: v.contactName,
+            contactEmail: v.contactEmail,
+            contactPhone: v.contactPhone,
+            partnerType: v.type,
+            partnerTypeLabel: labelFor(v.type),
+            city: v.city,
+            website: v.website,
+            notes: v.notes,
+          },
+          null,
+        ),
+      );
     }
   }
 
@@ -235,20 +371,25 @@ export async function listPartnerRecipients(filters?: {
       .from(logisticsPartners)
       .where(eq(logisticsPartners.isActive, true));
     for (const p of rows) {
-      recipients.push({
-        key: `logistics_partner:${p.id}`,
-        source: "logistics_partner",
-        id: p.id,
-        company: p.name,
-        contactName: p.contactName,
-        contactEmail: p.contactEmail,
-        contactPhone: p.contactPhone,
-        partnerType: p.serviceType,
-        partnerTypeLabel: labelFor(p.serviceType),
-        city: p.city,
-        website: p.website,
-        notes: p.notes,
-      });
+      recipients.push(
+        enrichRecipient(
+          {
+            key: `logistics_partner:${p.id}`,
+            source: "logistics_partner",
+            id: p.id,
+            company: p.name,
+            contactName: p.contactName,
+            contactEmail: p.contactEmail,
+            contactPhone: p.contactPhone,
+            partnerType: p.serviceType,
+            partnerTypeLabel: labelFor(p.serviceType),
+            city: p.city,
+            website: p.website,
+            notes: p.notes,
+          },
+          null,
+        ),
+      );
     }
   }
 
@@ -274,9 +415,28 @@ export async function sendPartnerOutreachEmail(input: {
   subject: string;
   body: string;
   toEmail?: string;
+  contactName?: string;
 }): Promise<{ sentTo: string; messageId?: string; warning?: string }> {
   const recipient = await getPartnerRecipient(input.recipientKey);
   if (!recipient) throw new Error("Recipient not found");
+
+  if (input.body.includes("{{") || input.subject.includes("{{")) {
+    throw new Error("Email still has unfilled placeholders — finish the draft before sending");
+  }
+
+  const resolved = resolveGreetingName({
+    contactName: input.contactName ?? recipient.contactName,
+    contactEmail: recipient.contactEmail,
+    company: recipient.company,
+    researchContactName: recipient.researchContactName,
+  });
+  if (resolved.needsName) {
+    throw new Error(`Add a contact name for ${recipient.company} before sending`);
+  }
+
+  if (input.contactName?.trim() && input.contactName !== recipient.contactName) {
+    await updatePartnerContactName(input.recipientKey, input.contactName.trim());
+  }
 
   const toEmail = (input.toEmail ?? recipient.contactEmail)?.trim();
   if (!toEmail) throw new Error(`${recipient.company} has no email address`);

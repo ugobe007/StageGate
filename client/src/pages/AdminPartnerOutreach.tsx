@@ -1,5 +1,6 @@
 /**
- * AdminPartnerOutreach — compose and send emails to partners & vendors.
+ * AdminPartnerOutreach — review Cal drafts and send to partners/vendors.
+ * No raw merge tokens in the send path.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -10,41 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
-  ArrowLeft, Loader2, Mail, Send, Sparkles, Users, Building2,
-  CheckSquare, Square, AlertCircle, RefreshCw,
+  ArrowLeft, Loader2, Mail, Send, Sparkles, Building2, AlertCircle, User,
 } from "lucide-react";
-
-const MERGE_FIELDS = [
-  { label: "Company", token: "{{company}}" },
-  { label: "Contact", token: "{{contact_name}}" },
-  { label: "Partner type", token: "{{partner_type}}" },
-  { label: "Partner hook", token: "{{partner_hook}}" },
-  { label: "City", token: "{{city}}" },
-];
-
-const DEFAULT_TEMPLATE = `Hi {{contact_name}},
-
-This is Cal from StageGate. We're the robotics logistics and technical operations team here in Las Vegas.
-
-{{partner_hook}}
-
-Curious whether that's come up for {{company}} — especially around CES and other Las Vegas shows.
-
-We're not competing with your core services — we care for the robots so your team and your clients don't have to debug freight damage at midnight. Happy to talk about how a referral works.
-
-Reply if useful, or check out onstage.bot for context.
-
-Thanks,
-Cal
-StageGate
-hello@onstage.bot`;
-
-const SOURCE_LABELS: Record<string, string> = {
-  prospect: "Discovered partner",
-  vendor: "Vendor directory",
-  logistics_partner: "Logistics partner",
-};
 
 type Recipient = {
   key: string;
@@ -52,70 +22,62 @@ type Recipient = {
   company: string;
   contactName: string | null;
   contactEmail: string | null;
-  partnerType: string;
   partnerTypeLabel: string;
-  city: string | null;
+  greetingName: string | null;
+  needsContactName: boolean;
+  isGenericInbox: boolean;
+  researchContactName: string | null;
 };
 
-function applyMerge(template: string, r: Recipient): string {
-  const hook =
-    r.partnerType === "exhibit_house"
-      ? "I work with exhibit teams when their clients bring robots to Vegas — receiving, staging, power-up, and hands-on tech before the hall opens."
-      : r.partnerType === "av" || r.partnerType === "av_electrical"
-      ? "When booths include live robots, someone has to power them up and debug hardware before your AV and demo schedule starts. That's the gap we fill."
-      : r.partnerType === "freight" || r.partnerType === "transport" || r.partnerType === "customs_broker"
-      ? "Robot freight often needs more than drayage — bonded storage, battery-safe handling, and activation before the booth. We handle that last mile in Vegas."
-      : "When your clients or partners bring robots to Las Vegas shows, we're the local team for warehouse, staging, and robot tech support.";
+const SOURCE_LABEL: Record<string, string> = {
+  prospect: "Discovered",
+  vendor: "Vendor",
+  logistics_partner: "Partner",
+};
 
-  return template
-    .replace(/\{\{company\}\}/g, r.company)
-    .replace(/\{\{contact_name\}\}/g, r.contactName ?? "there")
-    .replace(/\{\{partner_type\}\}/g, r.partnerTypeLabel)
-    .replace(/\{\{partner_hook\}\}/g, hook)
-    .replace(/\{\{city\}\}/g, r.city ?? "Las Vegas");
+function applyGreetingToBody(body: string, greetingName: string | null): string {
+  const line = greetingName ? `Hi ${greetingName},` : "Hi team,";
+  return body.replace(/^Hi .+?,/m, line);
 }
 
 export default function AdminPartnerOutreach() {
   const { user, isAuthenticated } = useAuth();
   const [location] = useLocation();
-  const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
-  const [subjectTemplate, setSubjectTemplate] = useState("Quick note — robotics support in Vegas ({{company}})");
   const [filterSource, setFilterSource] = useState<"all" | "prospect" | "vendor" | "logistics_partner">("all");
-  const [emailOnly, setEmailOnly] = useState(true);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [customBodies, setCustomBodies] = useState<Record<string, string>>({});
-  const [customSubjects, setCustomSubjects] = useState<Record<string, string>>({});
-  const [expandedKey, setExpandedKey] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [contactName, setContactName] = useState("");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [draftLoaded, setDraftLoaded] = useState(false);
 
-  const { data: recipients = [], isLoading, refetch } = trpc.partnerOutreach.listRecipients.useQuery(
-    { source: filterSource, hasEmail: emailOnly || undefined },
+  const utils = trpc.useUtils();
+  const { data: recipients = [], isLoading } = trpc.partnerOutreach.listRecipients.useQuery(
+    { source: filterSource, hasEmail: true },
     { enabled: isAuthenticated && user?.role === "admin" },
+  );
+
+  const active = useMemo(
+    () => recipients.find((r) => r.key === activeKey) ?? null,
+    [recipients, activeKey],
   );
 
   const previewCal = trpc.partnerOutreach.previewCalEmail.useMutation({
     onError: (e) => toast.error(e.message),
   });
 
-  const bulkSend = trpc.partnerOutreach.bulkSend.useMutation({
-    onSuccess: (res) => {
-      toast.success(`Sent ${res.sent} email${res.sent !== 1 ? "s" : ""}${res.failed ? ` · ${res.failed} failed` : ""}`);
-      if (res.errors.length) toast.error(res.errors.slice(0, 2).join("; "));
-      setSending(false);
-      refetch();
-    },
-    onError: (e) => { toast.error(e.message); setSending(false); },
+  const updateContact = trpc.partnerOutreach.updateContact.useMutation({
+    onSuccess: () => utils.partnerOutreach.listRecipients.invalidate(),
   });
 
   const sendOne = trpc.partnerOutreach.sendEmail.useMutation({
     onSuccess: (res) => {
       toast.success(`Sent to ${res.sentTo}`);
-      refetch();
+      if (res.warning) toast.warning(res.warning);
+      utils.partnerOutreach.listRecipients.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });
 
-  // Pre-select from ?key=vendor:12 query param
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const key = params.get("key");
@@ -123,54 +85,74 @@ export default function AdminPartnerOutreach() {
     if (source === "vendor" || source === "logistics_partner" || source === "prospect") {
       setFilterSource(source);
     }
-    if (key) {
-      setSelected(new Set([key]));
-      setExpandedKey(key);
-    }
+    if (key) setActiveKey(key);
   }, [location]);
 
-  const selectedList = useMemo(
-    () => recipients.filter((r) => selected.has(r.key) && r.contactEmail),
-    [recipients, selected],
-  );
-
-  function toggle(key: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }
-
-  function toggleAll() {
-    const withEmail = recipients.filter((r) => r.contactEmail);
-    if (withEmail.every((r) => selected.has(r.key))) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(withEmail.map((r) => r.key)));
-    }
-  }
-
-  async function loadCalDraft(key: string) {
-    const result = await previewCal.mutateAsync({ recipientKey: key });
-    setCustomSubjects((p) => ({ ...p, [key]: result.subject }));
-    setCustomBodies((p) => ({ ...p, [key]: result.body }));
-    setExpandedKey(key);
-  }
-
-  async function handleSendSelected() {
-    if (selectedList.length === 0) {
-      toast.error("Select at least one recipient with an email");
+  useEffect(() => {
+    if (!active) {
+      setContactName("");
+      setSubject("");
+      setBody("");
+      setDraftLoaded(false);
       return;
     }
-    setSending(true);
-    bulkSend.mutate({
-      sends: selectedList.map((r) => ({
-        recipientKey: r.key,
-        subject: customSubjects[r.key] ?? applyMerge(subjectTemplate, r),
-        body: customBodies[r.key] ?? applyMerge(template, r),
-      })),
+    const name =
+      active.contactName ??
+      active.researchContactName ??
+      active.greetingName ??
+      "";
+    setContactName(name);
+    setDraftLoaded(false);
+    void loadCalDraft(active.key, name);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active?.key]);
+
+  async function loadCalDraft(key: string, nameOverride?: string) {
+    const result = await previewCal.mutateAsync({
+      recipientKey: key,
+      contactName: nameOverride || undefined,
+    });
+    setSubject(result.subject);
+    setBody(result.body);
+    setDraftLoaded(true);
+    if (result.greetingName && !nameOverride) {
+      setContactName((prev) => prev || result.greetingName || "");
+    }
+  }
+
+  function onContactNameChange(name: string) {
+    setContactName(name);
+    if (draftLoaded && body) {
+      const first = name.trim().split(/\s+/)[0] || null;
+      setBody(applyGreetingToBody(body, first));
+    }
+  }
+
+  const canSend =
+    !!active?.contactEmail &&
+    !!subject.trim() &&
+    !!body.trim() &&
+    !body.includes("{{") &&
+    !subject.includes("{{") &&
+    (contactName.trim().length > 0 || !active.needsContactName);
+
+  const needsName = active?.needsContactName && !contactName.trim();
+
+  async function handleSend() {
+    if (!active) return;
+    if (needsName) {
+      toast.error("Enter a contact first name before sending");
+      return;
+    }
+    if (contactName.trim() && contactName !== active.contactName) {
+      await updateContact.mutateAsync({ recipientKey: active.key, contactName: contactName.trim() });
+    }
+    const first = contactName.trim().split(/\s+/)[0] || active.greetingName;
+    sendOne.mutate({
+      recipientKey: active.key,
+      subject,
+      body: applyGreetingToBody(body, first),
+      contactName: contactName.trim() || undefined,
     });
   }
 
@@ -183,208 +165,167 @@ export default function AdminPartnerOutreach() {
   }
 
   return (
-    <div className="min-h-0 bg-background text-foreground flex flex-col">
-      <div className="border-b border-border px-6 py-4 flex flex-wrap items-center gap-4 shrink-0">
+    <div className="min-h-0 bg-background text-foreground flex flex-col h-[calc(100vh-0px)]">
+      <header className="border-b border-border px-5 py-3 flex items-center gap-3 shrink-0">
         <Link href="/admin/partners">
-          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
-            <ArrowLeft size={14} /> Partners
+          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground h-8">
+            <ArrowLeft size={14} /> Back
           </Button>
         </Link>
-        <div className="flex-1 min-w-[200px]">
-          <h1 className="text-lg font-display font-bold flex items-center gap-2">
-            <Mail size={18} className="text-primary" /> Partner Outreach
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Email exhibit houses, AV, freight, vendors, and discovered partners
-          </p>
+        <div className="flex-1">
+          <h1 className="text-base font-semibold">Partner Outreach</h1>
+          <p className="text-xs text-muted-foreground">Cal drafts · review · send one at a time</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">
-            {selectedList.length} ready to send
-          </span>
-          <Button
-            onClick={handleSendSelected}
-            disabled={sending || selectedList.length === 0}
-            className="gap-2"
-          >
-            {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-            Send {selectedList.length > 0 ? `(${selectedList.length})` : ""}
-          </Button>
-        </div>
-      </div>
+      </header>
 
-      <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* Template panel */}
-        <div className="w-[420px] shrink-0 border-r border-border flex flex-col bg-card/30">
-          <div className="p-4 border-b border-border space-y-3">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1">
-                Subject template
-              </label>
-              <Input
-                value={subjectTemplate}
-                onChange={(e) => setSubjectTemplate(e.target.value)}
-                className="text-sm bg-input border-border"
-              />
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {MERGE_FIELDS.map((f) => (
-                <button
-                  key={f.token}
-                  type="button"
-                  onClick={() => setTemplate((t) => t + f.token)}
-                  className="text-[10px] font-mono bg-secondary border border-border rounded px-1.5 py-0.5 hover:border-primary/50"
-                >
-                  {f.token}
-                </button>
-              ))}
-            </div>
-          </div>
-          <Textarea
-            className="flex-1 resize-none border-0 rounded-none text-sm font-mono bg-transparent focus-visible:ring-0 min-h-[200px]"
-            value={template}
-            onChange={(e) => setTemplate(e.target.value)}
-          />
-          <div className="p-3 border-t border-border">
-            <button
-              type="button"
-              onClick={() => setTemplate(DEFAULT_TEMPLATE)}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <RefreshCw size={11} /> Reset template
-            </button>
-          </div>
-        </div>
-
-        {/* Recipients */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <div className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-2 shrink-0">
+      <div className="flex-1 flex min-h-0">
+        {/* Recipient list */}
+        <aside className="w-72 shrink-0 border-r border-border flex flex-col bg-card/20">
+          <div className="p-3 border-b border-border space-y-2">
             <select
               value={filterSource}
               onChange={(e) => setFilterSource(e.target.value as typeof filterSource)}
-              className="text-xs border border-border rounded px-2 py-1.5 bg-input"
+              className="w-full text-xs border border-border rounded-md px-2 py-1.5 bg-input"
             >
-              <option value="all">All sources</option>
+              <option value="all">All partners & vendors</option>
               <option value="prospect">Discovered partners</option>
-              <option value="vendor">Vendors</option>
+              <option value="vendor">Vendor directory</option>
               <option value="logistics_partner">Logistics partners</option>
             </select>
-            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-              <input type="checkbox" checked={emailOnly} onChange={(e) => setEmailOnly(e.target.checked)} />
-              Has email only
-            </label>
-            <div className="flex-1" />
-            <Button variant="outline" size="sm" className="text-xs gap-1" onClick={toggleAll}>
-              <Users size={12} />
-              {recipients.filter((r) => r.contactEmail).every((r) => selected.has(r.key)) ? "Deselect all" : "Select all"}
-            </Button>
+            <p className="text-[10px] text-muted-foreground">{recipients.length} with email</p>
           </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          <div className="flex-1 overflow-y-auto">
             {isLoading ? (
-              <div className="flex justify-center py-16">
-                <Loader2 className="animate-spin text-muted-foreground" size={24} />
+              <div className="flex justify-center py-12">
+                <Loader2 className="animate-spin text-muted-foreground" size={20} />
               </div>
             ) : recipients.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <Building2 size={32} className="mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No partners match your filters</p>
-                <p className="text-xs mt-1">Add vendors in Vendors, partners in Partners, or run Cal discovery.</p>
-              </div>
+              <p className="text-xs text-muted-foreground p-4 text-center">No contacts with email</p>
             ) : (
-              recipients.map((r) => {
-                const isSel = selected.has(r.key);
-                const isExp = expandedKey === r.key;
-                const mergedSubject = customSubjects[r.key] ?? applyMerge(subjectTemplate, r);
-                const mergedBody = customBodies[r.key] ?? applyMerge(template, r);
-
-                return (
-                  <div
-                    key={r.key}
-                    className={`rounded-lg border transition-colors ${
-                      isSel ? "border-primary/40 bg-card" : "border-border bg-card/40 opacity-70"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3 p-3">
-                      <button type="button" onClick={() => toggle(r.key)} className="mt-0.5 shrink-0">
-                        {isSel ? <CheckSquare size={16} className="text-primary" /> : <Square size={16} className="text-muted-foreground" />}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-sm">{r.company}</span>
-                          <Badge variant="outline" className="text-[10px]">{r.partnerTypeLabel}</Badge>
-                          <Badge variant="secondary" className="text-[10px]">{SOURCE_LABELS[r.source] ?? r.source}</Badge>
-                        </div>
-                        {r.contactEmail ? (
-                          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                            <Mail size={10} /> {r.contactEmail}
-                            {r.contactName && <span> · {r.contactName}</span>}
-                          </p>
-                        ) : (
-                          <p className="text-xs text-amber-500 mt-0.5 flex items-center gap-1">
-                            <AlertCircle size={10} /> No email — add contact in directory
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-1 shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-[10px] h-7 gap-1"
-                          disabled={previewCal.isPending}
-                          onClick={() => loadCalDraft(r.key)}
-                        >
-                          <Sparkles size={10} /> Cal draft
-                        </Button>
-                        {r.contactEmail && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-[10px] h-7"
-                            onClick={() => setExpandedKey(isExp ? null : r.key)}
-                          >
-                            {isExp ? "Hide" : "Preview"}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {isExp && r.contactEmail && (
-                      <div className="border-t border-border p-3 space-y-2 bg-background/50">
-                        <Input
-                          value={mergedSubject}
-                          onChange={(e) => setCustomSubjects((p) => ({ ...p, [r.key]: e.target.value }))}
-                          className="text-xs"
-                        />
-                        <Textarea
-                          value={mergedBody}
-                          onChange={(e) => setCustomBodies((p) => ({ ...p, [r.key]: e.target.value }))}
-                          rows={8}
-                          className="text-xs font-mono"
-                        />
-                        <Button
-                          size="sm"
-                          className="gap-1"
-                          disabled={sendOne.isPending}
-                          onClick={() =>
-                            sendOne.mutate({
-                              recipientKey: r.key,
-                              subject: mergedSubject,
-                              body: mergedBody,
-                            })
-                          }
-                        >
-                          {sendOne.isPending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-                          Send to {r.contactEmail}
-                        </Button>
-                      </div>
+              recipients.map((r) => (
+                <button
+                  key={r.key}
+                  type="button"
+                  onClick={() => setActiveKey(r.key)}
+                  className={`w-full text-left px-3 py-2.5 border-b border-border/50 hover:bg-accent/40 transition-colors ${
+                    activeKey === r.key ? "bg-accent/60 border-l-2 border-l-primary" : ""
+                  }`}
+                >
+                  <div className="font-medium text-sm truncate">{r.company}</div>
+                  <div className="text-[10px] text-muted-foreground truncate mt-0.5">{r.contactEmail}</div>
+                  <div className="flex gap-1 mt-1 flex-wrap">
+                    <Badge variant="outline" className="text-[9px] px-1 py-0">{SOURCE_LABEL[r.source]}</Badge>
+                    {r.needsContactName && (
+                      <Badge variant="outline" className="text-[9px] px-1 py-0 text-amber-500 border-amber-500/40">
+                        Needs name
+                      </Badge>
                     )}
                   </div>
-                );
-              })
+                </button>
+              ))
             )}
           </div>
-        </div>
+        </aside>
+
+        {/* Compose */}
+        <main className="flex-1 flex flex-col min-w-0">
+          {!active ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2">
+              <Building2 size={36} className="opacity-20" />
+              <p className="text-sm">Select a partner to review Cal&apos;s draft</p>
+            </div>
+          ) : (
+            <>
+              <div className="px-5 py-4 border-b border-border space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-lg font-semibold">{active.company}</h2>
+                  <Badge variant="secondary" className="text-xs">{active.partnerTypeLabel}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                  <Mail size={13} /> {active.contactEmail}
+                  {active.isGenericInbox && (
+                    <span className="text-amber-500 text-xs">· generic inbox</span>
+                  )}
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 max-w-2xl">
+                {needsName && (
+                  <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 flex gap-2 text-xs text-amber-200">
+                    <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                    <span>Add a contact first name — we won&apos;t send with a blank greeting.</span>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1">
+                    <User size={12} /> Contact first name
+                  </Label>
+                  <Input
+                    value={contactName}
+                    onChange={(e) => onContactNameChange(e.target.value)}
+                    placeholder={active.isGenericInbox ? "e.g. Sarah" : "First name"}
+                    className="max-w-xs"
+                  />
+                  {active.researchContactName && !active.contactName && (
+                    <p className="text-[10px] text-muted-foreground">
+                      Suggested from research: {active.researchContactName}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Subject</Label>
+                  <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Message</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      disabled={previewCal.isPending}
+                      onClick={() => loadCalDraft(active.key, contactName || undefined)}
+                    >
+                      {previewCal.isPending ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <Sparkles size={12} />
+                      )}
+                      Regenerate Cal draft
+                    </Button>
+                  </div>
+                  <Textarea
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    rows={16}
+                    className="text-sm leading-relaxed font-sans resize-y min-h-[280px]"
+                  />
+                </div>
+              </div>
+
+              <div className="px-5 py-3 border-t border-border flex items-center justify-between shrink-0 bg-card/30">
+                <p className="text-xs text-muted-foreground">
+                  From outreach@onstage.bot · includes {`https://onstage.bot/get-started`}
+                </p>
+                <Button
+                  onClick={handleSend}
+                  disabled={!canSend || sendOne.isPending || updateContact.isPending}
+                  className="gap-2"
+                >
+                  {(sendOne.isPending || updateContact.isPending) ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Send size={14} />
+                  )}
+                  Send email
+                </Button>
+              </div>
+            </>
+          )}
+        </main>
       </div>
     </div>
   );

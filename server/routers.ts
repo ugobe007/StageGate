@@ -774,16 +774,27 @@ Subject line and body only.`,
       }),
 
     previewCalEmail: adminProcedure
-      .input(z.object({ recipientKey: z.string() }))
+      .input(z.object({
+        recipientKey: z.string(),
+        contactName: z.string().optional(),
+      }))
       .mutation(async ({ input }) => {
         const { getPartnerRecipient, buildCalPartnerEmail } = await import("./services/partnerEmail");
         const recipient = await getPartnerRecipient(input.recipientKey);
         if (!recipient) throw new TRPCError({ code: "NOT_FOUND", message: "Recipient not found" });
         return buildCalPartnerEmail({
           company: recipient.company,
-          contactName: recipient.contactName,
+          contactName: input.contactName ?? recipient.contactName ?? recipient.researchContactName,
           vendorType: recipient.partnerType,
         });
+      }),
+
+    updateContact: adminProcedure
+      .input(z.object({ recipientKey: z.string(), contactName: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        const { updatePartnerContactName } = await import("./services/partnerEmail");
+        await updatePartnerContactName(input.recipientKey, input.contactName.trim());
+        return { ok: true };
       }),
 
     sendEmail: adminProcedure
@@ -793,6 +804,7 @@ Subject line and body only.`,
           subject: z.string().min(1),
           body: z.string().min(1),
           toEmail: z.string().email().optional(),
+          contactName: z.string().optional(),
         }),
       )
       .mutation(async ({ input }) => {
@@ -816,6 +828,7 @@ Subject line and body only.`,
               subject: z.string().min(1),
               body: z.string().min(1),
               toEmail: z.string().email().optional(),
+              contactName: z.string().optional(),
             }),
           ).min(1).max(50),
         }),
