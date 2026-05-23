@@ -1,5 +1,5 @@
 /**
- * AdminPartnerOutreach — compose partner/vendor drafts + review/approve/send workflow.
+ * AdminPartnerOutreach — compose partner/vendor drafts + always-visible review/send queue.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import OutreachDraftQueue from "@/components/OutreachDraftQueue";
 import {
   ArrowLeft, Loader2, Mail, Sparkles, Building2, AlertCircle, User,
-  CheckSquare, Square, Users, ClipboardList, PenLine,
+  CheckSquare, Square, Users, ClipboardList, Send,
 } from "lucide-react";
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -22,8 +22,6 @@ const SOURCE_LABEL: Record<string, string> = {
   vendor: "Vendor",
   logistics_partner: "Partner",
 };
-
-type ViewMode = "compose" | "review";
 
 function applyGreetingToBody(body: string, greetingName: string | null): string {
   const line = greetingName ? `Hi ${greetingName},` : "Hi team,";
@@ -41,7 +39,6 @@ function resolveName(r: {
 export default function AdminPartnerOutreach() {
   const { user, isAuthenticated } = useAuth();
   const [location] = useLocation();
-  const [viewMode, setViewMode] = useState<ViewMode>("compose");
   const [filterSource, setFilterSource] = useState<"all" | "prospect" | "vendor" | "logistics_partner">("all");
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -49,6 +46,7 @@ export default function AdminPartnerOutreach() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [queueExpanded, setQueueExpanded] = useState(true);
 
   const utils = trpc.useUtils();
   const { data: draftCount } = trpc.admin.getDraftCount.useQuery(
@@ -76,9 +74,19 @@ export default function AdminPartnerOutreach() {
 
   const saveDraft = trpc.partnerOutreach.saveDraft.useMutation({
     onSuccess: () => {
-      toast.success("Draft queued for review");
+      toast.success("Draft queued — approve and send below");
       utils.admin.getDrafts.invalidate();
       utils.admin.getDraftCount.invalidate();
+      setQueueExpanded(true);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const sendNow = trpc.partnerOutreach.sendEmail.useMutation({
+    onSuccess: (res) => {
+      toast.success(`Sent to ${res.sentTo}`);
+      if (res.warning) toast.warning(res.warning);
+      utils.partnerOutreach.listRecipients.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });
@@ -91,15 +99,12 @@ export default function AdminPartnerOutreach() {
     const params = new URLSearchParams(window.location.search);
     const key = params.get("key");
     const source = params.get("source");
-    const tab = params.get("tab");
     if (source === "vendor" || source === "logistics_partner" || source === "prospect") {
       setFilterSource(source);
     }
-    if (tab === "review") setViewMode("review");
     if (key) {
       setActiveKey(key);
       setSelected(new Set([key]));
-      setViewMode("compose");
     }
   }, [location]);
 
@@ -137,11 +142,6 @@ export default function AdminPartnerOutreach() {
     setBody((prev) => applyGreetingToBody(prev, first));
   }
 
-  const selectedRecipients = useMemo(
-    () => recipients.filter((r) => selected.has(r.key)),
-    [recipients, selected],
-  );
-
   function toggleSelect(key: string) {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -168,16 +168,16 @@ export default function AdminPartnerOutreach() {
     try {
       const keys = Array.from(selected).slice(0, 50);
       const res = await bulkDraftCal.mutateAsync({ recipientKeys: keys });
-      toast.success(`Cal drafted ${res.drafted} email${res.drafted !== 1 ? "s" : ""} — review before sending`);
+      toast.success(`Cal drafted ${res.drafted} email${res.drafted !== 1 ? "s" : ""} — review and send below`);
       utils.admin.getDrafts.invalidate();
       utils.admin.getDraftCount.invalidate();
-      setViewMode("review");
+      setQueueExpanded(true);
     } finally {
       setBulkBusy(false);
     }
   }
 
-  const canQueueIndividual =
+  const canSend =
     !!active?.contactEmail &&
     !!subject.trim() &&
     !!body.trim() &&
@@ -186,74 +186,71 @@ export default function AdminPartnerOutreach() {
 
   const needsName = active?.needsContactName && !contactName.trim();
 
-  async function handleQueueIndividual() {
-    if (!active) return;
+  async function prepareBody() {
+    if (!active) return null;
     if (needsName && !/^Hi team,/m.test(body)) {
       toast.error("Enter a first name or use Hi team, greeting");
-      return;
+      return null;
     }
     if (contactName.trim() && contactName !== active.contactName) {
       await updateContact.mutateAsync({ recipientKey: active.key, contactName: contactName.trim() });
     }
     const first = contactName.trim().split(/\s+/)[0] || active.greetingName;
+    return applyGreetingToBody(body, first);
+  }
+
+  async function handleQueueIndividual() {
+    const prepared = await prepareBody();
+    if (!prepared || !active) return;
     await saveDraft.mutateAsync({
       recipientKey: active.key,
       subject,
-      body: applyGreetingToBody(body, first),
+      body: prepared,
       contactName: contactName.trim() || undefined,
     });
-    setViewMode("review");
+  }
+
+  async function handleSendNow() {
+    if (!active) return;
+    const prepared = await prepareBody();
+    if (!prepared) return;
+    sendNow.mutate({
+      recipientKey: active.key,
+      subject,
+      body: prepared,
+      contactName: contactName.trim() || undefined,
+      allowTeamGreeting: needsName || /^Hi team,/m.test(prepared),
+    });
   }
 
   const pendingPartnerDrafts = (draftCount?.pending ?? 0) + (draftCount?.approved ?? 0);
 
   if (!isAuthenticated || user?.role !== "admin") {
     return (
-      <div className="min-h-0 bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Admin access required.</p>
+      <div className="min-h-0 flex items-center justify-center" style={{ background: "#080808", color: "#64748b" }}>
+        <p>Admin access required.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-0 bg-background text-foreground flex flex-col h-[calc(100vh-0px)]">
-      <header className="border-b border-border px-5 py-3 flex flex-wrap items-center gap-3 shrink-0">
+    <div className="min-h-0 flex flex-col" style={{ background: "#080808", color: "#ececec", height: "calc(100vh - 0px)" }}>
+      <header className="border-b px-5 py-3 flex flex-wrap items-center gap-3 shrink-0" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
         <Link href="/admin/partners">
-          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground h-8">
+          <Button variant="ghost" size="sm" className="gap-1.5 h-8" style={{ color: "#64748b" }}>
             <ArrowLeft size={14} /> Back
           </Button>
         </Link>
         <div className="flex-1 min-w-[160px]">
-          <h1 className="text-base font-semibold">Partner & Vendor Outreach</h1>
-          <p className="text-xs text-muted-foreground">Draft with Cal → review → approve → send</p>
+          <h1 className="text-base font-semibold" style={{ color: "#ececec" }}>Partner & Vendor Outreach</h1>
+          <p className="text-xs" style={{ color: "#64748b" }}>Compose with Cal · review · approve · send or bulk send</p>
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
-          <Button
-            variant={viewMode === "compose" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7 text-xs gap-1"
-            onClick={() => setViewMode("compose")}
-          >
-            <PenLine size={12} /> Compose
-          </Button>
-          <Button
-            variant={viewMode === "review" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7 text-xs gap-1"
-            onClick={() => setViewMode("review")}
-          >
-            <ClipboardList size={12} />
-            Review & Send
-            {pendingPartnerDrafts > 0 && (
-              <Badge variant="outline" className="text-[9px] px-1 py-0 ml-0.5">{pendingPartnerDrafts}</Badge>
-            )}
-          </Button>
-        </div>
-        {viewMode === "compose" && selected.size > 0 && (
+        {selected.size > 0 && (
           <Button
             variant="outline"
             size="sm"
             className="h-8 text-xs gap-1"
+            style={{ borderColor: "rgba(255,255,255,0.12)", color: "#cbd5e1", background: "#111111" }}
             disabled={bulkBusy}
             onClick={handleBulkDraft}
           >
@@ -261,118 +258,114 @@ export default function AdminPartnerOutreach() {
             Cal draft selected ({selected.size})
           </Button>
         )}
+        {pendingPartnerDrafts > 0 && (
+          <Button
+            size="sm"
+            className="h-8 text-xs gap-1"
+            style={{ background: "#00ff87", color: "#080808" }}
+            onClick={() => setQueueExpanded(true)}
+          >
+            <Send size={12} /> {pendingPartnerDrafts} ready to send
+          </Button>
+        )}
       </header>
 
-      {viewMode === "review" ? (
-        <div className="flex-1 overflow-y-auto p-5 max-w-3xl mx-auto w-full">
-          <OutreachDraftQueue
-            audience="partner"
-            compact
-            emptyPending={(
-              <div className="text-center space-y-2">
-                <p>No partner drafts yet.</p>
-                <Button variant="outline" size="sm" onClick={() => setViewMode("compose")}>
-                  Compose drafts
-                </Button>
+      <div className="flex-1 flex min-h-0">
+        {/* Recipient list */}
+        <aside className="w-72 shrink-0 border-r flex flex-col" style={{ borderColor: "rgba(255,255,255,0.08)", background: "#111111" }}>
+          <div className="p-3 border-b space-y-2" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+            <select
+              value={filterSource}
+              onChange={(e) => setFilterSource(e.target.value as typeof filterSource)}
+              className="w-full text-xs rounded-md px-2 py-1.5"
+              style={{ background: "#080808", border: "1px solid rgba(255,255,255,0.12)", color: "#ececec" }}
+            >
+              <option value="all">All partners & vendors</option>
+              <option value="prospect">Discovered partners</option>
+              <option value="vendor">Vendor directory</option>
+              <option value="logistics_partner">Logistics partners</option>
+            </select>
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="flex items-center gap-1.5 text-[10px]"
+              style={{ color: "#64748b" }}
+            >
+              <Users size={11} />
+              {selected.size === recipients.length ? "Deselect all" : "Select all"}
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="animate-spin" size={20} style={{ color: "#64748b" }} />
               </div>
+            ) : recipients.length === 0 ? (
+              <p className="text-xs p-4 text-center" style={{ color: "#64748b" }}>No contacts with email</p>
+            ) : (
+              recipients.map((r) => {
+                const isActive = activeKey === r.key;
+                const isSel = selected.has(r.key);
+                return (
+                  <div
+                    key={r.key}
+                    className="flex items-start gap-2 px-2 py-2 border-b"
+                    style={{
+                      borderColor: "rgba(255,255,255,0.06)",
+                      background: isActive ? "rgba(0,255,135,0.08)" : undefined,
+                      borderLeft: isActive ? "2px solid #00ff87" : undefined,
+                    }}
+                  >
+                    <button type="button" className="mt-1 shrink-0" style={{ color: "#64748b" }} onClick={() => toggleSelect(r.key)}>
+                      {isSel ? <CheckSquare size={15} style={{ color: "#00ff87" }} /> : <Square size={15} />}
+                    </button>
+                    <button type="button" className="flex-1 text-left min-w-0" onClick={() => setActiveKey(r.key)}>
+                      <div className="font-medium text-sm truncate" style={{ color: "#ececec" }}>{r.company}</div>
+                      <div className="text-[10px] truncate" style={{ color: "#64748b" }}>{r.contactEmail}</div>
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        <Badge variant="outline" className="text-[9px] px-1 py-0">{SOURCE_LABEL[r.source]}</Badge>
+                        {r.needsContactName && (
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 text-amber-500 border-amber-500/40">
+                            Team greeting
+                          </Badge>
+                        )}
+                      </div>
+                    </button>
+                  </div>
+                );
+              })
             )}
-          />
-        </div>
-      ) : (
-        <div className="flex-1 flex min-h-0">
-          <aside className="w-72 shrink-0 border-r border-border flex flex-col bg-card/20">
-            <div className="p-3 border-b border-border space-y-2">
-              <select
-                value={filterSource}
-                onChange={(e) => setFilterSource(e.target.value as typeof filterSource)}
-                className="w-full text-xs border border-border rounded-md px-2 py-1.5 bg-input"
-              >
-                <option value="all">All partners & vendors</option>
-                <option value="prospect">Discovered partners</option>
-                <option value="vendor">Vendor directory</option>
-                <option value="logistics_partner">Logistics partners</option>
-              </select>
-              <button
-                type="button"
-                onClick={toggleSelectAll}
-                className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground"
-              >
-                <Users size={11} />
-                {selected.size === recipients.length ? "Deselect all" : "Select all"}
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {isLoading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="animate-spin text-muted-foreground" size={20} />
-                </div>
-              ) : recipients.length === 0 ? (
-                <p className="text-xs text-muted-foreground p-4 text-center">No contacts with email</p>
-              ) : (
-                recipients.map((r) => {
-                  const isActive = activeKey === r.key;
-                  const isSel = selected.has(r.key);
-                  return (
-                    <div
-                      key={r.key}
-                      className={`flex items-start gap-2 px-2 py-2 border-b border-border/50 hover:bg-accent/30 ${
-                        isActive ? "bg-accent/50 border-l-2 border-l-primary" : ""
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        className="mt-1 shrink-0 text-muted-foreground hover:text-foreground"
-                        onClick={() => toggleSelect(r.key)}
-                      >
-                        {isSel ? <CheckSquare size={15} className="text-primary" /> : <Square size={15} />}
-                      </button>
-                      <button
-                        type="button"
-                        className="flex-1 text-left min-w-0"
-                        onClick={() => setActiveKey(r.key)}
-                      >
-                        <div className="font-medium text-sm truncate">{r.company}</div>
-                        <div className="text-[10px] text-muted-foreground truncate">{r.contactEmail}</div>
-                        <div className="flex gap-1 mt-1 flex-wrap">
-                          <Badge variant="outline" className="text-[9px] px-1 py-0">{SOURCE_LABEL[r.source]}</Badge>
-                          {r.needsContactName && (
-                            <Badge variant="outline" className="text-[9px] px-1 py-0 text-amber-500 border-amber-500/40">
-                              Team greeting
-                            </Badge>
-                          )}
-                        </div>
-                      </button>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </aside>
+          </div>
+        </aside>
 
-          <main className="flex-1 flex flex-col min-w-0">
+        {/* Compose + send queue */}
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {!active ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3 px-6 text-center">
-                <Building2 size={36} className="opacity-20" />
-                <p className="text-sm">Select a partner to draft, or select many and bulk-draft with Cal</p>
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center" style={{ color: "#64748b" }}>
+                <Building2 size={36} style={{ opacity: 0.2 }} />
+                <p className="text-sm">Select a partner to compose, or select many and bulk-draft with Cal</p>
                 {selected.size > 1 && (
-                  <Button variant="outline" size="sm" onClick={handleBulkDraft} disabled={bulkBusy} className="gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkDraft}
+                    disabled={bulkBusy}
+                    className="gap-1"
+                    style={{ borderColor: "rgba(255,255,255,0.12)", color: "#cbd5e1", background: "#111111" }}
+                  >
                     <Sparkles size={12} /> Cal draft {selected.size} selected
-                  </Button>
-                )}
-                {pendingPartnerDrafts > 0 && (
-                  <Button variant="secondary" size="sm" onClick={() => setViewMode("review")} className="gap-1">
-                    <ClipboardList size={12} /> Review {pendingPartnerDrafts} draft{pendingPartnerDrafts !== 1 ? "s" : ""}
                   </Button>
                 )}
               </div>
             ) : (
               <>
-                <div className="px-5 py-4 border-b border-border space-y-1">
+                <div className="px-5 py-4 border-b shrink-0" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-lg font-semibold">{active.company}</h2>
                     <Badge variant="secondary" className="text-xs">{active.partnerTypeLabel}</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                  <p className="text-sm flex items-center gap-1.5 mt-1" style={{ color: "#64748b" }}>
                     <Mail size={13} /> {active.contactEmail}
                   </p>
                 </div>
@@ -386,7 +379,7 @@ export default function AdminPartnerOutreach() {
                   )}
 
                   <div className="space-y-1.5">
-                    <Label className="text-xs flex items-center gap-1">
+                    <Label className="text-xs flex items-center gap-1" style={{ color: "#94a3b8" }}>
                       <User size={12} /> Contact first name
                     </Label>
                     <Input
@@ -398,13 +391,13 @@ export default function AdminPartnerOutreach() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Subject</Label>
+                    <Label className="text-xs" style={{ color: "#94a3b8" }}>Subject</Label>
                     <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs">Message</Label>
+                      <Label className="text-xs" style={{ color: "#94a3b8" }}>Message</Label>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -419,18 +412,22 @@ export default function AdminPartnerOutreach() {
                     <Textarea
                       value={body}
                       onChange={(e) => setBody(e.target.value)}
-                      rows={16}
-                      className="text-sm leading-relaxed font-sans resize-y min-h-[280px]"
+                      rows={12}
+                      className="text-sm leading-relaxed font-sans resize-y min-h-[220px]"
                     />
                   </div>
                 </div>
 
-                <div className="px-5 py-3 border-t border-border flex items-center justify-between shrink-0 bg-card/30">
-                  <p className="text-xs text-muted-foreground">Draft only — approve before sending</p>
+                <div
+                  className="px-5 py-3 border-t flex items-center justify-end gap-2 shrink-0 flex-wrap"
+                  style={{ borderColor: "rgba(255,255,255,0.08)", background: "#111111" }}
+                >
                   <Button
+                    variant="outline"
                     onClick={handleQueueIndividual}
-                    disabled={!canQueueIndividual || saveDraft.isPending || updateContact.isPending}
+                    disabled={!canSend || saveDraft.isPending || updateContact.isPending}
                     className="gap-2"
+                    style={{ borderColor: "rgba(255,255,255,0.12)", color: "#cbd5e1", background: "#080808" }}
                   >
                     {(saveDraft.isPending || updateContact.isPending) ? (
                       <Loader2 size={14} className="animate-spin" />
@@ -439,12 +436,67 @@ export default function AdminPartnerOutreach() {
                     )}
                     Queue for review
                   </Button>
+                  <Button
+                    onClick={handleSendNow}
+                    disabled={!canSend || sendNow.isPending || updateContact.isPending}
+                    className="gap-2"
+                    style={{ background: "#00ff87", color: "#080808" }}
+                  >
+                    {(sendNow.isPending || updateContact.isPending) ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Send size={14} />
+                    )}
+                    Send now
+                  </Button>
                 </div>
               </>
             )}
-          </main>
+          </div>
+
+          {/* Always-visible review / approve / bulk send queue */}
+          <div
+            className="shrink-0 border-t overflow-y-auto"
+            style={{
+              borderColor: "rgba(0,255,135,0.25)",
+              background: "#080808",
+              maxHeight: queueExpanded ? "48vh" : "2.75rem",
+              minHeight: queueExpanded ? "16rem" : "2.75rem",
+            }}
+          >
+            <button
+              type="button"
+              className="w-full flex items-center justify-between px-5 py-3 text-left"
+              style={{ borderBottom: queueExpanded ? "1px solid rgba(255,255,255,0.08)" : undefined }}
+              onClick={() => setQueueExpanded((v) => !v)}
+            >
+              <span className="text-sm font-semibold flex items-center gap-2" style={{ color: "#ececec" }}>
+                <ClipboardList size={14} style={{ color: "#00ff87" }} />
+                Review · Approve · Send
+                {pendingPartnerDrafts > 0 && (
+                  <Badge style={{ background: "rgba(0,255,135,0.15)", color: "#00ff87", border: "1px solid rgba(0,255,135,0.35)" }}>
+                    {pendingPartnerDrafts} draft{pendingPartnerDrafts !== 1 ? "s" : ""}
+                  </Badge>
+                )}
+              </span>
+              <span className="text-xs" style={{ color: "#64748b" }}>{queueExpanded ? "Collapse" : "Expand"}</span>
+            </button>
+            {queueExpanded && (
+              <div className="px-5 pb-5">
+                <OutreachDraftQueue
+                  audience="partner"
+                  compact
+                  emptyPending={(
+                    <p style={{ color: "#64748b" }}>
+                      No drafts yet — compose above and click Queue for review, or Cal draft selected partners.
+                    </p>
+                  )}
+                />
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -187,9 +187,12 @@ export default function OutreachDraftQueue({
 
   const sourceLabel = (entry: DraftEntry) => entry.recipient?.sourceLabel;
 
+  const sendableOnTab = activeTab !== "sent" ? drafts.length : 0;
+  const showBulkBar = sendableCount > 0 || sendableOnTab > 0;
+
   return (
     <div style={{ color: "#ececec" }}>
-      {sendableCount > 0 && (
+      {showBulkBar && (
         <div style={{
           display: "flex",
           alignItems: "center",
@@ -359,7 +362,7 @@ export default function OutreachDraftQueue({
                       <span style={{ color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>Subject:</span> {entry.draft.subject}
                     </p>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
                     {activeTab === "pending" && (
                       <>
                         <button

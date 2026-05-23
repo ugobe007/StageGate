@@ -42,6 +42,41 @@ export type UnifiedDraftEntry = {
   recipient: OutreachRecipient;
 };
 
+/** Partner/vendor drafts — includes rows keyed by vendor, logistics partner, or partner prospect. */
+export function isPartnerAudienceDraft(draft: {
+  audience?: string | null;
+  vendorId?: number | null;
+  logisticsPartnerId?: number | null;
+  recipientKey?: string | null;
+}): boolean {
+  if (draft.audience === "partner") return true;
+  if (draft.vendorId != null || draft.logisticsPartnerId != null) return true;
+  const key = draft.recipientKey ?? "";
+  return key.startsWith("vendor:") || key.startsWith("logistics_partner:");
+}
+
+export function draftRecipientKey(draft: {
+  recipientKey?: string | null;
+  vendorId?: number | null;
+  logisticsPartnerId?: number | null;
+  prospectId?: number | null;
+}): string | null {
+  if (draft.recipientKey) return draft.recipientKey;
+  if (draft.vendorId != null) return `vendor:${draft.vendorId}`;
+  if (draft.logisticsPartnerId != null) return `logistics_partner:${draft.logisticsPartnerId}`;
+  if (draft.prospectId != null) return `prospect:${draft.prospectId}`;
+  return null;
+}
+
+function matchesAudienceFilter(
+  draft: typeof draftEmails.$inferSelect,
+  audience: OutreachAudience,
+): boolean {
+  if (audience === "all") return true;
+  if (audience === "partner") return isPartnerAudienceDraft(draft);
+  return draft.audience === "prospect" || (!isPartnerAudienceDraft(draft) && draft.audience !== "partner");
+}
+
 // ─── Resend send helper ───────────────────────────────────────────────────────
 
 function _isNotificationUrlError(errText: string): boolean {
@@ -221,9 +256,7 @@ export async function getDraftsWithRecipients(
     .where(inArray(draftEmails.status, statuses))
     .orderBy(draftEmails.createdAt);
 
-  const filtered = audience === "all"
-    ? rows
-    : rows.filter((r) => r.draft.audience === audience);
+  const filtered = rows.filter((r) => matchesAudienceFilter(r.draft, audience));
 
   return filtered.map((row) => ({
     draft: row.draft,
@@ -237,7 +270,7 @@ export async function getDraftCountByAudience(audience: OutreachAudience = "all"
   if (!db) return { pending: 0, approved: 0, sent: 0, lastSentAt: null as Date | null };
 
   const rows = await db.select().from(draftEmails);
-  const filtered = audience === "all" ? rows : rows.filter((r) => r.audience === audience);
+  const filtered = rows.filter((r) => matchesAudienceFilter(r, audience));
 
   const pending = filtered.filter((r) => r.status === "pending").length;
   const approved = filtered.filter((r) => r.status === "approved").length;
@@ -400,11 +433,16 @@ export async function sendUnifiedDraftEntry(
     throw new Error(`${entry.recipient.company} has no email address`);
   }
 
-  if (entry.draft.audience === "partner" && entry.recipient.recipientKey) {
+  if (isPartnerAudienceDraft(entry.draft)) {
+    const recipientKey =
+      entry.recipient.recipientKey ?? draftRecipientKey(entry.draft);
+    if (!recipientKey) {
+      throw new Error(`${entry.recipient.company}: missing partner recipient key`);
+    }
     const { sendPartnerOutreachEmail } = await import("./services/partnerEmail");
     const allowTeam = /^Hi team,/m.test(entry.draft.body);
     return sendPartnerOutreachEmail({
-      recipientKey: entry.recipient.recipientKey,
+      recipientKey,
       subject: entry.draft.subject,
       body: entry.draft.body,
       allowTeamGreeting: allowTeam,

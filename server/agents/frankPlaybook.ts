@@ -16,7 +16,7 @@ export const FRANK_PERSONA = {
   name: "Cal",
   fromName: "Cal at StageGate",
   fromEmail: "cal@onstage.bot",
-  signature: "Cal\nRobot Ready Team @ StageGate\nonstage.bot\nLV Robotics partner · lvrobotics.org",
+  signature: "Cal\n\nRobot Ready Team @ StageGate\nonstage.bot\nLV Robotics partner · lvrobotics.org",
   robotGuildEmail: "start@therobotguild.com",
   robotGuildUrl: "https://www.therobotguild.com/",
   title: "Lead Solutions Engineer & Commercial Partner",
@@ -247,7 +247,7 @@ RULES:
 - No bullet points. No exclamation points. No numbered lists.
 - Mention what StageGate does ONCE. Do not repeat or rephrase it.
 - Subject line: short, specific, references the show or company. No clickbait.
-- Sign-off always: "Thanks,\nCal\nRobot Ready Team @ StageGate\nonstage.bot"
+- Sign-off always: "Thanks,\nCal\n\nRobot Ready Team @ StageGate\nonstage.bot"
 - Never sound like marketing copy or AI.
 - Never say "I hope this email finds you well", "leverage", "ecosystem", "cutting-edge", "innovative", "precision", "elite", "zero-risk".
 - Sound like a person, not a pitch.`;
