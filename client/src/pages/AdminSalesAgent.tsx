@@ -477,7 +477,7 @@ function PendingDraftsTab() {
         <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
           <span className="text-emerald-300">
-            Cal sent <strong>{bulkResult.sent}</strong> email{bulkResult.sent !== 1 ? "s" : ""}.
+            Sent {bulkResult.sent} email{bulkResult.sent !== 1 ? "s" : ""}.
             {bulkResult.failed > 0 && <span className="text-amber-400 ml-1">{bulkResult.failed} failed.</span>}
           </span>
           <button onClick={() => setBulkResult(null)} className="ml-auto text-zinc-500 hover:text-zinc-300 text-xs">Dismiss</button>
@@ -967,8 +967,8 @@ export default function AdminSalesAgent() {
                     <div>
                       <h1 className="text-lg font-semibold text-white">Cal</h1>
                       <p className="text-xs text-zinc-500">
-                        Sales agent. Cool, concise, politely confident.
-                        {lastRun ? ` Last run ${timeAgo(lastRun.startedAt)} · ${lastRun.emailsSent ?? 0} emails sent.` : ""}
+                        Lead Solutions Engineer · approachable, engaging, smart.
+                        {lastRun ? ` Last outreach run ${timeAgo(lastRun.startedAt)}.` : ""}
                       </p>
                     </div>
                   </div>

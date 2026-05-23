@@ -590,7 +590,7 @@ export default function AdminProspects() {
         {/* Header */}
         <div style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "1.25rem", marginBottom: "1.5rem" }}>
           <p style={{ fontSize: "0.6875rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", marginBottom: "0.375rem", fontWeight: 500 }}>
-            XBOT / OUTREACH
+            OUTREACH
           </p>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
             <h1 style={{ fontSize: "1.125rem", fontWeight: 700, letterSpacing: "-0.01em", color: "#ececec", margin: 0 }}>
@@ -695,12 +695,12 @@ export default function AdminProspects() {
           const respondedCount = (statusCounts["responded"] ?? 0) + (statusCounts["scheduled"] ?? 0) + (statusCounts["converted"] ?? 0);
 
           const focusLine = pendingDrafts > 0
-            ? `${pendingDrafts} draft${pendingDrafts !== 1 ? "s" : ""} ready — review on Outreach, then Bulk Send`
+            ? `${pendingDrafts} draft${pendingDrafts !== 1 ? "s" : ""} waiting for your review`
             : approvedDrafts > 0
-            ? `${approvedDrafts} approved — go to Outreach and Bulk Send`
+            ? `${approvedDrafts} approved — ready to send from Outreach`
             : newCount > 0
-            ? `${newCount} new robot companies — start with Draft All with Cal`
-            : "Pipeline caught up — check responses and follow-ups";
+            ? `${newCount} new companies — Cal can draft a first note for each`
+            : "Caught up — watch for replies";
 
           return (
             <div style={{
@@ -713,13 +713,13 @@ export default function AdminProspects() {
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
                 <div style={{ flex: 1, minWidth: "16rem" }}>
                   <p style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: pendingDrafts > 0 ? "#fbbf24" : "#00ff87", margin: "0 0 0.35rem" }}>
-                    Cal Outreach Workflow
+                    Cal
                   </p>
                   <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec", margin: 0, lineHeight: 1.4 }}>
                     {focusLine}
                   </p>
                   <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.40)", margin: "0.4rem 0 0" }}>
-                    1 · Draft with Cal &nbsp;→&nbsp; 2 · Review drafts &nbsp;→&nbsp; 3 · Send / Bulk Send
+                    Draft with Cal · you review · you send
                   </p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -729,7 +729,7 @@ export default function AdminProspects() {
                       generateDraftsMutation.mutate({});
                     }}
                     disabled={generatingDrafts}
-                    title="Step 1 — Have Cal pre-draft intro emails"
+                    title="Have Cal draft intro emails for new prospects"
                     style={{
                       display: "flex", alignItems: "center", gap: "0.4rem",
                       fontSize: "0.8125rem", fontWeight: 600,
@@ -744,14 +744,14 @@ export default function AdminProspects() {
                   >
                     {generatingDrafts
                       ? <><RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> Drafting…</>
-                      : <><Zap size={12} /> ① Draft All with Cal</>
+                      : <><Zap size={12} /> Draft with Cal</>
                     }
                   </button>
                   <button
                     onClick={() => setLocation("/admin/outreach")}
                     style={{
                       display: "flex", alignItems: "center", gap: "0.4rem",
-                      fontSize: "0.8125rem", fontWeight: 700,
+                      fontSize: "0.8125rem", fontWeight: 600,
                       padding: "0.5rem 1rem",
                       border: pendingDrafts > 0 ? "none" : "1px solid rgba(255,255,255,0.15)",
                       color: pendingDrafts > 0 ? "#080808" : "rgba(255,255,255,0.70)",
@@ -761,32 +761,13 @@ export default function AdminProspects() {
                     }}
                   >
                     <Mail size={13} />
-                    ② Review Drafts
+                    Review drafts
                     {pendingDrafts > 0 && (
                       <span style={{ fontSize: "0.6875rem", fontWeight: 700, background: "rgba(8,8,8,0.20)", padding: "0.1rem 0.4rem", borderRadius: "9999px" }}>
                         {pendingDrafts}
                       </span>
                     )}
                   </button>
-                  {(pendingDrafts > 0 || approvedDrafts > 0) && (
-                    <button
-                      onClick={() => setLocation("/admin/outreach")}
-                      style={{
-                        display: "flex", alignItems: "center", gap: "0.4rem",
-                        fontSize: "0.8125rem", fontWeight: 700,
-                        padding: "0.5rem 1rem",
-                        border: "none",
-                        color: "#080808",
-                        background: "#00ff87",
-                        cursor: "pointer",
-                        borderRadius: "0.375rem",
-                        boxShadow: "0 0 20px rgba(0,255,135,0.15)",
-                      }}
-                    >
-                      <Send size={13} />
-                      ③ Bulk Send ({pendingDrafts + approvedDrafts})
-                    </button>
-                  )}
                 </div>
               </div>
               <div style={{

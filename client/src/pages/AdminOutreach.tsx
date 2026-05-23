@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import DbStatusBanner from "@/components/DbStatusBanner";
-import OutreachCommandCenter from "@/components/OutreachCommandCenter";
-import { ChevronDown, ChevronUp, RefreshCw, Send, Zap, Check, Users } from "lucide-react";
+import { ChevronDown, ChevronUp, RefreshCw, Send, Users, ArrowLeft } from "lucide-react";
 
 type DraftStatus = "pending" | "approved" | "sent" | "discarded";
 type WorkflowTab = "pending" | "approved" | "sent";
@@ -56,19 +55,6 @@ export default function AdminOutreach() {
   const approvedCount = draftCount?.approved ?? 0;
   const sentCount = draftCount?.sent ?? 0;
   const sendableCount = pendingCount + approvedCount;
-  const queueClear = sendableCount === 0;
-  const lastSentAt = draftCount?.lastSentAt ?? null;
-
-  const { data: hubStats } = trpc.admin.getOutreachHubStats.useQuery(undefined, {
-    refetchInterval: 20_000,
-  });
-
-  // Land on Sent tab when queue is clear and we have sent history
-  useEffect(() => {
-    if (queueClear && sentCount > 0 && activeTab === "pending") {
-      setActiveTab("sent");
-    }
-  }, [queueClear, sentCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: allSendableDrafts = [] } = trpc.admin.getDrafts.useQuery(
     { statuses: ["pending", "approved"] },
@@ -87,7 +73,6 @@ export default function AdminOutreach() {
       toast.success(msg);
       utils.admin.getDrafts.invalidate();
       utils.admin.getDraftCount.invalidate();
-      utils.admin.getOutreachHubStats.invalidate();
       setGenerating(false);
     },
     onError: (e) => { toast.error(e.message); setGenerating(false); },
@@ -98,7 +83,6 @@ export default function AdminOutreach() {
       toast.success("Draft approved");
       utils.admin.getDrafts.invalidate();
       utils.admin.getDraftCount.invalidate();
-      utils.admin.getOutreachHubStats.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });
@@ -108,7 +92,6 @@ export default function AdminOutreach() {
       toast.success("Draft discarded");
       utils.admin.getDrafts.invalidate();
       utils.admin.getDraftCount.invalidate();
-      utils.admin.getOutreachHubStats.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });
@@ -127,7 +110,6 @@ export default function AdminOutreach() {
       toast.success(`Email sent to ${res.sentTo}`);
       utils.admin.getDrafts.invalidate();
       utils.admin.getDraftCount.invalidate();
-      utils.admin.getOutreachHubStats.invalidate();
       utils.prospects.listWithEngagement.invalidate();
       setExpandedId(null);
     },
@@ -142,7 +124,6 @@ export default function AdminOutreach() {
       setConfirmBulkSend(null);
       utils.admin.getDrafts.invalidate();
       utils.admin.getDraftCount.invalidate();
-      utils.admin.getOutreachHubStats.invalidate();
       utils.prospects.listWithEngagement.invalidate();
     },
     onError: (e) => { toast.error(e.message); setConfirmBulkSend(null); },
@@ -212,75 +193,45 @@ export default function AdminOutreach() {
       <div style={{ padding: "2rem", maxWidth: "52rem", margin: "0 auto", color: "#ececec" }}>
         {/* Header */}
         <div style={{ marginBottom: "1.5rem" }}>
-          <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.30)", margin: "0 0 0.25rem" }}>XBOT / OUTREACH</p>
-          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0 }}>Cal Outreach — Review &amp; Send</h1>
+          <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.30)", margin: "0 0 0.25rem" }}>OUTREACH</p>
+          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0 }}>Review Cal&apos;s drafts</h1>
           <p style={{ fontSize: "0.875rem", color: "#64748b", margin: "0.25rem 0 0" }}>
-            Step 3 of 3 · Approve drafts, then send via outreach@onstage.bot
+            Read, edit, and send when you&apos;re ready — from outreach@onstage.bot
           </p>
         </div>
 
-        {/* 3-step workflow */}
         <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "0.5rem",
-          marginBottom: "1.5rem",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          flexWrap: "wrap", gap: "0.75rem", marginBottom: "1.25rem",
         }}>
-          {([
-            { step: 1, label: "Draft", desc: "Cal writes intro emails", action: () => setLocation("/admin/prospects"), actionLabel: "Prospects", icon: Zap, active: false, count: null as number | null },
-            { step: 2, label: "Review", desc: "Edit & approve drafts", action: () => setActiveTab("pending"), actionLabel: "Review tab", icon: Check, active: activeTab === "pending", count: pendingCount },
-            { step: 3, label: "Send", desc: "Send one or bulk", action: null, actionLabel: "", icon: Send, active: activeTab !== "sent", count: sendableCount },
-          ] as const).map((s) => {
-            const Icon = s.icon;
-            const isCurrent = s.step === 2 && activeTab === "pending" || s.step === 3 && activeTab !== "sent";
-            return (
-              <div
-                key={s.step}
-                style={{
-                  padding: "0.875rem 1rem",
-                  borderRadius: "0.5rem",
-                  border: `1px solid ${isCurrent ? (s.step === 3 ? "rgba(0,255,135,0.35)" : "rgba(251,191,36,0.35)") : "rgba(255,255,255,0.08)"}`,
-                  background: isCurrent ? (s.step === 3 ? "rgba(0,255,135,0.05)" : "rgba(251,191,36,0.04)") : "#111111",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.35rem" }}>
-                  <span style={{
-                    width: "1.25rem", height: "1.25rem", borderRadius: "50%",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "0.6875rem", fontWeight: 700,
-                    background: isCurrent ? (s.step === 3 ? "#00ff87" : "#fbbf24") : "rgba(255,255,255,0.10)",
-                    color: isCurrent ? "#080808" : "rgba(255,255,255,0.45)",
-                  }}>{s.step}</span>
-                  <Icon size={13} style={{ color: isCurrent ? (s.step === 3 ? "#00ff87" : "#fbbf24") : "rgba(255,255,255,0.35)" }} />
-                  <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: isCurrent ? "#ececec" : "rgba(255,255,255,0.55)" }}>{s.label}</span>
-                  {s.count != null && s.count > 0 && (
-                    <span style={{ marginLeft: "auto", fontSize: "0.6875rem", fontWeight: 700, color: isCurrent ? "#fbbf24" : "rgba(255,255,255,0.35)" }}>{s.count}</span>
-                  )}
-                </div>
-                <p style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.35)", margin: "0 0 0.5rem" }}>{s.desc}</p>
-                {s.step === 1 && (
-                  <button
-                    onClick={s.action!}
-                    style={{ fontSize: "0.6875rem", fontWeight: 600, padding: "0.2rem 0.5rem", border: "1px solid rgba(251,191,36,0.30)", color: "#fbbf24", background: "transparent", borderRadius: "0.25rem", cursor: "pointer" }}
-                  >
-                    ← Draft on Prospects
-                  </button>
-                )}
-                {s.step === 1 && (
-                  <button
-                    onClick={handleGenerate}
-                    disabled={generating || generateMutation.isPending}
-                    style={{ fontSize: "0.6875rem", fontWeight: 600, padding: "0.2rem 0.5rem", marginLeft: "0.35rem", border: "none", color: "#080808", background: "#fbbf24", borderRadius: "0.25rem", cursor: "pointer", opacity: generating ? 0.6 : 1 }}
-                  >
-                    {generating ? "Drafting…" : "Generate Drafts"}
-                  </button>
-                )}
-              </div>
-            );
-          })}
+          <button
+            onClick={() => setLocation("/admin/prospects")}
+            style={{
+              display: "flex", alignItems: "center", gap: "0.35rem",
+              fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.75rem",
+              border: "1px solid rgba(255,255,255,0.10)", background: "#111111",
+              color: "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer",
+            }}
+          >
+            <ArrowLeft size={13} /> Prospects
+          </button>
+          <button
+            onClick={handleGenerate}
+            disabled={generating || generateMutation.isPending}
+            style={{
+              display: "flex", alignItems: "center", gap: "0.35rem",
+              fontSize: "0.8125rem", fontWeight: 600, padding: "0.375rem 0.875rem",
+              border: "1px solid rgba(251,191,36,0.35)", color: "#fbbf24",
+              background: "rgba(251,191,36,0.06)", borderRadius: "0.375rem",
+              cursor: generating ? "wait" : "pointer", opacity: generating ? 0.7 : 1,
+            }}
+          >
+            <RefreshCw size={13} style={generating ? { animation: "spin 1s linear infinite" } : undefined} />
+            {generating ? "Drafting…" : "Draft new with Cal"}
+          </button>
         </div>
 
-        {/* Step 3 — primary send actions (always visible when sendable) */}
+        {/* Send bar when drafts are ready */}
         {sendableCount > 0 && (
           <div style={{
             display: "flex",
@@ -295,9 +246,8 @@ export default function AdminOutreach() {
             background: "rgba(0,255,135,0.04)",
           }}>
             <div>
-              <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#00ff87", margin: "0 0 0.25rem" }}>Step 3 · Send</p>
               <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec", margin: 0 }}>
-                Queue ready — review, then send
+                Ready to send
                 {selectedIds.size > 0 && <span style={{ color: "rgba(255,255,255,0.45)", fontWeight: 400 }}> · {selectedIds.size} selected</span>}
               </p>
             </div>
@@ -338,15 +288,6 @@ export default function AdminOutreach() {
               )}
             </div>
           </div>
-        )}
-
-        {/* Post-send command center — gamified feedback loops */}
-        {hubStats && (sentCount > 0 || queueClear) && (
-          <OutreachCommandCenter
-            stats={hubStats}
-            lastSentAt={lastSentAt}
-            queueClear={queueClear}
-          />
         )}
 
         {/* Tabs */}
@@ -403,14 +344,14 @@ export default function AdminOutreach() {
         ) : drafts.length === 0 ? (
           <div style={{ textAlign: "center", padding: "2rem 0", color: "rgba(255,255,255,0.30)", fontSize: "0.875rem" }}>
             {activeTab === "pending" ? (
-              queueClear && sentCount > 0 ? (
-                <p style={{ color: "rgba(255,255,255,0.45)" }}>Queue clear — stats and next actions are above. Browse sent emails on the Sent tab.</p>
+              sentCount > 0 && sendableCount === 0 ? (
+                <p style={{ color: "rgba(255,255,255,0.45)" }}>Nothing pending review. Browse sent mail on the Sent tab.</p>
               ) : (
                 <div>
-                  <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.55)", marginBottom: "0.5rem" }}>No drafts to review</p>
-                  <p style={{ marginBottom: "1rem" }}>Go to Prospects and click &quot;Draft All with Cal&quot; — or generate here.</p>
+                  <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.55)", marginBottom: "0.5rem" }}>No drafts yet</p>
+                  <p style={{ marginBottom: "1rem" }}>Pick prospects and ask Cal to draft — or use Draft new with Cal above.</p>
                   <button onClick={() => setLocation("/admin/prospects")} style={{ fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid rgba(251,191,36,0.35)", color: "#fbbf24", background: "transparent", borderRadius: "0.375rem", cursor: "pointer" }}>
-                    ← Go to Prospects (Step 1)
+                    ← Go to Prospects
                   </button>
                 </div>
               )
@@ -510,7 +451,7 @@ export default function AdminOutreach() {
                     <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                       {entry.draft.agentReasoning && (
                         <div style={{ fontSize: "0.8125rem", color: "#64748b", background: "#080808", borderRadius: "0.375rem", padding: "0.625rem 0.875rem", border: "1px solid rgba(255,255,255,0.08)" }}>
-                          <span style={{ color: "#f59e0b", fontWeight: 600 }}>Agent reasoning: </span>
+                          <span style={{ color: "#f59e0b", fontWeight: 600 }}>Draft note: </span>
                           {entry.draft.agentReasoning}
                         </div>
                       )}

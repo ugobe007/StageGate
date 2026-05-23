@@ -1,8 +1,9 @@
 /**
  * server/agents/salesAgent.ts
  *
- * Cal — StageGate's Sales Agent
- * Cal is a logistics guy who knows robots. He's been on the show floor. He gets it.
+ * Cal — StageGate Lead Solutions Engineer
+ * Handles discovery drafts (template + insights), follow-ups, and scheduled outreach.
+ * Cal writes like a person who genuinely wants to help — not a volume-driven sales bot.
  *
  * 4-stage conversation playbook:
  *   Stage 1 (discovery → intro_sent):     Cold intro — who Cal is, what StageGate does
