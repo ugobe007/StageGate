@@ -10,6 +10,7 @@ import {
   ShieldCheck, Database, RefreshCw, Send, MessageSquare,
   Shield, ShieldOff,
 } from "lucide-react";
+import DailyBriefPanel from "@/components/DailyBriefPanel";
 
 // ── Dark palette tokens ────────────────────────────────────────────────────
 const D = {
@@ -133,6 +134,8 @@ export default function AdminDashboard() {
         <h1 style={{ fontSize: "1.125rem", fontWeight: 700, color: D.text, margin: "0 0 0.25rem", letterSpacing: "-0.02em" }}>Dashboard</h1>
         <p style={{ fontSize: "0.8125rem", color: D.text2, margin: 0 }}>Manage shows, leads, orders, and logistics partners.</p>
       </div>
+
+      <DailyBriefPanel enabled={isAuthenticated && user?.role === "admin"} />
 
       {/* ── Top stat cards ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem", marginBottom: "1.25rem" }}>

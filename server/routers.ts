@@ -2049,6 +2049,11 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return emailHelpers.getDraftCountByAudience(input?.audience ?? "all");
       }),
 
+    getDailyBrief: adminProcedure.query(async () => {
+      const { getDailyBrief } = await import("./dailyBrief");
+      return getDailyBrief();
+    }),
+
     getPipelineData: adminProcedure
       .input(z.object({ showFilter: z.string().optional() }))
       .query(async ({ input }) => {
