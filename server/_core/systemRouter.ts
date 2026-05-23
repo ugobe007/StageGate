@@ -12,6 +12,7 @@ import { getDb } from "../db";
 import { systemConfig } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { RSS_INTELLIGENCE_JOB_KEY } from "./bootstrapCrons";
 
 // Key used to store the quote follow-up job task UID in system_config
 const QUOTE_FOLLOWUP_JOB_KEY = "quote_followup_job_task_uid";
@@ -180,4 +181,85 @@ export const systemRouter = router({
       await updateHeartbeatJob(row[0].value, { enable: true }, sessionToken);
       return { resumed: true, taskUid: row[0].value };
     }),
+
+  // ── RSS Intelligence Heartbeat Job ──────────────────────────────────────────
+
+  createRssIntelligenceJob: adminProcedure.mutation(async ({ ctx }) => {
+    const dbConn = await getDb();
+    if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+    const existing = await dbConn
+      .select()
+      .from(systemConfig)
+      .where(eq(systemConfig.key, RSS_INTELLIGENCE_JOB_KEY))
+      .limit(1);
+
+    if (existing[0]) {
+      return {
+        created: false,
+        taskUid: existing[0].value,
+        message: "RSS intelligence job already exists.",
+      };
+    }
+
+    const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
+    if (!sessionToken) throw new TRPCError({ code: "UNAUTHORIZED", message: "No session token" });
+
+    const job = await createHeartbeatJob(
+      {
+        name: "rss-intelligence-daily",
+        cron: "0 0 4 * * *",
+        path: "/api/scheduled/rss-intelligence",
+        description:
+          "Daily 04:00 UTC: poll RSS feeds for robot OEM + show ecosystem signals, ingest prospects",
+      },
+      sessionToken,
+    );
+
+    await dbConn
+      .insert(systemConfig)
+      .values({
+        key: RSS_INTELLIGENCE_JOB_KEY,
+        value: job.taskUid,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: systemConfig.key,
+        set: { value: job.taskUid, updatedAt: new Date() },
+      });
+
+    return {
+      created: true,
+      taskUid: job.taskUid,
+      nextExecutionAt: job.nextExecutionAt,
+      message: "RSS intelligence job created. Runs daily at 04:00 UTC.",
+    };
+  }),
+
+  getRssIntelligenceJobStatus: adminProcedure.query(async ({ ctx }) => {
+    const dbConn = await getDb();
+    if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+    const row = await dbConn
+      .select()
+      .from(systemConfig)
+      .where(eq(systemConfig.key, RSS_INTELLIGENCE_JOB_KEY))
+      .limit(1);
+
+    if (!row[0]) {
+      return { exists: false, taskUid: null, job: null };
+    }
+
+    const taskUid = row[0].value;
+    const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
+    if (!sessionToken) throw new TRPCError({ code: "UNAUTHORIZED", message: "No session token" });
+
+    try {
+      const { jobs } = await listHeartbeatJobs(sessionToken);
+      const job = jobs.find((j) => j.taskUid === taskUid) ?? null;
+      return { exists: true, taskUid, job };
+    } catch {
+      return { exists: true, taskUid, job: null };
+    }
+  }),
 });

@@ -3,6 +3,7 @@ import { createServer } from "http";
 import net from "net";
 import { createStageGateApp } from "./app";
 import { setupVite } from "./vite";
+import { bootstrapProjectCrons } from "./bootstrapCrons";
 
 // Scheduled routes are registered in createStageGateApp:
 // /api/scheduled/sales-agent-discover -> salesAgentDiscoveryHandler
@@ -49,6 +50,7 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    void bootstrapProjectCrons();
   });
 }
 
