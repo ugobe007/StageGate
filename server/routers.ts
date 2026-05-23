@@ -858,9 +858,33 @@ Subject line and body only.`,
     bulkDraftCal: adminProcedure
       .input(z.object({ recipientKeys: z.array(z.string()).min(1).max(50) }))
       .mutation(async ({ input }) => {
-        const { bulkBuildCalPartnerDrafts } = await import("./services/partnerEmail");
-        const drafts = await bulkBuildCalPartnerDrafts(input.recipientKeys);
-        return { drafts, drafted: drafts.length };
+        const { bulkSaveCalPartnerDrafts } = await import("./services/partnerEmail");
+        return bulkSaveCalPartnerDrafts(input.recipientKeys);
+      }),
+
+    saveDraft: adminProcedure
+      .input(
+        z.object({
+          recipientKey: z.string(),
+          subject: z.string().min(1),
+          body: z.string().min(1),
+          contactName: z.string().optional(),
+        }),
+      )
+      .mutation(async ({ input }) => {
+        const { getPartnerRecipient, updatePartnerContactName } = await import("./services/partnerEmail");
+        const recipient = await getPartnerRecipient(input.recipientKey);
+        if (!recipient) throw new TRPCError({ code: "NOT_FOUND", message: "Recipient not found" });
+        if (input.contactName?.trim() && input.contactName !== recipient.contactName) {
+          await updatePartnerContactName(input.recipientKey, input.contactName.trim());
+        }
+        const row = await emailHelpers.createPartnerDraft({
+          recipientKey: input.recipientKey,
+          subject: input.subject,
+          body: input.body,
+          agentReasoning: "Manual partner outreach draft",
+        });
+        return { draftId: row.id };
       }),
   }),
 
@@ -1227,7 +1251,9 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           }
         }
         const contactedIds = new Set<number>();
-        for (const row of sentDraftRows) contactedIds.add(row.prospectId);
+        for (const row of sentDraftRows) {
+          if (row.prospectId !== null) contactedIds.add(row.prospectId);
+        }
         for (const row of campaignRows) contactedIds.add(row.prospectId);
         for (const row of outboundThreadRows) {
           if (row.prospectId !== null) contactedIds.add(row.prospectId);
@@ -1886,11 +1912,17 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         );
       }),
 
-    // Get all drafts with their prospect data
+    // Get all drafts with recipient data (prospects + partners/vendors)
     getDrafts: adminProcedure
-      .input(z.object({ statuses: z.array(z.string()).optional() }))
+      .input(z.object({
+        statuses: z.array(z.string()).optional(),
+        audience: z.enum(["prospect", "partner", "all"]).optional(),
+      }))
       .query(async ({ input }) => {
-        return emailHelpers.getDraftsWithProspects(input.statuses ?? ["pending", "approved"]);
+        return emailHelpers.getDraftsWithRecipients(
+          input.statuses ?? ["pending", "approved"],
+          input.audience ?? "all",
+        );
       }),
 
     // Get drafts for a single prospect (for per-row review in AdminProspects)
@@ -1931,108 +1963,74 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     sendDraft: adminProcedure
       .input(z.object({ draftId: z.number() }))
       .mutation(async ({ input }) => {
-        const drafts = await emailHelpers.getDraftsWithProspects(["pending", "approved"]);
-        const entry = drafts.find((d: { draft: { id: number } }) => d.draft.id === input.draftId);
+        const drafts = await emailHelpers.getDraftsWithRecipients(["pending", "approved"], "all");
+        const entry = drafts.find((d) => d.draft.id === input.draftId);
         if (!entry) throw new TRPCError({ code: "NOT_FOUND", message: "Draft not found" });
-        const toEmail = emailHelpers.getProspectOutreachEmail(entry.prospect);
-        if (!toEmail) throw new TRPCError({ code: "BAD_REQUEST", message: "Prospect has no email address" });
 
-        let sendResult: { id: string; warning?: string } | undefined;
-        let deliveryWarning: string | undefined;
+        let sendResult: { sentTo: string; messageId?: string; warning?: string };
         try {
-          sendResult = await emailHelpers.sendEmail({
-            to: toEmail,
-            subject: entry.draft.subject,
-            body: entry.draft.body,
-          });
-          if (sendResult?.warning) deliveryWarning = sendResult.warning;
+          sendResult = await emailHelpers.sendUnifiedDraftEntry(entry);
         } catch (sendErr) {
-          const msg = sendErr instanceof Error ? sendErr.message : String(sendErr);
-          console.error("[sendDraft] Resend delivery failed, marking draft sent anyway:", msg);
-          deliveryWarning = msg.startsWith("Resend inbound not configured")
-            ? "Email queued but not delivered — configure Resend inbound: resend.com → Domains → onstage.bot → Inbound → Notification URL: https://stagegate-production.up.railway.app/api/webhooks/resend-inbound"
-            : `Email delivery failed: ${msg}`;
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: sendErr instanceof Error ? sendErr.message : String(sendErr),
+          });
         }
 
-        // Always mark draft sent and prospect contacted regardless of delivery outcome
-        await emailHelpers.markDraftSent(entry.draft.id, sendResult?.id);
-        await emailHelpers.recordOutboundCommunication({
-          prospect: entry.prospect,
-          subject: entry.draft.subject,
-          body: entry.draft.body,
-          resendMessageId: sendResult?.id,
-          source: "draft_send",
-        });
-        await db.updateProspectStatus(entry.prospect.id, "contacted");
+        await emailHelpers.markDraftSent(entry.draft.id, sendResult.messageId);
 
-        const pgDb = await getDb();
-        if (pgDb) {
-          const [conv] = await pgDb
-            .select({ state: salesAgentConversations.state })
-            .from(salesAgentConversations)
-            .where(eq(salesAgentConversations.prospectId, entry.prospect.id))
-            .limit(1);
-          await advanceProspectConversationAfterSend(
-            entry.prospect.id,
-            (conv?.state ?? "discovery") as "discovery" | "intro_sent" | "followup_1" | "followup_2",
-          );
+        if (entry.prospect && entry.draft.audience === "prospect") {
+          const pgDb = await getDb();
+          if (pgDb) {
+            const [conv] = await pgDb
+              .select({ state: salesAgentConversations.state })
+              .from(salesAgentConversations)
+              .where(eq(salesAgentConversations.prospectId, entry.prospect.id))
+              .limit(1);
+            await advanceProspectConversationAfterSend(
+              entry.prospect.id,
+              (conv?.state ?? "discovery") as "discovery" | "intro_sent" | "followup_1" | "followup_2",
+            );
+          }
         }
 
-        return { success: true, sentTo: toEmail, messageId: sendResult?.id, warning: deliveryWarning };
+        return { success: true, sentTo: sendResult.sentTo, messageId: sendResult.messageId, warning: sendResult.warning };
       }),
 
     // Bulk send multiple approved drafts
     bulkSendDrafts: adminProcedure
       .input(z.object({ draftIds: z.array(z.number()) }))
       .mutation(async ({ input }) => {
-        const drafts = await emailHelpers.getDraftsWithProspects(["pending", "approved"]);
-        const targets = drafts.filter((d: { draft: { id: number } }) => input.draftIds.includes(d.draft.id));
+        const drafts = await emailHelpers.getDraftsWithRecipients(["pending", "approved"], "all");
+        const targets = drafts.filter((d) => input.draftIds.includes(d.draft.id));
 
         let sent = 0;
         let failed = 0;
         const errors: string[] = [];
 
         for (const entry of targets) {
-          const toEmail = emailHelpers.getProspectOutreachEmail(entry.prospect);
-          if (!toEmail) { failed++; continue; }
           try {
-            let sendResult: { id: string; warning?: string } | undefined;
-            try {
-              sendResult = await emailHelpers.sendEmail({
-                to: toEmail,
-                subject: entry.draft.subject,
-                body: entry.draft.body,
-              });
-            } catch (sendErr) {
-              // Delivery failure — log but continue to mark sent + contacted
-              const msg = sendErr instanceof Error ? sendErr.message : String(sendErr);
-              console.error(`[bulkSendDrafts] Resend failed for ${entry.prospect.company}:`, msg);
-            }
-            await emailHelpers.markDraftSent(entry.draft.id, sendResult?.id);
-            await emailHelpers.recordOutboundCommunication({
-              prospect: entry.prospect,
-              subject: entry.draft.subject,
-              body: entry.draft.body,
-              resendMessageId: sendResult?.id,
-              source: "bulk_draft_send",
-            });
-            await db.updateProspectStatus(entry.prospect.id, "contacted");
-            const pgDb = await getDb();
-            if (pgDb) {
-              const [conv] = await pgDb
-                .select({ state: salesAgentConversations.state })
-                .from(salesAgentConversations)
-                .where(eq(salesAgentConversations.prospectId, entry.prospect.id))
-                .limit(1);
-              await advanceProspectConversationAfterSend(
-                entry.prospect.id,
-                (conv?.state ?? "discovery") as "discovery" | "intro_sent" | "followup_1" | "followup_2",
-              );
+            const sendResult = await emailHelpers.sendUnifiedDraftEntry(entry);
+            await emailHelpers.markDraftSent(entry.draft.id, sendResult.messageId);
+
+            if (entry.prospect && entry.draft.audience === "prospect") {
+              const pgDb = await getDb();
+              if (pgDb) {
+                const [conv] = await pgDb
+                  .select({ state: salesAgentConversations.state })
+                  .from(salesAgentConversations)
+                  .where(eq(salesAgentConversations.prospectId, entry.prospect.id))
+                  .limit(1);
+                await advanceProspectConversationAfterSend(
+                  entry.prospect.id,
+                  (conv?.state ?? "discovery") as "discovery" | "intro_sent" | "followup_1" | "followup_2",
+                );
+              }
             }
             sent++;
           } catch (e: unknown) {
             failed++;
-            errors.push(`${entry.prospect.company}: ${e instanceof Error ? e.message : String(e)}`);
+            errors.push(`${entry.recipient.company}: ${e instanceof Error ? e.message : String(e)}`);
           }
         }
 
@@ -2045,25 +2043,11 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       const rows = await pgDb.select({ n: count() }).from(serviceRequests).where(eq(serviceRequests.status, "new"));
       return { count: Number(rows[0]?.n ?? 0) };
     }),
-    getDraftCount: adminProcedure.query(async () => {
-      const pgDb = await getDb();
-      if (!pgDb) return { pending: 0, approved: 0, sent: 0, lastSentAt: null };
-      const [pendingRows, approvedRows, sentRows, lastSentRows] = await Promise.all([
-        pgDb.select({ n: count() }).from(draftEmails).where(eq(draftEmails.status, "pending")),
-        pgDb.select({ n: count() }).from(draftEmails).where(eq(draftEmails.status, "approved")),
-        pgDb.select({ n: count() }).from(draftEmails).where(eq(draftEmails.status, "sent")),
-        pgDb.select({ sentAt: draftEmails.sentAt }).from(draftEmails)
-          .where(eq(draftEmails.status, "sent"))
-          .orderBy(desc(draftEmails.sentAt))
-          .limit(1),
-      ]);
-      return {
-        pending: Number(pendingRows[0]?.n ?? 0),
-        approved: Number(approvedRows[0]?.n ?? 0),
-        sent: Number(sentRows[0]?.n ?? 0),
-        lastSentAt: lastSentRows[0]?.sentAt ?? null,
-      };
-    }),
+    getDraftCount: adminProcedure
+      .input(z.object({ audience: z.enum(["prospect", "partner", "all"]).optional() }).optional())
+      .query(async ({ input }) => {
+        return emailHelpers.getDraftCountByAudience(input?.audience ?? "all");
+      }),
 
     getPipelineData: adminProcedure
       .input(z.object({ showFilter: z.string().optional() }))

@@ -87,6 +87,28 @@ export default function AdminLeads() {
     onError: (e) => toast.error(e.message),
   });
 
+  const triggerDiscovery = trpc.salesAgent.triggerDiscovery.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message ?? `Discovery started for ${data.showCount} shows`);
+      utils.prospects.listWithEngagement.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const btnPrimary: React.CSSProperties = {
+    display: "flex", alignItems: "center", gap: "0.375rem",
+    fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem",
+    border: "none", background: "#00ff87", color: "#080808",
+    borderRadius: "0.375rem", cursor: "pointer",
+  };
+
+  const btnSecondary: React.CSSProperties = {
+    display: "flex", alignItems: "center", gap: "0.375rem",
+    fontSize: "0.875rem", fontWeight: 500, padding: "0.5rem 1rem",
+    border: "1px solid rgba(255,255,255,0.12)", background: "#111111",
+    color: "#cbd5e1", borderRadius: "0.375rem", cursor: "pointer",
+  };
+
   if (!isAuthenticated || user?.role !== "admin") {
     return <div style={{ minHeight: "auto", display: "flex", alignItems: "center", justifyContent: "center" }}><p style={{ color: "#64748b" }}>Admin access required.</p></div>;
   }
@@ -115,7 +137,7 @@ export default function AdminLeads() {
           {/* AI Discover */}
           <Dialog open={discoveryOpen} onOpenChange={setDiscoveryOpen}>
             <DialogTrigger asChild>
-              <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}>
+              <button style={btnPrimary}>
                 <Bot size={14} /> AI Discover
               </button>
             </DialogTrigger>
@@ -144,7 +166,7 @@ export default function AdminLeads() {
                   />
                 </div>
                 <button
-                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.625rem 1rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}
+                  style={{ ...btnPrimary, width: "100%", justifyContent: "center", padding: "0.625rem 1rem" }}
                   onClick={() => {
                     if (!selectedShowId) { toast.error("Select a show first"); return; }
                     if (!discoveryText.trim()) { toast.error("Paste exhibitor list text"); return; }
@@ -161,7 +183,7 @@ export default function AdminLeads() {
           {/* Add Lead Manually */}
           <Dialog open={addLeadOpen} onOpenChange={setAddLeadOpen}>
             <DialogTrigger asChild>
-              <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 500, padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.08)", background: "#fff", color: "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer" }}>
+              <button style={btnSecondary}>
                 <Plus size={14} /> Add Lead
               </button>
             </DialogTrigger>
@@ -194,7 +216,7 @@ export default function AdminLeads() {
                   </div>
                 </div>
                 <button
-                  style={{ width: "100%", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}
+                  style={{ ...btnPrimary, width: "100%" }}
                   onClick={() => {
                     if (!selectedShowId) { toast.error("Select a show"); return; }
                     if (!newLead.companyName) { toast.error("Company name required"); return; }
@@ -226,9 +248,9 @@ export default function AdminLeads() {
               onClick={() => setFilterStatus(s)}
               style={{
                 padding: "0.3125rem 0.75rem", fontSize: "0.8125rem", fontWeight: 500,
-                border: `1px solid ${filterStatus === s ? "#00ff87" : "rgba(255,255,255,0.08)"}`,
-                background: filterStatus === s ? "rgba(62,207,142,0.08)" : "#fff",
-                color: filterStatus === s ? "#00ff87" : "#64748b",
+                border: `1px solid ${filterStatus === s ? "#00ff87" : "rgba(255,255,255,0.12)"}`,
+                background: filterStatus === s ? "rgba(0,255,135,0.08)" : "#111111",
+                color: filterStatus === s ? "#00ff87" : "#94a3b8",
                 borderRadius: "0.25rem", cursor: "pointer",
               }}
             >
@@ -250,9 +272,35 @@ export default function AdminLeads() {
         </div>
       ) : filteredLeads.length === 0 ? (
         <div style={{ textAlign: "center", padding: "4rem 0" }}>
-          <Users size={40} style={{ color: "#cbd5e1", margin: "0 auto 1rem" }} />
-          <p style={{ color: "rgba(255,255,255,0.30)", fontWeight: 500 }}>No leads found</p>
-          <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.30)", marginTop: "0.25rem" }}>Use AI Discover to find robotics companies from a trade show exhibitor list.</p>
+          <Users size={40} style={{ color: "rgba(255,255,255,0.20)", margin: "0 auto 1rem" }} />
+          <p style={{ color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>No leads found</p>
+          <p style={{ fontSize: "0.875rem", color: "#64748b", marginTop: "0.25rem", maxWidth: "24rem", margin: "0.25rem auto 1.25rem" }}>
+            Run the automated scrapers across all trade shows, or paste an exhibitor list with AI Discover.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", justifyContent: "center" }}>
+            <button
+              style={{ ...btnPrimary, margin: "0 auto" }}
+              onClick={() => triggerDiscovery.mutate()}
+              disabled={triggerDiscovery.isPending}
+            >
+              {triggerDiscovery.isPending ? (
+                <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Running scrapers…</>
+              ) : (
+                <><Bot size={14} /> Generate more leads</>
+              )}
+            </button>
+            <button
+              style={btnSecondary}
+              onClick={() => setDiscoveryOpen(true)}
+            >
+              Paste exhibitor list
+            </button>
+          </div>
+          <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", marginTop: "1rem" }}>
+            Scrapers add prospects to{" "}
+            <Link href="/admin/prospects" style={{ color: "#00ff87", textDecoration: "none" }}>Prospects</Link>
+            {" "}— check there in a few minutes.
+          </p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -278,7 +326,7 @@ export default function AdminLeads() {
                       <button
                         onClick={() => generateEmail.mutate({ leadId: lead.id })}
                         disabled={generateEmail.isPending}
-                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00ff87", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00ff87", background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
                       >
                         {generateEmail.isPending ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> : <Bot size={11} />}
                         Draft Email
@@ -288,7 +336,7 @@ export default function AdminLeads() {
                       <button
                         onClick={() => markEmailed.mutate({ leadId: lead.id })}
                         disabled={markEmailed.isPending}
-                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(59,130,246,0.4)", color: "#3b82f6", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(59,130,246,0.40)", color: "#3b82f6", background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
                       >
                         <Mail size={11} /> Mark Emailed
                       </button>
@@ -297,7 +345,7 @@ export default function AdminLeads() {
                       <button
                         onClick={() => markResponded.mutate({ leadId: lead.id })}
                         disabled={markResponded.isPending}
-                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(245,158,11,0.4)", color: "#f59e0b", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(245,158,11,0.40)", color: "#f59e0b", background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
                       >
                         <MessageSquare size={11} /> Mark Responded
                       </button>
@@ -306,7 +354,7 @@ export default function AdminLeads() {
                       <button
                         onClick={() => updateStatus.mutate({ id: lead.id, outreachStatus: "registered" })}
                         disabled={updateStatus.isPending}
-                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00ff87", background: "#fff", borderRadius: "0.25rem", cursor: "pointer" }}
+                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00ff87", background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
                       >
                         <CheckCircle size={11} /> Mark Registered
                       </button>
@@ -337,7 +385,7 @@ export default function AdminLeads() {
                     )}
                     {!lead.emailDraft && lead.outreachStatus === "new" && (
                       <button
-                        style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer" }}
+                        style={{ ...btnPrimary, alignSelf: "flex-start" }}
                         onClick={() => generateEmail.mutate({ leadId: lead.id })}
                         disabled={generateEmail.isPending}
                       >

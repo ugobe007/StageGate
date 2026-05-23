@@ -450,6 +450,28 @@ export async function bulkBuildCalPartnerDrafts(
   return drafts;
 }
 
+/** Build Cal drafts and persist to draft_emails for review workflow. */
+export async function bulkSaveCalPartnerDrafts(
+  recipientKeys: string[],
+): Promise<{ drafted: number; draftIds: number[]; skipped: number }> {
+  const built = await bulkBuildCalPartnerDrafts(recipientKeys);
+  const draftIds: number[] = [];
+  for (const d of built) {
+    const row = await emailHelpers.createPartnerDraft({
+      recipientKey: d.recipientKey,
+      subject: d.subject,
+      body: d.body,
+      agentReasoning: "Cal partner outreach draft",
+    });
+    draftIds.push(row.id);
+  }
+  return {
+    drafted: draftIds.length,
+    draftIds,
+    skipped: recipientKeys.length - built.length,
+  };
+}
+
 export async function sendPartnerOutreachEmail(input: {
   recipientKey: string;
   subject: string;

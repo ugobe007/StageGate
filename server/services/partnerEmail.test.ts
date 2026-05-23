@@ -29,7 +29,7 @@ describe("partnerEmail", () => {
     researchContactName: null,
   };
 
-  it("builds Cal partner email with signup link", () => {
+  it("builds Cal partner email with signup link and LV Robotics signature", () => {
     const { subject, body, needsName } = buildCalPartnerEmail({
       company: "Freeman",
       contactName: "Jane Doe",
@@ -38,6 +38,8 @@ describe("partnerEmail", () => {
     expect(subject).toContain("Freeman");
     expect(body).toContain("Hi Jane");
     expect(body).toContain(PARTNER_SIGNUP_URL);
+    expect(body).toContain("lvrobotics.org");
+    expect(body).toContain("LV Robotics");
     expect(needsName).toBe(false);
   });
 

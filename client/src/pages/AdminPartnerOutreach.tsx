@@ -1,5 +1,5 @@
 /**
- * AdminPartnerOutreach — individual + bulk partner email send.
+ * AdminPartnerOutreach — compose partner/vendor drafts + review/approve/send workflow.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -11,22 +11,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import OutreachDraftQueue from "@/components/OutreachDraftQueue";
 import {
-  ArrowLeft, Loader2, Mail, Send, Sparkles, Building2, AlertCircle, User,
-  CheckSquare, Square, Users,
+  ArrowLeft, Loader2, Mail, Sparkles, Building2, AlertCircle, User,
+  CheckSquare, Square, Users, ClipboardList, PenLine,
 } from "lucide-react";
-
-type DraftEntry = {
-  subject: string;
-  body: string;
-  contactName: string;
-};
 
 const SOURCE_LABEL: Record<string, string> = {
   prospect: "Discovered",
   vendor: "Vendor",
   logistics_partner: "Partner",
 };
+
+type ViewMode = "compose" | "review";
 
 function applyGreetingToBody(body: string, greetingName: string | null): string {
   const line = greetingName ? `Hi ${greetingName},` : "Hi team,";
@@ -44,17 +41,21 @@ function resolveName(r: {
 export default function AdminPartnerOutreach() {
   const { user, isAuthenticated } = useAuth();
   const [location] = useLocation();
+  const [viewMode, setViewMode] = useState<ViewMode>("compose");
   const [filterSource, setFilterSource] = useState<"all" | "prospect" | "vendor" | "logistics_partner">("all");
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [drafts, setDrafts] = useState<Record<string, DraftEntry>>({});
   const [contactName, setContactName] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
   const utils = trpc.useUtils();
+  const { data: draftCount } = trpc.admin.getDraftCount.useQuery(
+    { audience: "partner" },
+    { enabled: isAuthenticated && user?.role === "admin", refetchInterval: 15_000 },
+  );
+
   const { data: recipients = [], isLoading } = trpc.partnerOutreach.listRecipients.useQuery(
     { source: filterSource, hasEmail: true },
     { enabled: isAuthenticated && user?.role === "admin" },
@@ -73,44 +74,35 @@ export default function AdminPartnerOutreach() {
     onError: (e) => toast.error(e.message),
   });
 
-  const updateContact = trpc.partnerOutreach.updateContact.useMutation({
-    onSuccess: () => utils.partnerOutreach.listRecipients.invalidate(),
-  });
-
-  const sendOne = trpc.partnerOutreach.sendEmail.useMutation({
-    onSuccess: (res) => {
-      toast.success(`Sent to ${res.sentTo}`);
-      if (res.warning) toast.warning(res.warning);
-      utils.partnerOutreach.listRecipients.invalidate();
+  const saveDraft = trpc.partnerOutreach.saveDraft.useMutation({
+    onSuccess: () => {
+      toast.success("Draft queued for review");
+      utils.admin.getDrafts.invalidate();
+      utils.admin.getDraftCount.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });
 
-  const bulkSend = trpc.partnerOutreach.bulkSend.useMutation({
-    onSuccess: (res) => {
-      toast.success(`Sent ${res.sent}${res.failed ? ` · ${res.failed} failed` : ""}`);
-      if (res.errors.length) toast.error(res.errors.slice(0, 2).join("; "));
-      setBulkBusy(false);
-      setShowBulkConfirm(false);
-      utils.partnerOutreach.listRecipients.invalidate();
-    },
-    onError: (e) => { toast.error(e.message); setBulkBusy(false); },
+  const updateContact = trpc.partnerOutreach.updateContact.useMutation({
+    onSuccess: () => utils.partnerOutreach.listRecipients.invalidate(),
   });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const key = params.get("key");
     const source = params.get("source");
+    const tab = params.get("tab");
     if (source === "vendor" || source === "logistics_partner" || source === "prospect") {
       setFilterSource(source);
     }
+    if (tab === "review") setViewMode("review");
     if (key) {
       setActiveKey(key);
       setSelected(new Set([key]));
+      setViewMode("compose");
     }
   }, [location]);
 
-  // Load active recipient into compose (from drafts cache or Cal)
   useEffect(() => {
     if (!active) {
       setContactName("");
@@ -118,32 +110,13 @@ export default function AdminPartnerOutreach() {
       setBody("");
       return;
     }
-    const cached = drafts[active.key];
-    if (cached) {
-      setContactName(cached.contactName);
-      setSubject(cached.subject);
-      setBody(cached.body);
-      return;
-    }
     const name = resolveName(active);
     setContactName(name);
-    void loadCalDraft(active.key, name, false);
+    void loadCalDraft(active.key, name);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.key]);
 
-  function saveActiveDraft(overrides?: Partial<DraftEntry>) {
-    if (!activeKey) return;
-    setDrafts((prev) => ({
-      ...prev,
-      [activeKey]: {
-        subject: overrides?.subject ?? subject,
-        body: overrides?.body ?? body,
-        contactName: overrides?.contactName ?? contactName,
-      },
-    }));
-  }
-
-  async function loadCalDraft(key: string, nameOverride?: string, save = true) {
+  async function loadCalDraft(key: string, nameOverride?: string) {
     const result = await previewCal.mutateAsync({
       recipientKey: key,
       contactName: nameOverride || undefined,
@@ -155,49 +128,19 @@ export default function AdminPartnerOutreach() {
         setContactName((prev) => prev || result.greetingName || "");
       }
     }
-    const r = recipients.find((x) => x.key === key);
-    const entry: DraftEntry = {
-      subject: result.subject,
-      body: result.body,
-      contactName: nameOverride ?? (r ? resolveName(r) : "") ?? result.greetingName ?? "",
-    };
-    if (save) {
-      setDrafts((prev) => ({ ...prev, [key]: entry }));
-    }
-    return entry;
+    return result;
   }
 
   function onContactNameChange(name: string) {
     setContactName(name);
     const first = name.trim().split(/\s+/)[0] || null;
-    const nextBody = applyGreetingToBody(body, first);
-    setBody(nextBody);
-    saveActiveDraft({ contactName: name, body: nextBody });
-  }
-
-  function onSubjectChange(val: string) {
-    setSubject(val);
-    saveActiveDraft({ subject: val });
-  }
-
-  function onBodyChange(val: string) {
-    setBody(val);
-    saveActiveDraft({ body: val });
+    setBody((prev) => applyGreetingToBody(prev, first));
   }
 
   const selectedRecipients = useMemo(
     () => recipients.filter((r) => selected.has(r.key)),
     [recipients, selected],
   );
-
-  const selectedWithDrafts = selectedRecipients.filter((r) => drafts[r.key]);
-  const selectedReady = selectedRecipients.filter((r) => {
-    const d = drafts[r.key];
-    if (!d?.subject || !d?.body) return false;
-    if (d.subject.includes("{{") || d.body.includes("{{")) return false;
-    if (r.needsContactName && !d.contactName.trim()) return true; // team greeting ok for bulk
-    return true;
-  });
 
   function toggleSelect(key: string) {
     setSelected((prev) => {
@@ -223,81 +166,46 @@ export default function AdminPartnerOutreach() {
     }
     setBulkBusy(true);
     try {
-      const keys = [...selected].slice(0, 50);
+      const keys = Array.from(selected).slice(0, 50);
       const res = await bulkDraftCal.mutateAsync({ recipientKeys: keys });
-      const next: Record<string, DraftEntry> = { ...drafts };
-      for (const d of res.drafts) {
-        next[d.recipientKey] = {
-          subject: d.subject,
-          body: d.body,
-          contactName: d.contactName,
-        };
-      }
-      setDrafts(next);
-      if (activeKey && next[activeKey]) {
-        setSubject(next[activeKey].subject);
-        setBody(next[activeKey].body);
-        setContactName(next[activeKey].contactName);
-      }
-      toast.success(`Cal drafted ${res.drafted} email${res.drafted !== 1 ? "s" : ""}`);
+      toast.success(`Cal drafted ${res.drafted} email${res.drafted !== 1 ? "s" : ""} — review before sending`);
+      utils.admin.getDrafts.invalidate();
+      utils.admin.getDraftCount.invalidate();
+      setViewMode("review");
     } finally {
       setBulkBusy(false);
     }
   }
 
-  async function executeBulkSend() {
-    const sends = selectedRecipients
-      .filter((r) => drafts[r.key])
-      .map((r) => {
-        const d = drafts[r.key]!;
-        const needsTeam = r.needsContactName && !d.contactName.trim();
-        return {
-          recipientKey: r.key,
-          subject: d.subject,
-          body: d.body,
-          contactName: d.contactName.trim() || undefined,
-          allowTeamGreeting: needsTeam,
-        };
-      });
-
-    if (sends.length === 0) {
-      toast.error("Draft selected partners first (Cal draft selected)");
-      setShowBulkConfirm(false);
-      return;
-    }
-
-    setBulkBusy(true);
-    bulkSend.mutate({ sends });
-  }
-
-  const canSendIndividual =
+  const canQueueIndividual =
     !!active?.contactEmail &&
     !!subject.trim() &&
     !!body.trim() &&
     !body.includes("{{") &&
-    !subject.includes("{{") &&
-    (contactName.trim().length > 0 || !active.needsContactName);
+    !subject.includes("{{");
 
   const needsName = active?.needsContactName && !contactName.trim();
 
-  async function handleSendIndividual() {
+  async function handleQueueIndividual() {
     if (!active) return;
-    if (needsName) {
-      toast.error("Enter a contact first name before sending");
+    if (needsName && !/^Hi team,/m.test(body)) {
+      toast.error("Enter a first name or use Hi team, greeting");
       return;
     }
-    saveActiveDraft();
     if (contactName.trim() && contactName !== active.contactName) {
       await updateContact.mutateAsync({ recipientKey: active.key, contactName: contactName.trim() });
     }
     const first = contactName.trim().split(/\s+/)[0] || active.greetingName;
-    sendOne.mutate({
+    await saveDraft.mutateAsync({
       recipientKey: active.key,
       subject,
       body: applyGreetingToBody(body, first),
       contactName: contactName.trim() || undefined,
     });
+    setViewMode("review");
   }
+
+  const pendingPartnerDrafts = (draftCount?.pending ?? 0) + (draftCount?.approved ?? 0);
 
   if (!isAuthenticated || user?.role !== "admin") {
     return (
@@ -316,230 +224,227 @@ export default function AdminPartnerOutreach() {
           </Button>
         </Link>
         <div className="flex-1 min-w-[160px]">
-          <h1 className="text-base font-semibold">Partner Outreach</h1>
-          <p className="text-xs text-muted-foreground">Individual review or bulk send with Cal drafts</p>
+          <h1 className="text-base font-semibold">Partner & Vendor Outreach</h1>
+          <p className="text-xs text-muted-foreground">Draft with Cal → review → approve → send</p>
         </div>
-        {selected.size > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">{selected.size} selected</span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs gap-1"
-              disabled={bulkBusy}
-              onClick={handleBulkDraft}
-            >
-              {bulkBusy ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-              Cal draft selected
-            </Button>
-            <Button
-              size="sm"
-              className="h-8 text-xs gap-1"
-              disabled={bulkBusy || selectedWithDrafts.length === 0}
-              onClick={() => setShowBulkConfirm(true)}
-            >
-              <Send size={12} />
-              Send selected ({selectedWithDrafts.length})
-            </Button>
-          </div>
+        <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
+          <Button
+            variant={viewMode === "compose" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-7 text-xs gap-1"
+            onClick={() => setViewMode("compose")}
+          >
+            <PenLine size={12} /> Compose
+          </Button>
+          <Button
+            variant={viewMode === "review" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-7 text-xs gap-1"
+            onClick={() => setViewMode("review")}
+          >
+            <ClipboardList size={12} />
+            Review & Send
+            {pendingPartnerDrafts > 0 && (
+              <Badge variant="outline" className="text-[9px] px-1 py-0 ml-0.5">{pendingPartnerDrafts}</Badge>
+            )}
+          </Button>
+        </div>
+        {viewMode === "compose" && selected.size > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1"
+            disabled={bulkBusy}
+            onClick={handleBulkDraft}
+          >
+            {bulkBusy ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+            Cal draft selected ({selected.size})
+          </Button>
         )}
       </header>
 
-      {showBulkConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-card border border-border rounded-xl p-5 max-w-md w-full space-y-4 shadow-xl">
-            <h3 className="font-semibold">Send {selectedWithDrafts.length} partner emails?</h3>
-            <p className="text-sm text-muted-foreground">
-              Cal&apos;s draft goes to each selected contact from outreach@onstage.bot.
-              Generic inboxes (info@) use &quot;Hi team,&quot; unless you added a name.
-            </p>
-            <ul className="text-xs text-muted-foreground max-h-32 overflow-y-auto space-y-1">
-              {selectedWithDrafts.map((r) => (
-                <li key={r.key}>· {r.company} → {r.contactEmail}</li>
-              ))}
-            </ul>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowBulkConfirm(false)} disabled={bulkBusy}>
-                Cancel
-              </Button>
-              <Button onClick={executeBulkSend} disabled={bulkBusy} className="gap-2">
-                {bulkBusy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                Confirm send
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex-1 flex min-h-0">
-        <aside className="w-72 shrink-0 border-r border-border flex flex-col bg-card/20">
-          <div className="p-3 border-b border-border space-y-2">
-            <select
-              value={filterSource}
-              onChange={(e) => setFilterSource(e.target.value as typeof filterSource)}
-              className="w-full text-xs border border-border rounded-md px-2 py-1.5 bg-input"
-            >
-              <option value="all">All partners & vendors</option>
-              <option value="prospect">Discovered partners</option>
-              <option value="vendor">Vendor directory</option>
-              <option value="logistics_partner">Logistics partners</option>
-            </select>
-            <button
-              type="button"
-              onClick={toggleSelectAll}
-              className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground"
-            >
-              <Users size={11} />
-              {selected.size === recipients.length ? "Deselect all" : "Select all"}
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {isLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="animate-spin text-muted-foreground" size={20} />
-              </div>
-            ) : recipients.length === 0 ? (
-              <p className="text-xs text-muted-foreground p-4 text-center">No contacts with email</p>
-            ) : (
-              recipients.map((r) => {
-                const isActive = activeKey === r.key;
-                const isSel = selected.has(r.key);
-                const hasDraft = !!drafts[r.key];
-                return (
-                  <div
-                    key={r.key}
-                    className={`flex items-start gap-2 px-2 py-2 border-b border-border/50 hover:bg-accent/30 ${
-                      isActive ? "bg-accent/50 border-l-2 border-l-primary" : ""
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      className="mt-1 shrink-0 text-muted-foreground hover:text-foreground"
-                      onClick={() => toggleSelect(r.key)}
-                    >
-                      {isSel ? <CheckSquare size={15} className="text-primary" /> : <Square size={15} />}
-                    </button>
-                    <button
-                      type="button"
-                      className="flex-1 text-left min-w-0"
-                      onClick={() => setActiveKey(r.key)}
-                    >
-                      <div className="font-medium text-sm truncate">{r.company}</div>
-                      <div className="text-[10px] text-muted-foreground truncate">{r.contactEmail}</div>
-                      <div className="flex gap-1 mt-1 flex-wrap">
-                        <Badge variant="outline" className="text-[9px] px-1 py-0">{SOURCE_LABEL[r.source]}</Badge>
-                        {hasDraft && (
-                          <Badge variant="outline" className="text-[9px] px-1 py-0 text-emerald-500 border-emerald-500/40">
-                            Drafted
-                          </Badge>
-                        )}
-                        {r.needsContactName && !drafts[r.key]?.contactName && (
-                          <Badge variant="outline" className="text-[9px] px-1 py-0 text-amber-500 border-amber-500/40">
-                            Team greeting
-                          </Badge>
-                        )}
-                      </div>
-                    </button>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </aside>
-
-        <main className="flex-1 flex flex-col min-w-0">
-          {!active ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3 px-6 text-center">
-              <Building2 size={36} className="opacity-20" />
-              <p className="text-sm">Select a partner to review, or select many and use bulk actions in the header</p>
-              {selected.size > 1 && (
-                <Button variant="outline" size="sm" onClick={handleBulkDraft} disabled={bulkBusy} className="gap-1">
-                  <Sparkles size={12} /> Cal draft {selected.size} selected
+      {viewMode === "review" ? (
+        <div className="flex-1 overflow-y-auto p-5 max-w-3xl mx-auto w-full">
+          <OutreachDraftQueue
+            audience="partner"
+            compact
+            emptyPending={(
+              <div className="text-center space-y-2">
+                <p>No partner drafts yet.</p>
+                <Button variant="outline" size="sm" onClick={() => setViewMode("compose")}>
+                  Compose drafts
                 </Button>
+              </div>
+            )}
+          />
+        </div>
+      ) : (
+        <div className="flex-1 flex min-h-0">
+          <aside className="w-72 shrink-0 border-r border-border flex flex-col bg-card/20">
+            <div className="p-3 border-b border-border space-y-2">
+              <select
+                value={filterSource}
+                onChange={(e) => setFilterSource(e.target.value as typeof filterSource)}
+                className="w-full text-xs border border-border rounded-md px-2 py-1.5 bg-input"
+              >
+                <option value="all">All partners & vendors</option>
+                <option value="prospect">Discovered partners</option>
+                <option value="vendor">Vendor directory</option>
+                <option value="logistics_partner">Logistics partners</option>
+              </select>
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+              >
+                <Users size={11} />
+                {selected.size === recipients.length ? "Deselect all" : "Select all"}
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {isLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="animate-spin text-muted-foreground" size={20} />
+                </div>
+              ) : recipients.length === 0 ? (
+                <p className="text-xs text-muted-foreground p-4 text-center">No contacts with email</p>
+              ) : (
+                recipients.map((r) => {
+                  const isActive = activeKey === r.key;
+                  const isSel = selected.has(r.key);
+                  return (
+                    <div
+                      key={r.key}
+                      className={`flex items-start gap-2 px-2 py-2 border-b border-border/50 hover:bg-accent/30 ${
+                        isActive ? "bg-accent/50 border-l-2 border-l-primary" : ""
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        className="mt-1 shrink-0 text-muted-foreground hover:text-foreground"
+                        onClick={() => toggleSelect(r.key)}
+                      >
+                        {isSel ? <CheckSquare size={15} className="text-primary" /> : <Square size={15} />}
+                      </button>
+                      <button
+                        type="button"
+                        className="flex-1 text-left min-w-0"
+                        onClick={() => setActiveKey(r.key)}
+                      >
+                        <div className="font-medium text-sm truncate">{r.company}</div>
+                        <div className="text-[10px] text-muted-foreground truncate">{r.contactEmail}</div>
+                        <div className="flex gap-1 mt-1 flex-wrap">
+                          <Badge variant="outline" className="text-[9px] px-1 py-0">{SOURCE_LABEL[r.source]}</Badge>
+                          {r.needsContactName && (
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 text-amber-500 border-amber-500/40">
+                              Team greeting
+                            </Badge>
+                          )}
+                        </div>
+                      </button>
+                    </div>
+                  );
+                })
               )}
             </div>
-          ) : (
-            <>
-              <div className="px-5 py-4 border-b border-border space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-lg font-semibold">{active.company}</h2>
-                  <Badge variant="secondary" className="text-xs">{active.partnerTypeLabel}</Badge>
-                  {drafts[active.key] && (
-                    <Badge variant="outline" className="text-xs text-emerald-500">Draft saved</Badge>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                  <Mail size={13} /> {active.contactEmail}
-                </p>
-              </div>
+          </aside>
 
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 max-w-2xl">
-                {needsName && (
-                  <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 flex gap-2 text-xs text-amber-200">
-                    <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                    <span>Add a first name for a personal greeting, or bulk-send uses &quot;Hi team,&quot;</span>
-                  </div>
+          <main className="flex-1 flex flex-col min-w-0">
+            {!active ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3 px-6 text-center">
+                <Building2 size={36} className="opacity-20" />
+                <p className="text-sm">Select a partner to draft, or select many and bulk-draft with Cal</p>
+                {selected.size > 1 && (
+                  <Button variant="outline" size="sm" onClick={handleBulkDraft} disabled={bulkBusy} className="gap-1">
+                    <Sparkles size={12} /> Cal draft {selected.size} selected
+                  </Button>
                 )}
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs flex items-center gap-1">
-                    <User size={12} /> Contact first name
-                  </Label>
-                  <Input
-                    value={contactName}
-                    onChange={(e) => onContactNameChange(e.target.value)}
-                    placeholder={active.isGenericInbox ? "Leave blank for Hi team," : "First name"}
-                    className="max-w-xs"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Subject</Label>
-                  <Input value={subject} onChange={(e) => onSubjectChange(e.target.value)} />
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs">Message</Label>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs gap-1"
-                      disabled={previewCal.isPending}
-                      onClick={() => loadCalDraft(active.key, contactName || undefined)}
-                    >
-                      {previewCal.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                      Regenerate
-                    </Button>
+                {pendingPartnerDrafts > 0 && (
+                  <Button variant="secondary" size="sm" onClick={() => setViewMode("review")} className="gap-1">
+                    <ClipboardList size={12} /> Review {pendingPartnerDrafts} draft{pendingPartnerDrafts !== 1 ? "s" : ""}
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="px-5 py-4 border-b border-border space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-lg font-semibold">{active.company}</h2>
+                    <Badge variant="secondary" className="text-xs">{active.partnerTypeLabel}</Badge>
                   </div>
-                  <Textarea
-                    value={body}
-                    onChange={(e) => onBodyChange(e.target.value)}
-                    rows={16}
-                    className="text-sm leading-relaxed font-sans resize-y min-h-[280px]"
-                  />
+                  <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <Mail size={13} /> {active.contactEmail}
+                  </p>
                 </div>
-              </div>
 
-              <div className="px-5 py-3 border-t border-border flex items-center justify-between shrink-0 bg-card/30">
-                <p className="text-xs text-muted-foreground">outreach@onstage.bot</p>
-                <Button
-                  onClick={handleSendIndividual}
-                  disabled={!canSendIndividual || sendOne.isPending || updateContact.isPending}
-                  className="gap-2"
-                >
-                  {(sendOne.isPending || updateContact.isPending) ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Send size={14} />
+                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 max-w-2xl">
+                  {needsName && (
+                    <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 flex gap-2 text-xs text-amber-200">
+                      <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                      <span>Add a first name for a personal greeting, or keep blank for &quot;Hi team,&quot;</span>
+                    </div>
                   )}
-                  Send to {active.contactEmail}
-                </Button>
-              </div>
-            </>
-          )}
-        </main>
-      </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs flex items-center gap-1">
+                      <User size={12} /> Contact first name
+                    </Label>
+                    <Input
+                      value={contactName}
+                      onChange={(e) => onContactNameChange(e.target.value)}
+                      placeholder={active.isGenericInbox ? "Leave blank for Hi team," : "First name"}
+                      className="max-w-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Subject</Label>
+                    <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Message</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs gap-1"
+                        disabled={previewCal.isPending}
+                        onClick={() => loadCalDraft(active.key, contactName || undefined)}
+                      >
+                        {previewCal.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                        Regenerate
+                      </Button>
+                    </div>
+                    <Textarea
+                      value={body}
+                      onChange={(e) => setBody(e.target.value)}
+                      rows={16}
+                      className="text-sm leading-relaxed font-sans resize-y min-h-[280px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="px-5 py-3 border-t border-border flex items-center justify-between shrink-0 bg-card/30">
+                  <p className="text-xs text-muted-foreground">Draft only — approve before sending</p>
+                  <Button
+                    onClick={handleQueueIndividual}
+                    disabled={!canQueueIndividual || saveDraft.isPending || updateContact.isPending}
+                    className="gap-2"
+                  >
+                    {(saveDraft.isPending || updateContact.isPending) ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <ClipboardList size={14} />
+                    )}
+                    Queue for review
+                  </Button>
+                </div>
+              </>
+            )}
+          </main>
+        </div>
+      )}
     </div>
   );
 }

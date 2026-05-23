@@ -368,7 +368,11 @@ export type InsertAgentRun = typeof agentRuns.$inferInsert;
 // ─── Draft Emails (Outreach Workflow) ────────────────────────────────────────
 export const draftEmails = pgTable("draft_emails", {
   id: serial("id").primaryKey(),
-  prospectId: integer("prospectId").notNull().references(() => prospects.id, { onDelete: "cascade" }),
+  prospectId: integer("prospectId").references(() => prospects.id, { onDelete: "cascade" }),
+  vendorId: integer("vendorId").references(() => vendors.id, { onDelete: "cascade" }),
+  logisticsPartnerId: integer("logisticsPartnerId").references(() => logisticsPartners.id, { onDelete: "cascade" }),
+  recipientKey: text("recipientKey"), // e.g. vendor:12 — partner/vendor outreach
+  audience: text("audience").notNull().default("prospect"), // prospect | partner
   subject: text("subject").notNull(),
   body: text("body").notNull(),
   agentReasoning: text("agentReasoning"),
