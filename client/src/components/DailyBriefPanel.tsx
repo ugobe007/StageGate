@@ -118,26 +118,26 @@ export default function DailyBriefPanel({ enabled = true }: Props) {
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
                 {data!.nextSteps.map((step) => (
-                  <Link key={step.label} href={step.href}>
-                    <a
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0.5rem 0.75rem",
-                        background: step.priority === "high" ? "rgba(0,255,135,0.06)" : "#080808",
-                        border: `1px solid ${step.priority === "high" ? "rgba(0,255,135,0.25)" : D.border}`,
-                        borderRadius: "0.375rem",
-                        textDecoration: "none",
-                        color: D.text,
-                      }}
-                    >
-                      <span style={{ fontSize: "0.8125rem" }}>
-                        <strong style={{ color: D.emerald, fontFamily: "var(--font-mono)" }}>{step.count}</strong>
-                        {" "}{step.label}
-                      </span>
-                      <ArrowRight size={13} style={{ color: D.text3, flexShrink: 0 }} />
-                    </a>
+                  <Link
+                    key={step.label}
+                    href={step.href}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "0.5rem 0.75rem",
+                      background: step.priority === "high" ? "rgba(0,255,135,0.06)" : "#080808",
+                      border: `1px solid ${step.priority === "high" ? "rgba(0,255,135,0.25)" : D.border}`,
+                      borderRadius: "0.375rem",
+                      textDecoration: "none",
+                      color: D.text,
+                    }}
+                  >
+                    <span style={{ fontSize: "0.8125rem" }}>
+                      <strong style={{ color: D.emerald, fontFamily: "var(--font-mono)" }}>{step.count}</strong>
+                      {" "}{step.label}
+                    </span>
+                    <ArrowRight size={13} style={{ color: D.text3, flexShrink: 0 }} />
                   </Link>
                 ))}
               </div>
