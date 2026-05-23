@@ -752,7 +752,94 @@ Subject line and body only.`,
         await db.deleteLogisticsPartner(input.id);
         return { success: true };
       }),
-   }),
+  }),
+
+  // ─── Partner & Vendor Outreach Email ─────────────────────────────────────────
+  partnerOutreach: router({
+    listRecipients: adminProcedure
+      .input(
+        z.object({
+          source: z.enum(["all", "prospect", "vendor", "logistics_partner"]).optional(),
+          hasEmail: z.boolean().optional(),
+          partnerType: z.string().optional(),
+        }).optional(),
+      )
+      .query(async ({ input }) => {
+        const { listPartnerRecipients } = await import("./services/partnerEmail");
+        return listPartnerRecipients({
+          source: input?.source ?? "all",
+          hasEmail: input?.hasEmail,
+          partnerType: input?.partnerType,
+        });
+      }),
+
+    previewCalEmail: adminProcedure
+      .input(z.object({ recipientKey: z.string() }))
+      .mutation(async ({ input }) => {
+        const { getPartnerRecipient, buildCalPartnerEmail } = await import("./services/partnerEmail");
+        const recipient = await getPartnerRecipient(input.recipientKey);
+        if (!recipient) throw new TRPCError({ code: "NOT_FOUND", message: "Recipient not found" });
+        return buildCalPartnerEmail({
+          company: recipient.company,
+          contactName: recipient.contactName,
+          vendorType: recipient.partnerType,
+        });
+      }),
+
+    sendEmail: adminProcedure
+      .input(
+        z.object({
+          recipientKey: z.string(),
+          subject: z.string().min(1),
+          body: z.string().min(1),
+          toEmail: z.string().email().optional(),
+        }),
+      )
+      .mutation(async ({ input }) => {
+        const { sendPartnerOutreachEmail } = await import("./services/partnerEmail");
+        try {
+          return await sendPartnerOutreachEmail(input);
+        } catch (err) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }),
+
+    bulkSend: adminProcedure
+      .input(
+        z.object({
+          sends: z.array(
+            z.object({
+              recipientKey: z.string(),
+              subject: z.string().min(1),
+              body: z.string().min(1),
+              toEmail: z.string().email().optional(),
+            }),
+          ).min(1).max(50),
+        }),
+      )
+      .mutation(async ({ input }) => {
+        const { sendPartnerOutreachEmail } = await import("./services/partnerEmail");
+        let sent = 0;
+        let failed = 0;
+        const errors: string[] = [];
+
+        for (const item of input.sends) {
+          try {
+            await sendPartnerOutreachEmail(item);
+            sent++;
+          } catch (err) {
+            failed++;
+            errors.push(`${item.recipientKey}: ${err instanceof Error ? err.message : String(err)}`);
+          }
+          await new Promise((r) => setTimeout(r, 400));
+        }
+
+        return { sent, failed, errors: errors.slice(0, 10) };
+      }),
+  }),
 
   // ── Demo Requests ──────────────────────────────────────────────────────
   demos: router({

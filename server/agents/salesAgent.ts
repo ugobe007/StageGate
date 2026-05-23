@@ -649,66 +649,10 @@ async function resolveShowCity(showName: string): Promise<string> {
   return "Las Vegas";
 }
 
-function isPartnerProspect(prospect: typeof prospects.$inferSelect): boolean {
-  return (
-    prospect.outreachAngle === "partner" ||
-    (prospect.vendorType != null && prospect.vendorType !== "robot_oem")
-  );
-}
-
-function buildPartnerDiscoveryEmail(
-  prospect: typeof prospects.$inferSelect,
-  showName: string,
-  showCity: string,
-): { subject: string; body: string } {
-  const contactFirstName = prospect.contactName
-    ? prospect.contactName.split(" ")[0] ?? prospect.contactName
-    : null;
-  const greetingName = contactFirstName ?? "there";
-
-  const vendorType = prospect.vendorType ?? "agency";
-  const partnerHook =
-    vendorType === "exhibit_house"
-      ? `I work with exhibit teams when their clients bring robots to Vegas — receiving, staging, power-up, and hands-on tech before the hall opens.`
-      : vendorType === "av_electrical"
-      ? `When booths include live robots, someone has to power them up and debug hardware before your AV and demo schedule starts. That's the gap we fill.`
-      : vendorType === "show_organizer" || vendorType === "venue"
-      ? `More exhibitors are bringing robots every year. We're the Las Vegas team that receives, stages, and supports that hardware on the ground.`
-      : vendorType === "freight"
-      ? `Robot freight often needs more than drayage — bonded storage, battery-safe handling, and activation before the booth. We handle that last mile in Vegas.`
-      : `When your clients or partners bring robots to Las Vegas shows, we're the local team for warehouse, staging, and robot tech support.`;
-
-  const showRef = /las vegas/i.test(showCity)
-    ? `${showName} and other Las Vegas shows`
-    : `Las Vegas shows like CES and NAB`;
-
-  const insight = pickCalInsight({
-    showName,
-    robotType: prospect.robotType,
-    companyName: prospect.company,
-    allowHumor: true,
-  });
-
-  const body = [
-    `Hi ${greetingName},`,
-    ``,
-    `This is Cal from StageGate. We're the robotics logistics and technical operations team here in Las Vegas.`,
-    ``,
-    `${partnerHook} Curious whether that's come up for ${prospect.company} — especially around ${showRef}.`,
-    ``,
-    insight,
-    ``,
-    `We're not competing with your core services — we care for the robots so your team and your clients don't have to debug freight damage at midnight. Happy to talk about how a referral works.`,
-    ``,
-    `Reply if useful, or check out onstage.bot for context.`,
-    ``,
-    `Thanks,`,
-    FRANK_PERSONA.signature,
-  ].join("\n");
-
-  const subject = `Quick note — robotics support in Vegas (${prospect.company})`;
-  return { subject, body };
-}
+import {
+  buildCalPartnerEmail,
+  isPartnerProspect,
+} from "../services/partnerEmail.js";
 
 /**
  * For the discovery stage we use the user's exact example as a fill-in-the-blank
@@ -791,7 +735,13 @@ async function generateFrankEmail(
       .map(s => s.name)
       .slice(0, 3);
     const { subject, body } = isPartnerProspect(prospect)
-      ? buildPartnerDiscoveryEmail(prospect, primaryShow, showCity)
+      ? buildCalPartnerEmail({
+          company: prospect.company,
+          contactName: prospect.contactName,
+          vendorType: prospect.vendorType,
+          showName: primaryShow,
+          showCity,
+        })
       : buildDiscoveryEmail(prospect, primaryShow, showCity, lvShowNames);
     return { subject, body, nextStage };
   }

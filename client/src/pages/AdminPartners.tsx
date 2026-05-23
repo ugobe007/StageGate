@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { ArrowLeft, Plus, Trash2, Edit, Loader2, Globe, Phone, Mail, Building2, TrendingUp } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit, Loader2, Globe, Phone, Mail, Building2, TrendingUp, Send } from "lucide-react";
+import { Link as WLink } from "wouter";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
@@ -114,6 +115,11 @@ export default function AdminPartners() {
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">Customs agents, transporters, insurance brokers, and parts suppliers.</p>
             </div>
+            <WLink href="/admin/partner-outreach?source=logistics_partner">
+              <Button variant="outline" className="gap-2 border-border">
+                <Send size={14} /> Email Partners
+              </Button>
+            </WLink>
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setForm(EMPTY_FORM); } }}>
               <DialogTrigger asChild>
                 <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold gap-2">
@@ -244,6 +250,13 @@ export default function AdminPartners() {
                       <p className="text-xs text-muted-foreground/70 mb-4 line-clamp-2 italic">{partner.notes}</p>
                     )}
                     <div className="flex gap-2">
+                      {partner.contactEmail && (
+                        <WLink href={`/admin/partner-outreach?key=logistics_partner:${partner.id}`} className="flex-1">
+                          <Button size="sm" variant="default" className="w-full text-xs gap-1">
+                            <Mail size={12} /> Email
+                          </Button>
+                        </WLink>
+                      )}
                       <Button size="sm" variant="outline" className="flex-1 border-border text-xs gap-1" onClick={() => openEdit(partner)}>
                         <Edit size={12} /> Edit
                       </Button>

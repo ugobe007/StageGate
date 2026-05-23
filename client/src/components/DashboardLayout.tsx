@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import {
   LayoutDashboard, LogOut, Bot, ClipboardList, Star, Package,
   FileText, Calendar, Telescope, Send, Kanban, Zap, Truck,
-  Inbox, Users, Menu, X, ChevronLeft, ChevronRight,
+  Inbox, Users, Menu, X, ChevronLeft, ChevronRight, Mail,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -28,6 +28,7 @@ const menuItems = [
   { icon: ClipboardList,   label: "Demo Requests",    path: "/admin/demos" },
   { icon: FileText,        label: "Quotes",           path: "/admin/quotes" },
   { icon: Users,           label: "Partners",         path: "/admin/partners" },
+  { icon: Mail,            label: "Partner Email",    path: "/admin/partner-outreach" },
   { icon: Zap,             label: "Cal",              path: "/admin/sales-agent" },
   { icon: Truck,           label: "Vendors",          path: "/admin/vendors" },
   { icon: Calendar,        label: "Scheduling",       path: "/admin/scheduling" },

@@ -32,8 +32,9 @@ import {
 import {
   Plus, Globe, Phone, Mail, Star, Truck, Zap, Wrench, Package,
   Building2, MapPin, Search, Warehouse, Pencil, Trash2, Calculator,
-  CheckCircle2, XCircle, Bot, RefreshCw,
+  CheckCircle2, XCircle, Bot, RefreshCw, Send,
 } from "lucide-react";
+import { Link } from "wouter";
 
 const VENDOR_TYPES = [
   { value: "freight", label: "Freight", icon: Truck, color: "text-blue-500" },
@@ -580,10 +581,17 @@ export default function AdminVendors() {
           </p>
         </div>
         {activeTab === "vendors" && (
-          <Button onClick={() => setShowAddDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Vendor
-          </Button>
+          <>
+            <Link href="/admin/partner-outreach?source=vendor">
+              <Button variant="outline" className="gap-2 mr-2">
+                <Send className="h-4 w-4" /> Email Vendors
+              </Button>
+            </Link>
+            <Button onClick={() => setShowAddDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Vendor
+            </Button>
+          </>
         )}
       </div>
 
@@ -732,6 +740,13 @@ export default function AdminVendors() {
                         </div>
                       )}
                       <div className="flex gap-2 pt-1">
+                        {vendor.contactEmail && (
+                          <Link href={`/admin/partner-outreach?key=vendor:${vendor.id}`} className="flex-1">
+                            <Button variant="default" size="sm" className="w-full text-xs gap-1">
+                              <Mail className="h-3 w-3" /> Email
+                            </Button>
+                          </Link>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"

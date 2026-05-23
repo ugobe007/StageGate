@@ -36,6 +36,7 @@ import AdminBookings from "./pages/AdminBookings";
 import AdminSalesAgent from "./pages/AdminSalesAgent";
 import AdminScheduling from "./pages/AdminScheduling";
 import AdminVendors from "./pages/AdminVendors";
+import AdminPartnerOutreach from "./pages/AdminPartnerOutreach";
 import AdminLogistics from "./pages/AdminLogistics";
 import VideoIntake from "./pages/VideoIntake";
 import Schedule from "./pages/Schedule";
@@ -91,6 +92,7 @@ function Router() {
       <Route path="/admin/orders/:id">{() => <AdminShell><AdminOrderDetail /></AdminShell>}</Route>
       <Route path="/admin/orders">{() => <AdminShell><AdminOrders /></AdminShell>}</Route>
       <Route path="/admin/partners">{() => <AdminShell><AdminPartners /></AdminShell>}</Route>
+      <Route path="/admin/partner-outreach">{() => <AdminShell><AdminPartnerOutreach /></AdminShell>}</Route>
       <Route path="/admin/quotes">{() => <AdminShell><AdminQuotes /></AdminShell>}</Route>
       <Route path="/admin/demos">{() => <AdminShell><AdminDemoRequests /></AdminShell>}</Route>
       <Route path="/admin/prospects">{() => <AdminShell><AdminProspects /></AdminShell>}</Route>
