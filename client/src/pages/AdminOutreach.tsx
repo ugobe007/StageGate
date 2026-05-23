@@ -297,7 +297,7 @@ export default function AdminOutreach() {
             <div>
               <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#00ff87", margin: "0 0 0.25rem" }}>Step 3 · Send</p>
               <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec", margin: 0 }}>
-                {sendableCount} email{sendableCount !== 1 ? "s" : ""} ready to send
+                Queue ready — review, then send
                 {selectedIds.size > 0 && <span style={{ color: "rgba(255,255,255,0.45)", fontWeight: 400 }}> · {selectedIds.size} selected</span>}
               </p>
             </div>
@@ -344,7 +344,6 @@ export default function AdminOutreach() {
         {hubStats && (sentCount > 0 || queueClear) && (
           <OutreachCommandCenter
             stats={hubStats}
-            draftsSent={sentCount}
             lastSentAt={lastSentAt}
             queueClear={queueClear}
           />

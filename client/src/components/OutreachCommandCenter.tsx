@@ -1,20 +1,19 @@
 /**
- * Post-send command center — confirmation, stats, inbox links, Cal social drafts.
- * Gamified feedback loops after Step 3 (Send).
+ * Post-send command center — quiet confirmation, inbox loops, Cal social drafts.
+ * Admin metrics stay internal; Cal's voice never boasts about send volume.
  */
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import {
   CheckCircle2, Inbox, Telescope, BarChart3, Linkedin, Twitter,
-  FileText, Copy, ExternalLink, Mail, MousePointerClick, MessageSquare,
-  TrendingUp, Zap, ArrowRight,
+  FileText, Copy, ExternalLink, MessageSquare,
+  MousePointerClick, Zap, ArrowRight,
 } from "lucide-react";
-import { buildCalSocialPosts, outreachXpLevel, type OutreachHubStats } from "@/lib/calSocialPosts";
+import { buildCalSocialPosts, type OutreachHubStats } from "@/lib/calSocialPosts";
 
 type Props = {
   stats: OutreachHubStats;
-  draftsSent: number;
   lastSentAt: Date | string | null;
   queueClear: boolean;
 };
@@ -31,13 +30,11 @@ function copyText(text: string, label: string) {
   toast.success(`${label} copied — paste into ${label}`);
 }
 
-export default function OutreachCommandCenter({ stats, draftsSent, lastSentAt, queueClear }: Props) {
+export default function OutreachCommandCenter({ stats, lastSentAt, queueClear }: Props) {
   const [, setLocation] = useLocation();
   const [expandedSocial, setExpandedSocial] = useState<string | null>("linkedin");
 
-  const sentTotal = Math.max(stats.emailsSent, draftsSent);
-  const xp = outreachXpLevel(sentTotal);
-  const socialPosts = buildCalSocialPosts({ ...stats, emailsSent: sentTotal, lastSentAt });
+  const socialPosts = buildCalSocialPosts();
 
   const actionCards = [
     {
@@ -69,18 +66,20 @@ export default function OutreachCommandCenter({ stats, draftsSent, lastSentAt, q
     {
       id: "stats",
       icon: BarChart3,
-      title: "Outreach Stats",
-      desc: `${stats.responseRatePct}% response · ${stats.openRatePct}% open rate`,
+      title: "Pipeline",
+      desc: stats.replied > 0
+        ? `${stats.replied} conversation${stats.replied !== 1 ? "s" : ""} started`
+        : "Track opens and replies",
       href: "/admin/sales-agent",
-      badge: stats.opens,
+      badge: stats.awaitingInbox || stats.replied,
       color: "#fbbf24",
-      pulse: stats.opens > 0 && stats.replied === 0,
+      pulse: stats.awaitingInbox > 0,
     },
     {
       id: "prospects",
       icon: Zap,
-      title: "Next Batch",
-      desc: "Draft more intros with Cal",
+      title: "Prospects",
+      desc: "Draft the next note with Cal",
       href: "/admin/prospects",
       badge: 0,
       color: "#a78bfa",
@@ -88,12 +87,11 @@ export default function OutreachCommandCenter({ stats, draftsSent, lastSentAt, q
     },
   ];
 
-  if (sentTotal === 0 && !queueClear) return null;
+  if (!queueClear && stats.contacted === 0) return null;
 
   return (
     <div style={{ marginBottom: "1.5rem" }}>
-      {/* Mission complete */}
-      {queueClear && sentTotal > 0 && (
+      {queueClear && (
         <div style={{
           padding: "1.25rem 1.5rem",
           marginBottom: "1rem",
@@ -108,27 +106,20 @@ export default function OutreachCommandCenter({ stats, draftsSent, lastSentAt, q
                 Step 3 Complete
               </p>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#ececec", margin: 0 }}>
-                {draftsSent > 0 ? `${draftsSent} emails confirmed sent` : `${sentTotal} outreach emails in flight`}
+                Batch delivered. Quiet for now.
               </h2>
               <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.45)", margin: "0.35rem 0 0" }}>
-                Last batch: {formatWhen(lastSentAt)} · Cal is tracking opens and replies
+                {lastSentAt ? `Last send ${formatWhen(lastSentAt)}.` : ""} Cal watches the inbox — replies matter more than sends.
               </p>
-            </div>
-            {/* XP bar */}
-            <div style={{ minWidth: "10rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.6875rem", color: "rgba(255,255,255,0.40)", marginBottom: "0.35rem" }}>
-                <span>Lvl {xp.level} · {xp.label}</span>
-                <span>{sentTotal} / {xp.nextAt} XP</span>
-              </div>
-              <div style={{ height: "6px", borderRadius: "9999px", background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${xp.progressPct}%`, background: "linear-gradient(90deg, #00ff87, #fbbf24)", borderRadius: "9999px", transition: "width 0.4s ease" }} />
-              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Live stats ticker */}
+      {/* Admin-only activity (not Cal voice) */}
+      <p style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", margin: "0 0 0.5rem" }}>
+        Activity — for you, not for posting
+      </p>
       <div style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(7rem, 1fr))",
@@ -136,12 +127,10 @@ export default function OutreachCommandCenter({ stats, draftsSent, lastSentAt, q
         marginBottom: "1rem",
       }}>
         {[
-          { label: "Sent", value: sentTotal, icon: Mail, color: "#60a5fa" },
           { label: "Received", value: stats.emailsReceived, icon: MessageSquare, color: "#00ff87" },
-          { label: "Opens", value: stats.opens, icon: TrendingUp, color: "#fbbf24" },
+          { label: "Opens", value: stats.opens, icon: BarChart3, color: "#fbbf24" },
           { label: "Clicks", value: stats.clicks, icon: MousePointerClick, color: "#a78bfa" },
           { label: "Replied", value: stats.replied, icon: CheckCircle2, color: "#00ff87" },
-          { label: "Response", value: `${stats.responseRatePct}%`, icon: BarChart3, color: "#f59e0b" },
         ].map((s) => {
           const Icon = s.icon;
           return (
@@ -161,9 +150,8 @@ export default function OutreachCommandCenter({ stats, draftsSent, lastSentAt, q
         })}
       </div>
 
-      {/* Action loop cards */}
       <p style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", margin: "0 0 0.5rem" }}>
-        Active feedback loops
+        Where to go next
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(11rem, 1fr))", gap: "0.5rem", marginBottom: "1.25rem" }}>
         {actionCards.map((card) => {
@@ -179,7 +167,6 @@ export default function OutreachCommandCenter({ stats, draftsSent, lastSentAt, q
                 border: `1px solid ${card.pulse ? `${card.color}55` : "rgba(255,255,255,0.08)"}`,
                 background: card.pulse ? `${card.color}08` : "#111111",
                 cursor: "pointer",
-                transition: "border-color 0.15s",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.35rem" }}>
@@ -189,7 +176,6 @@ export default function OutreachCommandCenter({ stats, draftsSent, lastSentAt, q
                     fontSize: "0.6875rem", fontWeight: 700,
                     padding: "0.1rem 0.4rem", borderRadius: "9999px",
                     background: card.color, color: "#080808",
-                    animation: card.pulse ? "pulse 2s infinite" : undefined,
                   }}>{card.badge}</span>
                 )}
                 <ArrowRight size={12} style={{ color: "rgba(255,255,255,0.25)" }} />
@@ -201,9 +187,11 @@ export default function OutreachCommandCenter({ stats, draftsSent, lastSentAt, q
         })}
       </div>
 
-      {/* Social amplification */}
-      <p style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", margin: "0 0 0.5rem" }}>
-        Online marketing — Cal&apos;s draft posts
+      <p style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", margin: "0 0 0.35rem" }}>
+        Cal&apos;s draft posts — insight only, no send counts
+      </p>
+      <p style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.35)", margin: "0 0 0.75rem" }}>
+        Curious, calm, confident. Not a scoreboard.
       </p>
       <div style={{ display: "flex", gap: "0.35rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
         {socialPosts.map((post) => {
