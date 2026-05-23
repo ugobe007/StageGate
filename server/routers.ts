@@ -15,7 +15,7 @@ import crypto from "crypto";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 import { roleBasedOutreachEmails, isDeprecatedRoleInbox } from "./outreachContacts";
-import { salesAgentManualSendCore, salesAgentPreviewCore } from "./agents/salesAgent";
+import { salesAgentManualSendCore, salesAgentPreviewCore, generateCalDraftsCore, advanceProspectConversationAfterSend } from "./agents/salesAgent";
 
 // Admin-only middleware
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -1615,7 +1615,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         body: z.string(),
         advanceStage: z.boolean().default(true),
         scheduleFollowUp: z.boolean().default(true),
-        followUpDays: z.number().default(3),
+        followUpDays: z.number().default(7),
       }))
       .mutation(async ({ input, ctx }) => {
         const dbConn = await getDb();
@@ -1771,68 +1771,8 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       .input(z.object({ prospectIds: z.array(z.number()).optional() }))
       .mutation(async ({ input, ctx }) => {
         return workflows.withAgentRun(
-          { agentName: "Cal Draft Generator", triggeredBy: ctx.user?.name ?? "admin", inputSummary: input.prospectIds ? `${input.prospectIds.length} selected prospects` : "all prospects" },
-          async () => {
-            const allProspects = await db.listProspects();
-            const targets = input.prospectIds
-              ? allProspects.filter((p: { id: number }) => input.prospectIds!.includes(p.id))
-              : allProspects;
-
-            const dbConn = await getDb();
-            if (!dbConn) throw new Error("DB unavailable");
-
-            let generated = 0;
-            let skipped = 0;
-            let conversationsSeeded = 0;
-            const errors: string[] = [];
-
-            for (const prospect of targets as Array<{ id: number; company: string; contactEmail: string | null; status: string }>) {
-              const toEmail = emailHelpers.getProspectOutreachEmail(prospect);
-              if (!toEmail) { skipped++; continue; }
-
-              // Skip prospects that already have a pending or approved draft
-              const existing = await emailHelpers.getDraftsForProspect(prospect.id);
-              const hasPending = existing.some((d: { status: string }) => d.status === "pending" || d.status === "approved");
-              if (hasPending) { skipped++; continue; }
-
-              // Seed a conversation record if none exists so the nightly cron picks this
-              // prospect up for future follow-ups after Cal's draft is sent.
-              const [existingConv] = await dbConn
-                .select({ id: salesAgentConversations.id })
-                .from(salesAgentConversations)
-                .where(eq(salesAgentConversations.prospectId, prospect.id))
-                .limit(1);
-
-              if (!existingConv) {
-                await dbConn.insert(salesAgentConversations).values({
-                  prospectId: prospect.id,
-                  state: "discovery",
-                  nextFollowUpAt: new Date(), // ready immediately
-                  lastActivityAt: new Date(),
-                });
-                conversationsSeeded++;
-              }
-
-              // Generate Cal's discovery draft via his actual pipeline
-              try {
-                const preview = await salesAgentPreviewCore(prospect.id, "discovery");
-                await emailHelpers.createDraft({
-                  prospectId: prospect.id,
-                  subject: preview.subject,
-                  body: preview.body,
-                  agentReasoning: `Cal discovery draft — stage: discovery → ${preview.nextStage}`,
-                });
-                generated++;
-              } catch (e) {
-                errors.push(`${prospect.company}: ${String(e).slice(0, 100)}`);
-              }
-
-              // Small delay to avoid rate-limiting on the LLM
-              await new Promise(r => setTimeout(r, 300));
-            }
-
-            return { generated, skipped, conversationsSeeded, errors: errors.slice(0, 20), total: targets.length };
-          }
+          { agentName: "Cal Draft Generator", triggeredBy: ctx.user?.name ?? "admin", inputSummary: input.prospectIds ? `${input.prospectIds.length} selected prospects` : "all prospects due this week" },
+          async () => generateCalDraftsCore({ prospectIds: input.prospectIds }),
         );
       }),
 
@@ -1915,6 +1855,19 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         });
         await db.updateProspectStatus(entry.prospect.id, "contacted");
 
+        const pgDb = await getDb();
+        if (pgDb) {
+          const [conv] = await pgDb
+            .select({ state: salesAgentConversations.state })
+            .from(salesAgentConversations)
+            .where(eq(salesAgentConversations.prospectId, entry.prospect.id))
+            .limit(1);
+          await advanceProspectConversationAfterSend(
+            entry.prospect.id,
+            (conv?.state ?? "discovery") as "discovery" | "intro_sent" | "followup_1" | "followup_2",
+          );
+        }
+
         return { success: true, sentTo: toEmail, messageId: sendResult?.id, warning: deliveryWarning };
       }),
 
@@ -1954,6 +1907,18 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
               source: "bulk_draft_send",
             });
             await db.updateProspectStatus(entry.prospect.id, "contacted");
+            const pgDb = await getDb();
+            if (pgDb) {
+              const [conv] = await pgDb
+                .select({ state: salesAgentConversations.state })
+                .from(salesAgentConversations)
+                .where(eq(salesAgentConversations.prospectId, entry.prospect.id))
+                .limit(1);
+              await advanceProspectConversationAfterSend(
+                entry.prospect.id,
+                (conv?.state ?? "discovery") as "discovery" | "intro_sent" | "followup_1" | "followup_2",
+              );
+            }
             sent++;
           } catch (e: unknown) {
             failed++;
@@ -2840,7 +2805,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
               .where(eq(salesAgentConversations.prospectId, input.prospectId))
               .limit(1);
             const stage = input.stage ?? (conv?.state as "discovery" | "intro_sent" | "followup_1" | "followup_2" | "robot_guild") ?? "discovery";
-            const NEXT: Record<string, string> = { discovery: "intro_sent", intro_sent: "followup_1", followup_1: "followup_2", followup_2: "robot_guild", robot_guild: "robot_guild" };
+            const NEXT: Record<string, string> = { discovery: "intro_sent", intro_sent: "followup_1", followup_1: "followup_2", followup_2: "followup_2" };
             return { subject: existing.subject ?? "", body: existing.body, stage, nextStage: NEXT[stage] ?? "intro_sent", fromCache: true };
           }
         }

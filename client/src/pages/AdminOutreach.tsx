@@ -196,7 +196,7 @@ export default function AdminOutreach() {
           <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.30)", margin: "0 0 0.25rem" }}>OUTREACH</p>
           <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0 }}>Review Cal&apos;s drafts</h1>
           <p style={{ fontSize: "0.875rem", color: "#64748b", margin: "0.25rem 0 0" }}>
-            Read, edit, and send when you&apos;re ready — from outreach@onstage.bot
+            Up to 3 emails per lead, one week apart — read, edit, send when ready
           </p>
         </div>
 

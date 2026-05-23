@@ -719,7 +719,7 @@ export default function AdminProspects() {
                     {focusLine}
                   </p>
                   <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.40)", margin: "0.4rem 0 0" }}>
-                    Draft with Cal · you review · you send
+                    Draft with Cal · you review · up to 3 emails per lead, one week apart
                   </p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>

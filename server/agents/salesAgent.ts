@@ -36,6 +36,8 @@ import {
   FRANK_SYSTEM_PROMPT,
   STAGE_PROMPTS,
   STAGE_DELAYS_DAYS,
+  MAX_OUTREACH_EMAILS,
+  OUTREACH_WEEKLY_DAYS,
   LOGISTICS_BREAKPOINTS,
   DEMO_VENUES,
   ROBOT_GUILD_PITCH,
@@ -53,7 +55,7 @@ const NEXT_STAGE: Record<ConversationStage, ConversationStage> = {
   discovery: "intro_sent",
   intro_sent: "followup_1",
   followup_1: "followup_2",
-  followup_2: "robot_guild",
+  followup_2: "followup_2", // Terminal after 3rd email
   robot_guild: "robot_guild",
   email_opened: "followup_1",  // Opened but no reply — send follow-up 1
   link_clicked: "followup_1",  // Clicked a link — send follow-up 1
@@ -104,9 +106,8 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
             "discovery",
             "intro_sent",
             "followup_1",
-            "followup_2",
-            "email_opened",  // Opened but no reply — still eligible for follow-up
-            "link_clicked",  // Clicked a link — still eligible for follow-up
+            "email_opened",
+            "link_clicked",
           ] as ConversationStage[]),
           lte(salesAgentConversations.nextFollowUpAt, now)
         )
@@ -114,6 +115,8 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
       .limit(OUTREACH_BATCH_SIZE);
 
     for (const { conv, prospect } of readyConvs) {
+      if ((conv.followUpCount ?? 0) >= MAX_OUTREACH_EMAILS) continue;
+
       const toEmail = selectOutreachEmail(prospect);
       if (!toEmail) continue;
       const emailPolicy = outreachEmailPolicySummary(prospect);
@@ -293,6 +296,8 @@ export async function salesAgentIngestHandler(req: Request, res: Response) {
         notes: p.notes ?? null,
         emailConfidence: p.emailConfidence ?? "low",
         status: "new",
+        vendorType: p.vendorType ?? "robot_oem",
+        outreachAngle: p.outreachAngle ?? "customer",
       })
       .returning({ id: prospects.id });
 
@@ -371,6 +376,10 @@ export async function salesAgentManualSendCore(
     .where(eq(salesAgentConversations.prospectId, prospectId))
     .limit(1);
 
+  if ((conv?.followUpCount ?? 0) >= MAX_OUTREACH_EMAILS) {
+    throw new Error(`Already sent ${MAX_OUTREACH_EMAILS} emails to this lead`);
+  }
+
   const currentStage = (conv?.state ?? "discovery") as ConversationStage;
   const { subject, body, nextStage } = await generateFrankEmail(prospect, conv ?? null, currentStage);
 
@@ -414,29 +423,7 @@ export async function salesAgentManualSendCore(
     resendMessageId: messageId ?? undefined,
   });
 
-  const delayDays = STAGE_DELAYS_DAYS[nextStage] ?? 5;
-  const nextFollowUp = delayDays > 0 ? new Date(now.getTime() + delayDays * 86400000) : null;
-
-  if (conv) {
-    await db
-      .update(salesAgentConversations)
-      .set({
-        state: nextStage,
-        lastActivityAt: now,
-        nextFollowUpAt: nextFollowUp,
-        followUpCount: (conv.followUpCount ?? 0) + 1,
-        updatedAt: now,
-      })
-      .where(eq(salesAgentConversations.id, conv.id));
-  } else {
-    await db.insert(salesAgentConversations).values({
-      prospectId,
-      state: nextStage,
-      lastActivityAt: now,
-      nextFollowUpAt: nextFollowUp,
-      followUpCount: 1,
-    });
-  }
+  await advanceProspectConversationAfterSend(prospectId, currentStage);
 
   await db.update(prospects).set({ status: "contacted", updatedAt: now }).where(eq(prospects.id, prospectId));
 
@@ -662,6 +649,67 @@ async function resolveShowCity(showName: string): Promise<string> {
   return "Las Vegas";
 }
 
+function isPartnerProspect(prospect: typeof prospects.$inferSelect): boolean {
+  return (
+    prospect.outreachAngle === "partner" ||
+    (prospect.vendorType != null && prospect.vendorType !== "robot_oem")
+  );
+}
+
+function buildPartnerDiscoveryEmail(
+  prospect: typeof prospects.$inferSelect,
+  showName: string,
+  showCity: string,
+): { subject: string; body: string } {
+  const contactFirstName = prospect.contactName
+    ? prospect.contactName.split(" ")[0] ?? prospect.contactName
+    : null;
+  const greetingName = contactFirstName ?? "there";
+
+  const vendorType = prospect.vendorType ?? "agency";
+  const partnerHook =
+    vendorType === "exhibit_house"
+      ? `I work with exhibit teams when their clients bring robots to Vegas — receiving, staging, power-up, and hands-on tech before the hall opens.`
+      : vendorType === "av_electrical"
+      ? `When booths include live robots, someone has to power them up and debug hardware before your AV and demo schedule starts. That's the gap we fill.`
+      : vendorType === "show_organizer" || vendorType === "venue"
+      ? `More exhibitors are bringing robots every year. We're the Las Vegas team that receives, stages, and supports that hardware on the ground.`
+      : vendorType === "freight"
+      ? `Robot freight often needs more than drayage — bonded storage, battery-safe handling, and activation before the booth. We handle that last mile in Vegas.`
+      : `When your clients or partners bring robots to Las Vegas shows, we're the local team for warehouse, staging, and robot tech support.`;
+
+  const showRef = /las vegas/i.test(showCity)
+    ? `${showName} and other Las Vegas shows`
+    : `Las Vegas shows like CES and NAB`;
+
+  const insight = pickCalInsight({
+    showName,
+    robotType: prospect.robotType,
+    companyName: prospect.company,
+    allowHumor: true,
+  });
+
+  const body = [
+    `Hi ${greetingName},`,
+    ``,
+    `This is Cal from StageGate. We're the robotics logistics and technical operations team here in Las Vegas.`,
+    ``,
+    `${partnerHook} Curious whether that's come up for ${prospect.company} — especially around ${showRef}.`,
+    ``,
+    insight,
+    ``,
+    `We're not competing with your core services — we care for the robots so your team and your clients don't have to debug freight damage at midnight. Happy to talk about how a referral works.`,
+    ``,
+    `Reply if useful, or check out onstage.bot for context.`,
+    ``,
+    `Thanks,`,
+    FRANK_PERSONA.signature,
+  ].join("\n");
+
+  const subject = `Quick note — robotics support in Vegas (${prospect.company})`;
+  return { subject, body };
+}
+
 /**
  * For the discovery stage we use the user's exact example as a fill-in-the-blank
  * template — no LLM for the body. This guarantees Cal's voice is always natural
@@ -742,7 +790,9 @@ async function generateFrankEmail(
       .filter(s => s.name !== primaryShow)
       .map(s => s.name)
       .slice(0, 3);
-    const { subject, body } = buildDiscoveryEmail(prospect, primaryShow, showCity, lvShowNames);
+    const { subject, body } = isPartnerProspect(prospect)
+      ? buildPartnerDiscoveryEmail(prospect, primaryShow, showCity)
+      : buildDiscoveryEmail(prospect, primaryShow, showCity, lvShowNames);
     return { subject, body, nextStage };
   }
 
@@ -933,6 +983,159 @@ function pickBreakpoints(robotType: string, robotCategory: string = "light") {
   ).slice(0, 2);
 }
 
+const DRAFTABLE_STAGES: ConversationStage[] = ["discovery", "intro_sent", "followup_1"];
+
+/** Advance conversation after a draft is sent (manual or automated). Max 3 emails per lead. */
+export async function advanceProspectConversationAfterSend(
+  prospectId: number,
+  sentStage?: ConversationStage,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const now = new Date();
+  const [conv] = await db
+    .select()
+    .from(salesAgentConversations)
+    .where(eq(salesAgentConversations.prospectId, prospectId))
+    .limit(1);
+
+  if (!conv) {
+    await db.insert(salesAgentConversations).values({
+      prospectId,
+      state: "intro_sent",
+      followUpCount: 1,
+      nextFollowUpAt: new Date(now.getTime() + OUTREACH_WEEKLY_DAYS * 86400000),
+      lastActivityAt: now,
+    });
+    return;
+  }
+
+  if ((conv.followUpCount ?? 0) >= MAX_OUTREACH_EMAILS) return;
+
+  const currentStage = (sentStage ?? conv.state) as ConversationStage;
+  const nextStage = NEXT_STAGE[currentStage] ?? "followup_2";
+  const newCount = (conv.followUpCount ?? 0) + 1;
+  const atCap = newCount >= MAX_OUTREACH_EMAILS;
+  const delayDays = atCap ? 0 : OUTREACH_WEEKLY_DAYS;
+
+  await db
+    .update(salesAgentConversations)
+    .set({
+      state: atCap ? "followup_2" : nextStage,
+      followUpCount: newCount,
+      nextFollowUpAt: delayDays > 0 ? new Date(now.getTime() + delayDays * 86400000) : null,
+      lastActivityAt: now,
+      updatedAt: now,
+    })
+    .where(eq(salesAgentConversations.id, conv.id));
+}
+
+/** Draft the next Cal email for each lead (weekly cadence, max 3 emails per lead). */
+export async function generateCalDraftsCore(options?: {
+  prospectIds?: number[];
+}): Promise<{ generated: number; skipped: number; conversationsSeeded: number; errors: string[]; total: number }> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const { listProspects } = await import("../db.js");
+  const emailHelpers = await import("../email.js");
+
+  const allProspects = await listProspects();
+  const targets = options?.prospectIds
+    ? allProspects.filter((p: { id: number }) => options.prospectIds!.includes(p.id))
+    : allProspects;
+
+  let generated = 0;
+  let skipped = 0;
+  let conversationsSeeded = 0;
+  const errors: string[] = [];
+  const now = new Date();
+
+  for (const prospect of targets as Array<{ id: number; company: string; contactEmail: string | null }>) {
+    const toEmail = emailHelpers.getProspectOutreachEmail(prospect);
+    if (!toEmail) { skipped++; continue; }
+
+    const existing = await emailHelpers.getDraftsForProspect(prospect.id);
+    const hasPending = existing.some((d: { status: string }) => d.status === "pending" || d.status === "approved");
+    if (hasPending) { skipped++; continue; }
+
+    const [conv] = await db
+      .select()
+      .from(salesAgentConversations)
+      .where(eq(salesAgentConversations.prospectId, prospect.id))
+      .limit(1);
+
+    if ((conv?.followUpCount ?? 0) >= MAX_OUTREACH_EMAILS || conv?.state === "followup_2") {
+      skipped++;
+      continue;
+    }
+
+    const stage = (conv?.state ?? "discovery") as ConversationStage;
+    if (!DRAFTABLE_STAGES.includes(stage)) {
+      skipped++;
+      continue;
+    }
+
+    // Weekly cadence: wait until nextFollowUpAt unless this is the first email
+    if (
+      conv &&
+      (conv.followUpCount ?? 0) > 0 &&
+      conv.nextFollowUpAt &&
+      conv.nextFollowUpAt > now
+    ) {
+      skipped++;
+      continue;
+    }
+
+    if (!conv) {
+      await db.insert(salesAgentConversations).values({
+        prospectId: prospect.id,
+        state: "discovery",
+        nextFollowUpAt: now,
+        lastActivityAt: now,
+      });
+      conversationsSeeded++;
+    }
+
+    try {
+      const preview = await salesAgentPreviewCore(prospect.id, stage);
+      await emailHelpers.createDraft({
+        prospectId: prospect.id,
+        subject: preview.subject,
+        body: preview.body,
+        agentReasoning: `Cal draft — email ${(conv?.followUpCount ?? 0) + 1} of ${MAX_OUTREACH_EMAILS}, stage: ${stage}`,
+      });
+      generated++;
+    } catch (e) {
+      errors.push(`${prospect.company}: ${String(e).slice(0, 100)}`);
+    }
+
+    await new Promise((r) => setTimeout(r, 300));
+  }
+
+  return { generated, skipped, conversationsSeeded, errors: errors.slice(0, 20), total: targets.length };
+}
+
+/** Weekly cron: draft the next Cal email for leads due this week. */
+export async function calWeeklyDraftsHandler(req: Request, res: Response) {
+  try {
+    const user = await sdk.authenticateRequest(req);
+    if (!user.isCron && user.role !== "admin") {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+  } catch {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  try {
+    const result = await generateCalDraftsCore();
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface DiscoveredProspect {
   company: string;
@@ -946,6 +1149,8 @@ export interface DiscoveredProspect {
   shows?: string[];
   notes?: string;
   emailConfidence?: string;
+  vendorType?: string;
+  outreachAngle?: string;
 }
 
 export interface DiscoveredShow {

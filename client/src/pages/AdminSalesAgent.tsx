@@ -199,7 +199,7 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
   // When existing draft loads, show it immediately
   useEffect(() => {
     if (existingDraft && !preview) {
-      const NEXT: Record<string, string> = { discovery: "intro_sent", intro_sent: "followup_1", followup_1: "followup_2", followup_2: "robot_guild", robot_guild: "robot_guild" };
+      const NEXT: Record<string, string> = { discovery: "intro_sent", intro_sent: "followup_1", followup_1: "followup_2", followup_2: "followup_2" };
       setPreview({ subject: existingDraft.subject ?? "", body: existingDraft.body ?? "", stage: selectedStage, nextStage: NEXT[selectedStage] ?? "intro_sent", fromCache: true });
     }
   }, [existingDraft]);
@@ -209,7 +209,7 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
     onError: (err) => toast.error(`Preview failed: ${err.message}`),
   });
 
-  const PREVIEW_STAGES = ["discovery", "intro_sent", "followup_1", "followup_2", "robot_guild"] as const;
+  const PREVIEW_STAGES = ["discovery", "intro_sent", "followup_1", "followup_2"] as const;
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) { onClose(); setPreview(null); } }}>

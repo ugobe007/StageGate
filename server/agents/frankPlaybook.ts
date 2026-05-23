@@ -269,12 +269,18 @@ export type ConversationStage =
   | "not_interested" // Opted out
   | "converted";     // Became a customer
 
+/** Max automated + drafted outreach emails per lead (intro + 2 follow-ups). */
+export const MAX_OUTREACH_EMAILS = 3;
+
+/** Days between each of Cal's three emails to a lead. */
+export const OUTREACH_WEEKLY_DAYS = 7;
+
 export const STAGE_DELAYS_DAYS: Record<ConversationStage, number> = {
   discovery: 0,
-  intro_sent: 5,       // Wait 5 days before follow-up 1
-  followup_1: 5,       // Wait 5 days before follow-up 2
-  followup_2: 7,       // Wait 7 days before Robot Guild pitch
-  robot_guild: 0,      // No further automated follow-up
+  intro_sent: OUTREACH_WEEKLY_DAYS,
+  followup_1: OUTREACH_WEEKLY_DAYS,
+  followup_2: 0,       // Terminal — 3 emails sent, no further automation
+  robot_guild: 0,      // Legacy terminal state
   email_opened: 3,     // Opened but no reply — follow up in 3 days
   link_clicked: 1,     // Clicked a link — follow up in 1 day (v36)
   awaiting_reply: 0,   // v37: replied — no automated follow-up

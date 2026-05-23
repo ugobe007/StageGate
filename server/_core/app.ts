@@ -15,6 +15,7 @@ import {
   salesAgentOutreachHandler,
   salesAgentManualSendHandler,
   salesAgentPreviewHandler,
+  calWeeklyDraftsHandler,
 } from "../agents/salesAgent";
 import { salesAgentDiscoveryHandler } from "../agents/salesAgentDiscovery";
 import { vendorScraperHandler } from "../agents/vendorScraper";
@@ -57,6 +58,7 @@ export async function createStageGateApp(): Promise<Express> {
   app.post("/api/scheduled/sales-agent-outreach", salesAgentOutreachHandler);
   app.post("/api/scheduled/sales-agent-manual", salesAgentManualSendHandler);
   app.post("/api/scheduled/sales-agent-preview", salesAgentPreviewHandler);
+  app.post("/api/scheduled/cal-weekly-drafts", calWeeklyDraftsHandler);
   app.post("/api/scheduled/vendor-scraper", vendorScraperHandler);
   app.post("/api/scheduled/quote-followup", quoteFollowupHandler);
 

@@ -29,6 +29,7 @@ import {
   filterAndClassify,
   extractCompanyNamesFromHtml,
   detectPaginationUrl,
+  KNOWN_ECOSYSTEM_VENDORS,
   type RawProspect,
 } from "./discoveryLogicEngine.js";
 
@@ -278,6 +279,106 @@ Return ONLY valid JSON, no markdown.`,
   }
 }
 
+/** Discover show ecosystem partners — organizers, booth builders, AV, event cos. */
+async function extractPartnerProspectsWithLLM(
+  lvShowList: string,
+): Promise<DiscoveredProspect[]> {
+  const prompt = `You are researching Las Vegas trade show ecosystem companies for StageGate.
+
+StageGate is the robotics logistics team in Las Vegas — warehouse, staging, power-up, and hands-on robot tech for exhibitors. We partner with (not compete against):
+
+1. Show organizers & event management companies (CES/CTA, Informa, Emerald, RX/Reed, etc.)
+2. General contractors & exhibit houses (Freeman, GES, mid-sized booth builders)
+3. AV / electrical / production companies (Encore, PRG, Freeman AV, etc.)
+4. Event agencies running large activations with robots
+
+Las Vegas shows in our pipeline:
+${lvShowList || "CES, NAB, Manifest, HIMSS, G2E, PACK EXPO Las Vegas, MINExpo, Ai4"}
+
+Find up to 20 REAL companies in these categories that operate in or serve Las Vegas trade shows.
+Do NOT repeat robot OEMs (Unitree, Boston Dynamics, etc.) — those are a separate list.
+
+For each company return:
+- company: exact legal or trade name
+- contactName: ops / partnerships / robotics liaison if known
+- contactEmail: partnerships@, events@, or sales@ on their domain — never info@ or support@
+- contactTitle: likely title
+- website: URL
+- vendorType: one of exhibit_house | av_electrical | show_organizer | agency | venue | freight | other
+- robotName: "" (empty for partners)
+- robotType: "other"
+- robotCategory: "light"
+- shows: relevant Las Vegas show names
+- notes: why they'd partner with a robotics staging team
+- emailConfidence: high | medium | low
+
+Return ONLY valid JSON with "prospects" array and empty "shows" array.`;
+
+  try {
+    const result = await invokeLLM({
+      messages: [
+        {
+          role: "system",
+          content: "Return ONLY valid JSON matching the schema. Focus on real Las Vegas show ecosystem companies — not robot manufacturers.",
+        },
+        { role: "user", content: prompt },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: "partner_discovery", strict: true, schema: DISCOVERY_SCHEMA },
+      },
+    });
+
+    const rawContent = result.choices?.[0]?.message?.content;
+    const parsed: { prospects: DiscoveredProspect[] } = JSON.parse(
+      typeof rawContent === "string" ? rawContent : "{}"
+    );
+    return (parsed.prospects ?? []).map((p) => {
+      const key = p.company.toLowerCase().trim();
+      const known = KNOWN_ECOSYSTEM_VENDORS[key];
+      return {
+        ...p,
+        vendorType: known?.vendorType ?? inferPartnerVendorType(p.company, p.notes),
+        outreachAngle: "partner" as const,
+        isEcosystemVendor: true,
+      };
+    });
+  } catch (err) {
+    console.error("[Discovery] Partner LLM extraction failed:", String(err).slice(0, 200));
+    return [];
+  }
+}
+
+function inferPartnerVendorType(company: string, notes?: string): string {
+  const text = `${company} ${notes ?? ""}`.toLowerCase();
+  if (/freeman|ges|exhibit|booth|tradeshow/i.test(text)) return "exhibit_house";
+  if (/encore|av|audio|visual|production|electrical|prg/i.test(text)) return "av_electrical";
+  if (/informa|emerald|reed|rx global|organizer|association|cta/i.test(text)) return "show_organizer";
+  if (/convention center|venetian|mandalay|caesars forum|lvcc/i.test(text)) return "venue";
+  if (/dhl|fedex|freight|logistics|schenker/i.test(text)) return "freight";
+  if (/agency|experiential|marketing/i.test(text)) return "agency";
+  return "other";
+}
+
+function seedKnownEcosystemVendors(): DiscoveredProspect[] {
+  return Object.entries(KNOWN_ECOSYSTEM_VENDORS).map(([key, meta]) => ({
+    company: key.replace(/\b\w/g, (c) => c.toUpperCase()),
+    contactEmail: "",
+    contactName: "",
+    contactTitle: "Partnerships",
+    website: "",
+    robotName: "",
+    robotType: "other",
+    robotCategory: "light",
+    shows: ["CES", "NAB Show"],
+    notes: meta.notes,
+    emailConfidence: "low",
+    vendorType: meta.vendorType,
+    outreachAngle: "partner",
+    isEcosystemVendor: true,
+  }));
+}
+
 // ─── Discovery handler (cron-authenticated) ───────────────────────────────────
 
 export async function salesAgentDiscoveryHandler(req: Request, res: Response) {
@@ -294,7 +395,7 @@ export async function salesAgentDiscoveryHandler(req: Request, res: Response) {
       .returning({ id: salesAgentRuns.id });
     const runId = run?.id;
 
-    const result = await runDiscoveryCore(db, 5, runId);
+    const result = await runDiscoveryCore(db, 8, runId);
 
     if (runId) {
       await db.update(salesAgentRuns).set({
@@ -320,7 +421,7 @@ export async function salesAgentDiscoveryCore(runId?: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
 
-  const result = await runDiscoveryCore(db, 8, runId);
+  const result = await runDiscoveryCore(db, 12, runId);
 
   if (runId) {
     await db.update(salesAgentRuns).set({
@@ -423,6 +524,12 @@ async function runDiscoveryCore(
     console.log(`[Discovery] Fallback: ${fallbackProspects.length} additional prospects`);
   }
 
+  // ── Partner ecosystem pass (organizers, booth builders, AV, event cos) ───
+  const partnerProspects = await extractPartnerProspectsWithLLM(lvShows.slice(0, 20).join(", "));
+  allRawProspects = allRawProspects.concat(partnerProspects);
+  allRawProspects = allRawProspects.concat(seedKnownEcosystemVendors());
+  console.log(`[Discovery] Partner pass: ${partnerProspects.length} LLM + ecosystem seeds`);
+
   // ── Deduplicate by company name (case-insensitive) ───────────────────────
   const seen = new Set<string>();
   const uniqueRaw = allRawProspects.filter(p => {
@@ -446,6 +553,9 @@ async function runDiscoveryCore(
     shows: p.shows,
     notes: p.notes,
     emailConfidence: p.emailConfidence,
+    vendorType: p.vendorType as RawProspect["vendorType"],
+    outreachAngle: p.outreachAngle as RawProspect["outreachAngle"],
+    isEcosystemVendor: p.isEcosystemVendor,
   }));
 
   const { accepted, rejected, stats } = await filterAndClassify(rawForEngine);
@@ -469,6 +579,8 @@ async function runDiscoveryCore(
     shows: sp.shows,
     notes: sp.notes ?? sp.companyReason,
     emailConfidence: sp.emailConfidence,
+    vendorType: sp.vendorType,
+    outreachAngle: sp.outreachAngle,
   }));
 
   // ── POST to ingest endpoint ──────────────────────────────────────────────
@@ -524,6 +636,9 @@ interface DiscoveredProspect {
   shows?: string[];
   notes?: string;
   emailConfidence?: string;
+  vendorType?: string;
+  outreachAngle?: string;
+  isEcosystemVendor?: boolean;
 }
 
 interface DiscoveredShow {

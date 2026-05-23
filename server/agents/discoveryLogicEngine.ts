@@ -47,6 +47,7 @@ export type VendorType =
   | "av_electrical"   // AV, power, networking, event tech
   | "venue"           // Convention center / event venue
   | "agency"          // Creative / experiential marketing agency
+  | "show_organizer"  // Show producer / event management (Informa, Emerald, etc.)
   | "other";
 
 export type OutreachAngle = "customer" | "partner";
@@ -90,6 +91,22 @@ export const KNOWN_ECOSYSTEM_VENDORS: Record<string, { vendorType: VendorType; o
   "venetian expo": { vendorType: "venue", outreachAngle: "partner", notes: "The Venetian Expo — major Las Vegas convention venue." },
   "mandalay bay convention center": { vendorType: "venue", outreachAngle: "partner", notes: "Major Las Vegas convention venue." },
   "caesars forum": { vendorType: "venue", outreachAngle: "partner", notes: "Caesars Forum convention center — major Las Vegas event venue." },
+  // Show organizers & event management
+  "informa markets": { vendorType: "show_organizer", outreachAngle: "partner", notes: "Major B2B show organizer — robotics tracks at multiple Las Vegas events." },
+  "informa": { vendorType: "show_organizer", outreachAngle: "partner", notes: "Global events and exhibitions company." },
+  "emerald holding": { vendorType: "show_organizer", outreachAngle: "partner", notes: "Emerald Expositions — trade show organizer." },
+  "emerald expositions": { vendorType: "show_organizer", outreachAngle: "partner", notes: "Trade show organizer with Las Vegas portfolio." },
+  "rx global": { vendorType: "show_organizer", outreachAngle: "partner", notes: "Reed Exhibitions / RX — large convention portfolio." },
+  "reed exhibitions": { vendorType: "show_organizer", outreachAngle: "partner", notes: "Major international show organizer." },
+  "tsnn": { vendorType: "show_organizer", outreachAngle: "partner", notes: "Trade show news network — ecosystem connector." },
+  "fmi": { vendorType: "show_organizer", outreachAngle: "partner", notes: "Food Marketing Institute / industry events." },
+  "consumer technology association": { vendorType: "show_organizer", outreachAngle: "partner", notes: "CES producer — highest-value Las Vegas robotics show." },
+  "cta": { vendorType: "show_organizer", outreachAngle: "partner", notes: "Consumer Technology Association — CES." },
+  // Additional AV / production
+  "clark production": { vendorType: "av_electrical", outreachAngle: "partner", notes: "Las Vegas AV and production for corporate events." },
+  "4wall entertainment": { vendorType: "av_electrical", outreachAngle: "partner", notes: "Entertainment and AV production — Las Vegas presence." },
+  "live nation special events": { vendorType: "agency", outreachAngle: "partner", notes: "Large-scale event production." },
+  "freeman audio visual": { vendorType: "av_electrical", outreachAngle: "partner", notes: "Freeman AV division — booth electrical and event tech." },
 };
 
 export interface RawProspect {
@@ -551,6 +568,17 @@ export async function filterAndClassify(
         vendorType: prospect.vendorType ?? ecosystemMatch.vendorType,
         outreachAngle: prospect.outreachAngle ?? ecosystemMatch.outreachAngle,
         notes: prospect.notes ?? ecosystemMatch.notes,
+        isEcosystemVendor: true,
+      });
+      continue;
+    }
+
+    // Partner-segment prospects from ecosystem discovery — no robot product required
+    if (prospect.isEcosystemVendor || (prospect.vendorType && prospect.vendorType !== "robot_oem")) {
+      tier2Passed.push({
+        ...prospect,
+        vendorType: prospect.vendorType ?? "agency",
+        outreachAngle: prospect.outreachAngle ?? "partner",
         isEcosystemVendor: true,
       });
       continue;
