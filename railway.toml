@@ -3,6 +3,6 @@ builder = "nixpacks"
 buildCommand = "pnpm run build"
 
 [deploy]
-startCommand = "pnpm start"
+startCommand = "NODE_ENV=production node dist/index.js"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3

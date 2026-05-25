@@ -34,6 +34,7 @@
  *   → Moves to "awaiting_reply"
  *   → Cal's draft acknowledges and asks how he can help
  */
+import crypto from "node:crypto";
 import type { Request, Response } from "express";
 import { getDb } from "../db.js";
 import {
@@ -251,7 +252,7 @@ async function autoCreateCalendarEvent({
     const startAt = proposed;
     const endAt = new Date(proposed.getTime() + 30 * 60_000); // 30 min call
 
-    const shareToken = crypto_v2.randomBytes(24).toString("hex");
+    const shareToken = crypto.randomBytes(24).toString("hex");
 
     const [evt] = await db.insert(calendarEvents).values({
       title: `Intro Call — ${prospect.company}`,

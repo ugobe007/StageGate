@@ -5,7 +5,7 @@ nixPkgs = ["nodejs_22"]
 cmds = ["npm install -g pnpm", "pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["pnpm run build"]
+cmds = ["NODE_OPTIONS=--max-old-space-size=4096 pnpm run build"]
 
 [start]
-cmd = "pnpm start"
+cmd = "NODE_ENV=production node dist/index.js"
