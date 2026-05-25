@@ -174,7 +174,7 @@ export default function Home() {
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 2rem" }}>
           {/* Logo mark */}
           <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <StageGateLogo size={32} variant="icon" />
+            <StageGateLogo size={40} variant="icon" />
           </Link>
 
           {/* Nav links */}
@@ -270,7 +270,7 @@ export default function Home() {
           <div>
             {/* Logo — large, upper-left of hero */}
             <div style={{ marginBottom: "2.5rem" }}>
-              <StageGateLogo size={128} variant="lockup" style={{ display: "block" }} />
+              <StageGateLogo size={160} variant="lockup" style={{ display: "block" }} />
             </div>
             <h1 style={{ fontSize: "clamp(3.5rem, 8vw, 7.5rem)", fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em", marginBottom: "2rem" }}>
               Your Robot<br />

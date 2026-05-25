@@ -75,7 +75,7 @@ export default function About() {
       }}>
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 2rem" }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <StageGateLogo size={32} variant="icon" />
+            <StageGateLogo size={40} variant="icon" />
           </Link>
           <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
             <Link href="/shows" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Shows</Link>

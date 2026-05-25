@@ -59,7 +59,7 @@ export default function Navbar({ darkBg = false }: { darkBg?: boolean }) {
           {/* ── Logo mark ── */}
           <Link href="/">
             <div className="flex items-center cursor-pointer" style={{ padding: "2px 0" }}>
-              <StageGateLogo size={32} variant="icon" />
+              <StageGateLogo size={40} variant="icon" />
             </div>
           </Link>
 
