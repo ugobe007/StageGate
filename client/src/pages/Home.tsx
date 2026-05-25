@@ -23,7 +23,9 @@ const IMG_CAMERA_DEMO = "/manus-storage/hero-camera-demo.png";
 const IMG_LG_DOMESTIC = "/manus-storage/hero-lg-domestic.png";
 const IMG_HUMANOID_MARCH = "/manus-storage/hero-humanoid-march.png";
 
-const HERO_SLIDES = [
+type HeroSlide = { src: string; position: string };
+
+const HERO_SLIDES: HeroSlide[] = [
   { src: IMG_HERO, position: "center 30%" },
   { src: IMG_GXO_WAREHOUSE, position: "center 35%" },
   { src: IMG_ROKAE_DEMO, position: "center center" },
@@ -34,26 +36,44 @@ const HERO_SLIDES = [
   { src: IMG_HUMANOID_ACTION, position: "center 40%" },
   { src: IMG_NEURA, position: "center 25%" },
   { src: IMG_SERVICE_HOSPITALITY, position: "center 35%" },
-  { src: IMG_GRID_3, position: "center 40%" },
   { src: IMG_HUMANOID_EXPO, position: "center 20%" },
   { src: IMG_LG_DOMESTIC, position: "center 35%" },
   { src: IMG_CAMERA_DEMO, position: "center center" },
-] as const;
+];
+
+function shuffleSlides(slides: HeroSlide[]): HeroSlide[] {
+  const next = [...slides];
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [next[i], next[j]] = [next[j], next[i]];
+  }
+  return next;
+}
+
+function randomSlideIndex(length: number, current: number): number {
+  if (length <= 1) return 0;
+  let next = current;
+  while (next === current) {
+    next = Math.floor(Math.random() * length);
+  }
+  return next;
+}
 
 function HeroCrossfade() {
+  const [slides] = useState(() => shuffleSlides(HERO_SLIDES));
   const [active, setActive] = useState(0);
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const id = window.setInterval(() => {
-      setActive((current) => (current + 1) % HERO_SLIDES.length);
+      setActive((current) => randomSlideIndex(slides.length, current));
     }, 5000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [slides.length]);
 
   return (
     <>
-      {HERO_SLIDES.map((slide, index) => (
+      {slides.map((slide, index) => (
         <img
           key={slide.src}
           src={slide.src}
