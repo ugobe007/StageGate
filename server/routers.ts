@@ -2140,6 +2140,13 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         serviceRequests: { total: serviceRequestRows.length, newCount: serviceRequestRows.filter((r: { status: string | null }) => r.status === "new").length },
       };
     }),
+
+    /** Pull ReadyForRobots robot_companies into local prospects (canonical OEM source). */
+    syncRfrProspects: adminProcedure.mutation(async () => {
+      const { syncFromRfrRobotCompanies } = await import("./integrations/rfrRobotCompanies");
+      const result = await syncFromRfrRobotCompanies({ force: true });
+      return result;
+    }),
   }),
   // ─── Bookings (public intake form) ───────────────────────────────────────────────────────────────────────────────────
   bookings: router({

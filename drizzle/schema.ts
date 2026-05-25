@@ -325,6 +325,8 @@ export const prospects = pgTable("prospects", {
   // Prospect classification: robot_oem (customer) vs ecosystem partner (exhibit_house, freight, av_electrical, venue, agency)
   vendorType: varchar("vendorType", { length: 50 }).default("robot_oem"), // robot_oem | exhibit_house | freight | av_electrical | venue | agency | other
   outreachAngle: varchar("outreachAngle", { length: 50 }).default("customer"), // customer | partner
+  /** ReadyForRobots robot_companies.id — canonical OEM record */
+  rfrRobotCompanyId: integer("rfrRobotCompanyId").unique(),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });

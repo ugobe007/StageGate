@@ -656,6 +656,13 @@ export async function listAllXbotProjects(status?: string) {
 
 // ─── Prospects ────────────────────────────────────────────────────────────────
 export async function listProspects(status?: string) {
+  const { syncFromRfrRobotCompanies } = await import("./integrations/rfrRobotCompanies");
+  try {
+    await syncFromRfrRobotCompanies();
+  } catch (e) {
+    console.warn("[listProspects] RFR sync skipped:", e);
+  }
+
   const db = await getDb();
   if (!db) return [];
   if (status) {
@@ -686,12 +693,22 @@ export async function updateProspect(id: number, data: Partial<InsertProspect>) 
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   await db.update(prospects).set(data).where(eq(prospects.id, id));
+  if (data.status) {
+    const { syncProspectStatusToRfr } = await import("./integrations/rfrRobotCompanies");
+    void syncProspectStatusToRfr(id, data.status).catch((e) =>
+      console.warn("[updateProspect] RFR status push failed:", e),
+    );
+  }
 }
 
 export async function updateProspectStatus(id: number, status: string) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   await db.update(prospects).set({ status, updatedAt: new Date() }).where(eq(prospects.id, id));
+  const { syncProspectStatusToRfr } = await import("./integrations/rfrRobotCompanies");
+  void syncProspectStatusToRfr(id, status).catch((e) =>
+    console.warn("[updateProspectStatus] RFR status push failed:", e),
+  );
 }
 
 export async function bulkInsertProspects(data: InsertProspect[]) {
