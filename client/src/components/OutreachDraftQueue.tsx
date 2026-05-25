@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ChevronDown, ChevronUp, Send, Users } from "lucide-react";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
 
 type DraftStatus = "pending" | "approved" | "sent" | "discarded";
 type WorkflowTab = "pending" | "approved" | "sent";
@@ -14,7 +15,7 @@ type DraftEntry = any;
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f59e0b",
-  approved: "#00E87A",
+  approved: `${BRAND.emerald}`,
   sent: "#3b82f6",
   discarded: "rgba(255,255,255,0.30)",
 };
@@ -201,9 +202,9 @@ export default function OutreachDraftQueue({
           gap: "0.75rem",
           marginBottom: compact ? "0.75rem" : "1.25rem",
           padding: "0.875rem 1rem",
-          border: "1px solid rgba(0,232,122,0.30)",
+          border: `1px solid ${emeraldAlpha(0.30)}`,
           borderRadius: "0.5rem",
-          background: "rgba(0,232,122,0.04)",
+          background: emeraldAlpha(0.04),
         }}>
           <div>
             <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec", margin: 0 }}>
@@ -220,7 +221,7 @@ export default function OutreachDraftQueue({
                 <button
                   onClick={executeBulkSend}
                   disabled={bulkSendMutation.isPending}
-                  style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.5rem 1rem", border: "none", background: "#00E87A", color: "#1C1E22", borderRadius: "0.375rem", cursor: "pointer" }}
+                  style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.5rem 1rem", border: "none", background: `${BRAND.emerald}`, color: "#1C1E22", borderRadius: "0.375rem", cursor: "pointer" }}
                 >
                   <Send size={13} />
                   {bulkSendMutation.isPending ? "Sending…" : "Confirm Bulk Send"}
@@ -234,14 +235,14 @@ export default function OutreachDraftQueue({
                 {selectedIds.size > 0 && (
                   <button
                     onClick={() => requestBulkSend(Array.from(selectedIds))}
-                    style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid rgba(0,232,122,0.40)", color: "#00E87A", background: "transparent", borderRadius: "0.375rem", cursor: "pointer" }}
+                    style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1rem", border: `1px solid ${emeraldAlpha(0.40)}`, color: `${BRAND.emerald}`, background: "transparent", borderRadius: "0.375rem", cursor: "pointer" }}
                   >
                     <Send size={13} /> Send Selected ({selectedIds.size})
                   </button>
                 )}
                 <button
                   onClick={() => requestBulkSend(allSendableIds.length > 0 ? allSendableIds : draftIdsOnTab)}
-                  style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.5rem 1.25rem", border: "none", background: "#00E87A", color: "#1C1E22", borderRadius: "0.375rem", cursor: "pointer", boxShadow: "0 0 20px rgba(0,232,122,0.20)" }}
+                  style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.5rem 1.25rem", border: "none", background: `${BRAND.emerald}`, color: "#1C1E22", borderRadius: "0.375rem", cursor: "pointer", boxShadow: "0 0 20px emeraldAlpha(0.20)" }}
                 >
                   <Users size={13} />
                   Bulk Send All ({allSendableIds.length || sendableCount})
@@ -261,7 +262,7 @@ export default function OutreachDraftQueue({
               padding: compact ? "0.5rem 0.75rem" : "0.625rem 1rem",
               fontSize: "0.875rem", fontWeight: 500,
               background: "none", border: "none",
-              borderBottom: `2px solid ${activeTab === tab ? (tab === "sent" ? "#60a5fa" : tab === "approved" ? "#00E87A" : "#f59e0b") : "transparent"}`,
+              borderBottom: `2px solid ${activeTab === tab ? (tab === "sent" ? "#60a5fa" : tab === "approved" ? `${BRAND.emerald}` : "#f59e0b") : "transparent"}`,
               color: activeTab === tab ? "#ececec" : "#64748b",
               cursor: "pointer",
               marginBottom: "-1px",
@@ -290,7 +291,7 @@ export default function OutreachDraftQueue({
           {activeTab === "pending" && drafts.length > 0 && (
             <button
               onClick={handleApproveAll}
-              style={{ marginLeft: "auto", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00E87A", background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
+              style={{ marginLeft: "auto", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(62,207,142,0.4)", color: `${BRAND.emerald}`, background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
             >
               ✓ Approve All ({drafts.length})
             </button>
@@ -367,7 +368,7 @@ export default function OutreachDraftQueue({
                       <>
                         <button
                           onClick={(e) => { e.stopPropagation(); approveMutation.mutate({ draftId: entry.draft.id }); }}
-                          style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.45)", color: "#00E87A", background: "#0b0b0b", borderRadius: "0.25rem", cursor: "pointer" }}
+                          style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.45)", color: `${BRAND.emerald}`, background: "#0b0b0b", borderRadius: "0.25rem", cursor: "pointer" }}
                         >
                           ✓ Approve
                         </button>
@@ -383,7 +384,7 @@ export default function OutreachDraftQueue({
                       <button
                         onClick={(e) => { e.stopPropagation(); sendMutation.mutate({ draftId: entry.draft.id }); }}
                         disabled={sendMutation.isPending}
-                        style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.375rem 0.875rem", border: "none", background: "#00E87A", color: "#1C1E22", borderRadius: "0.25rem", cursor: "pointer" }}
+                        style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.375rem 0.875rem", border: "none", background: `${BRAND.emerald}`, color: "#1C1E22", borderRadius: "0.25rem", cursor: "pointer" }}
                       >
                         <Send size={12} /> Send
                       </button>
@@ -449,7 +450,7 @@ export default function OutreachDraftQueue({
                             <button
                               onClick={() => sendMutation.mutate({ draftId: entry.draft.id })}
                               disabled={sendMutation.isPending}
-                              style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.25rem 0.875rem", border: "none", background: "#00E87A", color: "#1C1E22", borderRadius: "0.25rem", cursor: "pointer" }}
+                              style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.25rem 0.875rem", border: "none", background: `${BRAND.emerald}`, color: "#1C1E22", borderRadius: "0.25rem", cursor: "pointer" }}
                             >
                               <Send size={12} /> Send Now
                             </button>

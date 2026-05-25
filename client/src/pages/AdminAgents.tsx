@@ -2,6 +2,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Play, RefreshCw } from "lucide-react";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
 
 // ─── Agent metadata registry ──────────────────────────────────────────────────
 const AGENT_REGISTRY: Record<string, { label: string; description: string; icon: string; category: string }> = {
@@ -54,9 +55,9 @@ function formatRelative(date: Date | null | undefined): string {
 
 const STATUS_STYLES: Record<string, { color: string; dot: string; label?: string }> = {
   running: { color: "#f59e0b", dot: "#f59e0b" },
-  success: { color: "#00E87A", dot: "#00E87A" },
+  success: { color: `${BRAND.emerald}`, dot: `${BRAND.emerald}` },
   error: { color: "#ef4444", dot: "#ef4444" },
-  idle: { color: "#00E87A", dot: "#00E87A", label: "ready" },
+  idle: { color: `${BRAND.emerald}`, dot: `${BRAND.emerald}`, label: "ready" },
 };
 
 function StatusText({ status }: { status: "running" | "success" | "error" | "idle" }) {
@@ -143,7 +144,7 @@ export default function AdminAgents() {
       <div style={{ display: "flex", alignItems: "stretch", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", overflow: "hidden", background: "#111111", marginBottom: "1.5rem" }}>
         {[
           { label: "Total Runs", value: totalRuns, color: "#ececec" },
-          { label: "Success Rate", value: overallRate !== null ? `${overallRate}%` : "—", color: overallRate !== null ? "#00E87A" : "rgba(255,255,255,0.30)" },
+          { label: "Success Rate", value: overallRate !== null ? `${overallRate}%` : "—", color: overallRate !== null ? `${BRAND.emerald}` : "rgba(255,255,255,0.30)" },
           { label: "Active Agents", value: ALL_AGENTS.length, color: "#ececec" },
         ].map((s, i, arr) => (
           <div key={s.label} style={{ flex: 1, padding: "0.875rem 1.25rem", borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
@@ -174,7 +175,7 @@ export default function AdminAgents() {
                 textAlign: "left",
                 padding: "1rem",
                 borderRadius: "0.5rem",
-                border: `1px solid ${isSelected ? "#00E87A" : "rgba(255,255,255,0.08)"}`,
+                border: `1px solid ${isSelected ? `${BRAND.emerald}` : "rgba(255,255,255,0.08)"}`,
                 background: isSelected ? "rgba(62,207,142,0.04)" : "#111111",
                 cursor: "pointer",
                 transition: "border-color 0.1s, background 0.1s",
@@ -200,8 +201,8 @@ export default function AdminAgents() {
                 style={{
                   display: "inline-flex", alignItems: "center", gap: "0.35rem",
                   marginBottom: "0.75rem", padding: "0.35rem 0.65rem",
-                  borderRadius: "0.25rem", border: "1px solid rgba(0,232,122,0.35)",
-                  background: "rgba(0,232,122,0.08)", color: "#00E87A",
+                  borderRadius: "0.25rem", border: `1px solid ${emeraldAlpha(0.35)}`,
+                  background: emeraldAlpha(0.08), color: `${BRAND.emerald}`,
                   fontSize: "0.75rem", fontWeight: 700, cursor: isActivating ? "wait" : "pointer",
                   opacity: isActivating ? 0.7 : 1,
                 }}
@@ -212,7 +213,7 @@ export default function AdminAgents() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
                 {[
                   { label: "Runs", value: String(stats?.totalRuns ?? 0), color: "#ececec" },
-                  { label: "Success", value: successRate !== null ? `${successRate}%` : "—", color: successRate !== null ? (successRate >= 80 ? "#00E87A" : successRate >= 50 ? "#f59e0b" : "#ef4444") : "rgba(255,255,255,0.30)" },
+                  { label: "Success", value: successRate !== null ? `${successRate}%` : "—", color: successRate !== null ? (successRate >= 80 ? `${BRAND.emerald}` : successRate >= 50 ? "#f59e0b" : "#ef4444") : "rgba(255,255,255,0.30)" },
                   { label: "Last Run", value: formatRelative(stats?.lastRunAt), color: "#64748b" },
                 ].map((stat) => (
                   <div key={stat.label} style={{ background: "#1C1E22", borderRadius: "0.25rem", padding: "0.5rem", textAlign: "center" }}>
@@ -232,7 +233,7 @@ export default function AdminAgents() {
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec", margin: 0 }}>Run History</h2>
             {selectedAgent && (
-              <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: "#00E87A" }}>
+              <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: `${BRAND.emerald}` }}>
                 {selectedAgent}
                 <button onClick={() => setSelectedAgent(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.30)", marginLeft: "0.375rem", fontSize: "1rem", lineHeight: 1 }}>×</button>
               </span>
@@ -276,7 +277,7 @@ export default function AdminAgents() {
                       <td style={{ padding: "0.625rem 1rem", color: "#64748b", maxWidth: "180px" }}>
                         <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={run.inputSummary ?? ""}>{run.inputSummary ?? "—"}</span>
                       </td>
-                      <td style={{ padding: "0.625rem 1rem", maxWidth: "200px", color: run.status === "error" ? "#ef4444" : "#00E87A" }}>
+                      <td style={{ padding: "0.625rem 1rem", maxWidth: "200px", color: run.status === "error" ? "#ef4444" : `${BRAND.emerald}` }}>
                         <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={run.status === "error" ? (run.errorMessage ?? "") : (run.outputSummary ?? "")}>
                           {run.status === "error" ? (run.errorMessage ?? "Error") : (run.outputSummary ?? "—")}
                         </span>

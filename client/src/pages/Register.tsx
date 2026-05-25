@@ -8,6 +8,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { CheckCircle, ArrowRight, Loader2, Building2, Bot } from "lucide-react";
 import { toast } from "sonner";
+import { BRAND } from "@/lib/brand";
 
 const ROBOT_TYPES = [
   "Humanoid Robot",
@@ -85,7 +86,7 @@ export default function Register() {
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#1C1E22" }}>
-        <Loader2 size={28} style={{ color: "#00E87A", animation: "spin 1s linear infinite" }} />
+        <Loader2 size={28} style={{ color: `${BRAND.emerald}`, animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
@@ -98,7 +99,7 @@ export default function Register() {
           <div style={{ maxWidth: "28rem", margin: "0 auto", padding: "0 1rem", textAlign: "center" }}>
             <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#111" }}>
               <div style={{ width: "3rem", height: "3rem", borderRadius: "0.5rem", background: "rgba(62,207,142,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem" }}>
-                <Bot size={22} style={{ color: "#00E87A" }} />
+                <Bot size={22} style={{ color: `${BRAND.emerald}` }} />
               </div>
               <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#ececec", marginBottom: "0.625rem" }}>Register Your Company</h1>
               <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "2rem" }}>
@@ -123,7 +124,7 @@ export default function Register() {
           <div style={{ maxWidth: "28rem", margin: "0 auto", padding: "0 1rem", textAlign: "center" }}>
             <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "3rem 2rem", background: "#111" }}>
               <div style={{ width: "3rem", height: "3rem", borderRadius: "9999px", background: "rgba(62,207,142,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem" }}>
-                <CheckCircle size={22} style={{ color: "#00E87A" }} />
+                <CheckCircle size={22} style={{ color: `${BRAND.emerald}` }} />
               </div>
               <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#ececec", marginBottom: "0.5rem" }}>Already Registered</h1>
               <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "0.375rem" }}>
@@ -157,7 +158,7 @@ export default function Register() {
       <div style={{ paddingTop: "6rem", paddingBottom: "4rem" }}>
         <div style={{ maxWidth: "42rem", margin: "0 auto", padding: "0 1rem" }}>
           <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, color: "#00E87A", background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.25rem 0.75rem", marginBottom: "1rem" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 500, color: `${BRAND.emerald}`, background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.25rem 0.75rem", marginBottom: "1rem" }}>
               Free Registration
             </div>
             <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "#ececec", marginBottom: "0.5rem" }}>Register Your Company</h1>
@@ -168,7 +169,7 @@ export default function Register() {
             {/* Company Info */}
             <div style={sectionStyle}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>
-                <Building2 size={15} style={{ color: "#00E87A" }} />
+                <Building2 size={15} style={{ color: `${BRAND.emerald}` }} />
                 <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec", margin: 0 }}>Company Information</h2>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.875rem" }}>
@@ -217,7 +218,7 @@ export default function Register() {
             {/* Robot Types */}
             <div style={sectionStyle}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                <Bot size={15} style={{ color: "#00E87A" }} />
+                <Bot size={15} style={{ color: `${BRAND.emerald}` }} />
                 <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec", margin: 0 }}>Robot Types</h2>
               </div>
               <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.30)", marginBottom: "1rem" }}>Select all robot types your company makes or sells.</p>
@@ -233,10 +234,10 @@ export default function Register() {
                         padding: "0.3125rem 0.75rem",
                         fontSize: "0.8125rem",
                         fontWeight: selected ? 500 : 400,
-                        border: `1px solid ${selected ? "#00E87A" : "rgba(255,255,255,0.12)"}`,
+                        border: `1px solid ${selected ? `${BRAND.emerald}` : "rgba(255,255,255,0.12)"}`,
                         borderRadius: "0.25rem",
                         background: selected ? "rgba(62,207,142,0.10)" : "#1a1a1a",
-                        color: selected ? "#00E87A" : "#94a3b8",
+                        color: selected ? `${BRAND.emerald}` : "#94a3b8",
                         cursor: "pointer",
                         transition: "all 0.1s",
                       }}
@@ -253,7 +254,7 @@ export default function Register() {
               <button
                 type="submit"
                 disabled={upsertProfile.isPending}
-                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", background: "transparent", color: "#00E87A", fontWeight: 600, fontSize: "0.9375rem", borderRadius: "0.375rem", border: "1px solid #00E87A", cursor: "pointer", opacity: upsertProfile.isPending ? 0.7 : 1 }}
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", background: "transparent", color: `${BRAND.emerald}`, fontWeight: 600, fontSize: "0.9375rem", borderRadius: "0.375rem", border: `1px solid ${BRAND.emerald}`, cursor: "pointer", opacity: upsertProfile.isPending ? 0.7 : 1 }}
               >
                 {upsertProfile.isPending ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Saving…</> : <>Complete Registration <ArrowRight size={15} /></>}
               </button>

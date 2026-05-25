@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Package, ArrowLeft, Loader2, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { BRAND } from "@/lib/brand";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -12,7 +13,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   pending:     { label: "Pending",     color: "#f59e0b" },
   confirmed:   { label: "Confirmed",   color: "#3b82f6" },
   in_progress: { label: "In Progress", color: "#8b5cf6" },
-  completed:   { label: "Completed",   color: "#00E87A" },
+  completed:   { label: "Completed",   color: `${BRAND.emerald}` },
   cancelled:   { label: "Cancelled",   color: "#ef4444" },
 };
 
@@ -65,7 +66,7 @@ export default function AdminOrders() {
           </button>
         </Link>
         <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <Package size={18} style={{ color: "#00E87A" }} /> Service Orders
+          <Package size={18} style={{ color: `${BRAND.emerald}` }} /> Service Orders
         </h1>
       </div>
 
@@ -78,7 +79,7 @@ export default function AdminOrders() {
             style={{
               padding: "0.5rem 0.875rem", fontSize: "0.875rem", fontWeight: 500,
               background: "none", border: "none",
-              borderBottom: `2px solid ${filterStatus === s ? "#00E87A" : "transparent"}`,
+              borderBottom: `2px solid ${filterStatus === s ? `${BRAND.emerald}` : "transparent"}`,
               color: filterStatus === s ? "#ececec" : "#64748b",
               cursor: "pointer", marginBottom: "-1px",
             }}
@@ -110,7 +111,7 @@ export default function AdminOrders() {
             const isExpanded = expandedOrder === order.id;
 
             return (
-              <div key={order.id} style={{ border: `1px solid ${isExpanded ? "#00E87A" : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#111111", overflow: "hidden", transition: "border-color 0.1s" }}>
+              <div key={order.id} style={{ border: `1px solid ${isExpanded ? `${BRAND.emerald}` : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#111111", overflow: "hidden", transition: "border-color 0.1s" }}>
                 <div style={{ padding: "0.875rem 1rem", display: "flex", alignItems: "flex-start", gap: "1rem" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.25rem" }}>
@@ -172,7 +173,7 @@ export default function AdminOrders() {
                             <div style={{ fontWeight: 500, color: "#ececec" }}>{show.name}</div>
                             {show.venue && <div style={{ color: "#64748b", fontSize: "0.8125rem", marginTop: "0.125rem" }}>{show.venue}, {show.city}</div>}
                             {show.startDate && (
-                              <div style={{ fontSize: "0.8125rem", color: "#00E87A", marginTop: "0.25rem" }}>
+                              <div style={{ fontSize: "0.8125rem", color: `${BRAND.emerald}`, marginTop: "0.25rem" }}>
                                 {new Date(show.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                               </div>
                             )}

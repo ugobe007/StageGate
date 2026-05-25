@@ -4,6 +4,7 @@ import { ArrowRight, ArrowUpRight, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
 
 const STEPS = [
   { num: "01", title: "Robot Profile", desc: "Make, model, dimensions, weight, power requirements, and special handling notes." },
@@ -79,8 +80,8 @@ export default function XbotLanding() {
       {bannerVisible && resumeBanner && (
         <div
           style={{
-            borderBottom: "1px solid rgba(0,232,122,0.18)",
-            background: "rgba(0,232,122,0.04)",
+            borderBottom: `1px solid ${emeraldAlpha(0.18)}`,
+            background: emeraldAlpha(0.04),
             padding: "0.75rem 0",
           }}
         >
@@ -92,7 +93,7 @@ export default function XbotLanding() {
                   fontSize: "0.625rem",
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
-                  color: "#00E87A",
+                  color: `${BRAND.emerald}`,
                   flexShrink: 0,
                 }}
               >
@@ -181,7 +182,7 @@ export default function XbotLanding() {
               {OUTPUTS.map((out, i) => (
                 <div key={i} style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "1.25rem 0" }}>
                   <div style={{ display: "flex", alignItems: "baseline", gap: "1.25rem", marginBottom: "0.4rem" }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(0,232,122,0.45)", flexShrink: 0, minWidth: "1rem" }}>{out.num}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: emeraldAlpha(0.45), flexShrink: 0, minWidth: "1rem" }}>{out.num}</span>
                     <span style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#fff" }}>{out.title}</span>
                   </div>
                   <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.6, paddingLeft: "2.25rem" }}>{out.desc}</p>
@@ -202,7 +203,7 @@ export default function XbotLanding() {
         <div className="container">
           <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1.2fr", gap: "5rem" }}>
             <div>
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#00E87A", marginBottom: "1rem" }}>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: `${BRAND.emerald}`, marginBottom: "1rem" }}>
                 Definition
               </p>
               <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em" }}>
@@ -236,7 +237,7 @@ export default function XbotLanding() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
             {WORKFLOW.map((item, i) => (
               <div key={item.label} style={{ padding: "1.75rem", borderLeft: i === 0 ? "none" : "1px solid rgba(255,255,255,0.07)" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#00E87A", marginBottom: "1rem" }}>{item.label}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: `${BRAND.emerald}`, marginBottom: "1rem" }}>{item.label}</div>
                 <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.5rem" }}>{item.title}</h3>
                 <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.65 }}>{item.desc}</p>
               </div>
@@ -347,7 +348,7 @@ export default function XbotLanding() {
                       </div>
                     </div>
                   </div>
-                  <Link href={`/xbot/project/${project.id}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "#00E87A", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                  <Link href={`/xbot/project/${project.id}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: `${BRAND.emerald}`, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
                     View brief <ArrowUpRight size={12} />
                   </Link>
                 </div>
@@ -365,7 +366,7 @@ export default function XbotLanding() {
           </p>
           <h2 style={{ fontSize: "clamp(2.5rem, 6vw, 5rem)", fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em", marginBottom: "2rem", maxWidth: "18ch" }}>
             Stop scrambling.<br />
-            <span style={{ color: "#00E87A" }}>Start with XBOT.</span>
+            <span style={{ color: `${BRAND.emerald}` }}>Start with XBOT.</span>
           </h2>
           <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.35)", maxWidth: "44ch", lineHeight: 1.65, marginBottom: "2.5rem" }}>
             No account required. Complete the 6-step intake and get your logistics brief in under 60 seconds.

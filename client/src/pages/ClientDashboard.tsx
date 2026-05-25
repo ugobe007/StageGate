@@ -7,6 +7,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Navbar from "@/components/Navbar";
 import EditProfileSheet from "@/components/EditProfileSheet";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
 import {
   Package, Calendar, CheckCircle, Clock, AlertCircle, XCircle,
   ArrowRight, Loader2, User, Building2, Globe, Phone, Mail,
@@ -17,9 +18,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   new:         { label: "New",         color: "#3b82f6", icon: Clock },
   reviewing:   { label: "Reviewing",   color: "#f59e0b", icon: AlertCircle },
   quoted:      { label: "Quoted",      color: "#8b5cf6", icon: FileText },
-  approved:    { label: "Approved",    color: "#00E87A", icon: CheckCircle },
+  approved:    { label: "Approved",    color: `${BRAND.emerald}`, icon: CheckCircle },
   in_progress: { label: "In Progress", color: "#f97316", icon: Zap },
-  completed:   { label: "Completed",   color: "#00E87A", icon: CheckCircle },
+  completed:   { label: "Completed",   color: `${BRAND.emerald}`, icon: CheckCircle },
   cancelled:   { label: "Cancelled",   color: "#ef4444", icon: XCircle },
 };
 
@@ -98,7 +99,7 @@ export default function ClientDashboard() {
   if (loading || profileLoading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#1C1E22" }}>
-        <Loader2 size={28} style={{ color: "#00E87A", animation: "spin 1s linear infinite" }} />
+        <Loader2 size={28} style={{ color: `${BRAND.emerald}`, animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
@@ -109,8 +110,8 @@ export default function ClientDashboard() {
         <Navbar />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 4rem)", padding: "2rem 1rem" }}>
           <div style={{ maxWidth: "26rem", width: "100%", textAlign: "center" }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(0,232,122,0.10)", border: "1px solid rgba(0,232,122,0.20)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
-              <ArrowRight size={20} style={{ color: "#00E87A" }} />
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: emeraldAlpha(0.10), border: `1px solid ${emeraldAlpha(0.20)}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
+              <ArrowRight size={20} style={{ color: `${BRAND.emerald}` }} />
             </div>
             <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#ececec", marginBottom: "0.5rem", letterSpacing: "-0.02em" }}>Sign In Required</h1>
             <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.9375rem", marginBottom: "2rem", lineHeight: 1.6 }}>Please sign in to access your dashboard.</p>
@@ -129,8 +130,8 @@ export default function ClientDashboard() {
         <Navbar />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 4rem)", padding: "2rem 1rem" }}>
           <div style={{ maxWidth: "26rem", width: "100%", textAlign: "center" }}>
-            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(0,232,122,0.08)", border: "1px solid rgba(0,232,122,0.18)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
-              <Bot size={24} style={{ color: "#00E87A" }} />
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: emeraldAlpha(0.08), border: `1px solid ${emeraldAlpha(0.18)}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
+              <Bot size={24} style={{ color: `${BRAND.emerald}` }} />
             </div>
             <p style={{ fontSize: "0.6875rem", fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.28)", marginBottom: "0.75rem", fontFamily: "'JetBrains Mono', monospace" }}>Client Portal</p>
             <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#ececec", marginBottom: "0.625rem", letterSpacing: "-0.02em", lineHeight: 1.2 }}>Set Up Your Profile</h1>
@@ -193,7 +194,7 @@ export default function ClientDashboard() {
               <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#111", padding: "1.25rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
                   <div style={{ width: "2.25rem", height: "2.25rem", borderRadius: "0.375rem", background: "rgba(62,207,142,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Building2 size={16} style={{ color: "#00E87A" }} />
+                    <Building2 size={16} style={{ color: `${BRAND.emerald}` }} />
                   </div>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec" }}>{profile.companyName}</div>
@@ -214,7 +215,7 @@ export default function ClientDashboard() {
                   {profile.website && (
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "rgba(255,255,255,0.45)" }}>
                       <Globe size={12} />
-                      <a href={profile.website} target="_blank" rel="noreferrer" style={{ color: "#00E87A", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <a href={profile.website} target="_blank" rel="noreferrer" style={{ color: `${BRAND.emerald}`, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {profile.website.replace(/^https?:\/\//, "")}
                       </a>
                     </div>
@@ -226,7 +227,7 @@ export default function ClientDashboard() {
               {robots.length > 0 && (
                 <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#111", padding: "1.25rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                    <Bot size={13} style={{ color: "#00E87A" }} />
+                    <Bot size={13} style={{ color: `${BRAND.emerald}` }} />
                     <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec" }}>Your Robots</span>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -247,7 +248,7 @@ export default function ClientDashboard() {
               {showsAttending.length > 0 && (
                 <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#111", padding: "1.25rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                    <Calendar size={13} style={{ color: "#00E87A" }} />
+                    <Calendar size={13} style={{ color: `${BRAND.emerald}` }} />
                     <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec" }}>Upcoming Shows</span>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -268,12 +269,12 @@ export default function ClientDashboard() {
               {servicesNeeded.length > 0 && (
                 <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", background: "#111", padding: "1.25rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                    <Star size={13} style={{ color: "#00E87A" }} />
+                    <Star size={13} style={{ color: `${BRAND.emerald}` }} />
                     <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec" }}>Services Requested</span>
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
                     {servicesNeeded.map(s => (
-                      <span key={s} style={{ fontSize: "0.8125rem", color: "#00E87A", background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>
+                      <span key={s} style={{ fontSize: "0.8125rem", color: `${BRAND.emerald}`, background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>
                         {s}
                       </span>
                     ))}
@@ -292,7 +293,7 @@ export default function ClientDashboard() {
                   style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.125rem 1.25rem", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                    <div style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", background: "#00E87A", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", background: `${BRAND.emerald}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <Plus size={15} style={{ color: "#fff" }} />
                     </div>
                     <div>
@@ -343,7 +344,7 @@ export default function ClientDashboard() {
                         </label>
                         {attachment ? (
                           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem" }}>
-                            <a href={attachment.url} target="_blank" rel="noopener noreferrer" style={{ color: "#00E87A", textDecoration: "underline", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "18rem" }}>{attachment.name}</a>
+                            <a href={attachment.url} target="_blank" rel="noopener noreferrer" style={{ color: `${BRAND.emerald}`, textDecoration: "underline", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "18rem" }}>{attachment.name}</a>
                             <button type="button" onClick={() => setAttachment(null)} style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", background: "none", border: "none", cursor: "pointer", marginLeft: "0.25rem" }}>Remove</button>
                           </div>
                         ) : (
@@ -374,7 +375,7 @@ export default function ClientDashboard() {
                           setFormError(null);
                           submitRequest.mutate({ requestType, showName: showName || undefined, showDate: showDate || undefined, robotName: robotName || undefined, details: details || undefined, urgency, attachmentUrl: attachment?.url, attachmentKey: attachment?.key, attachmentName: attachment?.name });
                         }}
-                        style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: "#00E87A", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: (submitRequest.isPending || uploadingFile) ? 0.6 : 1 }}
+                        style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "none", background: `${BRAND.emerald}`, color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: (submitRequest.isPending || uploadingFile) ? 0.6 : 1 }}
                       >
                         {submitRequest.isPending ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={13} />}
                         Submit Request
@@ -410,7 +411,7 @@ export default function ClientDashboard() {
                       const Icon = cfg.icon;
                       const isExpanded = expandedRequest === req.id;
                       return (
-                        <div key={req.id} style={{ border: `1px solid ${isExpanded ? "#00E87A" : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#111", overflow: "hidden", transition: "border-color 0.1s" }}>
+                        <div key={req.id} style={{ border: `1px solid ${isExpanded ? `${BRAND.emerald}` : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#111", overflow: "hidden", transition: "border-color 0.1s" }}>
                           <button
                             onClick={() => setExpandedRequest(isExpanded ? null : req.id)}
                             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.875rem 1rem", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}
@@ -455,16 +456,16 @@ export default function ClientDashboard() {
                                           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", flex: "0 0 auto" }}>
                                             <div style={{
                                               width: "8px", height: "8px", borderRadius: "50%",
-                                              background: isCurrent ? "#00E87A" : isPast ? "rgba(0,232,122,0.40)" : "rgba(255,255,255,0.12)",
-                                              border: isCurrent ? "2px solid #00E87A" : "none",
-                                              boxShadow: isCurrent ? "0 0 6px rgba(0,232,122,0.50)" : "none",
+                                              background: isCurrent ? `${BRAND.emerald}` : isPast ? emeraldAlpha(0.40) : "rgba(255,255,255,0.12)",
+                                              border: isCurrent ? `2px solid ${BRAND.emerald}` : "none",
+                                              boxShadow: isCurrent ? "0 0 6px emeraldAlpha(0.50)" : "none",
                                             }} />
-                                            <span style={{ fontSize: "0.625rem", color: isCurrent ? "#00E87A" : isPast ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.18)", whiteSpace: "nowrap" }}>
+                                            <span style={{ fontSize: "0.625rem", color: isCurrent ? `${BRAND.emerald}` : isPast ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.18)", whiteSpace: "nowrap" }}>
                                               {stage.label}
                                             </span>
                                           </div>
                                           {i < stages.length - 1 && (
-                                            <div style={{ flex: 1, height: "1px", background: i < currentIdx ? "rgba(0,232,122,0.30)" : "rgba(255,255,255,0.08)", margin: "0 0.25rem", marginBottom: "1.125rem" }} />
+                                            <div style={{ flex: 1, height: "1px", background: i < currentIdx ? emeraldAlpha(0.30) : "rgba(255,255,255,0.08)", margin: "0 0.25rem", marginBottom: "1.125rem" }} />
                                           )}
                                         </React.Fragment>
                                       );
@@ -481,7 +482,7 @@ export default function ClientDashboard() {
                               {(req as any).attachmentUrl && (
                                 <div>
                                   <span style={{ color: "rgba(255,255,255,0.30)" }}>Attachment: </span>
-                                  <a href={(req as any).attachmentUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#00E87A", textDecoration: "underline" }}>
+                                  <a href={(req as any).attachmentUrl} target="_blank" rel="noopener noreferrer" style={{ color: `${BRAND.emerald}`, textDecoration: "underline" }}>
                                     {(req as any).attachmentName ?? "View file"}
                                   </a>
                                 </div>
@@ -489,7 +490,7 @@ export default function ClientDashboard() {
                               {req.quotedPrice && (
                                 <div style={{ marginTop: "0.5rem", padding: "0.75rem", borderRadius: "0.375rem", background: "rgba(62,207,142,0.06)", border: "1px solid rgba(62,207,142,0.2)" }}>
                                   <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", marginBottom: "0.25rem" }}>Quoted Price</div>
-                                  <div style={{ fontWeight: 700, fontSize: "1.125rem", color: "#00E87A" }}>{req.quotedPrice}</div>
+                                  <div style={{ fontWeight: 700, fontSize: "1.125rem", color: `${BRAND.emerald}` }}>{req.quotedPrice}</div>
                                 </div>
                               )}
                               {req.adminNotes && (

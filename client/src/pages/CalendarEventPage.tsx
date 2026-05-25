@@ -2,6 +2,7 @@ import React from "react";
 import { useParams, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Calendar, Clock, Building2, User, ArrowLeft } from "lucide-react";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
 
 function formatDateTime(d: Date) {
   return new Date(d).toLocaleString("en-US", {
@@ -21,7 +22,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "#60a5fa",
-  confirmed: "#00E87A",
+  confirmed: `${BRAND.emerald}`,
   cancelled: "#ef4444",
   completed: "#64748b",
 };
@@ -48,7 +49,7 @@ export default function CalendarEventPage() {
       <div style={{ minHeight: "100vh", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", flexDirection: "column", gap: "1rem" }}>
         <Calendar size={40} color="#1e293b" />
         <div style={{ color: "#475569", fontSize: "0.75rem" }}>Event not found or no longer available.</div>
-        <Link href="/" style={{ color: "#00E87A", fontSize: "0.625rem", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "0.375rem" }}>
+        <Link href="/" style={{ color: `${BRAND.emerald}`, fontSize: "0.625rem", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "0.375rem" }}>
           <ArrowLeft size={12} /> Back to StageGate
         </Link>
       </div>
@@ -71,7 +72,7 @@ export default function CalendarEventPage() {
         {/* Card */}
         <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "1rem", overflow: "hidden" }}>
           {/* Header stripe */}
-          <div style={{ background: "linear-gradient(135deg, rgba(0,232,122,0.08), rgba(96,165,250,0.05))", borderBottom: "1px solid rgba(255,255,255,0.08)", padding: "1.5rem" }}>
+          <div style={{ background: "linear-gradient(135deg, emeraldAlpha(0.08), rgba(96,165,250,0.05))", borderBottom: "1px solid rgba(255,255,255,0.08)", padding: "1.5rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
               <span style={{ background: `${statusColor}22`, color: statusColor, fontSize: "0.5rem", fontWeight: 700, padding: "3px 8px", borderRadius: "4px", letterSpacing: "0.1em", textTransform: "uppercase" }}>
                 {ev.status}
@@ -89,7 +90,7 @@ export default function CalendarEventPage() {
           <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             {/* Date/time */}
             <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
-              <Calendar size={16} color="#00E87A" style={{ marginTop: "2px", flexShrink: 0 }} />
+              <Calendar size={16} color={BRAND.emerald} style={{ marginTop: "2px", flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: "0.5625rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", marginBottom: "0.25rem" }}>Date & Time</div>
                 <div style={{ fontSize: "0.8125rem", color: "#e2e8f0" }}>{formatDateTime(ev.startAt)}</div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
+import { BRAND } from "@/lib/brand";
 import {
   Clock, CheckCircle2, XCircle, Loader2, AlertTriangle,
   ChevronDown, ChevronUp, Search, Bot, Calendar, Zap, Paperclip, RefreshCw, ExternalLink
@@ -15,7 +16,7 @@ const S = {
   text:    "#ececec",
   text2:   "rgba(255,255,255,0.55)",
   text3:   "rgba(255,255,255,0.30)",
-  green:   "#00E87A",
+  green:   `${BRAND.emerald}`,
   greenDim:"rgba(62,207,142,0.12)",
   amber:   "#f59e0b",
   blue:    "#3b82f6",

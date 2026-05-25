@@ -72,9 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: D.bg, fontFamily: D.font }}
       >
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem", padding: "2rem", maxWidth: "20rem", width: "100%", textAlign: "center" }}>
-          <div style={{ width: 40, height: 40, borderRadius: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center", background: D.emeraldDim, border: `1px solid ${emeraldAlpha(0.20)}` }}>
-            <StageGateLogo size={24} variant="icon" theme="dark" />
-          </div>
+          <StageGateLogo size={32} variant="icon" theme="dark" />
           <div>
             <h2 style={{ fontSize: "1.125rem", fontWeight: 600, color: D.text, marginBottom: "0.25rem" }}>Admin access required</h2>
             <p style={{ fontSize: "0.875rem", color: D.text2 }}>Sign in with your admin account to continue.</p>
@@ -262,7 +260,7 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
                 fontWeight: isActive ? 600 : 400,
                 color: isActive ? D.emerald : D.text2,
                 background: isActive ? D.emeraldDim : "transparent",
-                border: isActive ? `1px solid rgba(0,232,122,0.15)` : "1px solid transparent",
+                border: isActive ? `1px solid ${emeraldAlpha(0.15)}` : "1px solid transparent",
                 cursor: "pointer",
                 width: "100%",
                 textAlign: "left",

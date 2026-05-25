@@ -10,6 +10,7 @@ import {
   Trash2, Plus, ChevronDown, ChevronUp, Bot,
 } from "lucide-react";
 import { toast } from "sonner";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -21,7 +22,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   new:        { label: "New",        color: "rgba(255,255,255,0.30)" },
   emailed:    { label: "Emailed",    color: "#3b82f6" },
   responded:  { label: "Responded",  color: "#f59e0b" },
-  registered: { label: "Registered", color: "#00E87A" },
+  registered: { label: "Registered", color: `${BRAND.emerald}` },
 };
 
 export default function AdminLeads() {
@@ -98,7 +99,7 @@ export default function AdminLeads() {
   const btnPrimary: React.CSSProperties = {
     display: "flex", alignItems: "center", gap: "0.375rem",
     fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem",
-    border: "none", background: "#00E87A", color: "#1C1E22",
+    border: "none", background: `${BRAND.emerald}`, color: "#1C1E22",
     borderRadius: "0.375rem", cursor: "pointer",
   };
 
@@ -130,7 +131,7 @@ export default function AdminLeads() {
         </Link>
         <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Users size={18} style={{ color: "#00E87A" }} /> Lead Discovery & Outreach
+            <Users size={18} style={{ color: `${BRAND.emerald}` }} /> Lead Discovery & Outreach
           </h1>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -248,9 +249,9 @@ export default function AdminLeads() {
               onClick={() => setFilterStatus(s)}
               style={{
                 padding: "0.3125rem 0.75rem", fontSize: "0.8125rem", fontWeight: 500,
-                border: `1px solid ${filterStatus === s ? "#00E87A" : "rgba(255,255,255,0.12)"}`,
-                background: filterStatus === s ? "rgba(0,232,122,0.08)" : "#111111",
-                color: filterStatus === s ? "#00E87A" : "#94a3b8",
+                border: `1px solid ${filterStatus === s ? `${BRAND.emerald}` : "rgba(255,255,255,0.12)"}`,
+                background: filterStatus === s ? emeraldAlpha(0.08) : "#111111",
+                color: filterStatus === s ? `${BRAND.emerald}` : "#94a3b8",
                 borderRadius: "0.25rem", cursor: "pointer",
               }}
             >
@@ -298,7 +299,7 @@ export default function AdminLeads() {
           </div>
           <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", marginTop: "1rem" }}>
             Scrapers add prospects to{" "}
-            <Link href="/admin/prospects" style={{ color: "#00E87A", textDecoration: "none" }}>Prospects</Link>
+            <Link href="/admin/prospects" style={{ color: `${BRAND.emerald}`, textDecoration: "none" }}>Prospects</Link>
             {" "}— check there in a few minutes.
           </p>
         </div>
@@ -309,7 +310,7 @@ export default function AdminLeads() {
             const status = STATUS_CONFIG[lead.outreachStatus] || STATUS_CONFIG.new;
             const isExpanded = expandedLead === lead.id;
             return (
-              <div key={lead.id} style={{ border: `1px solid ${isExpanded ? "#00E87A" : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#111111", overflow: "hidden", transition: "border-color 0.1s" }}>
+              <div key={lead.id} style={{ border: `1px solid ${isExpanded ? `${BRAND.emerald}` : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#111111", overflow: "hidden", transition: "border-color 0.1s" }}>
                 <div style={{ padding: "0.875rem 1rem", display: "flex", alignItems: "flex-start", gap: "1rem" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -317,7 +318,7 @@ export default function AdminLeads() {
                       <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: status.color }}>{status.label}</span>
                       {show && <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.30)" }}>{show.name}</span>}
                     </div>
-                    {lead.website && <a href={lead.website} target="_blank" rel="noopener noreferrer" style={{ fontSize: "0.8125rem", color: "#00E87A", textDecoration: "none", display: "block", marginTop: "0.125rem" }}>{lead.website}</a>}
+                    {lead.website && <a href={lead.website} target="_blank" rel="noopener noreferrer" style={{ fontSize: "0.8125rem", color: `${BRAND.emerald}`, textDecoration: "none", display: "block", marginTop: "0.125rem" }}>{lead.website}</a>}
                     {lead.contactEmail && <div style={{ fontSize: "0.8125rem", color: "#64748b", marginTop: "0.125rem" }}>{lead.contactEmail}</div>}
                     {lead.aiSummary && <p style={{ fontSize: "0.8125rem", color: "#64748b", marginTop: "0.375rem", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{lead.aiSummary}</p>}
                   </div>
@@ -326,7 +327,7 @@ export default function AdminLeads() {
                       <button
                         onClick={() => generateEmail.mutate({ leadId: lead.id })}
                         disabled={generateEmail.isPending}
-                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00E87A", background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
+                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: `${BRAND.emerald}`, background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
                       >
                         {generateEmail.isPending ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> : <Bot size={11} />}
                         Draft Email
@@ -354,7 +355,7 @@ export default function AdminLeads() {
                       <button
                         onClick={() => updateStatus.mutate({ id: lead.id, outreachStatus: "registered" })}
                         disabled={updateStatus.isPending}
-                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00E87A", background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
+                        style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", color: `${BRAND.emerald}`, background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
                       >
                         <CheckCircle size={11} /> Mark Registered
                       </button>

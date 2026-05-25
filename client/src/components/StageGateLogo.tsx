@@ -101,7 +101,7 @@ export default function StageGateLogo({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      style={style}
+      style={{ display: "block", background: "transparent", ...style }}
       role="img"
       aria-label={title}
     >

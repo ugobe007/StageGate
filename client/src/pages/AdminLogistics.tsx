@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
 import {
   Truck, CheckCircle2, Clock, AlertTriangle, AlertCircle,
   Loader2, ChevronDown, ChevronRight, ExternalLink,
@@ -13,7 +14,7 @@ import {
 const CHECKPOINT_STATUS_COLORS: Record<string, string> = {
   pending:     "rgba(255,255,255,0.30)",
   in_progress: "#f59e0b",
-  completed:   "#00E87A",
+  completed:   `${BRAND.emerald}`,
   blocked:     "#ef4444",
   escalated:   "#ef4444",
   skipped:     "rgba(255,255,255,0.30)",
@@ -21,7 +22,7 @@ const CHECKPOINT_STATUS_COLORS: Record<string, string> = {
 
 const WORKFLOW_STATUS_COLORS: Record<string, string> = {
   active:    "#f59e0b",
-  completed: "#00E87A",
+  completed: `${BRAND.emerald}`,
   cancelled: "rgba(255,255,255,0.30)",
   on_hold:   "#3b82f6",
 };
@@ -61,7 +62,7 @@ const CP_PHASE: Record<string, number> = {
 const STATUS_BG: Record<string, string> = {
   pending:     "#1a1a1a",
   in_progress: "rgba(245,158,11,0.18)",
-  completed:   "rgba(0,232,122,0.15)",
+  completed:   emeraldAlpha(0.15),
   blocked:     "rgba(239,68,68,0.18)",
   escalated:   "rgba(239,68,68,0.18)",
   skipped:     "#111111",
@@ -159,7 +160,7 @@ function ScheduleChart({ checkpoints, showStartDate, createdAt }: {
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 {row.status === "completed" && (
-                  <div style={{ width: "0.375rem", height: "0.375rem", borderRadius: "9999px", background: "#00E87A" }} />
+                  <div style={{ width: "0.375rem", height: "0.375rem", borderRadius: "9999px", background: `${BRAND.emerald}` }} />
                 )}
                 {row.status === "in_progress" && (
                   <div style={{ width: "0.375rem", height: "0.375rem", borderRadius: "9999px", background: "#f59e0b" }} />
@@ -179,7 +180,7 @@ function ScheduleChart({ checkpoints, showStartDate, createdAt }: {
                   ? "Pending"
                   : row.estimated.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 {row.completedAt && (
-                  <span style={{ color: "#00E87A", marginLeft: "0.375rem" }}>
+                  <span style={{ color: `${BRAND.emerald}`, marginLeft: "0.375rem" }}>
                     ✓ {new Date(row.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </span>
                 )}
@@ -194,7 +195,7 @@ function ScheduleChart({ checkpoints, showStartDate, createdAt }: {
         {[
           { color: "rgba(255,255,255,0.30)", label: "Pending" },
           { color: "#f59e0b", label: "In Progress" },
-          { color: "#00E87A", label: "Completed" },
+          { color: `${BRAND.emerald}`, label: "Completed" },
           { color: "#ef4444", label: "Blocked" },
         ].map(l => (
           <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
@@ -429,8 +430,8 @@ export default function AdminLogistics() {
                       {w.workflow.robotName && <span style={{ fontSize: "0.8125rem", color: "#64748b", display: "flex", alignItems: "center", gap: "0.25rem" }}><Package size={11} /> {w.workflow.robotName}</span>}
                       <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: WORKFLOW_STATUS_COLORS[w.workflow.status] ?? "rgba(255,255,255,0.30)" }}>{w.workflow.status}</span>
                       {w.overdueCount > 0 && <span style={{ fontSize: "0.75rem", color: "#f59e0b" }}><Clock size={10} /> {w.overdueCount} overdue</span>}
-                      {wf.totalEstimatedCostUsd && <span style={{ fontSize: "0.75rem", color: "#00E87A" }}>{fmt$(wf.totalEstimatedCostUsd)} est.</span>}
-                      {wf.costEstimateAcceptedAt && <span style={{ fontSize: "0.75rem", color: "#00E87A" }}>✓ Accepted</span>}
+                      {wf.totalEstimatedCostUsd && <span style={{ fontSize: "0.75rem", color: `${BRAND.emerald}` }}>{fmt$(wf.totalEstimatedCostUsd)} est.</span>}
+                      {wf.costEstimateAcceptedAt && <span style={{ fontSize: "0.75rem", color: `${BRAND.emerald}` }}>✓ Accepted</span>}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.25rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", flexWrap: "wrap" }}>
                       {w.workflow.showName && <span><Calendar size={10} /> {w.workflow.showName}</span>}
@@ -444,7 +445,7 @@ export default function AdminLogistics() {
                   <div style={{ width: "5rem", flexShrink: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.6875rem", color: "rgba(255,255,255,0.30)", marginBottom: "0.25rem" }}><span>Progress</span><span>{progress}%</span></div>
                     <div style={{ height: "0.375rem", background: "#1a1a1a", borderRadius: "9999px", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${progress}%`, background: progress === 100 ? "#00E87A" : "#f59e0b", borderRadius: "9999px" }} />
+                      <div style={{ height: "100%", width: `${progress}%`, background: progress === 100 ? `${BRAND.emerald}` : "#f59e0b", borderRadius: "9999px" }} />
                     </div>
                   </div>
                   {isExpanded ? <ChevronDown size={14} style={{ color: "rgba(255,255,255,0.30)", flexShrink: 0 }} /> : <ChevronRight size={14} style={{ color: "rgba(255,255,255,0.30)", flexShrink: 0 }} />}
@@ -458,7 +459,7 @@ export default function AdminLogistics() {
                       <button
                         onClick={() => generateCostEstimate.mutate({ workflowId: w.workflow.id })}
                         disabled={generateCostEstimate.isPending}
-                        style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", padding: "0.375rem 0.75rem", border: "1px solid rgba(0,232,122,0.35)", background: "transparent", color: "#00E87A", borderRadius: "0.375rem", cursor: "pointer" }}
+                        style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", padding: "0.375rem 0.75rem", border: `1px solid ${emeraldAlpha(0.35)}`, background: "transparent", color: `${BRAND.emerald}`, borderRadius: "0.375rem", cursor: "pointer" }}
                       >
                         <DollarSign size={12} /> Generate Cost Estimate
                       </button>
@@ -472,7 +473,7 @@ export default function AdminLogistics() {
                       {trackingUrl && (
                         <button
                           onClick={() => { navigator.clipboard.writeText(trackingUrl); setCopiedToken(w.workflow.id); setTimeout(() => setCopiedToken(null), 2000); }}
-                          style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", padding: "0.375rem 0.75rem", border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: copiedToken === w.workflow.id ? "#00E87A" : "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer" }}
+                          style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", padding: "0.375rem 0.75rem", border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: copiedToken === w.workflow.id ? `${BRAND.emerald}` : "rgba(255,255,255,0.55)", borderRadius: "0.375rem", cursor: "pointer" }}
                         >
                           {copiedToken === w.workflow.id ? <Check size={12} /> : <Copy size={12} />} Copy Link
                         </button>
@@ -558,7 +559,7 @@ export default function AdminLogistics() {
                                   {(cp as typeof cp & { customerVisibleNote?: string }).customerVisibleNote && <p style={{ fontSize: "0.8125rem", color: "#3b82f6", marginTop: "0.25rem" }}>Customer note: {(cp as typeof cp & { customerVisibleNote?: string }).customerVisibleNote}</p>}
                                 </div>
                                 {cp.status !== "completed" && (
-                                  <button onClick={() => updateCheckpoint.mutate({ checkpointId: cp.id, status: "completed" })} disabled={updateCheckpoint.isPending} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", background: "#fff", color: "#00E87A", borderRadius: "0.25rem", cursor: "pointer" }}>
+                                  <button onClick={() => updateCheckpoint.mutate({ checkpointId: cp.id, status: "completed" })} disabled={updateCheckpoint.isPending} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.4)", background: "#fff", color: `${BRAND.emerald}`, borderRadius: "0.25rem", cursor: "pointer" }}>
                                     <CheckCircle2 size={11} /> Done
                                   </button>
                                 )}
@@ -585,7 +586,7 @@ export default function AdminLogistics() {
                                 {[
                                   { label: "Total Estimated", value: fmt$(wf.totalEstimatedCostUsd), color: "#ececec" },
                                   { label: "Total Actual", value: fmt$(wf.totalActualCostUsd), color: "#f59e0b" },
-                                  { label: "Estimate Status", value: wf.costEstimateAcceptedAt ? "Accepted ✓" : "Pending acceptance", color: wf.costEstimateAcceptedAt ? "#00E87A" : "#64748b" },
+                                  { label: "Estimate Status", value: wf.costEstimateAcceptedAt ? "Accepted ✓" : "Pending acceptance", color: wf.costEstimateAcceptedAt ? `${BRAND.emerald}` : "#64748b" },
                                 ].map(s => (
                                   <div key={s.label} style={{ background: "#1C1E22", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem", padding: "0.75rem" }}>
                                     <p style={{ fontSize: "0.75rem", color: "#64748b", margin: "0 0 0.25rem" }}>{s.label}</p>
@@ -619,7 +620,7 @@ export default function AdminLogistics() {
                                           <td style={{ padding: "0.5rem", color: "rgba(255,255,255,0.55)" }}>{row.vendorName ?? "—"}</td>
                                           <td style={{ padding: "0.5rem", color: "#ececec", fontVariantNumeric: "tabular-nums" }}>{fmt$(row.estimatedAmountUsd)}</td>
                                           <td style={{ padding: "0.5rem", color: row.actualAmountUsd ? "#f59e0b" : "rgba(255,255,255,0.30)", fontVariantNumeric: "tabular-nums" }}>{row.actualAmountUsd ? fmt$(row.actualAmountUsd) : "—"}</td>
-                                          <td style={{ padding: "0.5rem", color: row.paidAt ? "#00E87A" : "rgba(255,255,255,0.30)" }}>{row.paidAt ? "Paid" : row.actualAmountUsd ? "Invoiced" : "Estimated"}</td>
+                                          <td style={{ padding: "0.5rem", color: row.paidAt ? `${BRAND.emerald}` : "rgba(255,255,255,0.30)" }}>{row.paidAt ? "Paid" : row.actualAmountUsd ? "Invoiced" : "Estimated"}</td>
                                         </tr>
                                       ))}
                                     </tbody>
@@ -692,7 +693,7 @@ export default function AdminLogistics() {
                               <button
                                 onClick={() => { const t = trackingInput[w.workflow.id]; if (!t?.number) { toast.error("Enter a tracking number"); return; } addTracking.mutate({ workflowId: w.workflow.id, carrier: (t.carrier ?? "manual") as "dhl" | "fedex" | "ups" | "manual" | "other", trackingNumber: t.number }); }}
                                 disabled={addTracking.isPending}
-                                style={{ fontSize: "0.8125rem", padding: "0.375rem 0.875rem", border: "1px solid rgba(0,232,122,0.35)", background: "transparent", color: "#00E87A", borderRadius: "0.375rem", cursor: "pointer" }}
+                                style={{ fontSize: "0.8125rem", padding: "0.375rem 0.875rem", border: `1px solid ${emeraldAlpha(0.35)}`, background: "transparent", color: `${BRAND.emerald}`, borderRadius: "0.375rem", cursor: "pointer" }}
                               >
                                 Save
                               </button>

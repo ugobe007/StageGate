@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
+import { BRAND } from "@/lib/brand";
 
 /**
  * Intermediate page that handles post-login routing:
@@ -42,7 +43,7 @@ export default function AuthRedirect() {
   return (
     <div style={{ minHeight: "100vh", background: "#1C1E22", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
-        <Loader2 size={28} style={{ color: "#00E87A", animation: "spin 1s linear infinite" }} />
+        <Loader2 size={28} style={{ color: `${BRAND.emerald}`, animation: "spin 1s linear infinite" }} />
         <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.45)" }}>Setting up your workspace…</p>
       </div>
     </div>

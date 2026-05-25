@@ -6,6 +6,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import ProspectCRMCard from "@/components/ProspectCRMCard";
 import { ExternalLink, Mail, RefreshCw, ChevronDown, Check, X, Clock, Phone, AlertCircle, Square, CheckSquare, Zap, ArrowUpDown, ArrowUp, ArrowDown, Download, Upload, Calendar, ArrowRight, Send } from "lucide-react";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
 
 type ProspectStatus = "new" | "contacted" | "responded" | "scheduled" | "converted" | "not_interested";
 
@@ -26,9 +27,9 @@ function formatRelativeTime(date: Date): string {
 const STATUS_CONFIG: Record<ProspectStatus, { label: string; color: string; icon: React.ReactNode }> = {
   new:            { label: "New",           color: "#3b82f6",  icon: <AlertCircle size={11} /> },
   contacted:      { label: "Contacted",     color: "#f59e0b",  icon: <Mail size={11} /> },
-  responded:      { label: "Responded",     color: "#00E87A",  icon: <Check size={11} /> },
+  responded:      { label: "Responded",     color: `${BRAND.emerald}`,  icon: <Check size={11} /> },
   scheduled:      { label: "Scheduled",     color: "#8b5cf6",  icon: <Phone size={11} /> },
-  converted:      { label: "Converted",     color: "#00E87A",  icon: <Check size={11} /> },
+  converted:      { label: "Converted",     color: `${BRAND.emerald}`,  icon: <Check size={11} /> },
   not_interested: { label: "Not Interested",color: "rgba(255,255,255,0.30)",  icon: <X size={11} /> },
 };
 
@@ -43,7 +44,7 @@ const ROBOT_TYPE_LABELS: Record<string, string> = {
 };
 
 const CONFIDENCE_COLORS: Record<string, string> = {
-  verified: "#00E87A",
+  verified: `${BRAND.emerald}`,
   high: "rgba(62,207,142,0.80)",
   medium: "#f59e0b",
   low: "rgba(255,255,255,0.30)",
@@ -481,7 +482,7 @@ export default function AdminProspects() {
       <div style={{ background: "#1C1E22" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", gap: "1.5rem" }}>
           <p style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.875rem" }}>Admin access required</p>
-          <a href={getLoginUrl()} style={{ padding: "0.5rem 1rem", background: "#00E87A", color: "#ececec", fontWeight: 600, borderRadius: "0.375rem", textDecoration: "none", fontSize: "0.875rem" }}>Sign In</a>
+          <a href={getLoginUrl()} style={{ padding: "0.5rem 1rem", background: `${BRAND.emerald}`, color: "#ececec", fontWeight: 600, borderRadius: "0.375rem", textDecoration: "none", fontSize: "0.875rem" }}>Sign In</a>
         </div>
       </div>
     );
@@ -502,7 +503,7 @@ export default function AdminProspects() {
 
   // Vendor type filter config
   const VENDOR_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
-    robot_oem:    { label: "Robot OEM",     color: "#00E87A" },
+    robot_oem:    { label: "Robot OEM",     color: `${BRAND.emerald}` },
     exhibit_house:{ label: "Exhibit House", color: "#60a5fa" },
     freight:      { label: "Freight",       color: "#f59e0b" },
     av_electrical:{ label: "AV / Elec",    color: "#a78bfa" },
@@ -673,7 +674,7 @@ export default function AdminProspects() {
                 <button
                   onClick={() => setViewMode("byshow")}
                   title="By Show view"
-                  style={{ padding: "0.375rem 0.5rem", background: viewMode === "byshow" ? "#1a1a1a" : "#111111", border: "none", cursor: "pointer", color: viewMode === "byshow" ? "#00E87A" : "rgba(255,255,255,0.30)" }}
+                  style={{ padding: "0.375rem 0.5rem", background: viewMode === "byshow" ? "#1a1a1a" : "#111111", border: "none", cursor: "pointer", color: viewMode === "byshow" ? `${BRAND.emerald}` : "rgba(255,255,255,0.30)" }}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
                 </button>
@@ -705,14 +706,14 @@ export default function AdminProspects() {
           return (
             <div style={{
               marginBottom: "1.5rem",
-              border: `1px solid ${pendingDrafts > 0 ? "rgba(251,191,36,0.35)" : "rgba(0,232,122,0.20)"}`,
+              border: `1px solid ${pendingDrafts > 0 ? "rgba(251,191,36,0.35)" : emeraldAlpha(0.20)}`,
               borderRadius: "0.5rem",
-              background: pendingDrafts > 0 ? "rgba(251,191,36,0.04)" : "rgba(0,232,122,0.03)",
+              background: pendingDrafts > 0 ? "rgba(251,191,36,0.04)" : emeraldAlpha(0.03),
               padding: "1rem 1.25rem",
             }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
                 <div style={{ flex: 1, minWidth: "16rem" }}>
-                  <p style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: pendingDrafts > 0 ? "#fbbf24" : "#00E87A", margin: "0 0 0.35rem" }}>
+                  <p style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: pendingDrafts > 0 ? "#fbbf24" : `${BRAND.emerald}`, margin: "0 0 0.35rem" }}>
                     Cal
                   </p>
                   <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec", margin: 0, lineHeight: 1.4 }}>
@@ -778,7 +779,7 @@ export default function AdminProspects() {
               }}>
                 <span><strong style={{ color: "#3b82f6" }}>{newCount}</strong> new</span>
                 <span><strong style={{ color: "#f59e0b" }}>{contactedCount}</strong> contacted</span>
-                <span><strong style={{ color: "#00E87A" }}>{respondedCount}</strong> replied</span>
+                <span><strong style={{ color: `${BRAND.emerald}` }}>{respondedCount}</strong> replied</span>
                 <span><strong style={{ color: "#fbbf24" }}>{pendingDrafts}</strong> drafts pending</span>
                 <span><strong style={{ color: "#60a5fa" }}>{sentDrafts}</strong> sent</span>
               </div>
@@ -798,7 +799,7 @@ export default function AdminProspects() {
               width: "100%",
               fontSize: "0.8125rem",
               background: "#111111",
-              border: `1px solid ${searchQuery ? "#00E87A" : "rgba(255,255,255,0.08)"}`,
+              border: `1px solid ${searchQuery ? `${BRAND.emerald}` : "rgba(255,255,255,0.08)"}`,
               color: "#ececec",
               padding: "0.4375rem 2.25rem 0.4375rem 0.75rem",
               borderRadius: "0.375rem",
@@ -938,8 +939,8 @@ export default function AdminProspects() {
                 display: "flex", alignItems: "center", gap: "0.3rem",
                 fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.08em", textTransform: "uppercase",
                 padding: "0.3rem 0.65rem",
-                border: "1px solid rgba(0,232,122,0.30)",
-                color: "#00E87A",
+                border: `1px solid ${emeraldAlpha(0.30)}`,
+                color: `${BRAND.emerald}`,
                 background: "transparent", cursor: "pointer", borderRadius: "0.125rem",
               }}
             >
@@ -1083,7 +1084,7 @@ export default function AdminProspects() {
 
             {/* Bulk progress indicator */}
             {bulkProgress && (
-              <span style={{ fontSize: "0.8125rem", color: bulkProgress.failed > 0 ? "#f59e0b" : "#00E87A" }}>
+              <span style={{ fontSize: "0.8125rem", color: bulkProgress.failed > 0 ? "#f59e0b" : `${BRAND.emerald}` }}>
                 {bulkSending ? (
                   <><RefreshCw size={12} style={{ display: "inline", marginRight: 4, animation: "spin 1s linear infinite" }} />Sending...</>
                 ) : (
@@ -1099,8 +1100,8 @@ export default function AdminProspects() {
                 display: "flex", alignItems: "center", gap: "0.4rem",
                 fontSize: "0.8125rem", fontWeight: 600,
                 padding: "0.375rem 1rem",
-                background: bulkSending ? "rgba(62,207,142,0.15)" : "#00E87A",
-                color: bulkSending ? "#00E87A" : "#ececec",
+                background: bulkSending ? "rgba(62,207,142,0.15)" : `${BRAND.emerald}`,
+                color: bulkSending ? `${BRAND.emerald}` : "#ececec",
                 border: "none",
                 cursor: bulkSending ? "wait" : "pointer",
                 borderRadius: "0.375rem",
@@ -1129,7 +1130,7 @@ export default function AdminProspects() {
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
               <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#ececec", margin: 0 }}>
-                Bulk Send Complete — <span style={{ color: "#00E87A" }}>{bulkResults.filter(r => r.success).length} sent</span> · <span style={{ color: "#ef4444" }}>{bulkResults.filter(r => !r.success).length} failed</span>
+                Bulk Send Complete — <span style={{ color: `${BRAND.emerald}` }}>{bulkResults.filter(r => r.success).length} sent</span> · <span style={{ color: "#ef4444" }}>{bulkResults.filter(r => !r.success).length} failed</span>
               </p>
               <button onClick={() => setBulkResults([])} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.30)", padding: 0 }}>
                 <X size={13} />
@@ -1141,7 +1142,7 @@ export default function AdminProspects() {
                   fontSize: "0.75rem",
                   padding: "0.2rem 0.5rem", borderRadius: "0.25rem",
                   border: `1px solid ${r.success ? "rgba(62,207,142,0.30)" : "rgba(239,68,68,0.30)"}`,
-                  color: r.success ? "#00E87A" : "#ef4444",
+                  color: r.success ? `${BRAND.emerald}` : "#ef4444",
                 }}
                 title={r.error}>
                   {r.success ? "✓" : "✗"} {r.company}
@@ -1205,7 +1206,7 @@ export default function AdminProspects() {
                           {col !== "responded" && col !== "converted" && col !== "not_interested" && (
                             <button
                               onClick={() => markReplied.mutate({ id: p.id })}
-                              style={{ fontFamily: "var(--font-mono)", fontSize: "0.4rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.15rem 0.4rem", border: "1px solid rgba(0,232,122,0.30)", color: "#00E87A", background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
+                              style={{ fontFamily: "var(--font-mono)", fontSize: "0.4rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.15rem 0.4rem", border: `1px solid ${emeraldAlpha(0.30)}`, color: `${BRAND.emerald}`, background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
                             >✓ Replied</button>
                           )}
                           {col === "contacted" && (
@@ -1271,8 +1272,8 @@ export default function AdminProspects() {
                     <div style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between",
                       padding: "0.75rem 1rem",
-                      background: "rgba(0,232,122,0.04)",
-                      border: "1px solid rgba(0,232,122,0.15)",
+                      background: emeraldAlpha(0.04),
+                      border: `1px solid ${emeraldAlpha(0.15)}`,
                       borderRadius: "0.25rem 0.25rem 0 0",
                       borderBottom: "none",
                     }}>
@@ -1289,7 +1290,7 @@ export default function AdminProspects() {
                           {allShowSelected ? <CheckSquare size={13} /> : <Square size={13} />}
                         </button>
                         <div>
-                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", fontWeight: 700, color: "#00E87A", letterSpacing: "-0.01em" }}>
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", fontWeight: 700, color: `${BRAND.emerald}`, letterSpacing: "-0.01em" }}>
                             {showName}
                           </span>
                           <div style={{ display: "flex", gap: "1rem", marginTop: "0.2rem" }}>
@@ -1326,9 +1327,9 @@ export default function AdminProspects() {
                             fontFamily: "var(--font-mono)", fontSize: "0.5625rem", fontWeight: 700,
                             letterSpacing: "0.08em", textTransform: "uppercase",
                             padding: "0.35rem 0.75rem",
-                            background: "rgba(0,232,122,0.10)",
-                            color: "#00E87A",
-                            border: "1px solid rgba(0,232,122,0.30)",
+                            background: emeraldAlpha(0.10),
+                            color: `${BRAND.emerald}`,
+                            border: `1px solid ${emeraldAlpha(0.30)}`,
                             cursor: "pointer", borderRadius: "0.125rem",
                           }}
                         >
@@ -1404,8 +1405,8 @@ export default function AdminProspects() {
                                   style={{
                                     fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.06em", textTransform: "uppercase",
                                     padding: "0.2rem 0.55rem",
-                                    border: sentIds.has(p.id) ? "1px solid rgba(0,232,122,0.40)" : "1px solid rgba(245,158,11,0.40)",
-                                    color: sentIds.has(p.id) ? "#00E87A" : "#f59e0b",
+                                    border: sentIds.has(p.id) ? `1px solid ${emeraldAlpha(0.40)}` : "1px solid rgba(245,158,11,0.40)",
+                                    color: sentIds.has(p.id) ? `${BRAND.emerald}` : "#f59e0b",
                                     background: "transparent", cursor: sendingId === p.id ? "wait" : "pointer", borderRadius: "0.125rem",
                                   }}
                                 >
@@ -1415,7 +1416,7 @@ export default function AdminProspects() {
                               {p.status !== "new" && p.status !== "converted" && p.status !== "not_interested" && (
                                 <button
                                   onClick={() => markReplied.mutate({ id: p.id })}
-                                  style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.2rem 0.55rem", border: "1px solid rgba(0,232,122,0.30)", color: "#00E87A", background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
+                                  style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0.2rem 0.55rem", border: `1px solid ${emeraldAlpha(0.30)}`, color: `${BRAND.emerald}`, background: "transparent", cursor: "pointer", borderRadius: "0.125rem" }}
                                 >
                                   ✓ Replied
                                 </button>
@@ -1463,7 +1464,7 @@ export default function AdminProspects() {
             }}>
               <button
                 onClick={toggleAll}
-                style={{ background: "none", border: "none", cursor: "pointer", color: allSelected ? "#00E87A" : "rgba(255,255,255,0.30)", padding: 0, display: "flex", alignItems: "center" }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: allSelected ? `${BRAND.emerald}` : "rgba(255,255,255,0.30)", padding: 0, display: "flex", alignItems: "center" }}
                 title={allSelected ? "Deselect all" : "Select all"}
               >
                 {allSelected ? <CheckSquare size={14} /> : <Square size={14} />}
@@ -1514,13 +1515,13 @@ export default function AdminProspects() {
                       : isFailed && bulkResults.some(r => r.id === p.id && !r.success)
                       ? "rgba(239,68,68,0.04)"
                       : isPanelSelected
-                      ? "rgba(0,232,122,0.07)"
+                      ? emeraldAlpha(0.07)
                       : isSelected
                       ? "rgba(62,207,142,0.05)"
                       : isHighlighted
-                      ? "rgba(0,232,122,0.06)"
+                      ? emeraldAlpha(0.06)
                       : "transparent",
-                    outline: isPanelSelected ? "2px solid rgba(0,232,122,0.30)" : isHighlighted ? "2px solid rgba(0,232,122,0.55)" : "none",
+                    outline: isPanelSelected ? `2px solid ${emeraldAlpha(0.30)}` : isHighlighted ? `2px solid ${emeraldAlpha(0.55)}` : "none",
                     outlineOffset: "-2px",
                     borderRadius: (isPanelSelected || isHighlighted) ? "0.25rem" : undefined,
                     transition: "background 0.15s, outline 0.15s",
@@ -1541,7 +1542,7 @@ export default function AdminProspects() {
                     {/* Checkbox */}
                     <div onClick={e => { e.stopPropagation(); toggleRow(p.id); }} style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
                       {isSelected
-                        ? <CheckSquare size={14} style={{ color: "#00E87A" }} />
+                        ? <CheckSquare size={14} style={{ color: `${BRAND.emerald}` }} />
                         : <Square size={14} style={{ color: "#cbd5e1" }} />
                       }
                     </div>
@@ -1554,7 +1555,7 @@ export default function AdminProspects() {
                         </span>
                         <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec" }}>{p.company}</span>
                         {Boolean((p as { hasClientProfile?: boolean }).hasClientProfile) && (
-                          <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#00E87A" }} title="Company has signed up as a StageGate client">✓ Client</span>
+                          <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: `${BRAND.emerald}` }} title="Company has signed up as a StageGate client">✓ Client</span>
                         )}
                         {urgency && (
                           <span style={{
@@ -1613,7 +1614,7 @@ export default function AdminProspects() {
                     </div>
 
                     {/* LV status */}
-                    <div style={{ fontSize: "0.8125rem", color: p.attendsLasVegas === "yes" ? "#00E87A" : "rgba(255,255,255,0.30)" }}>
+                    <div style={{ fontSize: "0.8125rem", color: p.attendsLasVegas === "yes" ? `${BRAND.emerald}` : "rgba(255,255,255,0.30)" }}>
                       {p.attendsLasVegas === "yes" ? "LV ✓" : p.attendsLasVegas === "no" ? "LV ✗" : "LV ?"}
                     </div>
 
@@ -1624,7 +1625,7 @@ export default function AdminProspects() {
                         {cfg.label}
                       </div>
                       {p.status === "responded" && (p as Record<string, unknown>).repliedAt != null && (
-                        <span style={{ fontSize: "0.75rem", color: "#00E87A" }}>
+                        <span style={{ fontSize: "0.75rem", color: `${BRAND.emerald}` }}>
                           {formatRelativeTime(new Date(String((p as Record<string, unknown>).repliedAt)))}
                         </span>
                       )}
@@ -1699,8 +1700,8 @@ export default function AdminProspects() {
                             display: "flex", alignItems: "center", gap: "0.3rem",
                             fontSize: "0.8125rem", fontWeight: 500,
                             padding: "0.25rem 0.625rem",
-                            border: "1px solid rgba(0,232,122,0.25)",
-                            color: "#00E87A",
+                            border: `1px solid ${emeraldAlpha(0.25)}`,
+                            color: `${BRAND.emerald}`,
                             background: "transparent", cursor: "pointer",
                             borderRadius: "0.25rem",
                           }}
@@ -1708,7 +1709,7 @@ export default function AdminProspects() {
                           <Check size={12} /> Sent · Outreach
                         </button>
                       ) : p.status === "responded" ? (
-                        <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", color: "#00E87A" }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", color: `${BRAND.emerald}` }}>
                           <Check size={12} /> Replied
                         </span>
                       ) : (
@@ -1761,7 +1762,7 @@ export default function AdminProspects() {
                             fontSize: "0.8125rem", fontWeight: 500,
                             padding: "0.25rem 0.625rem",
                             border: "1px solid rgba(62,207,142,0.40)",
-                            color: "#00E87A",
+                            color: `${BRAND.emerald}`,
                             background: "#111111",
                             cursor: replyingId === p.id ? "wait" : "pointer",
                             borderRadius: "0.25rem",
@@ -1795,7 +1796,7 @@ export default function AdminProspects() {
                               outline: "none", width: "14rem",
                             }}
                           />
-                          <button onClick={() => saveReplyNote(p.id)} title="Save note" style={{ background: "none", border: "none", cursor: "pointer", color: "#00E87A", padding: "0.2rem", lineHeight: 1 }}>
+                          <button onClick={() => saveReplyNote(p.id)} title="Save note" style={{ background: "none", border: "none", cursor: "pointer", color: `${BRAND.emerald}`, padding: "0.2rem", lineHeight: 1 }}>
                             <Check size={13} />
                           </button>
                           <button onClick={() => dismissReplyNote(p.id)} title="Dismiss" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.30)", padding: "0.2rem", lineHeight: 1 }}>
@@ -1803,7 +1804,7 @@ export default function AdminProspects() {
                           </button>
                         </div>
                       )}
-                      <ArrowRight size={14} style={{ color: isPanelSelected ? "#00E87A" : "rgba(255,255,255,0.20)", transition: "color 0.15s" }} />
+                      <ArrowRight size={14} style={{ color: isPanelSelected ? `${BRAND.emerald}` : "rgba(255,255,255,0.20)", transition: "color 0.15s" }} />
                     </div>
                   </div>
 
@@ -1839,7 +1840,7 @@ export default function AdminProspects() {
             flexShrink: 0,
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span style={{ fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#00E87A" }}>CRM</span>
+              <span style={{ fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: `${BRAND.emerald}` }}>CRM</span>
               <span style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.30)" }}>·</span>
               <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#ececec" }}>{selectedProspect.company}</span>
             </div>
@@ -1964,7 +1965,7 @@ export default function AdminProspects() {
                       generateDraftMutation.mutate({ id: draftReviewId! });
                     }}
                     disabled={generateDraftMutation.isPending}
-                    style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "1px solid rgba(0,232,122,0.40)", color: "#00E87A", background: "rgba(0,232,122,0.06)", cursor: generateDraftMutation.isPending ? "wait" : "pointer", borderRadius: "0.25rem" }}
+                    style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: `1px solid ${emeraldAlpha(0.40)}`, color: `${BRAND.emerald}`, background: emeraldAlpha(0.06), cursor: generateDraftMutation.isPending ? "wait" : "pointer", borderRadius: "0.25rem" }}
                   >
                     {generateDraftMutation.isPending ? <RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Zap size={13} />}
                     {generateDraftMutation.isPending ? "Generating…" : "Generate with AI"}
@@ -1987,7 +1988,7 @@ export default function AdminProspects() {
                 {draftReviewDraftId && (() => {
                   const draft = (reviewDrafts as Array<{id: number; status: string}> | undefined)?.find(d => d.id === draftReviewDraftId);
                   const status = draft?.status ?? "pending";
-                  const statusColor = status === "approved" ? "#00E87A" : status === "sent" ? "#60a5fa" : "#f59e0b";
+                  const statusColor = status === "approved" ? `${BRAND.emerald}` : status === "sent" ? "#60a5fa" : "#f59e0b";
                   return (
                     <div style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: statusColor, marginBottom: "1rem" }}>
                       <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: statusColor, display: "inline-block" }} />
@@ -2038,7 +2039,7 @@ export default function AdminProspects() {
                             setDraftReviewEditing(false);
                           }
                         }}
-                        style={{ fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "1px solid rgba(0,232,122,0.40)", color: "#00E87A", background: "rgba(0,232,122,0.06)", cursor: "pointer", borderRadius: "0.25rem" }}
+                        style={{ fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: `1px solid ${emeraldAlpha(0.40)}`, color: `${BRAND.emerald}`, background: emeraldAlpha(0.06), cursor: "pointer", borderRadius: "0.25rem" }}
                       >
                         Save Draft
                       </button>
@@ -2060,7 +2061,7 @@ export default function AdminProspects() {
                               <button
                                 onClick={() => approveDraftMutation.mutate({ draftId: draftReviewDraftId })}
                                 disabled={approveDraftMutation.isPending}
-                                style={{ fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "1px solid rgba(0,232,122,0.40)", color: "#00E87A", background: "rgba(0,232,122,0.06)", cursor: "pointer", borderRadius: "0.25rem" }}
+                                style={{ fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: `1px solid ${emeraldAlpha(0.40)}`, color: `${BRAND.emerald}`, background: emeraldAlpha(0.06), cursor: "pointer", borderRadius: "0.25rem" }}
                               >
                                 Approve
                               </button>
@@ -2069,7 +2070,7 @@ export default function AdminProspects() {
                               <button
                                 onClick={() => sendDraftMutation.mutate({ draftId: draftReviewDraftId })}
                                 disabled={sendDraftMutation.isPending}
-                                style={{ fontSize: "0.8125rem", fontWeight: 700, padding: "0.5rem 1.5rem", border: "none", color: "#1C1E22", background: "#00E87A", cursor: sendDraftMutation.isPending ? "wait" : "pointer", borderRadius: "0.25rem" }}
+                                style={{ fontSize: "0.8125rem", fontWeight: 700, padding: "0.5rem 1.5rem", border: "none", color: "#1C1E22", background: `${BRAND.emerald}`, cursor: sendDraftMutation.isPending ? "wait" : "pointer", borderRadius: "0.25rem" }}
                               >
                                 {sendDraftMutation.isPending ? "Sending…" : "Send Email"}
                               </button>

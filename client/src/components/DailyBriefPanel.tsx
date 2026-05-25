@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { BRAND } from "@/lib/brand";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
 import { Loader2, Sun, ArrowRight, Mail, Users, FileEdit, Send } from "lucide-react";
 
 const D = {
@@ -70,7 +70,7 @@ export default function DailyBriefPanel({ enabled = true }: Props) {
         marginBottom: "1.25rem",
         padding: "1.25rem",
         background: D.surface,
-        border: `1px solid rgba(0,232,122,0.18)`,
+        border: `1px solid ${emeraldAlpha(0.18)}`,
         borderRadius: "0.5rem",
         fontFamily: D.font,
       }}
@@ -127,8 +127,8 @@ export default function DailyBriefPanel({ enabled = true }: Props) {
                       alignItems: "center",
                       justifyContent: "space-between",
                       padding: "0.5rem 0.75rem",
-                      background: step.priority === "high" ? "rgba(0,232,122,0.06)" : "#1C1E22",
-                      border: `1px solid ${step.priority === "high" ? "rgba(0,232,122,0.25)" : D.border}`,
+                      background: step.priority === "high" ? emeraldAlpha(0.06) : "#1C1E22",
+                      border: `1px solid ${step.priority === "high" ? emeraldAlpha(0.25) : D.border}`,
                       borderRadius: "0.375rem",
                       textDecoration: "none",
                       color: D.text,

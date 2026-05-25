@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import OutreachDraftQueue from "@/components/OutreachDraftQueue";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
 import {
   ArrowLeft, Loader2, Mail, Sparkles, Building2, AlertCircle, User,
   CheckSquare, Square, Users, ClipboardList, Send,
@@ -262,7 +263,7 @@ export default function AdminPartnerOutreach() {
           <Button
             size="sm"
             className="h-8 text-xs gap-1"
-            style={{ background: "#00E87A", color: "#1C1E22" }}
+            style={{ background: `${BRAND.emerald}`, color: "#1C1E22" }}
             onClick={() => setQueueExpanded(true)}
           >
             <Send size={12} /> {pendingPartnerDrafts} ready to send
@@ -312,12 +313,12 @@ export default function AdminPartnerOutreach() {
                     className="flex items-start gap-2 px-2 py-2 border-b"
                     style={{
                       borderColor: "rgba(255,255,255,0.06)",
-                      background: isActive ? "rgba(0,232,122,0.08)" : undefined,
-                      borderLeft: isActive ? "2px solid #00E87A" : undefined,
+                      background: isActive ? emeraldAlpha(0.08) : undefined,
+                      borderLeft: isActive ? `2px solid ${BRAND.emerald}` : undefined,
                     }}
                   >
                     <button type="button" className="mt-1 shrink-0" style={{ color: "#64748b" }} onClick={() => toggleSelect(r.key)}>
-                      {isSel ? <CheckSquare size={15} style={{ color: "#00E87A" }} /> : <Square size={15} />}
+                      {isSel ? <CheckSquare size={15} style={{ color: `${BRAND.emerald}` }} /> : <Square size={15} />}
                     </button>
                     <button type="button" className="flex-1 text-left min-w-0" onClick={() => setActiveKey(r.key)}>
                       <div className="font-medium text-sm truncate" style={{ color: "#ececec" }}>{r.company}</div>
@@ -440,7 +441,7 @@ export default function AdminPartnerOutreach() {
                     onClick={handleSendNow}
                     disabled={!canSend || sendNow.isPending || updateContact.isPending}
                     className="gap-2"
-                    style={{ background: "#00E87A", color: "#1C1E22" }}
+                    style={{ background: `${BRAND.emerald}`, color: "#1C1E22" }}
                   >
                     {(sendNow.isPending || updateContact.isPending) ? (
                       <Loader2 size={14} className="animate-spin" />
@@ -458,7 +459,7 @@ export default function AdminPartnerOutreach() {
           <div
             className="shrink-0 border-t overflow-y-auto"
             style={{
-              borderColor: "rgba(0,232,122,0.25)",
+              borderColor: emeraldAlpha(0.25),
               background: "#1C1E22",
               maxHeight: queueExpanded ? "48vh" : "2.75rem",
               minHeight: queueExpanded ? "16rem" : "2.75rem",
@@ -471,10 +472,10 @@ export default function AdminPartnerOutreach() {
               onClick={() => setQueueExpanded((v) => !v)}
             >
               <span className="text-sm font-semibold flex items-center gap-2" style={{ color: "#ececec" }}>
-                <ClipboardList size={14} style={{ color: "#00E87A" }} />
+                <ClipboardList size={14} style={{ color: `${BRAND.emerald}` }} />
                 Review · Approve · Send
                 {pendingPartnerDrafts > 0 && (
-                  <Badge style={{ background: "rgba(0,232,122,0.15)", color: "#00E87A", border: "1px solid rgba(0,232,122,0.35)" }}>
+                  <Badge style={{ background: emeraldAlpha(0.15), color: `${BRAND.emerald}`, border: `1px solid ${emeraldAlpha(0.35)}` }}>
                     {pendingPartnerDrafts} draft{pendingPartnerDrafts !== 1 ? "s" : ""}
                   </Badge>
                 )}

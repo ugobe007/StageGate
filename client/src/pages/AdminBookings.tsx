@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { BRAND } from "@/lib/brand";
 import {
   ClipboardList, ChevronDown, ChevronUp, ExternalLink,
   Mail, Phone, Globe, Bot, Calendar, Package,
@@ -421,7 +422,7 @@ export default function AdminBookings() {
   if (authLoading) {
     return (
       <div style={{ minHeight: "auto", background: "#1C1E22", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: "#00E87A", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: `${BRAND.emerald}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       </div>
     );
   }
@@ -495,7 +496,7 @@ export default function AdminBookings() {
       <div style={{ padding: "1.5rem 2rem" }}>
         {bookingsLoading ? (
           <div style={{ display: "flex", justifyContent: "center", padding: "4rem 0" }}>
-            <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: "#00E87A", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+            <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: `${BRAND.emerald}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
           </div>
         ) : bookings.length === 0 ? (
           <div style={{ textAlign: "center", padding: "5rem 0" }}>

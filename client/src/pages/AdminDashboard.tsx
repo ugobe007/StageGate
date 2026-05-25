@@ -11,6 +11,7 @@ import {
   Shield, ShieldOff,
 } from "lucide-react";
 import DailyBriefPanel from "@/components/DailyBriefPanel";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
 
 // ── Dark palette tokens ────────────────────────────────────────────────────
 const D = {
@@ -21,8 +22,8 @@ const D = {
   text:       "#ececec",
   text2:      "rgba(255,255,255,0.55)",
   text3:      "rgba(255,255,255,0.28)",
-  emerald:    "#00E87A",
-  emeraldDim: "rgba(0,232,122,0.10)",
+  emerald:    `${BRAND.emerald}`,
+  emeraldDim: emeraldAlpha(0.10),
   amber:      "#f59e0b",
   blue:       "#60a5fa",
   red:        "#ef4444",
@@ -316,7 +317,7 @@ export default function AdminDashboard() {
             <a style={{ textDecoration: "none", display: "block" }}>
               <Card
                 style={{ padding: "1rem", cursor: "pointer", transition: "border-color 0.15s" }}
-                onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.borderColor = `rgba(0,232,122,0.25)`)}
+                onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.borderColor = `${emeraldAlpha(0.25)}`)}
                 onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.borderColor = D.border)}
               >
                 <item.icon size={16} style={{ color: D.emerald, marginBottom: "0.5rem" }} />
@@ -366,7 +367,7 @@ export default function AdminDashboard() {
                             display: "inline-flex", alignItems: "center", gap: "0.25rem",
                             padding: "0.25rem 0.5rem", borderRadius: "0.25rem",
                             fontSize: "0.75rem", fontWeight: 500, cursor: "pointer",
-                            border: `1px solid ${u.role === "admin" ? "rgba(239,68,68,0.30)" : "rgba(0,232,122,0.25)"}`,
+                            border: `1px solid ${u.role === "admin" ? "rgba(239,68,68,0.30)" : emeraldAlpha(0.25)}`,
                             background: "transparent",
                             color: u.role === "admin" ? D.red : D.emerald,
                           }}
