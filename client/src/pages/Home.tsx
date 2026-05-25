@@ -13,13 +13,31 @@ const IMG_GRID_1 = "/manus-storage/ces-richtech-robot_e74b2991.png";
 const IMG_GRID_2 = "/manus-storage/ces-hisense-robots_ac1d2332.png";
 const IMG_GRID_3 = "/manus-storage/ces-unitree-rider_fac4d951.png";
 const IMG_NEURA  = "/manus-storage/ces-neura-robots_1d4104ad.png";
+const IMG_GXO_WAREHOUSE = "/manus-storage/hero-gxo-warehouse.png";
+const IMG_ROKAE_DEMO = "/manus-storage/hero-rokae-demo.png";
+const IMG_HUMANOID_EXPO = "/manus-storage/hero-humanoid-expo.png";
+const IMG_HUMANOID_ACTION = "/manus-storage/hero-humanoid-action.png";
+const IMG_ENGINEAI_BOOTH = "/manus-storage/hero-engineai-booth.png";
+const IMG_SERVICE_HOSPITALITY = "/manus-storage/hero-service-hospitality.png";
+const IMG_CAMERA_DEMO = "/manus-storage/hero-camera-demo.png";
+const IMG_LG_DOMESTIC = "/manus-storage/hero-lg-domestic.png";
+const IMG_HUMANOID_MARCH = "/manus-storage/hero-humanoid-march.png";
 
 const HERO_SLIDES = [
   { src: IMG_HERO, position: "center 30%" },
+  { src: IMG_GXO_WAREHOUSE, position: "center 35%" },
+  { src: IMG_ROKAE_DEMO, position: "center center" },
   { src: IMG_GRID_1, position: "center center" },
+  { src: IMG_HUMANOID_MARCH, position: "center 45%" },
+  { src: IMG_ENGINEAI_BOOTH, position: "center 30%" },
   { src: IMG_GRID_2, position: "center 35%" },
+  { src: IMG_HUMANOID_ACTION, position: "center 40%" },
   { src: IMG_NEURA, position: "center 25%" },
+  { src: IMG_SERVICE_HOSPITALITY, position: "center 35%" },
   { src: IMG_GRID_3, position: "center 40%" },
+  { src: IMG_HUMANOID_EXPO, position: "center 20%" },
+  { src: IMG_LG_DOMESTIC, position: "center 35%" },
+  { src: IMG_CAMERA_DEMO, position: "center center" },
 ] as const;
 
 function HeroCrossfade() {
@@ -29,7 +47,7 @@ function HeroCrossfade() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const id = window.setInterval(() => {
       setActive((current) => (current + 1) % HERO_SLIDES.length);
-    }, 9000);
+    }, 5000);
     return () => window.clearInterval(id);
   }, []);
 
