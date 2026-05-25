@@ -14,6 +14,49 @@ const IMG_GRID_2 = "/manus-storage/ces-hisense-robots_ac1d2332.png";
 const IMG_GRID_3 = "/manus-storage/ces-unitree-rider_fac4d951.png";
 const IMG_NEURA  = "/manus-storage/ces-neura-robots_1d4104ad.png";
 
+const HERO_SLIDES = [
+  { src: IMG_HERO, position: "center 30%" },
+  { src: IMG_GRID_1, position: "center center" },
+  { src: IMG_GRID_2, position: "center 35%" },
+  { src: IMG_NEURA, position: "center 25%" },
+  { src: IMG_GRID_3, position: "center 40%" },
+] as const;
+
+function HeroCrossfade() {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = window.setInterval(() => {
+      setActive((current) => (current + 1) % HERO_SLIDES.length);
+    }, 9000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  return (
+    <>
+      {HERO_SLIDES.map((slide, index) => (
+        <img
+          key={slide.src}
+          src={slide.src}
+          alt=""
+          aria-hidden={index !== active}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: slide.position,
+            opacity: index === active ? 1 : 0,
+            transition: "opacity 2.4s ease-in-out",
+          }}
+        />
+      ))}
+    </>
+  );
+}
+
 /* ── Animated counter ───────────────────────────────────────────────────────── */
 function useCountUp(target: number, duration = 1800, trigger = false) {
   const [value, setValue] = useState(0);
@@ -179,9 +222,9 @@ export default function Home() {
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <section style={{ position: "relative", minHeight: "100svh", display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
-        {/* Background image */}
+        {/* Background images — slow crossfade */}
         <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
-          <img src={IMG_HERO} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} />
+          <HeroCrossfade />
           {/* Left-heavy gradient — text on left, image bleeds right */}
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(105deg, rgba(8,8,8,0.97) 0%, rgba(8,8,8,0.90) 35%, rgba(8,8,8,0.55) 60%, rgba(8,8,8,0.15) 100%)" }} />
         </div>
