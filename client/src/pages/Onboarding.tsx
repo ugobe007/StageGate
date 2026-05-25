@@ -168,8 +168,8 @@ export default function Onboarding() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#080808" }}>
-        <Loader2 size={28} style={{ color: "#00ff87", animation: "spin 1s linear infinite" }} />
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#1C1E22" }}>
+        <Loader2 size={28} style={{ color: "#00E87A", animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
@@ -177,12 +177,12 @@ export default function Onboarding() {
   if (!isAuthenticated) { navigate("/"); return null; }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#080808" }}>
+    <div style={{ minHeight: "100vh", background: "#1C1E22" }}>
       {/* Header */}
       <div style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(8,8,8,0.96)", backdropFilter: "blur(20px)", position: "sticky", top: 0, zIndex: 10 }}>
         <div style={{ maxWidth: "40rem", margin: "0 auto", padding: "1rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
-            <div style={{ width: "1.875rem", height: "1.875rem", borderRadius: "0.375rem", background: "#00ff87", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "1.875rem", height: "1.875rem", borderRadius: "0.375rem", background: "#00E87A", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Zap size={14} style={{ color: "#fff" }} />
             </div>
             <span style={{ fontWeight: 700, fontSize: "1.0625rem", color: "#ececec" }}>StageGate</span>
@@ -194,10 +194,10 @@ export default function Onboarding() {
       <div style={{ maxWidth: "40rem", margin: "0 auto", padding: "2rem 1.5rem 4rem" }} className="dark-page-inputs">
         {/* Resume banner — shown when a draft profile was found */}
         {hydrated && existingProfile && !existingProfile.onboardingComplete && (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", padding: "0.625rem 0.875rem", marginBottom: "1.5rem", borderRadius: "0.375rem", background: "rgba(0,255,135,0.06)", border: "1px solid rgba(0,255,135,0.18)" }}>
-            <CheckCircle size={14} style={{ color: "#00ff87", flexShrink: 0 }} />
+          <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", padding: "0.625rem 0.875rem", marginBottom: "1.5rem", borderRadius: "0.375rem", background: "rgba(0,232,122,0.06)", border: "1px solid rgba(0,232,122,0.18)" }}>
+            <CheckCircle size={14} style={{ color: "#00E87A", flexShrink: 0 }} />
             <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.65)" }}>
-              <span style={{ color: "#00ff87", fontWeight: 600 }}>Resuming your setup</span> — your progress from last time has been loaded.
+              <span style={{ color: "#00E87A", fontWeight: 600 }}>Resuming your setup</span> — your progress from last time has been loaded.
             </span>
           </div>
         )}
@@ -210,9 +210,9 @@ export default function Onboarding() {
                   width: "1.875rem", height: "1.875rem", borderRadius: "9999px",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: "0.8125rem", fontWeight: 700,
-                  border: `2px solid ${step > s.id ? "#00ff87" : step === s.id ? "#00ff87" : "rgba(255,255,255,0.08)"}`,
-                  background: step > s.id ? "#00ff87" : "transparent",
-                  color: step > s.id ? "#fff" : step === s.id ? "#00ff87" : "rgba(255,255,255,0.30)",
+                  border: `2px solid ${step > s.id ? "#00E87A" : step === s.id ? "#00E87A" : "rgba(255,255,255,0.08)"}`,
+                  background: step > s.id ? "#00E87A" : "transparent",
+                  color: step > s.id ? "#fff" : step === s.id ? "#00E87A" : "rgba(255,255,255,0.30)",
                   transition: "all 0.15s",
                 }}>
                   {step > s.id ? <CheckCircle size={13} /> : s.id}
@@ -220,7 +220,7 @@ export default function Onboarding() {
                 <span style={{ fontSize: "0.875rem", fontWeight: 500, color: step >= s.id ? "#ececec" : "rgba(255,255,255,0.30)", display: "none" }} className="sm:inline">{s.label}</span>
               </div>
               {i < STEPS.length - 1 && (
-                <div style={{ flex: 1, height: "2px", background: step > s.id ? "#00ff87" : "rgba(255,255,255,0.08)", margin: "0 0.5rem", transition: "background 0.15s" }} />
+                <div style={{ flex: 1, height: "2px", background: step > s.id ? "#00E87A" : "rgba(255,255,255,0.08)", margin: "0 0.5rem", transition: "background 0.15s" }} />
               )}
             </div>
           ))}
@@ -397,13 +397,13 @@ export default function Onboarding() {
                   <button key={svc.id} onClick={() => toggleService(svc.id)}
                     style={{
                       padding: "1rem", borderRadius: "0.5rem", textAlign: "left", cursor: "pointer",
-                      border: `1px solid ${selected ? "#00ff87" : "rgba(255,255,255,0.08)"}`,
-                      background: selected ? "rgba(0,255,135,0.06)" : "#111",
+                      border: `1px solid ${selected ? "#00E87A" : "rgba(255,255,255,0.08)"}`,
+                      background: selected ? "rgba(0,232,122,0.06)" : "#111",
                       transition: "all 0.1s",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
-                      <Icon size={16} style={{ color: selected ? "#00ff87" : "rgba(255,255,255,0.30)", marginTop: "0.125rem", flexShrink: 0 }} />
+                      <Icon size={16} style={{ color: selected ? "#00E87A" : "rgba(255,255,255,0.30)", marginTop: "0.125rem", flexShrink: 0 }} />
                       <div>
                         <div style={{ fontSize: "0.875rem", fontWeight: 600, color: selected ? "#ececec" : "#ececec" }}>{svc.label}</div>
                         <div style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", marginTop: "0.125rem" }}>{svc.desc}</div>
@@ -418,7 +418,7 @@ export default function Onboarding() {
                 {selectedServices.map(id => {
                   const svc = SERVICES_NEEDED.find(s => s.id === id);
                   return svc ? (
-                    <span key={id} style={{ fontSize: "0.8125rem", color: "#00ff87", background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>
+                    <span key={id} style={{ fontSize: "0.8125rem", color: "#00E87A", background: "rgba(62,207,142,0.08)", border: "1px solid rgba(62,207,142,0.2)", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>
                       {svc.label}
                     </span>
                   ) : null;
@@ -443,7 +443,7 @@ export default function Onboarding() {
             <button
               onClick={handleNextStep}
               disabled={step === 1 && !companyName.trim()}
-              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: (step === 1 && !companyName.trim()) ? 0.5 : 1 }}
+              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "none", background: "#00E87A", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: (step === 1 && !companyName.trim()) ? 0.5 : 1 }}
             >
               Continue <ArrowRight size={14} />
             </button>
@@ -451,7 +451,7 @@ export default function Onboarding() {
             <button
               onClick={handleSubmit}
               disabled={upsertProfile.isPending}
-              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "none", background: "#00ff87", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: upsertProfile.isPending ? 0.7 : 1 }}
+              style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1.25rem", border: "none", background: "#00E87A", color: "#fff", borderRadius: "0.375rem", cursor: "pointer", opacity: upsertProfile.isPending ? 0.7 : 1 }}
             >
               {upsertProfile.isPending ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Saving…</> : <>Complete Setup <CheckCircle size={14} /></>}
             </button>

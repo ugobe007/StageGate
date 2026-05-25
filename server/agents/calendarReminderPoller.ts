@@ -58,7 +58,7 @@ export async function runCalendarReminderPoller(): Promise<ReminderResult> {
 
       const internalHtml = `
 <div style="font-family:sans-serif;max-width:600px;">
-  <h2 style="color:#00ff87;">⏰ Meeting Reminder — ${evt.companyName ?? evt.title}</h2>
+  <h2 style="color:#00E87A;">⏰ Meeting Reminder — ${evt.companyName ?? evt.title}</h2>
   <p>This is a 24-hour reminder for an upcoming meeting.</p>
   <table style="border-collapse:collapse;width:100%;margin:1rem 0;">
     <tr><td style="padding:0.5rem 0;color:#555;width:120px;"><strong>Title</strong></td><td style="padding:0.5rem 0;">${evt.title}</td></tr>
@@ -67,7 +67,7 @@ export async function runCalendarReminderPoller(): Promise<ReminderResult> {
     ${evt.prospectName ? `<tr><td style="padding:0.5rem 0;color:#555;"><strong>Contact</strong></td><td style="padding:0.5rem 0;">${evt.prospectName} (${evt.prospectEmail ?? ""})</td></tr>` : ""}
     ${evt.notes ? `<tr><td style="padding:0.5rem 0;color:#555;"><strong>Notes</strong></td><td style="padding:0.5rem 0;">${evt.notes}</td></tr>` : ""}
   </table>
-  <p><a href="${shareUrl}" style="color:#00ff87;">View Event Details →</a></p>
+  <p><a href="${shareUrl}" style="color:#00E87A;">View Event Details →</a></p>
   <hr style="border-color:#333;">
   <p style="color:#888;font-size:12px;">StageGate • onstage.bot</p>
 </div>`;
@@ -107,7 +107,7 @@ export async function runCalendarReminderPoller(): Promise<ReminderResult> {
   <table style="border-collapse:collapse;width:100%;margin:1rem 0;">
     <tr><td style="padding:0.5rem 0;color:#555;width:120px;"><strong>Date &amp; Time</strong></td><td style="padding:0.5rem 0;">${startDisplay} (Pacific Time)</td></tr>
   </table>
-  <p><a href="${shareUrl}" style="display:inline-block;background:#00ff87;color:#000;padding:0.6rem 1.2rem;border-radius:0.25rem;text-decoration:none;font-weight:600;">View Event Details →</a></p>
+  <p><a href="${shareUrl}" style="display:inline-block;background:#00E87A;color:#1C1E22;padding:0.6rem 1.2rem;border-radius:0.25rem;text-decoration:none;font-weight:600;">View Event Details →</a></p>
   <p style="color:#555;">Need to reschedule? Reply to this email or reach us at <a href="mailto:hello@onstage.bot">hello@onstage.bot</a>.</p>
   <hr style="border-color:#eee;">
   <p style="color:#999;font-size:12px;">StageGate — Robotics Activation Infrastructure • <a href="https://onstage.bot" style="color:#999;">onstage.bot</a></p>

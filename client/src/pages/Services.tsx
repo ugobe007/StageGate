@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 /* ── Palette ────────────────────────────────────────────────────────────── */
-const BG      = "#080808";
+const BG      = "#1C1E22";
 const CARD    = "#111111";
 const BORDER  = "#222222";
 const GREEN   = "#3ecf8e";

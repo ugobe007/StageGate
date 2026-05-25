@@ -10,6 +10,8 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
+import StageGateLogo from "./StageGateLogo";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
@@ -43,7 +45,7 @@ const COLLAPSED_WIDTH = 52;
 
 // ─── Dark palette tokens ──────────────────────────────────────────────────────
 const D = {
-  bg:         "#080808",   // true near-black
+  bg:         BRAND.nearBlack,
   surface:    "#111111",   // card surface
   surface2:   "#1a1a1a",   // hover / raised
   border:     "rgba(255,255,255,0.08)",
@@ -51,8 +53,8 @@ const D = {
   text:       "#ececec",   // primary text
   text2:      "rgba(255,255,255,0.55)", // secondary
   text3:      "rgba(255,255,255,0.30)", // muted
-  emerald:    "#00ff87",
-  emeraldDim: "rgba(0,255,135,0.10)",
+  emerald:    BRAND.emerald,
+  emeraldDim: emeraldAlpha(0.10),
   amber:      "#f59e0b",
   font:       "'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif",
 };
@@ -70,11 +72,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: D.bg, fontFamily: D.font }}
       >
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem", padding: "2rem", maxWidth: "20rem", width: "100%", textAlign: "center" }}>
-          <div style={{ width: 40, height: 40, borderRadius: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center", background: D.emeraldDim, border: `1px solid rgba(0,255,135,0.20)` }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={D.emerald} strokeWidth="2">
-              <rect x="3" y="11" width="18" height="11" rx="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
+          <div style={{ width: 40, height: 40, borderRadius: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center", background: D.emeraldDim, border: `1px solid ${emeraldAlpha(0.20)}` }}>
+            <StageGateLogo size={24} variant="icon" theme="dark" />
           </div>
           <div>
             <h2 style={{ fontSize: "1.125rem", fontWeight: 600, color: D.text, marginBottom: "0.25rem" }}>Admin access required</h2>
@@ -85,7 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             style={{
               width: "100%", padding: "0.5rem 1rem", borderRadius: "0.25rem",
               background: D.emerald, border: "none",
-              color: "#080808", fontWeight: 700, fontSize: "0.875rem", cursor: "pointer",
+              color: BRAND.nearBlack, fontWeight: 700, fontSize: "0.875rem", cursor: "pointer",
               letterSpacing: "0.04em",
             }}
           >
@@ -218,10 +217,10 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
         padding: "0 0.75rem", height: "48px", borderBottom: `1px solid ${D.border}`,
         flexShrink: 0,
       }}>
-        {!collapsed && (
-          <span style={{ fontWeight: 700, fontSize: "0.875rem", color: D.emerald, letterSpacing: "0.04em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            StageGate
-          </span>
+        {!collapsed ? (
+          <StageGateLogo size={88} variant="lockup" theme="dark" style={{ flexShrink: 0 }} />
+        ) : (
+          <StageGateLogo size={28} variant="icon" theme="dark" style={{ margin: "0 auto" }} />
         )}
         <button
           onClick={() => { if (isMobile) setMobileOpen(false); else setCollapsed(c => !c); }}
@@ -263,7 +262,7 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
                 fontWeight: isActive ? 600 : 400,
                 color: isActive ? D.emerald : D.text2,
                 background: isActive ? D.emeraldDim : "transparent",
-                border: isActive ? `1px solid rgba(0,255,135,0.15)` : "1px solid transparent",
+                border: isActive ? `1px solid rgba(0,232,122,0.15)` : "1px solid transparent",
                 cursor: "pointer",
                 width: "100%",
                 textAlign: "left",

@@ -281,7 +281,7 @@ function BookingDetailPanel({
               onChange={e => setNotes(e.target.value)}
               rows={3}
               style={{
-                width: "100%", background: '#080808', border: "1px solid rgba(255,255,255,0.10)",
+                width: "100%", background: '#1C1E22', border: "1px solid rgba(255,255,255,0.10)",
                 borderRadius: "0.375rem", padding: "0.5rem 0.75rem",
                 color: "rgba(255,255,255,0.82)", fontSize: "0.8125rem",
                 resize: "vertical", outline: "none",
@@ -420,8 +420,8 @@ export default function AdminBookings() {
 
   if (authLoading) {
     return (
-      <div style={{ minHeight: "auto", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: "#00ff87", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <div style={{ minHeight: "auto", background: "#1C1E22", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: "#00E87A", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       </div>
     );
   }
@@ -441,7 +441,7 @@ export default function AdminBookings() {
   const selectedBooking = selectedId != null ? bookings.find(b => b.id === selectedId) ?? null : null;
 
   return (
-    <div style={{ minHeight: "auto", background: "#080808", color: "#ececec" }}>
+    <div style={{ minHeight: "auto", background: "#1C1E22", color: "#ececec" }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
@@ -495,7 +495,7 @@ export default function AdminBookings() {
       <div style={{ padding: "1.5rem 2rem" }}>
         {bookingsLoading ? (
           <div style={{ display: "flex", justifyContent: "center", padding: "4rem 0" }}>
-            <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: "#00ff87", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+            <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: "#00E87A", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
           </div>
         ) : bookings.length === 0 ? (
           <div style={{ textAlign: "center", padding: "5rem 0" }}>

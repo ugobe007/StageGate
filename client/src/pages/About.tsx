@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
+import StageGateLogo from "@/components/StageGateLogo";
 import { getLoginUrl } from "@/const";
 
 const TIMELINE = [
@@ -60,11 +61,11 @@ const VALUES = [
 
 export default function About() {
   return (
-    <div style={{ background: "#080808", color: "#ececec", minHeight: "100vh" }}>
+    <div style={{ background: "#1C1E22", color: "#ececec", minHeight: "100vh" }}>
 
       {/* ── NAV ──────────────────────────────────────────────────────────────── */}
       <nav style={{
-        borderBottom: "1px solid rgba(0,255,135,0.10)",
+        borderBottom: "1px solid rgba(0,232,122,0.10)",
         background: "rgba(8,8,8,0.92)",
         backdropFilter: "blur(12px)",
         position: "sticky",
@@ -73,17 +74,13 @@ export default function About() {
       }}>
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 2rem" }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <svg width="26" height="26" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 88 L4 6 L76 6 L76 88" stroke="#00ff87" strokeWidth="7" strokeLinejoin="miter" fill="none"/>
-              <path d="M19 88 L19 22 L64 22 L64 88" stroke="#00ff87" strokeWidth="5" strokeLinejoin="miter" fill="none"/>
-              <path d="M34 52 L42 62 L56 46" stroke="#00ff87" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            </svg>
+            <StageGateLogo size={32} variant="icon" />
           </Link>
           <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
             <Link href="/shows" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Shows</Link>
             <Link href="/services" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Services</Link>
             <Link href="/xbot" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>XBOT</Link>
-            <Link href="/about" style={{ fontSize: "0.8125rem", color: "#00ff87", fontWeight: 600, textDecoration: "none" }}>About</Link>
+            <Link href="/about" style={{ fontSize: "0.8125rem", color: "#00E87A", fontWeight: 600, textDecoration: "none" }}>About</Link>
             <a href="/#contact" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Contact</a>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -99,7 +96,7 @@ export default function About() {
             <Link href="/register">
               <button style={{
                 background: "#ff9500",
-                color: "#080808",
+                color: "#1C1E22",
                 border: "none",
                 borderRadius: "6px",
                 padding: "0.45rem 1.1rem",
@@ -125,7 +122,7 @@ export default function About() {
             </p>
             <h1 style={{ fontSize: "clamp(2.75rem, 5.5vw, 5.5rem)", fontWeight: 800, lineHeight: 0.92, letterSpacing: "-0.05em", marginBottom: "2.5rem" }}>
               Built by the<br />
-              <span style={{ color: "#00ff87" }}>Las Vegas</span><br />
+              <span style={{ color: "#00E87A" }}>Las Vegas</span><br />
               robotics community.
             </h1>
             <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.65)", lineHeight: 1.75, marginBottom: "2.5rem" }}>
@@ -138,7 +135,7 @@ export default function About() {
                 { value: "19+",  label: "Shows / Year" },
               ].map(stat => (
                 <div key={stat.label}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "1.5rem", fontWeight: 700, color: "#00ff87", letterSpacing: "-0.03em" }}>{stat.value}</div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "1.5rem", fontWeight: 700, color: "#00E87A", letterSpacing: "-0.03em" }}>{stat.value}</div>
                   <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", marginTop: "0.125rem" }}>{stat.label}</div>
                 </div>
               ))}
@@ -173,9 +170,9 @@ export default function About() {
         <div className="container">
           <div style={{ display: "grid", gridTemplateColumns: "5fr 4fr", gap: "6rem", alignItems: "start" }}>
             <div>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: "0.6rem", marginBottom: "2rem", padding: "0.4rem 0.9rem", border: "1px solid rgba(0,255,135,0.20)", borderRadius: "100px", background: "rgba(0,255,135,0.05)" }}>
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00ff87", display: "inline-block" }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#00ff87" }}>LV Robotics</span>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "0.6rem", marginBottom: "2rem", padding: "0.4rem 0.9rem", border: "1px solid rgba(0,232,122,0.20)", borderRadius: "100px", background: "rgba(0,232,122,0.05)" }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00E87A", display: "inline-block" }} />
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#00E87A" }}>LV Robotics</span>
               </div>
               <h2 style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)", fontWeight: 800, lineHeight: 1.0, letterSpacing: "-0.04em", marginBottom: "1.75rem" }}>
                 Nevada's first robotics community.
@@ -191,8 +188,8 @@ export default function About() {
               </p>
             </div>
             <div style={{ paddingTop: "1rem" }}>
-              <div style={{ padding: "2rem", border: "1px solid rgba(0,255,135,0.12)", borderRadius: "12px", background: "rgba(0,255,135,0.03)", marginBottom: "1.5rem" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(0,255,135,0.50)", marginBottom: "1rem" }}>The Problem We Solved</div>
+              <div style={{ padding: "2rem", border: "1px solid rgba(0,232,122,0.12)", borderRadius: "12px", background: "rgba(0,232,122,0.03)", marginBottom: "1.5rem" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(0,232,122,0.50)", marginBottom: "1rem" }}>The Problem We Solved</div>
                 <p style={{ fontSize: "0.9375rem", color: "rgba(255,255,255,0.70)", lineHeight: 1.7 }}>
                   Robot companies were shipping to Las Vegas with no local partner who understood their hardware. Freight handlers dropped crates. Booth crews didn't know how to position a quadruped. Demo units arrived with dead batteries and no charging infrastructure. Shows started with robots that couldn't move.
                 </p>
@@ -290,14 +287,14 @@ export default function About() {
         <div className="container">
           <h2 style={{ fontSize: "clamp(2.5rem, 5vw, 4.5rem)", fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em", marginBottom: "2rem", maxWidth: "18ch" }}>
             Ready to bring your robot to{" "}
-            <span style={{ color: "#00ff87" }}>Las Vegas?</span>
+            <span style={{ color: "#00E87A" }}>Las Vegas?</span>
           </h2>
           <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.60)", maxWidth: "48ch", lineHeight: 1.7, marginBottom: "2.5rem" }}>
             Register free and tell us about your robot and your next show. We'll handle everything from there.
           </p>
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
             <Link href="/register">
-              <button style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "#ff9500", color: "#080808", border: "none", borderRadius: "6px", padding: "0.75rem 1.75rem", fontSize: "0.9375rem", fontWeight: 700, cursor: "pointer" }}>
+              <button style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "#ff9500", color: "#1C1E22", border: "none", borderRadius: "6px", padding: "0.75rem 1.75rem", fontSize: "0.9375rem", fontWeight: 700, cursor: "pointer" }}>
                 Register Free <ArrowRight size={15} />
               </button>
             </Link>
@@ -312,7 +309,7 @@ export default function About() {
       <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "3rem 0" }}>
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1.5rem" }}>
           <div>
-            <img src="/stagegate-logo.png" alt="StageGate" style={{ height: "48px", width: "auto", display: "block", opacity: 0.85 }} />
+            <StageGateLogo size={64} variant="lockup" style={{ opacity: 0.85, display: "block" }} />
           </div>
           <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
             {[

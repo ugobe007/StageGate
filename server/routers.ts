@@ -1444,13 +1444,13 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
 
           const emailHtml = `
 <div style="font-family:sans-serif;max-width:600px;">
-  <h2 style="color:#00ff87;">New Meeting Scheduled — ${prospect.company}</h2>
+  <h2 style="color:#00E87A;">New Meeting Scheduled — ${prospect.company}</h2>
   <p><strong>Prospect:</strong> ${prospect.contactName ?? "Unknown"} (${prospect.contactEmail ?? "no email"})</p>
   <p><strong>Company:</strong> ${prospect.company}</p>
   <p><strong>Time:</strong> ${startDisplay} (PT)</p>
   <p><strong>Duration:</strong> ${input.meetingDurationMinutes ?? 30} minutes</p>
   ${input.meetingNotes ? `<p><strong>Notes:</strong> ${input.meetingNotes}</p>` : ""}
-  <p><a href="${shareUrl}" style="color:#00ff87;">View Event Details →</a></p>
+  <p><a href="${shareUrl}" style="color:#00E87A;">View Event Details →</a></p>
   <hr style="border-color:#333;">
   <p style="color:#888;font-size:12px;">StageGate • onstage.bot</p>
 </div>`;
@@ -1489,7 +1489,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     <tr><td style="padding:0.5rem 0;color:#555;"><strong>Duration</strong></td><td style="padding:0.5rem 0;">${input.meetingDurationMinutes ?? 30} minutes</td></tr>
     ${input.meetingNotes ? `<tr><td style="padding:0.5rem 0;color:#555;"><strong>Notes</strong></td><td style="padding:0.5rem 0;">${input.meetingNotes}</td></tr>` : ""}
   </table>
-  <p><a href="${shareUrl}" style="display:inline-block;background:#00ff87;color:#000;padding:0.6rem 1.2rem;border-radius:0.25rem;text-decoration:none;font-weight:600;">View Event Details →</a></p>
+  <p><a href="${shareUrl}" style="display:inline-block;background:#00E87A;color:#1C1E22;padding:0.6rem 1.2rem;border-radius:0.25rem;text-decoration:none;font-weight:600;">View Event Details →</a></p>
   <p style="color:#555;">We look forward to speaking with you. If you need to reschedule, reply to this email or reach us at <a href="mailto:hello@onstage.bot">hello@onstage.bot</a>.</p>
   <hr style="border-color:#eee;">
   <p style="color:#999;font-size:12px;">StageGate — Robotics Activation Infrastructure • <a href="https://onstage.bot" style="color:#999;">onstage.bot</a></p>
@@ -4547,14 +4547,14 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
 
         const rescheduleHtml = `
 <div style="font-family:sans-serif;max-width:600px;">
-  <h2 style="color:#00ff87;">Meeting Rescheduled — ${event.companyName ?? event.title}</h2>
+  <h2 style="color:#00E87A;">Meeting Rescheduled — ${event.companyName ?? event.title}</h2>
   <p>Your meeting has been rescheduled to a new time:</p>
   <table style="border-collapse:collapse;width:100%;margin:1rem 0;">
     <tr><td style="padding:0.5rem 0;color:#555;width:120px;"><strong>New Date &amp; Time</strong></td><td style="padding:0.5rem 0;">${startDisplay} (Pacific Time)</td></tr>
     <tr><td style="padding:0.5rem 0;color:#555;"><strong>Title</strong></td><td style="padding:0.5rem 0;">${event.title}</td></tr>
     ${event.notes ? `<tr><td style="padding:0.5rem 0;color:#555;"><strong>Notes</strong></td><td style="padding:0.5rem 0;">${event.notes}</td></tr>` : ""}
   </table>
-  <p><a href="${shareUrl}" style="display:inline-block;background:#00ff87;color:#000;padding:0.6rem 1.2rem;border-radius:0.25rem;text-decoration:none;font-weight:600;">View Updated Event →</a></p>
+  <p><a href="${shareUrl}" style="display:inline-block;background:#00E87A;color:#1C1E22;padding:0.6rem 1.2rem;border-radius:0.25rem;text-decoration:none;font-weight:600;">View Updated Event →</a></p>
   <p style="color:#555;">Questions? Reply to this email or reach us at <a href="mailto:hello@onstage.bot">hello@onstage.bot</a>.</p>
   <hr style="border-color:#eee;">
   <p style="color:#999;font-size:12px;">StageGate — Robotics Activation Infrastructure • <a href="https://onstage.bot" style="color:#999;">onstage.bot</a></p>
@@ -4594,7 +4594,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     <tr><td style="padding:0.5rem 0;color:#555;width:120px;"><strong>New Date &amp; Time</strong></td><td style="padding:0.5rem 0;">${startDisplay} (Pacific Time)</td></tr>
     ${event.notes ? `<tr><td style="padding:0.5rem 0;color:#555;"><strong>Notes</strong></td><td style="padding:0.5rem 0;">${event.notes}</td></tr>` : ""}
   </table>
-  <p><a href="${shareUrl}" style="display:inline-block;background:#00ff87;color:#000;padding:0.6rem 1.2rem;border-radius:0.25rem;text-decoration:none;font-weight:600;">View Updated Event →</a></p>
+  <p><a href="${shareUrl}" style="display:inline-block;background:#00E87A;color:#1C1E22;padding:0.6rem 1.2rem;border-radius:0.25rem;text-decoration:none;font-weight:600;">View Updated Event →</a></p>
   <p style="color:#555;">If this time no longer works, reply to this email or reach us at <a href="mailto:hello@onstage.bot">hello@onstage.bot</a>.</p>
   <hr style="border-color:#eee;">
   <p style="color:#999;font-size:12px;">StageGate — Robotics Activation Infrastructure • <a href="https://onstage.bot" style="color:#999;">onstage.bot</a></p>

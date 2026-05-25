@@ -8,14 +8,14 @@ import {
 
 // ── Supabase light tokens ────────────────────────────────────────────────────
 const S = {
-  bg:      "#080808",
+  bg:      "#1C1E22",
   surface: "#111111",
   surface2:"#1a1a1a",
   border:  "rgba(255,255,255,0.08)",
   text:    "#ececec",
   text2:   "rgba(255,255,255,0.55)",
   text3:   "rgba(255,255,255,0.30)",
-  green:   "#00ff87",
+  green:   "#00E87A",
   greenDim:"rgba(62,207,142,0.12)",
   amber:   "#f59e0b",
   blue:    "#3b82f6",

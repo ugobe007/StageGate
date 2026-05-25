@@ -14,15 +14,15 @@ import DailyBriefPanel from "@/components/DailyBriefPanel";
 
 // ── Dark palette tokens ────────────────────────────────────────────────────
 const D = {
-  bg:         "#080808",
+  bg:         "#1C1E22",
   surface:    "#111111",
   s2:         "#1a1a1a",
   border:     "rgba(255,255,255,0.08)",
   text:       "#ececec",
   text2:      "rgba(255,255,255,0.55)",
   text3:      "rgba(255,255,255,0.28)",
-  emerald:    "#00ff87",
-  emeraldDim: "rgba(0,255,135,0.10)",
+  emerald:    "#00E87A",
+  emeraldDim: "rgba(0,232,122,0.10)",
   amber:      "#f59e0b",
   blue:       "#60a5fa",
   red:        "#ef4444",
@@ -56,7 +56,7 @@ const Btn = ({ children, href, onClick, variant = "default" }: {
     textDecoration: "none",
     border: variant === "primary" ? "none" : `1px solid ${D.border}`,
     background: variant === "primary" ? D.emerald : "transparent",
-    color: variant === "primary" ? "#080808" : D.text2,
+    color: variant === "primary" ? "#1C1E22" : D.text2,
     transition: "background 0.1s, color 0.1s",
     whiteSpace: "nowrap" as const,
   };
@@ -91,7 +91,7 @@ export default function AdminDashboard() {
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: D.bg }}>
       <div style={{ textAlign: "center", maxWidth: "20rem" }}>
         <p style={{ color: D.text2, marginBottom: "1rem", fontSize: "0.875rem" }}>Admin access required</p>
-        <a href={getLoginUrl()} style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", padding: "0.5rem 1rem", borderRadius: "0.25rem", background: D.emerald, color: "#080808", fontWeight: 700, fontSize: "0.875rem", textDecoration: "none" }}>Sign in</a>
+        <a href={getLoginUrl()} style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", padding: "0.5rem 1rem", borderRadius: "0.25rem", background: D.emerald, color: "#1C1E22", fontWeight: 700, fontSize: "0.875rem", textDecoration: "none" }}>Sign in</a>
       </div>
     </div>
   );
@@ -316,7 +316,7 @@ export default function AdminDashboard() {
             <a style={{ textDecoration: "none", display: "block" }}>
               <Card
                 style={{ padding: "1rem", cursor: "pointer", transition: "border-color 0.15s" }}
-                onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.borderColor = `rgba(0,255,135,0.25)`)}
+                onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.borderColor = `rgba(0,232,122,0.25)`)}
                 onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.borderColor = D.border)}
               >
                 <item.icon size={16} style={{ color: D.emerald, marginBottom: "0.5rem" }} />
@@ -366,7 +366,7 @@ export default function AdminDashboard() {
                             display: "inline-flex", alignItems: "center", gap: "0.25rem",
                             padding: "0.25rem 0.5rem", borderRadius: "0.25rem",
                             fontSize: "0.75rem", fontWeight: 500, cursor: "pointer",
-                            border: `1px solid ${u.role === "admin" ? "rgba(239,68,68,0.30)" : "rgba(0,255,135,0.25)"}`,
+                            border: `1px solid ${u.role === "admin" ? "rgba(239,68,68,0.30)" : "rgba(0,232,122,0.25)"}`,
                             background: "transparent",
                             color: u.role === "admin" ? D.red : D.emerald,
                           }}

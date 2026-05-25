@@ -11,10 +11,10 @@ import {
 } from "lucide-react";
 
 const STATUS_CONFIG = {
-  new:       { label: "New",       color: "#00ff87" },
+  new:       { label: "New",       color: "#00E87A" },
   contacted: { label: "Contacted", color: "#f59e0b" },
   scheduled: { label: "Scheduled", color: "#3b82f6" },
-  completed: { label: "Completed", color: "#00ff87" },
+  completed: { label: "Completed", color: "#00E87A" },
   closed:    { label: "Closed",    color: "rgba(255,255,255,0.30)" },
 } as const;
 
@@ -95,7 +95,7 @@ export default function AdminDemoRequests() {
             </button>
           </Link>
           <div style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(62,207,142,0.1)" }}>
-            <Play size={14} style={{ color: "#00ff87" }} />
+            <Play size={14} style={{ color: "#00E87A" }} />
           </div>
           <div>
             <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0 }}>Demo Requests</h1>
@@ -105,7 +105,7 @@ export default function AdminDemoRequests() {
           </div>
         </div>
         {(counts["new"] || 0) > 0 && (
-          <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#00ff87" }}>
+          <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#00E87A" }}>
             {counts["new"]} new
           </span>
         )}
@@ -145,9 +145,9 @@ export default function AdminDemoRequests() {
               style={{
                 padding: "0.3125rem 0.75rem",
                 fontSize: "0.8125rem", fontWeight: 500,
-                border: `1px solid ${statusFilter === key ? "#00ff87" : "rgba(255,255,255,0.08)"}`,
+                border: `1px solid ${statusFilter === key ? "#00E87A" : "rgba(255,255,255,0.08)"}`,
                 background: statusFilter === key ? "rgba(62,207,142,0.08)" : "#111111",
-                color: statusFilter === key ? "#00ff87" : "#64748b",
+                color: statusFilter === key ? "#00E87A" : "#64748b",
                 borderRadius: "0.25rem", cursor: "pointer",
                 display: "flex", alignItems: "center", gap: "0.375rem",
               }}
@@ -182,7 +182,7 @@ export default function AdminDemoRequests() {
                 <button
                   key={opt.key}
                   onClick={() => { setSortKey(opt.key); setSortOpen(false); }}
-                  style={{ width: "100%", padding: "0.5rem 0.875rem", textAlign: "left", fontSize: "0.8125rem", background: sortKey === opt.key ? "rgba(62,207,142,0.06)" : "transparent", color: sortKey === opt.key ? "#00ff87" : "rgba(255,255,255,0.55)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}
+                  style={{ width: "100%", padding: "0.5rem 0.875rem", textAlign: "left", fontSize: "0.8125rem", background: sortKey === opt.key ? "rgba(62,207,142,0.06)" : "transparent", color: sortKey === opt.key ? "#00E87A" : "rgba(255,255,255,0.55)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}
                 >
                   {opt.label}
                   {sortKey === opt.key && <CheckCircle2 size={12} />}
@@ -197,8 +197,8 @@ export default function AdminDemoRequests() {
       {!isLoading && demos && (
         <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.30)", marginBottom: "1rem" }}>
           Showing {processed.length} of {demos.length} request{demos.length !== 1 ? "s" : ""}
-          {statusFilter !== "all" && <> · status: <span style={{ color: "#00ff87" }}>{STATUS_CONFIG[statusFilter as DemoStatus]?.label}</span></>}
-          {searchQuery.trim() && <> · search: <span style={{ color: "#00ff87" }}>"{searchQuery.trim()}"</span></>}
+          {statusFilter !== "all" && <> · status: <span style={{ color: "#00E87A" }}>{STATUS_CONFIG[statusFilter as DemoStatus]?.label}</span></>}
+          {searchQuery.trim() && <> · search: <span style={{ color: "#00E87A" }}>"{searchQuery.trim()}"</span></>}
           {" · "}sorted by {currentSortLabel.toLowerCase()}
         </p>
       )}
@@ -206,7 +206,7 @@ export default function AdminDemoRequests() {
       {/* Loading */}
       {isLoading && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "4rem 0", gap: "0.75rem" }}>
-          <Loader2 size={20} style={{ color: "#00ff87", animation: "spin 1s linear infinite" }} />
+          <Loader2 size={20} style={{ color: "#00E87A", animation: "spin 1s linear infinite" }} />
           <span style={{ color: "#64748b" }}>Loading demo requests…</span>
         </div>
       )}
@@ -242,7 +242,7 @@ export default function AdminDemoRequests() {
             return (
               <div
                 key={d.id}
-                style={{ border: `1px solid ${isExpanded ? "#00ff87" : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#111111", overflow: "hidden", transition: "border-color 0.1s" }}
+                style={{ border: `1px solid ${isExpanded ? "#00E87A" : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#111111", overflow: "hidden", transition: "border-color 0.1s" }}
               >
                 {/* Row summary */}
                 <button
@@ -250,7 +250,7 @@ export default function AdminDemoRequests() {
                   onClick={() => setExpandedId(isExpanded ? null : d.id)}
                 >
                   <div style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(62,207,142,0.1)", flexShrink: 0 }}>
-                    <Bot size={14} style={{ color: "#00ff87" }} />
+                    <Bot size={14} style={{ color: "#00E87A" }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</p>
@@ -278,7 +278,7 @@ export default function AdminDemoRequests() {
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", fontSize: "0.875rem" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
                             <Mail size={13} style={{ color: "rgba(255,255,255,0.30)" }} />
-                            <a href={`mailto:${d.email}`} style={{ color: "#00ff87", textDecoration: "none" }}>{d.email}</a>
+                            <a href={`mailto:${d.email}`} style={{ color: "#00E87A", textDecoration: "none" }}>{d.email}</a>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
                             <Building2 size={13} style={{ color: "rgba(255,255,255,0.30)" }} />
@@ -308,7 +308,7 @@ export default function AdminDemoRequests() {
                     {d.message && (
                       <div>
                         <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.30)", marginBottom: "0.5rem" }}>Message</p>
-                        <div style={{ background: "#080808", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem", padding: "0.75rem", fontSize: "0.875rem", color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
+                        <div style={{ background: "#1C1E22", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem", padding: "0.75rem", fontSize: "0.875rem", color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
                           <MessageSquare size={13} style={{ display: "inline", marginRight: "0.375rem", color: "rgba(255,255,255,0.30)", verticalAlign: "middle" }} />
                           {d.message}
                         </div>

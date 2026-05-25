@@ -32,7 +32,7 @@ const EMPTY_FORM: ShowForm = {
 
 const STATUS_COLORS: Record<string, string> = {
   upcoming: "#f59e0b",
-  active: "#00ff87",
+  active: "#00E87A",
   completed: "rgba(255,255,255,0.30)",
 };
 
@@ -111,12 +111,12 @@ export default function AdminShows() {
         </Link>
         <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Calendar size={18} style={{ color: "#00ff87" }} /> Trade Shows
+            <Calendar size={18} style={{ color: "#00E87A" }} /> Trade Shows
           </h1>
         </div>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setForm(EMPTY_FORM); } }}>
           <DialogTrigger asChild>
-            <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid #00ff87", background: "transparent", color: "#00ff87", borderRadius: "0.375rem", cursor: "pointer" }}>
+            <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid #00E87A", background: "transparent", color: "#00E87A", borderRadius: "0.375rem", cursor: "pointer" }}>
               <Plus size={14} /> Add Show
             </button>
           </DialogTrigger>
@@ -170,7 +170,7 @@ export default function AdminShows() {
               </div>
               <div style={{ display: "flex", gap: "0.75rem", paddingTop: "0.5rem" }}>
                 <button type="submit" disabled={createShow.isPending || updateShow.isPending}
-                  style={{ flex: 1, fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid #00ff87", background: "transparent", color: "#00ff87", borderRadius: "0.375rem", cursor: "pointer" }}>
+                  style={{ flex: 1, fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid #00E87A", background: "transparent", color: "#00E87A", borderRadius: "0.375rem", cursor: "pointer" }}>
                   {(createShow.isPending || updateShow.isPending) ? <Loader2 size={14} className="animate-spin" /> : editId ? "Update Show" : "Create Show"}
                 </button>
                 <button type="button" onClick={() => { setOpen(false); setEditId(null); setForm(EMPTY_FORM); }}
@@ -185,7 +185,7 @@ export default function AdminShows() {
 
       {isLoading ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "5rem 0" }}>
-          <Loader2 size={28} style={{ color: "#00ff87", animation: "spin 1s linear infinite" }} />
+          <Loader2 size={28} style={{ color: "#00E87A", animation: "spin 1s linear infinite" }} />
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" }}>
@@ -209,7 +209,7 @@ export default function AdminShows() {
                     </div>
                   )}
                   {show.website && (
-                    <a href={show.website} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "#00ff87", textDecoration: "none" }}>
+                    <a href={show.website} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "#00E87A", textDecoration: "none" }}>
                       <Globe size={11} /> Website
                     </a>
                   )}
@@ -220,7 +220,7 @@ export default function AdminShows() {
                     <Edit size={12} /> Edit
                   </button>
                   <Link href={`/admin/leads?showId=${show.id}`} style={{ flex: 1 }}>
-                    <button style={{ width: "100%", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: "1px solid rgba(62,207,142,0.45)", background: "#0b0b0b", color: "#00ff87", borderRadius: "0.25rem", cursor: "pointer" }}>
+                    <button style={{ width: "100%", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: "1px solid rgba(62,207,142,0.45)", background: "#0b0b0b", color: "#00E87A", borderRadius: "0.25rem", cursor: "pointer" }}>
                       Leads
                     </button>
                   </Link>
@@ -234,7 +234,7 @@ export default function AdminShows() {
                 {notifCount > 0 && (
                   <button
                     onClick={() => setSelectedShowForNotifs(showingNotifs ? null : show.id)}
-                    style={{ marginTop: "0.625rem", width: "100%", display: "flex", alignItems: "center", gap: "0.375rem", padding: "0.375rem 0.625rem", borderRadius: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, border: "1px solid rgba(62,207,142,0.3)", color: "#00ff87", background: "rgba(62,207,142,0.04)", cursor: "pointer" }}
+                    style={{ marginTop: "0.625rem", width: "100%", display: "flex", alignItems: "center", gap: "0.375rem", padding: "0.375rem 0.625rem", borderRadius: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, border: "1px solid rgba(62,207,142,0.3)", color: "#00E87A", background: "rgba(62,207,142,0.04)", cursor: "pointer" }}
                   >
                     <Bell size={12} />
                     {notifCount} notification request{notifCount !== 1 ? "s" : ""}
@@ -245,7 +245,7 @@ export default function AdminShows() {
                 {/* Notification list */}
                 {showingNotifs && (
                   <div style={{ marginTop: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem", overflow: "hidden" }}>
-                    <div style={{ padding: "0.375rem 0.75rem", background: "#080808", fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b" }}>
+                    <div style={{ padding: "0.375rem 0.75rem", background: "#1C1E22", fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b" }}>
                       Notification Requests
                     </div>
                     <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>

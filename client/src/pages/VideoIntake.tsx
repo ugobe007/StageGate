@@ -86,11 +86,11 @@ export default function VideoIntake() {
 
   if (submitted) {
     return (
-      <div style={{ minHeight: "100vh", background: "#080808" }}>
+      <div style={{ minHeight: "100vh", background: "#1C1E22" }}>
         <Navbar />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "70vh", gap: "1.5rem", textAlign: "center" }}>
-          <div style={{ width: "3rem", height: "3rem", borderRadius: "50%", background: "rgba(0,255,135,0.10)", border: "1px solid rgba(0,255,135,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Check size={20} style={{ color: "#00ff87" }} />
+          <div style={{ width: "3rem", height: "3rem", borderRadius: "50%", background: "rgba(0,232,122,0.10)", border: "1px solid rgba(0,232,122,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Check size={20} style={{ color: "#00E87A" }} />
           </div>
           <h2 style={{ fontSize: "1.75rem", fontWeight: 800, letterSpacing: "-0.04em", color: "#fff", margin: 0 }}>Message Received</h2>
           <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.55)", maxWidth: "36ch", lineHeight: 1.65 }}>
@@ -103,7 +103,7 @@ export default function VideoIntake() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#080808" }}>
+    <div style={{ minHeight: "100vh", background: "#1C1E22" }}>
       <Navbar />
       <div className="container" style={{ paddingTop: "6rem", paddingBottom: "6rem", maxWidth: "42rem", marginLeft: "auto", marginRight: "auto" }}>
         {/* Header */}
@@ -150,10 +150,10 @@ export default function VideoIntake() {
             <div style={{ border: "1px dashed rgba(255,255,255,0.15)", borderRadius: "0.25rem", padding: "2rem", textAlign: "center", position: "relative" }}>
               {videoFile && !uploadError ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-                  <Video size={24} style={{ color: "#00ff87" }} />
+                  <Video size={24} style={{ color: "#00E87A" }} />
                   <span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.70)" }}>{videoFile.name}</span>
                   {uploading && <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "#f59e0b" }}>Uploading...</span>}
-                  {!uploading && videoUrl && <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "#00ff87" }}>✓ Uploaded</span>}
+                  {!uploading && videoUrl && <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "#00E87A" }}>✓ Uploaded</span>}
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>

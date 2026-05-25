@@ -14,7 +14,7 @@ type DraftEntry = any;
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f59e0b",
-  approved: "#00ff87",
+  approved: "#00E87A",
   sent: "#3b82f6",
   discarded: "rgba(255,255,255,0.30)",
 };
@@ -201,9 +201,9 @@ export default function OutreachDraftQueue({
           gap: "0.75rem",
           marginBottom: compact ? "0.75rem" : "1.25rem",
           padding: "0.875rem 1rem",
-          border: "1px solid rgba(0,255,135,0.30)",
+          border: "1px solid rgba(0,232,122,0.30)",
           borderRadius: "0.5rem",
-          background: "rgba(0,255,135,0.04)",
+          background: "rgba(0,232,122,0.04)",
         }}>
           <div>
             <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec", margin: 0 }}>
@@ -220,7 +220,7 @@ export default function OutreachDraftQueue({
                 <button
                   onClick={executeBulkSend}
                   disabled={bulkSendMutation.isPending}
-                  style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.5rem 1rem", border: "none", background: "#00ff87", color: "#080808", borderRadius: "0.375rem", cursor: "pointer" }}
+                  style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.5rem 1rem", border: "none", background: "#00E87A", color: "#1C1E22", borderRadius: "0.375rem", cursor: "pointer" }}
                 >
                   <Send size={13} />
                   {bulkSendMutation.isPending ? "Sending…" : "Confirm Bulk Send"}
@@ -234,14 +234,14 @@ export default function OutreachDraftQueue({
                 {selectedIds.size > 0 && (
                   <button
                     onClick={() => requestBulkSend(Array.from(selectedIds))}
-                    style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid rgba(0,255,135,0.40)", color: "#00ff87", background: "transparent", borderRadius: "0.375rem", cursor: "pointer" }}
+                    style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 600, padding: "0.5rem 1rem", border: "1px solid rgba(0,232,122,0.40)", color: "#00E87A", background: "transparent", borderRadius: "0.375rem", cursor: "pointer" }}
                   >
                     <Send size={13} /> Send Selected ({selectedIds.size})
                   </button>
                 )}
                 <button
                   onClick={() => requestBulkSend(allSendableIds.length > 0 ? allSendableIds : draftIdsOnTab)}
-                  style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.5rem 1.25rem", border: "none", background: "#00ff87", color: "#080808", borderRadius: "0.375rem", cursor: "pointer", boxShadow: "0 0 20px rgba(0,255,135,0.20)" }}
+                  style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.5rem 1.25rem", border: "none", background: "#00E87A", color: "#1C1E22", borderRadius: "0.375rem", cursor: "pointer", boxShadow: "0 0 20px rgba(0,232,122,0.20)" }}
                 >
                   <Users size={13} />
                   Bulk Send All ({allSendableIds.length || sendableCount})
@@ -261,7 +261,7 @@ export default function OutreachDraftQueue({
               padding: compact ? "0.5rem 0.75rem" : "0.625rem 1rem",
               fontSize: "0.875rem", fontWeight: 500,
               background: "none", border: "none",
-              borderBottom: `2px solid ${activeTab === tab ? (tab === "sent" ? "#60a5fa" : tab === "approved" ? "#00ff87" : "#f59e0b") : "transparent"}`,
+              borderBottom: `2px solid ${activeTab === tab ? (tab === "sent" ? "#60a5fa" : tab === "approved" ? "#00E87A" : "#f59e0b") : "transparent"}`,
               color: activeTab === tab ? "#ececec" : "#64748b",
               cursor: "pointer",
               marginBottom: "-1px",
@@ -277,7 +277,7 @@ export default function OutreachDraftQueue({
       </div>
 
       {activeTab !== "sent" && drafts.length > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", padding: "0.625rem 0.875rem", background: "#080808", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", padding: "0.625rem 0.875rem", background: "#1C1E22", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem" }}>
           <input
             type="checkbox"
             checked={selectedIds.size === drafts.length && drafts.length > 0}
@@ -290,7 +290,7 @@ export default function OutreachDraftQueue({
           {activeTab === "pending" && drafts.length > 0 && (
             <button
               onClick={handleApproveAll}
-              style={{ marginLeft: "auto", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00ff87", background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
+              style={{ marginLeft: "auto", fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.75rem", border: "1px solid rgba(62,207,142,0.4)", color: "#00E87A", background: "#111111", borderRadius: "0.25rem", cursor: "pointer" }}
             >
               ✓ Approve All ({drafts.length})
             </button>
@@ -367,7 +367,7 @@ export default function OutreachDraftQueue({
                       <>
                         <button
                           onClick={(e) => { e.stopPropagation(); approveMutation.mutate({ draftId: entry.draft.id }); }}
-                          style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.45)", color: "#00ff87", background: "#0b0b0b", borderRadius: "0.25rem", cursor: "pointer" }}
+                          style={{ fontSize: "0.8125rem", fontWeight: 500, padding: "0.25rem 0.625rem", border: "1px solid rgba(62,207,142,0.45)", color: "#00E87A", background: "#0b0b0b", borderRadius: "0.25rem", cursor: "pointer" }}
                         >
                           ✓ Approve
                         </button>
@@ -383,7 +383,7 @@ export default function OutreachDraftQueue({
                       <button
                         onClick={(e) => { e.stopPropagation(); sendMutation.mutate({ draftId: entry.draft.id }); }}
                         disabled={sendMutation.isPending}
-                        style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.375rem 0.875rem", border: "none", background: "#00ff87", color: "#080808", borderRadius: "0.25rem", cursor: "pointer" }}
+                        style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.375rem 0.875rem", border: "none", background: "#00E87A", color: "#1C1E22", borderRadius: "0.25rem", cursor: "pointer" }}
                       >
                         <Send size={12} /> Send
                       </button>
@@ -400,7 +400,7 @@ export default function OutreachDraftQueue({
                 {isExpanded && (
                   <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                     {entry.draft.agentReasoning && (
-                      <div style={{ fontSize: "0.8125rem", color: "#64748b", background: "#080808", borderRadius: "0.375rem", padding: "0.625rem 0.875rem", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      <div style={{ fontSize: "0.8125rem", color: "#64748b", background: "#1C1E22", borderRadius: "0.375rem", padding: "0.625rem 0.875rem", border: "1px solid rgba(255,255,255,0.08)" }}>
                         <span style={{ color: "#f59e0b", fontWeight: 600 }}>Draft note: </span>
                         {entry.draft.agentReasoning}
                       </div>
@@ -435,7 +435,7 @@ export default function OutreachDraftQueue({
                           <span style={{ fontWeight: 500, color: "rgba(255,255,255,0.55)" }}>Subject: </span>
                           {entry.draft.subject}
                         </div>
-                        <pre style={{ fontSize: "0.875rem", whiteSpace: "pre-wrap", fontFamily: "inherit", background: "#080808", borderRadius: "0.375rem", padding: "0.875rem", border: "1px solid rgba(255,255,255,0.08)", lineHeight: 1.6, color: "#ececec", margin: 0 }}>
+                        <pre style={{ fontSize: "0.875rem", whiteSpace: "pre-wrap", fontFamily: "inherit", background: "#1C1E22", borderRadius: "0.375rem", padding: "0.875rem", border: "1px solid rgba(255,255,255,0.08)", lineHeight: 1.6, color: "#ececec", margin: 0 }}>
                           {entry.draft.body}
                         </pre>
                         {activeTab !== "sent" && (
@@ -449,7 +449,7 @@ export default function OutreachDraftQueue({
                             <button
                               onClick={() => sendMutation.mutate({ draftId: entry.draft.id })}
                               disabled={sendMutation.isPending}
-                              style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.25rem 0.875rem", border: "none", background: "#00ff87", color: "#080808", borderRadius: "0.25rem", cursor: "pointer" }}
+                              style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8125rem", fontWeight: 700, padding: "0.25rem 0.875rem", border: "none", background: "#00E87A", color: "#1C1E22", borderRadius: "0.25rem", cursor: "pointer" }}
                             >
                               <Send size={12} /> Send Now
                             </button>

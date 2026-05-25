@@ -227,14 +227,14 @@ export default function AdminPartnerOutreach() {
 
   if (!isAuthenticated || user?.role !== "admin") {
     return (
-      <div className="min-h-0 flex items-center justify-center" style={{ background: "#080808", color: "#64748b" }}>
+      <div className="min-h-0 flex items-center justify-center" style={{ background: "#1C1E22", color: "#64748b" }}>
         <p>Admin access required.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-0 flex flex-col" style={{ background: "#080808", color: "#ececec", height: "calc(100vh - 0px)" }}>
+    <div className="min-h-0 flex flex-col" style={{ background: "#1C1E22", color: "#ececec", height: "calc(100vh - 0px)" }}>
       <header className="border-b px-5 py-3 flex flex-wrap items-center gap-3 shrink-0" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
         <Link href="/admin/partners">
           <Button variant="ghost" size="sm" className="gap-1.5 h-8" style={{ color: "#64748b" }}>
@@ -262,7 +262,7 @@ export default function AdminPartnerOutreach() {
           <Button
             size="sm"
             className="h-8 text-xs gap-1"
-            style={{ background: "#00ff87", color: "#080808" }}
+            style={{ background: "#00E87A", color: "#1C1E22" }}
             onClick={() => setQueueExpanded(true)}
           >
             <Send size={12} /> {pendingPartnerDrafts} ready to send
@@ -278,7 +278,7 @@ export default function AdminPartnerOutreach() {
               value={filterSource}
               onChange={(e) => setFilterSource(e.target.value as typeof filterSource)}
               className="w-full text-xs rounded-md px-2 py-1.5"
-              style={{ background: "#080808", border: "1px solid rgba(255,255,255,0.12)", color: "#ececec" }}
+              style={{ background: "#1C1E22", border: "1px solid rgba(255,255,255,0.12)", color: "#ececec" }}
             >
               <option value="all">All partners & vendors</option>
               <option value="prospect">Discovered partners</option>
@@ -312,12 +312,12 @@ export default function AdminPartnerOutreach() {
                     className="flex items-start gap-2 px-2 py-2 border-b"
                     style={{
                       borderColor: "rgba(255,255,255,0.06)",
-                      background: isActive ? "rgba(0,255,135,0.08)" : undefined,
-                      borderLeft: isActive ? "2px solid #00ff87" : undefined,
+                      background: isActive ? "rgba(0,232,122,0.08)" : undefined,
+                      borderLeft: isActive ? "2px solid #00E87A" : undefined,
                     }}
                   >
                     <button type="button" className="mt-1 shrink-0" style={{ color: "#64748b" }} onClick={() => toggleSelect(r.key)}>
-                      {isSel ? <CheckSquare size={15} style={{ color: "#00ff87" }} /> : <Square size={15} />}
+                      {isSel ? <CheckSquare size={15} style={{ color: "#00E87A" }} /> : <Square size={15} />}
                     </button>
                     <button type="button" className="flex-1 text-left min-w-0" onClick={() => setActiveKey(r.key)}>
                       <div className="font-medium text-sm truncate" style={{ color: "#ececec" }}>{r.company}</div>
@@ -427,7 +427,7 @@ export default function AdminPartnerOutreach() {
                     onClick={handleQueueIndividual}
                     disabled={!canSend || saveDraft.isPending || updateContact.isPending}
                     className="gap-2"
-                    style={{ borderColor: "rgba(255,255,255,0.12)", color: "#cbd5e1", background: "#080808" }}
+                    style={{ borderColor: "rgba(255,255,255,0.12)", color: "#cbd5e1", background: "#1C1E22" }}
                   >
                     {(saveDraft.isPending || updateContact.isPending) ? (
                       <Loader2 size={14} className="animate-spin" />
@@ -440,7 +440,7 @@ export default function AdminPartnerOutreach() {
                     onClick={handleSendNow}
                     disabled={!canSend || sendNow.isPending || updateContact.isPending}
                     className="gap-2"
-                    style={{ background: "#00ff87", color: "#080808" }}
+                    style={{ background: "#00E87A", color: "#1C1E22" }}
                   >
                     {(sendNow.isPending || updateContact.isPending) ? (
                       <Loader2 size={14} className="animate-spin" />
@@ -458,8 +458,8 @@ export default function AdminPartnerOutreach() {
           <div
             className="shrink-0 border-t overflow-y-auto"
             style={{
-              borderColor: "rgba(0,255,135,0.25)",
-              background: "#080808",
+              borderColor: "rgba(0,232,122,0.25)",
+              background: "#1C1E22",
               maxHeight: queueExpanded ? "48vh" : "2.75rem",
               minHeight: queueExpanded ? "16rem" : "2.75rem",
             }}
@@ -471,10 +471,10 @@ export default function AdminPartnerOutreach() {
               onClick={() => setQueueExpanded((v) => !v)}
             >
               <span className="text-sm font-semibold flex items-center gap-2" style={{ color: "#ececec" }}>
-                <ClipboardList size={14} style={{ color: "#00ff87" }} />
+                <ClipboardList size={14} style={{ color: "#00E87A" }} />
                 Review · Approve · Send
                 {pendingPartnerDrafts > 0 && (
-                  <Badge style={{ background: "rgba(0,255,135,0.15)", color: "#00ff87", border: "1px solid rgba(0,255,135,0.35)" }}>
+                  <Badge style={{ background: "rgba(0,232,122,0.15)", color: "#00E87A", border: "1px solid rgba(0,232,122,0.35)" }}>
                     {pendingPartnerDrafts} draft{pendingPartnerDrafts !== 1 ? "s" : ""}
                   </Badge>
                 )}

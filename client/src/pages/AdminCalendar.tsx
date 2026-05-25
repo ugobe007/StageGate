@@ -34,14 +34,14 @@ interface CalendarEvent {
 const TYPE_CONFIG: Record<EventType, { label: string; color: string; icon: React.ReactNode }> = {
   meeting: { label: "Meeting", color: "#818cf8", icon: <User size={11} /> },
   demo:    { label: "Demo",    color: "#f59e0b", icon: <Star size={11} /> },
-  call:    { label: "Call",    color: "#00ff87", icon: <Phone size={11} /> },
+  call:    { label: "Call",    color: "#00E87A", icon: <Phone size={11} /> },
   event:   { label: "Event",   color: "#60a5fa", icon: <Calendar size={11} /> },
   follow_up: { label: "Follow-up", color: "#a78bfa", icon: <Clock size={11} /> },
 };
 
 const STATUS_CONFIG: Record<EventStatus, { label: string; color: string }> = {
   scheduled:  { label: "Scheduled",  color: "#60a5fa" },
-  confirmed:  { label: "Confirmed",  color: "#00ff87" },
+  confirmed:  { label: "Confirmed",  color: "#00E87A" },
   cancelled:  { label: "Cancelled",  color: "#ef4444" },
   completed:  { label: "Completed",  color: "#64748b" },
 };
@@ -351,12 +351,12 @@ export default function AdminCalendar() {
           </div>
           <div style={{ display: "flex", gap: "0.375rem", alignItems: "flex-start", flexWrap: "wrap", justifyContent: "flex-end" }}>
             {ev.shareToken && (
-              <button onClick={() => copyShareLink(ev.shareToken!)} title="Copy share link" style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: copiedToken === ev.shareToken ? "#00ff87" : "#64748b", display: "flex", alignItems: "center" }}>
+              <button onClick={() => copyShareLink(ev.shareToken!)} title="Copy share link" style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: copiedToken === ev.shareToken ? "#00E87A" : "#64748b", display: "flex", alignItems: "center" }}>
                 {copiedToken === ev.shareToken ? <Check size={12} /> : <Copy size={12} />}
               </button>
             )}
             {ev.status === "scheduled" && (
-              <button onClick={() => { setConfirmingId(ev.id); confirmMutation.mutate({ id: ev.id }); }} title="Mark Confirmed" style={{ background: "transparent", border: "1px solid rgba(0,255,135,0.3)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: confirmingId === ev.id ? "#00ff87" : "#4ade80", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.5625rem" }}>
+              <button onClick={() => { setConfirmingId(ev.id); confirmMutation.mutate({ id: ev.id }); }} title="Mark Confirmed" style={{ background: "transparent", border: "1px solid rgba(0,232,122,0.3)", borderRadius: "0.25rem", padding: "0.25rem 0.375rem", cursor: "pointer", color: confirmingId === ev.id ? "#00E87A" : "#4ade80", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.5625rem" }}>
                 <CheckCircle size={11} /> Confirm
               </button>
             )}
@@ -391,7 +391,7 @@ export default function AdminCalendar() {
           </div>
           <div>
             {ev.prospectName && <div style={{ marginBottom: "0.5rem" }}><div style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", marginBottom: "0.25rem" }}>Contact</div><div style={{ fontSize: "0.6875rem", color: "#94a3b8" }}>{ev.prospectName}</div>{ev.prospectEmail && <div style={{ fontSize: "0.625rem", color: "#60a5fa" }}>{ev.prospectEmail}</div>}</div>}
-            {ev.shareToken && <div><div style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", marginBottom: "0.25rem" }}>Share Link</div><div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}><span style={{ fontSize: "0.5625rem", color: "#64748b", fontFamily: "monospace", background: "rgba(255,255,255,0.04)", padding: "3px 6px", borderRadius: "4px", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>/calendar/{ev.shareToken.slice(0, 12)}...</span><button onClick={() => copyShareLink(ev.shareToken!)} style={{ background: "rgba(0,255,135,0.1)", color: "#00ff87", border: "1px solid rgba(0,255,135,0.2)", borderRadius: "4px", padding: "3px 8px", fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}><Copy size={10} /> Copy</button><a href={`/calendar/${ev.shareToken}`} target="_blank" rel="noreferrer" style={{ color: "#60a5fa", display: "flex", alignItems: "center" }}><ExternalLink size={12} /></a></div></div>}
+            {ev.shareToken && <div><div style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", marginBottom: "0.25rem" }}>Share Link</div><div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}><span style={{ fontSize: "0.5625rem", color: "#64748b", fontFamily: "monospace", background: "rgba(255,255,255,0.04)", padding: "3px 6px", borderRadius: "4px", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>/calendar/{ev.shareToken.slice(0, 12)}...</span><button onClick={() => copyShareLink(ev.shareToken!)} style={{ background: "rgba(0,232,122,0.1)", color: "#00E87A", border: "1px solid rgba(0,232,122,0.2)", borderRadius: "4px", padding: "3px 8px", fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}><Copy size={10} /> Copy</button><a href={`/calendar/${ev.shareToken}`} target="_blank" rel="noreferrer" style={{ color: "#60a5fa", display: "flex", alignItems: "center" }}><ExternalLink size={12} /></a></div></div>}
           </div>
         </div>
       </div>
@@ -401,7 +401,7 @@ export default function AdminCalendar() {
   if (!user) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#0a0a0a" }}>
-        <a href={getLoginUrl()} style={{ color: "#00ff87", fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}>Sign in to access admin</a>
+        <a href={getLoginUrl()} style={{ color: "#00E87A", fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}>Sign in to access admin</a>
       </div>
     );
   }
@@ -418,17 +418,17 @@ export default function AdminCalendar() {
       {/* Header */}
       <div style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <Calendar size={18} color="#00ff87" />
+          <Calendar size={18} color="#00E87A" />
           <span style={{ fontSize: "0.875rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#e2e8f0" }}>Calendar</span>
           {upcomingCount > 0 && (
-            <span style={{ background: "rgba(0,255,135,0.15)", color: "#00ff87", fontSize: "0.5625rem", fontWeight: 700, padding: "2px 7px", borderRadius: "999px", letterSpacing: "0.08em" }}>
+            <span style={{ background: "rgba(0,232,122,0.15)", color: "#00E87A", fontSize: "0.5625rem", fontWeight: 700, padding: "2px 7px", borderRadius: "999px", letterSpacing: "0.08em" }}>
               {upcomingCount} UPCOMING
             </span>
           )}
         </div>
         <button
           onClick={openCreate}
-          style={{ display: "flex", alignItems: "center", gap: "0.4rem", background: "#00ff87", color: "#0a0a0a", border: "none", borderRadius: "0.375rem", padding: "0.5rem 1rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+          style={{ display: "flex", alignItems: "center", gap: "0.4rem", background: "#00E87A", color: "#0a0a0a", border: "none", borderRadius: "0.375rem", padding: "0.5rem 1rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
         >
           <Plus size={13} /> New Event
         </button>
@@ -438,14 +438,14 @@ export default function AdminCalendar() {
       <div style={{ padding: "0.875rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
         {["", "meeting", "demo", "call", "event", "follow_up"].map(t => (
           <button key={t} onClick={() => setTypeFilter(t)}
-            style={{ padding: "0.25rem 0.75rem", borderRadius: "999px", border: `1px solid ${typeFilter === t ? "#00ff87" : "rgba(255,255,255,0.12)"}`, background: typeFilter === t ? "rgba(0,255,135,0.1)" : "transparent", color: typeFilter === t ? "#00ff87" : "#94a3b8", fontSize: "0.5625rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+            style={{ padding: "0.25rem 0.75rem", borderRadius: "999px", border: `1px solid ${typeFilter === t ? "#00E87A" : "rgba(255,255,255,0.12)"}`, background: typeFilter === t ? "rgba(0,232,122,0.1)" : "transparent", color: typeFilter === t ? "#00E87A" : "#94a3b8", fontSize: "0.5625rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
             {t === "" ? "All Types" : TYPE_CONFIG[t as EventType]?.label ?? t}
           </button>
         ))}
         <div style={{ width: "1px", background: "rgba(255,255,255,0.08)", margin: "0 0.25rem" }} />
         {["", "scheduled", "confirmed", "completed", "cancelled"].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}
-            style={{ padding: "0.25rem 0.75rem", borderRadius: "999px", border: `1px solid ${statusFilter === s ? STATUS_CONFIG[s as EventStatus]?.color ?? "#00ff87" : "rgba(255,255,255,0.12)"}`, background: statusFilter === s ? "rgba(255,255,255,0.05)" : "transparent", color: statusFilter === s ? (STATUS_CONFIG[s as EventStatus]?.color ?? "#00ff87") : "#94a3b8", fontSize: "0.5625rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+            style={{ padding: "0.25rem 0.75rem", borderRadius: "999px", border: `1px solid ${statusFilter === s ? STATUS_CONFIG[s as EventStatus]?.color ?? "#00E87A" : "rgba(255,255,255,0.12)"}`, background: statusFilter === s ? "rgba(255,255,255,0.05)" : "transparent", color: statusFilter === s ? (STATUS_CONFIG[s as EventStatus]?.color ?? "#00E87A") : "#94a3b8", fontSize: "0.5625rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
             {s === "" ? "All Status" : STATUS_CONFIG[s as EventStatus]?.label ?? s}
           </button>
         ))}
@@ -462,7 +462,7 @@ export default function AdminCalendar() {
         <div style={{ display: "flex", gap: "0.375rem", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem", padding: "0.25rem", background: "rgba(255,255,255,0.025)" }}>
           {(["day", "week", "month"] as CalendarView[]).map(v => (
             <button key={v} onClick={() => setView(v)}
-              style={{ border: "none", borderRadius: "0.35rem", background: view === v ? "rgba(0,255,135,0.15)" : "transparent", color: view === v ? "#00ff87" : "#94a3b8", padding: "0.35rem 0.75rem", fontSize: "0.5625rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+              style={{ border: "none", borderRadius: "0.35rem", background: view === v ? "rgba(0,232,122,0.15)" : "transparent", color: view === v ? "#00E87A" : "#94a3b8", padding: "0.35rem 0.75rem", fontSize: "0.5625rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
               {v}
             </button>
           ))}
@@ -486,8 +486,8 @@ export default function AdminCalendar() {
                     const activeMonth = isSameMonth(day, cursorDate);
                     const today = sameDay(day, new Date());
                     return (
-                      <div key={day.toISOString()} style={{ minHeight: 132, padding: "0.6rem", borderRight: day.getDay() === 6 ? "none" : "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", background: today ? "rgba(0,255,135,0.045)" : "transparent", opacity: activeMonth ? 1 : 0.35 }}>
-                        <button onClick={() => { setCursorDate(day); setView("day"); }} style={{ background: today ? "#00ff87" : "transparent", color: today ? "#0a0a0a" : "#94a3b8", border: "none", borderRadius: "999px", width: 24, height: 24, fontSize: "0.625rem", fontWeight: 800, cursor: "pointer", marginBottom: "0.4rem" }}>{day.getDate()}</button>
+                      <div key={day.toISOString()} style={{ minHeight: 132, padding: "0.6rem", borderRight: day.getDay() === 6 ? "none" : "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", background: today ? "rgba(0,232,122,0.045)" : "transparent", opacity: activeMonth ? 1 : 0.35 }}>
+                        <button onClick={() => { setCursorDate(day); setView("day"); }} style={{ background: today ? "#00E87A" : "transparent", color: today ? "#0a0a0a" : "#94a3b8", border: "none", borderRadius: "999px", width: 24, height: 24, fontSize: "0.625rem", fontWeight: 800, cursor: "pointer", marginBottom: "0.4rem" }}>{day.getDate()}</button>
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                           {dayEvents.slice(0, 3).map(ev => renderEventChip(ev, true))}
                           {dayEvents.length > 3 && <button onClick={() => { setCursorDate(day); setView("day"); }} style={{ background: "transparent", border: "none", color: "#64748b", fontSize: "0.55rem", textAlign: "left", cursor: "pointer" }}>+{dayEvents.length - 3} more</button>}
@@ -503,7 +503,7 @@ export default function AdminCalendar() {
               <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", overflow: "hidden", background: "rgba(255,255,255,0.015)" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "56px repeat(7, minmax(0, 1fr))", background: "rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
                   <div />
-                  {weekDays.map(day => <div key={day.toISOString()} style={{ padding: "0.65rem", textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.06)" }}><div style={{ color: "#64748b", fontSize: "0.55rem", fontWeight: 800, textTransform: "uppercase" }}>{DAY_LABELS[day.getDay()]}</div><button onClick={() => { setCursorDate(day); setView("day"); }} style={{ marginTop: "0.25rem", background: sameDay(day, new Date()) ? "#00ff87" : "transparent", color: sameDay(day, new Date()) ? "#0a0a0a" : "#e2e8f0", border: "none", borderRadius: "999px", width: 26, height: 26, fontWeight: 800, cursor: "pointer" }}>{day.getDate()}</button></div>)}
+                  {weekDays.map(day => <div key={day.toISOString()} style={{ padding: "0.65rem", textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.06)" }}><div style={{ color: "#64748b", fontSize: "0.55rem", fontWeight: 800, textTransform: "uppercase" }}>{DAY_LABELS[day.getDay()]}</div><button onClick={() => { setCursorDate(day); setView("day"); }} style={{ marginTop: "0.25rem", background: sameDay(day, new Date()) ? "#00E87A" : "transparent", color: sameDay(day, new Date()) ? "#0a0a0a" : "#e2e8f0", border: "none", borderRadius: "999px", width: 26, height: 26, fontWeight: 800, cursor: "pointer" }}>{day.getDate()}</button></div>)}
                 </div>
                 {DAY_HOURS.map(hour => (
                   <div key={hour} style={{ display: "grid", gridTemplateColumns: "56px repeat(7, minmax(0, 1fr))", minHeight: 86, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
@@ -539,7 +539,7 @@ export default function AdminCalendar() {
                   <div style={{ color: "#94a3b8", fontSize: "0.75rem", fontWeight: 800 }}>No events match this view yet.</div>
                   <div style={{ color: "#475569", fontSize: "0.625rem", marginTop: "0.25rem" }}>The calendar grid stays visible so you can plan before the first booking lands.</div>
                 </div>
-                <button onClick={openCreate} style={{ background: "rgba(0,255,135,0.1)", color: "#00ff87", border: "1px solid rgba(0,255,135,0.3)", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap" }}>
+                <button onClick={openCreate} style={{ background: "rgba(0,232,122,0.1)", color: "#00E87A", border: "1px solid rgba(0,232,122,0.3)", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap" }}>
                   + Create Event
                 </button>
               </div>
@@ -651,7 +651,7 @@ export default function AdminCalendar() {
                 Cancel
               </button>
               <button onClick={handleSave} disabled={saving}
-                style={{ background: saving ? "rgba(0,255,135,0.4)" : "#00ff87", color: "#0a0a0a", border: "none", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: saving ? "not-allowed" : "pointer" }}>
+                style={{ background: saving ? "rgba(0,232,122,0.4)" : "#00E87A", color: "#0a0a0a", border: "none", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: saving ? "not-allowed" : "pointer" }}>
                 {saving ? "Saving…" : editingEvent ? "Save Changes" : "Create Event"}
               </button>
             </div>
@@ -709,7 +709,7 @@ export default function AdminCalendar() {
                   });
                 }}
                 disabled={rescheduleMutation.isPending}
-                style={{ background: rescheduleMutation.isPending ? "rgba(0,255,135,0.4)" : "#00ff87", color: "#0a0a0a", border: "none", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: rescheduleMutation.isPending ? "not-allowed" : "pointer" }}>
+                style={{ background: rescheduleMutation.isPending ? "rgba(0,232,122,0.4)" : "#00E87A", color: "#0a0a0a", border: "none", borderRadius: "0.375rem", padding: "0.5rem 1.25rem", fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: rescheduleMutation.isPending ? "not-allowed" : "pointer" }}>
                 {rescheduleMutation.isPending ? "Sending…" : "Reschedule & Notify"}
               </button>
             </div>

@@ -31,6 +31,12 @@ export async function setupVite(app: Express, server: Server) {
   });
 
   app.use(vite.middlewares);
+
+  // Serve standalone public HTML before SPA fallback
+  app.get("/logo-preview.html", (_req, res) => {
+    res.sendFile(path.resolve(__dirname, "../..", "client", "public", "logo-preview.html"));
+  });
+
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
 

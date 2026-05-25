@@ -11,17 +11,17 @@
   --radius-xl:  0.5rem;
   --radius-2xl: 0.75rem;
 
-  /* True near-black, no blue cast */
-  --color-background:         oklch(0.04 0.000 0);     /* #080808 */
+  /* Brand near-black */
+  --color-background:         oklch(0.12 0.005 264);   /* #1C1E22 */
   --color-foreground:         oklch(0.93 0.000 0);     /* #ececec */
   --color-card:               oklch(0.07 0.000 0);     /* #111 */
   --color-card-foreground:    oklch(0.93 0.000 0);
   --color-popover:            oklch(0.07 0.000 0);
   --color-popover-foreground: oklch(0.93 0.000 0);
 
-  /* Primary = emerald green */
-  --color-primary:            oklch(0.84 0.22 152);    /* #00ff87 */
-  --color-primary-foreground: oklch(0.04 0.000 0);     /* black text on green */
+  /* Primary = brand emerald */
+  --color-primary:            oklch(0.82 0.21 152);    /* #00E87A */
+  --color-primary-foreground: oklch(0.12 0.005 264);   /* near-black on green */
 
   /* Secondary = dark surface */
   --color-secondary:          oklch(0.10 0.000 0);
@@ -36,10 +36,10 @@
   --color-destructive:        oklch(0.58 0.22 25);
   --color-border:             oklch(0.18 0.000 0);     /* slightly brighter for visibility */
   --color-input:              oklch(0.09 0.000 0);
-  --color-ring:               oklch(0.84 0.22 152);    /* emerald ring */
+  --color-ring:               oklch(0.82 0.21 152);    /* emerald ring */
 
   /* Custom brand tokens */
-  --color-emerald:            #00ff87;
+  --color-emerald:            #00E87A;
   --color-amber:              #f59e0b;
   --color-amber-bright:       #fbbf24;
   --color-rule:               rgba(255,255,255,0.08);
@@ -61,7 +61,7 @@
   }
 
   body {
-    background-color: #080808;
+    background-color: #1C1E22;
     color: #e8e8e8;
     font-family: var(--font-sans);
     font-size: 1rem;
@@ -78,7 +78,7 @@
   }
 
   ::selection {
-    background: rgba(0, 255, 135, 0.20);
+    background: rgba(0, 232, 122, 0.20);
     color: #fff;
   }
 
@@ -187,16 +187,16 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
     line-height: 1;
-    border: 1px solid #00ff87;
-    color: #00ff87;
+    border: 1px solid #00E87A;
+    color: #00E87A;
     background: transparent;
     transition: background 0.15s, box-shadow 0.15s;
     cursor: pointer;
     white-space: nowrap;
   }
   .btn-nav-primary:hover {
-    background: rgba(0,255,135,0.08);
-    box-shadow: 0 0 12px rgba(0,255,135,0.20);
+    background: rgba(0,232,122,0.08);
+    box-shadow: 0 0 12px rgba(0,232,122,0.20);
   }
 
   /* Section label — tiny mono caps */
@@ -217,8 +217,8 @@
     transition: border-color 0.2s, box-shadow 0.2s;
   }
   .card-base:hover {
-    border-color: rgba(0,255,135,0.20);
-    box-shadow: 0 0 0 1px rgba(0,255,135,0.06);
+    border-color: rgba(0,232,122,0.20);
+    box-shadow: 0 0 0 1px rgba(0,232,122,0.06);
   }
 
   /* Divider */
@@ -238,14 +238,14 @@
   }
 
   /* Accent text — emerald */
-  .text-accent { color: #00ff87; }
+  .text-accent { color: #00E87A; }
 
   /* Accent text — amber */
   .text-amber { color: #f59e0b; }
 
   /* Accent gradient text — emerald to cyan */
   .text-accent-gradient {
-    background: linear-gradient(90deg, #00ff87 0%, #00d4ff 100%);
+    background: linear-gradient(90deg, #00E87A 0%, #00d4ff 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -297,8 +297,8 @@
     font-family: var(--font-mono);
     letter-spacing: 0.10em;
     text-transform: uppercase;
-    border: 1px solid rgba(0,255,135,0.30);
-    color: #00ff87;
+    border: 1px solid rgba(0,232,122,0.30);
+    color: #00E87A;
     background: transparent;
   }
 
@@ -334,7 +334,7 @@
 /* Applied via .sb-admin wrapper on DashboardLayout */
 .sb-admin {
   /* Dark base */
-  --sb-bg:            #080808;
+  --sb-bg:            #1C1E22;
   --sb-surface:       #111111;
   --sb-surface-2:     #1a1a1a;
   --sb-border:        rgba(255,255,255,0.08);
@@ -346,12 +346,12 @@
   --sb-text-3:        rgba(255,255,255,0.28);
 
   /* Accent — site emerald */
-  --sb-green:         #00ff87;
-  --sb-green-dim:     rgba(0,255,135,0.10);
+  --sb-green:         #00E87A;
+  --sb-green-dim:     rgba(0,232,122,0.10);
 
   /* Status colors — inline text only, no backgrounds */
   --sb-status-new:        #60a5fa;   /* blue */
-  --sb-status-active:     #00ff87;   /* emerald */
+  --sb-status-active:     #00E87A;   /* emerald */
   --sb-status-pending:    #f59e0b;   /* amber */
   --sb-status-done:       rgba(255,255,255,0.30);   /* muted */
   --sb-status-error:      #ef4444;   /* red */
@@ -469,7 +469,7 @@
 .sb-btn-primary {
   background: var(--sb-green);
   border-color: var(--sb-green);
-  color: #080808;
+  color: #1C1E22;
   font-weight: 700;
 }
 .sb-btn-primary:hover { filter: brightness(1.08); }
@@ -510,7 +510,7 @@
 }
 
 /* Dark palette overrides for admin panel — Tailwind utilities */
-.sb-admin .bg-background  { background-color: #080808 !important; }
+.sb-admin .bg-background  { background-color: #1C1E22 !important; }
 .sb-admin .bg-card        { background-color: #111111 !important; }
 .sb-admin .bg-muted       { background-color: #1a1a1a !important; }
 .sb-admin .bg-secondary   { background-color: #1a1a1a !important; }
@@ -597,8 +597,8 @@
 }
 .dark-page-inputs [data-slot="input"]:focus-visible,
 .dark-page-inputs [data-slot="textarea"]:focus-visible {
-  border-color: #00ff87 !important;
-  box-shadow: 0 0 0 2px rgba(0,255,135,0.18) !important;
+  border-color: #00E87A !important;
+  box-shadow: 0 0 0 2px rgba(0,232,122,0.18) !important;
   outline: none !important;
 }
 

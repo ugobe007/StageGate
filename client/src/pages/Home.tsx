@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
 import DemoRequestModal from "@/components/DemoRequestModal";
 import NewsTicker from "@/components/NewsTicker";
+import StageGateLogo from "@/components/StageGateLogo";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
@@ -158,11 +159,11 @@ export default function Home() {
   const upcomingShows = upcomingShowsRaw?.slice(0, 3);
 
   return (
-    <div style={{ background: "#080808", color: "#ececec", minHeight: "100vh" }}>
+    <div style={{ background: "#1C1E22", color: "#ececec", minHeight: "100vh" }}>
 
       {/* ── TOP NAV ──────────────────────────────────────────────────────────── */}
       <nav style={{
-        borderBottom: "1px solid rgba(0,255,135,0.10)",
+        borderBottom: "1px solid rgba(0,232,122,0.10)",
         background: "rgba(8,8,8,0.92)",
         backdropFilter: "blur(12px)",
         position: "sticky",
@@ -172,11 +173,7 @@ export default function Home() {
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 2rem" }}>
           {/* Logo mark */}
           <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <svg width="26" height="26" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 88 L4 6 L76 6 L76 88" stroke="#00ff87" strokeWidth="7" strokeLinejoin="miter" fill="none"/>
-              <path d="M19 88 L19 22 L64 22 L64 88" stroke="#00ff87" strokeWidth="5" strokeLinejoin="miter" fill="none"/>
-              <path d="M34 52 L42 62 L56 46" stroke="#00ff87" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            </svg>
+            <StageGateLogo size={32} variant="icon" />
           </Link>
 
           {/* Nav links */}
@@ -185,7 +182,7 @@ export default function Home() {
             <Link href="/services" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Services</Link>
             <Link href="/xbot" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>XBOT</Link>
             <Link href="/about" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>About</Link>
-            {isAdmin && <Link href="/admin" style={{ fontSize: "0.8125rem", color: "#00ff87", fontWeight: 700, textDecoration: "none" }}>Admin</Link>}
+            {isAdmin && <Link href="/admin" style={{ fontSize: "0.8125rem", color: "#00E87A", fontWeight: 700, textDecoration: "none" }}>Admin</Link>}
             <a href="#contact" style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.60)", fontWeight: 500, textDecoration: "none" }}>Contact</a>
           </div>
 
@@ -195,11 +192,11 @@ export default function Home() {
               <>
                 <Link href={isAdmin ? "/admin" : "/dashboard"} style={{
                   fontSize: "0.8125rem",
-                  color: isAdmin ? "#00ff87" : "rgba(255,255,255,0.85)",
+                  color: isAdmin ? "#00E87A" : "rgba(255,255,255,0.85)",
                   fontWeight: 700,
                   textDecoration: "none",
                   padding: "0.45rem 0.9rem",
-                  border: isAdmin ? "1px solid rgba(0,255,135,0.35)" : "1px solid rgba(255,255,255,0.18)",
+                  border: isAdmin ? "1px solid rgba(0,232,122,0.35)" : "1px solid rgba(255,255,255,0.18)",
                   borderRadius: "6px",
                 }}>{isAdmin ? "Admin Panel" : "Dashboard"}</Link>
                 <button onClick={() => void logout()} style={{
@@ -225,7 +222,7 @@ export default function Home() {
             {!isAuthenticated && <Link href="/register">
               <button style={{
                 background: "#ff9500",
-                color: "#080808",
+                color: "#1C1E22",
                 border: "none",
                 borderRadius: "6px",
                 padding: "0.45rem 1.1rem",
@@ -242,7 +239,7 @@ export default function Home() {
         </div>
 
         {/* Announcement strip */}
-        <div style={{ borderTop: "1px solid rgba(0,255,135,0.07)", background: "rgba(0,255,135,0.03)" }}>
+        <div style={{ borderTop: "1px solid rgba(0,232,122,0.07)", background: "rgba(0,232,122,0.03)" }}>
           <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.35rem 2rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
               <span className="badge-emerald">New</span>
@@ -250,7 +247,7 @@ export default function Home() {
                 Now accepting bookings for CES 2027 and NAB 2026 in Las Vegas
               </span>
             </div>
-            <Link href="/shows" style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.6875rem", color: "#00ff87", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", textDecoration: "none" }}>
+            <Link href="/shows" style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.6875rem", color: "#00E87A", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", textDecoration: "none" }}>
               View shows <ArrowRight size={11} />
             </Link>
           </div>
@@ -272,15 +269,11 @@ export default function Home() {
           <div>
             {/* Logo — large, upper-left of hero */}
             <div style={{ marginBottom: "2.5rem" }}>
-              <img
-                src="/stagegate-logo.png"
-                alt="StageGate"
-                style={{ height: "90px", width: "auto", display: "block" }}
-              />
+              <StageGateLogo size={128} variant="lockup" style={{ display: "block" }} />
             </div>
             <h1 style={{ fontSize: "clamp(3.5rem, 8vw, 7.5rem)", fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em", marginBottom: "2rem" }}>
               Your Robot<br />
-              <span style={{ color: "#00ff87" }}>Performs.</span><br />
+              <span style={{ color: "#00E87A" }}>Performs.</span><br />
               <span style={{ color: "rgba(255,255,255,0.70)" }}>We make sure</span><br />
               <span style={{ color: "rgba(255,255,255,0.70)" }}>it works.</span>
             </h1>
@@ -319,7 +312,7 @@ export default function Home() {
                 <span style={{ fontSize: "0.9375rem", fontWeight: 600, color: "rgba(255,255,255,0.80)" }}>{svc.title}</span>
               </div>
             ))}
-            <Link href="/services" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", marginTop: "1.25rem", fontSize: "0.75rem", color: "#00ff87", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            <Link href="/services" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", marginTop: "1.25rem", fontSize: "0.75rem", color: "#00E87A", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
               All services <ArrowRight size={12} />
             </Link>
           </div>
@@ -360,7 +353,7 @@ export default function Home() {
           </p>
           <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: "1rem", maxWidth: "28ch" }}>
             Robot logistics isn't freight.{" "}
-            <span style={{ color: "#00ff87" }}>It's a layer above freight.</span>
+            <span style={{ color: "#00E87A" }}>It's a layer above freight.</span>
           </h2>
           <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.55)", maxWidth: "56ch", lineHeight: 1.7, marginBottom: "3.5rem" }}>
             DHL moves boxes. FedEx moves pallets. StageGate moves robots — and activates them wherever they land.
@@ -382,8 +375,8 @@ export default function Home() {
                 layer: "Layer 2",
                 name: "StageGate",
                 desc: "Plans the deployment. Activates the robot. Owns the field.",
-                color: "rgba(0,255,135,0.06)",
-                labelColor: "#00ff87",
+                color: "rgba(0,232,122,0.06)",
+                labelColor: "#00E87A",
                 highlight: true,
               },
               {
@@ -395,11 +388,11 @@ export default function Home() {
                 highlight: false,
               },
             ].map((item) => (
-              <div key={item.layer} style={{ padding: "2rem", background: item.color, borderLeft: item.highlight ? "2px solid #00ff87" : "none" }}>
+              <div key={item.layer} style={{ padding: "2rem", background: item.color, borderLeft: item.highlight ? "2px solid #00E87A" : "none" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: item.labelColor, marginBottom: "0.625rem" }}>
                   {item.layer}
                 </div>
-                <div style={{ fontSize: "1rem", fontWeight: 700, color: item.highlight ? "#00ff87" : "rgba(255,255,255,0.70)", marginBottom: "0.5rem", letterSpacing: "-0.02em" }}>
+                <div style={{ fontSize: "1rem", fontWeight: 700, color: item.highlight ? "#00E87A" : "rgba(255,255,255,0.70)", marginBottom: "0.5rem", letterSpacing: "-0.02em" }}>
                   {item.name}
                 </div>
                 <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.45)", lineHeight: 1.65 }}>{item.desc}</p>
@@ -420,7 +413,7 @@ export default function Home() {
             ].map((item, i) => (
               <div key={item.type} style={{ padding: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.07)", borderLeft: i === 0 ? "none" : "1px solid rgba(255,255,255,0.07)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.625rem" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.1em", textTransform: "uppercase", color: item.status === "Live" ? "#00ff87" : item.status === "Expanding" ? "#f59e0b" : "rgba(255,255,255,0.25)", padding: "0.125rem 0.5rem", border: `1px solid ${item.status === "Live" ? "rgba(0,255,135,0.30)" : item.status === "Expanding" ? "rgba(245,158,11,0.30)" : "rgba(255,255,255,0.10)"}`, borderRadius: "100px" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.1em", textTransform: "uppercase", color: item.status === "Live" ? "#00E87A" : item.status === "Expanding" ? "#f59e0b" : "rgba(255,255,255,0.25)", padding: "0.125rem 0.5rem", border: `1px solid ${item.status === "Live" ? "rgba(0,232,122,0.30)" : item.status === "Expanding" ? "rgba(245,158,11,0.30)" : "rgba(255,255,255,0.10)"}`, borderRadius: "100px" }}>
                     {item.status}
                   </span>
                 </div>
@@ -443,7 +436,7 @@ export default function Home() {
               </p>
               <h2 style={{ fontSize: "clamp(2.25rem, 4vw, 3.5rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: "2rem" }}>
                 The deployment OS{" "}
-                <span style={{ color: "#00ff87" }}>built for robots.</span>
+                <span style={{ color: "#00E87A" }}>built for robots.</span>
               </h2>
               <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.75, marginBottom: "1.25rem", maxWidth: "52ch" }}>
                 Every robot sold needs to get from factory to field. It needs customs clearance, receiving, commissioning, and ongoing support. No freight company does that. No OEM wants to build it.
@@ -468,7 +461,7 @@ export default function Home() {
                 </div>
               ))}
               <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "1.5rem" }}>
-                <Link href="/services" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "#00ff87", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                <Link href="/services" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "#00E87A", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
                   View all services <ArrowRight size={12} />
                 </Link>
               </div>
@@ -524,7 +517,7 @@ export default function Home() {
               { id: 3, name: "World of Concrete 2026", venue: "Las Vegas Convention Center", startDate: new Date("2026-01-20"), endDate: new Date("2026-01-23"), location: null, city: null, website: null, exhibitorListUrl: null, createdAt: new Date() },
             ]).slice(0, 3).map((show, i: number) => (
               <div key={show.id} style={{ borderLeft: i === 0 ? "none" : "1px solid rgba(255,255,255,0.07)", padding: i === 0 ? "0 2rem 0 0" : "0 2rem" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "#00ff87", marginBottom: "1rem" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "#00E87A", marginBottom: "1rem" }}>
                   Upcoming
                 </div>
                 <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff", marginBottom: "0.5rem", letterSpacing: "-0.02em" }}>{show.name}</h3>
@@ -590,7 +583,7 @@ export default function Home() {
               This is the situation robot companies face at every deployment — trade show or enterprise. Freight brokers who don't understand robot hardware. Customs agents who've never seen an ATA Carnet for a humanoid. Field teams with no commissioning protocol.
             </p>
             <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
-              <span style={{ color: "#00ff87", fontWeight: 600 }}>XBOT</span> is StageGate's AI deployment planner. Tell it your robot, origin, destination, and deployment type. In under 60 seconds it generates a complete operational brief — customs checklist, activation timeline, service package, and field support plan — tailored to your hardware and route.
+              <span style={{ color: "#00E87A", fontWeight: 600 }}>XBOT</span> is StageGate's AI deployment planner. Tell it your robot, origin, destination, and deployment type. In under 60 seconds it generates a complete operational brief — customs checklist, activation timeline, service package, and field support plan — tailored to your hardware and route.
             </p>
           </div>
 
@@ -605,7 +598,7 @@ export default function Home() {
               { num: "06", label: "Field Support" },
             ].map((step, i) => (
               <div key={i} style={{ borderRight: i < 5 ? "1px solid rgba(255,255,255,0.07)" : "none", padding: "1.5rem 1.5rem 1.5rem 0" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(0,255,135,0.50)", marginBottom: "0.5rem" }}>{step.num}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(0,232,122,0.50)", marginBottom: "0.5rem" }}>{step.num}</div>
                 <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "rgba(255,255,255,0.65)" }}>{step.label}</div>
               </div>
             ))}
@@ -655,7 +648,7 @@ export default function Home() {
                 <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginBottom: "1rem", paddingBottom: "0.75rem", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                   <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "9999px", background: "#ef4444" }} />
                   <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "9999px", background: "#f59e0b" }} />
-                  <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "9999px", background: "#00ff87" }} />
+                  <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "9999px", background: "#00E87A" }} />
                   <span style={{ marginLeft: "0.5rem", fontSize: "0.6875rem", color: "rgba(255,255,255,0.20)" }}>onstage.bot/track/abc123</span>
                 </div>
                 {/* Robot identity */}
@@ -685,21 +678,21 @@ export default function Home() {
                   { ph: 8, label: "Live Show Support",      status: "pending", date: "Jan 6–9" },
                 ].map((row) => (
                   <div key={row.ph} style={{ display: "flex", alignItems: "center", gap: "0.625rem", padding: "0.3125rem 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                    <div style={{ width: "0.875rem", height: "0.875rem", borderRadius: "9999px", flexShrink: 0, background: row.status === "done" ? "rgba(0,255,135,0.15)" : row.status === "active" ? "rgba(245,158,11,0.15)" : "#1a1a1a", border: `1px solid ${row.status === "done" ? "#00ff87" : row.status === "active" ? "#f59e0b" : "rgba(255,255,255,0.12)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {row.status === "done" && <div style={{ width: "0.25rem", height: "0.25rem", borderRadius: "9999px", background: "#00ff87" }} />}
+                    <div style={{ width: "0.875rem", height: "0.875rem", borderRadius: "9999px", flexShrink: 0, background: row.status === "done" ? "rgba(0,232,122,0.15)" : row.status === "active" ? "rgba(245,158,11,0.15)" : "#1a1a1a", border: `1px solid ${row.status === "done" ? "#00E87A" : row.status === "active" ? "#f59e0b" : "rgba(255,255,255,0.12)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {row.status === "done" && <div style={{ width: "0.25rem", height: "0.25rem", borderRadius: "9999px", background: "#00E87A" }} />}
                       {row.status === "active" && <div style={{ width: "0.25rem", height: "0.25rem", borderRadius: "9999px", background: "#f59e0b" }} />}
                     </div>
                     <span style={{ flex: 1, fontSize: "0.6875rem", color: row.status === "pending" ? "rgba(255,255,255,0.30)" : "#ececec" }}>Phase {row.ph} — {row.label}</span>
-                    <span style={{ fontSize: "0.6875rem", color: row.status === "done" ? "#00ff87" : row.status === "active" ? "#f59e0b" : "rgba(255,255,255,0.20)", flexShrink: 0 }}>{row.date}</span>
+                    <span style={{ fontSize: "0.6875rem", color: row.status === "done" ? "#00E87A" : row.status === "active" ? "#f59e0b" : "rgba(255,255,255,0.20)", flexShrink: 0 }}>{row.date}</span>
                   </div>
                 ))}
                 {/* Cost acceptance bar */}
-                <div style={{ marginTop: "0.875rem", padding: "0.625rem 0.75rem", background: "rgba(0,255,135,0.06)", border: "1px solid rgba(0,255,135,0.15)", borderRadius: "0.375rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ marginTop: "0.875rem", padding: "0.625rem 0.75rem", background: "rgba(0,232,122,0.06)", border: "1px solid rgba(0,232,122,0.15)", borderRadius: "0.375rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
                     <p style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.40)", margin: 0 }}>Deployment Estimate</p>
                     <p style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#fff", margin: 0 }}>$24,800</p>
                   </div>
-                  <div style={{ fontSize: "0.6875rem", fontWeight: 600, padding: "0.25rem 0.625rem", background: "#00ff87", color: "#080808", borderRadius: "0.25rem" }}>Accepted ✓</div>
+                  <div style={{ fontSize: "0.6875rem", fontWeight: 600, padding: "0.25rem 0.625rem", background: "#00E87A", color: "#1C1E22", borderRadius: "0.25rem" }}>Accepted ✓</div>
                 </div>
               </div>
             </div>
@@ -711,7 +704,7 @@ export default function Home() {
               </p>
               <h2 style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: "1.5rem" }}>
                 Your robot. Every step.<br />
-                <span style={{ color: "#00ff87" }}>Visible from anywhere.</span>
+                <span style={{ color: "#00E87A" }}>Visible from anywhere.</span>
               </h2>
               <p style={{ fontSize: "1.0625rem", color: "rgba(255,255,255,0.65)", lineHeight: 1.7, marginBottom: "2rem", maxWidth: "44ch" }}>
                 StageGate generates a live tracking link for every deployment. Your team sees exactly where the robot is — from customs clearance to warehouse activation to show-floor go-live.
@@ -722,7 +715,7 @@ export default function Home() {
                 { num: "03", label: "Cost estimate sign-off", desc: "Review and accept the deployment budget in one click." },
               ].map((item, i) => (
                 <div key={i} style={{ display: "flex", gap: "1.25rem", padding: "1rem 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(0,255,135,0.50)", paddingTop: "0.125rem", flexShrink: 0 }}>{item.num}</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(0,232,122,0.50)", paddingTop: "0.125rem", flexShrink: 0 }}>{item.num}</span>
                   <div>
                     <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec", margin: "0 0 0.25rem" }}>{item.label}</p>
                     <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.45)", margin: 0 }}>{item.desc}</p>
@@ -730,7 +723,7 @@ export default function Home() {
                 </div>
               ))}
               <div style={{ marginTop: "2rem" }}>
-                <Link href="/register" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "#080808", background: "#00ff87", padding: "0.75rem 1.5rem", borderRadius: "0.375rem", textDecoration: "none" }}>
+                <Link href="/register" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "#1C1E22", background: "#00E87A", padding: "0.75rem 1.5rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                   Get a tracking link <ArrowRight size={14} />
                 </Link>
               </div>
@@ -748,7 +741,7 @@ export default function Home() {
               <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: "2rem" }}>
                 Promotion Partner
               </p>
-              <blockquote style={{ borderLeft: "2px solid #00ff87", paddingLeft: "1.5rem", marginBottom: "2rem" }}>
+              <blockquote style={{ borderLeft: "2px solid #00E87A", paddingLeft: "1.5rem", marginBottom: "2rem" }}>
                 <p style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)", fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.03em", color: "#fff" }}>
                   "Get your robot in front of press, buyers, and industry leaders — beyond the trade show floor."
                 </p>
@@ -756,7 +749,7 @@ export default function Home() {
               <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: "2rem", maxWidth: "44ch" }}>
                 StageGate partners with The Robot Guild to offer exclusive access to curated showroom events, media days, and promotional activations across Las Vegas.
               </p>
-              <a href="https://www.therobotguild.com/" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "#00ff87", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              <a href="https://www.therobotguild.com/" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", color: "#00E87A", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
                 Visit The Robot Guild <ArrowUpRight size={12} />
               </a>
             </div>
@@ -769,7 +762,7 @@ export default function Home() {
               </p>
               {["Curated showroom events", "Media day access", "Industry buyer introductions", "Promotional activations"].map((item, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "baseline", gap: "1rem", padding: "0.75rem 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(0,255,135,0.40)", flexShrink: 0 }}>{String(i + 1).padStart(2, "0")}</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(0,232,122,0.40)", flexShrink: 0 }}>{String(i + 1).padStart(2, "0")}</span>
                   <span style={{ fontSize: "0.9375rem", color: "rgba(255,255,255,0.55)" }}>{item}</span>
                 </div>
               ))}
@@ -786,7 +779,7 @@ export default function Home() {
           </p>
           <h2 style={{ fontSize: "clamp(3rem, 7vw, 6rem)", fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em", marginBottom: "2rem", maxWidth: "16ch" }}>
             Deploy your robot{" "}
-            <span style={{ color: "#00ff87" }}>anywhere.</span>
+            <span style={{ color: "#00E87A" }}>anywhere.</span>
           </h2>
           <p style={{ fontSize: "1.125rem", color: "rgba(255,255,255,0.75)", maxWidth: "48ch", lineHeight: 1.65, marginBottom: "3rem" }}>
             Register free, tell us about your robot and your next deployment, and let StageGate handle the rest — from customs clearance to go-live activation to ongoing field support.
@@ -872,7 +865,7 @@ export default function Home() {
       <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "3rem 0" }}>
         <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1.5rem" }}>
           <div>
-            <img src="/stagegate-logo.png" alt="StageGate" style={{ height: "48px", width: "auto", display: "block", opacity: 0.85 }} />
+            <StageGateLogo size={64} variant="lockup" style={{ opacity: 0.85, display: "block" }} />
           </div>
           <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
             {[

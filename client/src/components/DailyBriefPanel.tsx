@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { BRAND } from "@/lib/brand";
 import { Loader2, Sun, ArrowRight, Mail, Users, FileEdit, Send } from "lucide-react";
 
 const D = {
@@ -8,7 +9,7 @@ const D = {
   text: "#ececec",
   text2: "rgba(255,255,255,0.55)",
   text3: "rgba(255,255,255,0.28)",
-  emerald: "#00ff87",
+  emerald: BRAND.emerald,
   amber: "#f59e0b",
   blue: "#60a5fa",
   font: "'Space Grotesk','Inter',ui-sans-serif,system-ui,sans-serif",
@@ -69,7 +70,7 @@ export default function DailyBriefPanel({ enabled = true }: Props) {
         marginBottom: "1.25rem",
         padding: "1.25rem",
         background: D.surface,
-        border: `1px solid rgba(0,255,135,0.18)`,
+        border: `1px solid rgba(0,232,122,0.18)`,
         borderRadius: "0.5rem",
         fontFamily: D.font,
       }}
@@ -96,7 +97,7 @@ export default function DailyBriefPanel({ enabled = true }: Props) {
                 key={s.label}
                 style={{
                   padding: "0.75rem",
-                  background: "#080808",
+                  background: "#1C1E22",
                   border: `1px solid ${D.border}`,
                   borderRadius: "0.375rem",
                 }}
@@ -126,8 +127,8 @@ export default function DailyBriefPanel({ enabled = true }: Props) {
                       alignItems: "center",
                       justifyContent: "space-between",
                       padding: "0.5rem 0.75rem",
-                      background: step.priority === "high" ? "rgba(0,255,135,0.06)" : "#080808",
-                      border: `1px solid ${step.priority === "high" ? "rgba(0,255,135,0.25)" : D.border}`,
+                      background: step.priority === "high" ? "rgba(0,232,122,0.06)" : "#1C1E22",
+                      border: `1px solid ${step.priority === "high" ? "rgba(0,232,122,0.25)" : D.border}`,
                       borderRadius: "0.375rem",
                       textDecoration: "none",
                       color: D.text,

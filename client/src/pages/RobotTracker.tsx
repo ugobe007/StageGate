@@ -6,6 +6,7 @@ import {
   Package, Truck, DollarSign, Warehouse, Radio,
   Calendar, ChevronDown, ChevronRight,
 } from "lucide-react";
+import StageGateLogo from "@/components/StageGateLogo";
 
 const PHASE_INFO: Record<number, { label: string; icon: React.ReactNode; description: string }> = {
   1: { label: "Origin Country",       icon: <Package size={16} />,   description: "Robot is being prepared for export" },
@@ -22,7 +23,7 @@ const PHASE_INFO: Record<number, { label: string; icon: React.ReactNode; descrip
 const STATUS_COLORS: Record<string, string> = {
   pending:     "rgba(255,255,255,0.25)",
   in_progress: "#f59e0b",
-  completed:   "#00ff87",
+  completed:   "#00E87A",
   blocked:     "#ef4444",
   escalated:   "#ef4444",
 };
@@ -63,7 +64,7 @@ export default function RobotTracker() {
 
   if (!token) {
     return (
-      <div style={{ minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ minHeight: "100vh", background: "#1C1E22", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <p style={{ color: "rgba(255,255,255,0.40)", fontSize: "1rem" }}>No tracking token provided.</p>
       </div>
     );
@@ -71,7 +72,7 @@ export default function RobotTracker() {
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ minHeight: "100vh", background: "#1C1E22", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Loader2 size={28} style={{ color: "#f59e0b", animation: "spin 1s linear infinite" }} />
       </div>
     );
@@ -79,7 +80,7 @@ export default function RobotTracker() {
 
   if (error || !data) {
     return (
-      <div style={{ minHeight: "100vh", background: "#080808", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
+      <div style={{ minHeight: "100vh", background: "#1C1E22", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
         <AlertCircle size={40} style={{ color: "#ef4444" }} />
         <p style={{ color: "#ececec", fontSize: "1.125rem", fontWeight: 600 }}>Tracking link not found</p>
         <p style={{ color: "rgba(255,255,255,0.40)", fontSize: "0.875rem" }}>This link may have expired or the token is invalid.</p>
@@ -121,14 +122,10 @@ export default function RobotTracker() {
   const phases = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#080808", color: "#ececec", fontFamily: "system-ui, -apple-system, sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#1C1E22", color: "#ececec", fontFamily: "system-ui, -apple-system, sans-serif" }}>
       {/* Top nav strip */}
       <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "1rem 1.5rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-        <svg width="22" height="22" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 88 L4 6 L76 6 L76 88" stroke="#00ff87" strokeWidth="7" strokeLinejoin="miter" fill="none"/>
-          <path d="M19 88 L19 22 L64 22 L64 88" stroke="#00ff87" strokeWidth="5" strokeLinejoin="miter" fill="none"/>
-          <path d="M34 52 L42 62 L56 46" stroke="#00ff87" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-        </svg>
+        <StageGateLogo size={28} variant="icon" />
         <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec" }}>StageGate</span>
         <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", marginLeft: "auto" }}>Robot Deployment Tracker</span>
       </div>
@@ -164,10 +161,10 @@ export default function RobotTracker() {
             <div style={{ marginBottom: "2rem", background: "#111111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.625rem", padding: "1.25rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
                 <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ececec" }}>Overall Progress</span>
-                <span style={{ fontSize: "0.875rem", fontWeight: 700, color: pct === 100 ? "#00ff87" : "#f59e0b" }}>{pct}%</span>
+                <span style={{ fontSize: "0.875rem", fontWeight: 700, color: pct === 100 ? "#00E87A" : "#f59e0b" }}>{pct}%</span>
               </div>
               <div style={{ height: "0.5rem", background: "#1a1a1a", borderRadius: "9999px", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: pct === 100 ? "#00ff87" : "#f59e0b", borderRadius: "9999px", transition: "width 0.5s" }} />
+                <div style={{ height: "100%", width: `${pct}%`, background: pct === 100 ? "#00E87A" : "#f59e0b", borderRadius: "9999px", transition: "width 0.5s" }} />
               </div>
               <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", marginTop: "0.5rem" }}>{completedCount} of {total} checkpoints complete</p>
             </div>
@@ -207,8 +204,8 @@ export default function RobotTracker() {
                     style={{ width: "100%", display: "flex", alignItems: "center", gap: "0.875rem", padding: "0.875rem 1rem", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}
                   >
                     {/* Status icon */}
-                    <div style={{ flexShrink: 0, width: "1.5rem", height: "1.5rem", borderRadius: "9999px", display: "flex", alignItems: "center", justifyContent: "center", background: st === "completed" ? "rgba(0,255,135,0.15)" : st === "in_progress" ? "rgba(245,158,11,0.15)" : "#1a1a1a", border: `1px solid ${st === "completed" ? "rgba(0,255,135,0.4)" : st === "in_progress" ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.1)"}` }}>
-                      {st === "completed" ? <CheckCircle2 size={13} style={{ color: "#00ff87" }} /> : st === "in_progress" ? <Clock size={13} style={{ color: "#f59e0b" }} /> : <Circle size={13} style={{ color: "rgba(255,255,255,0.20)" }} />}
+                    <div style={{ flexShrink: 0, width: "1.5rem", height: "1.5rem", borderRadius: "9999px", display: "flex", alignItems: "center", justifyContent: "center", background: st === "completed" ? "rgba(0,232,122,0.15)" : st === "in_progress" ? "rgba(245,158,11,0.15)" : "#1a1a1a", border: `1px solid ${st === "completed" ? "rgba(0,232,122,0.4)" : st === "in_progress" ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.1)"}` }}>
+                      {st === "completed" ? <CheckCircle2 size={13} style={{ color: "#00E87A" }} /> : st === "in_progress" ? <Clock size={13} style={{ color: "#f59e0b" }} /> : <Circle size={13} style={{ color: "rgba(255,255,255,0.20)" }} />}
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -216,7 +213,7 @@ export default function RobotTracker() {
                         <span style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.30)", flexShrink: 0 }}>Phase {phaseNum}</span>
                         <span style={{ fontSize: "0.9375rem", fontWeight: st === "in_progress" ? 600 : 500, color: st === "pending" ? "rgba(255,255,255,0.40)" : "#ececec" }}>{info.label}</span>
                         {st === "in_progress" && <span style={{ fontSize: "0.6875rem", padding: "0.125rem 0.5rem", borderRadius: "9999px", background: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)" }}>In Progress</span>}
-                        {st === "completed" && <span style={{ fontSize: "0.6875rem", color: "#00ff87" }}>✓</span>}
+                        {st === "completed" && <span style={{ fontSize: "0.6875rem", color: "#00E87A" }}>✓</span>}
                       </div>
                       <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", margin: "0.125rem 0 0" }}>{info.description}</p>
                     </div>
@@ -235,11 +232,11 @@ export default function RobotTracker() {
                           <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b", margin: "0 0 0.5rem" }}>Checkpoints</p>
                           {cps.map(cp => (
                             <div key={cp.id} style={{ display: "flex", alignItems: "center", gap: "0.625rem", padding: "0.5rem 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                              {cp.status === "completed" ? <CheckCircle2 size={13} style={{ color: "#00ff87", flexShrink: 0 }} /> : cp.status === "in_progress" ? <Clock size={13} style={{ color: "#f59e0b", flexShrink: 0 }} /> : <Circle size={13} style={{ color: "rgba(255,255,255,0.20)", flexShrink: 0 }} />}
+                              {cp.status === "completed" ? <CheckCircle2 size={13} style={{ color: "#00E87A", flexShrink: 0 }} /> : cp.status === "in_progress" ? <Clock size={13} style={{ color: "#f59e0b", flexShrink: 0 }} /> : <Circle size={13} style={{ color: "rgba(255,255,255,0.20)", flexShrink: 0 }} />}
                               <div style={{ flex: 1 }}>
                                 <span style={{ fontSize: "0.875rem", color: cp.status === "pending" ? "rgba(255,255,255,0.40)" : "#ececec" }}>{cp.title}</span>
                                 {cp.dueAt && <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.25)", marginLeft: "0.5rem" }}>Due {new Date(cp.dueAt).toLocaleDateString()}</span>}
-                                {cp.completedAt && <span style={{ fontSize: "0.75rem", color: "#00ff87", marginLeft: "0.5rem" }}>✓ {new Date(cp.completedAt).toLocaleDateString()}</span>}
+                                {cp.completedAt && <span style={{ fontSize: "0.75rem", color: "#00E87A", marginLeft: "0.5rem" }}>✓ {new Date(cp.completedAt).toLocaleDateString()}</span>}
                               </div>
                               {cp.customerVisibleNote && (
                                 <span style={{ fontSize: "0.75rem", color: "#3b82f6", maxWidth: "14rem", textAlign: "right" }}>{cp.customerVisibleNote}</span>
@@ -271,7 +268,7 @@ export default function RobotTracker() {
 
         {/* Cost estimate acceptance */}
         {hasCosts && (
-          <div style={{ marginBottom: "2rem", background: "#111111", border: `1px solid ${estimateAccepted ? "rgba(0,255,135,0.3)" : "rgba(255,255,255,0.10)"}`, borderRadius: "0.625rem", padding: "1.5rem" }}>
+          <div style={{ marginBottom: "2rem", background: "#111111", border: `1px solid ${estimateAccepted ? "rgba(0,232,122,0.3)" : "rgba(255,255,255,0.10)"}`, borderRadius: "0.625rem", padding: "1.5rem" }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1rem" }}>
               <div>
                 <p style={{ fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b", marginBottom: "0.25rem" }}>Cost Estimate</p>
@@ -282,7 +279,7 @@ export default function RobotTracker() {
             </div>
 
             {estimateAccepted ? (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#00ff87", fontSize: "0.875rem", fontWeight: 500 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#00E87A", fontSize: "0.875rem", fontWeight: 500 }}>
                 <CheckCircle2 size={16} /> Estimate accepted — StageGate team will be in touch.
               </div>
             ) : (
@@ -298,7 +295,7 @@ export default function RobotTracker() {
                   <button
                     onClick={() => { if (!acceptName.trim()) { alert("Please enter your name to accept."); return; } setAccepting(true); acceptEstimate.mutate({ token, acceptedBy: acceptName.trim() }); }}
                     disabled={accepting || !acceptName.trim()}
-                    style={{ fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1.25rem", background: "#00ff87", color: "#080808", border: "none", borderRadius: "0.375rem", cursor: "pointer" }}
+                    style={{ fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1.25rem", background: "#00E87A", color: "#1C1E22", border: "none", borderRadius: "0.375rem", cursor: "pointer" }}
                   >
                     {accepting ? "Saving…" : "Accept Estimate"}
                   </button>
@@ -311,7 +308,7 @@ export default function RobotTracker() {
         {/* Footer */}
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "1.5rem", textAlign: "center" }}>
           <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.25)" }}>
-            Questions? Email <a href="mailto:hello@onstage.bot" style={{ color: "#00ff87", textDecoration: "none" }}>hello@onstage.bot</a>
+            Questions? Email <a href="mailto:hello@onstage.bot" style={{ color: "#00E87A", textDecoration: "none" }}>hello@onstage.bot</a>
           </p>
           <p style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.15)", marginTop: "0.25rem" }}>
             StageGate — Robot Deployment Infrastructure · Las Vegas, NV

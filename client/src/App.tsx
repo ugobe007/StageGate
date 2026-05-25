@@ -50,6 +50,7 @@ import AdminCalendar from "./pages/AdminCalendar";
 import CalendarEventPage from "./pages/CalendarEventPage";
 import Newsletter from "./pages/Newsletter";
 import RobotTracker from "./pages/RobotTracker";
+import LogoPreview from "./pages/LogoPreview";
 
 /** Wraps admin pages in the shared DashboardLayout sidebar shell */
 function AdminShell({ children }: { children: React.ReactNode }) {
@@ -67,6 +68,7 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/get-started" component={GetStarted} />
       <Route path="/about" component={About} />
+      <Route path="/logo-preview" component={LogoPreview} />
       <Route path="/newsletter" component={Newsletter} />
       <Route path="/shows" component={ShowsCalendar} />
       <Route path="/shows/:id" component={ShowDetail} />
