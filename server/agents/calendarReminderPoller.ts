@@ -9,6 +9,7 @@ import { calendarEvents } from "../../drizzle/schema";
 import { and, isNull, gte, lte } from "drizzle-orm";
 import { sendEmail } from "../email";
 import { notifyOwner } from "../_core/notification";
+import { emailLogoHtml } from "@shared/siteBrand";
 
 const TOMMY_EMAIL = "tom@starsupportinc.com";
 const OWNER_EMAIL = "ugobe07@gmail.com";
@@ -101,7 +102,8 @@ export async function runCalendarReminderPoller(): Promise<ReminderResult> {
       if (evt.prospectEmail) {
         const prospectHtml = `
 <div style="font-family:sans-serif;max-width:600px;">
-  <h2 style="color:#1a1a1a;">Reminder: Your Meeting with StageGate is Tomorrow</h2>
+  ${emailLogoHtml(48)}
+  <h2 style="color:#1a1a1a;margin-top:16px;">Reminder: Your Meeting with StageGate is Tomorrow</h2>
   <p>Hi ${evt.prospectName ?? "there"},</p>
   <p>This is a friendly reminder that your meeting with the StageGate team is scheduled for tomorrow:</p>
   <table style="border-collapse:collapse;width:100%;margin:1rem 0;">

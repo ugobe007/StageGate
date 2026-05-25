@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
+import { emailLogoHtml } from "@shared/siteBrand";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
@@ -2393,7 +2394,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
   <div class="card">
     <div class="header">
       <div>
-        <div class="logo">Stage<span>Gate</span></div>
+        <div class="logo">${emailLogoHtml(44)}</div>
         <div style="font-size:12px;color:#888;margin-top:4px">Robotics Activation Infrastructure &bull; Las Vegas, NV</div>
       </div>
       <div class="meta">
@@ -2522,7 +2523,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
   <div class="card">
     <div class="header">
       <div>
-        <div class="logo">Stage<span>Gate</span></div>
+        <div class="logo">${emailLogoHtml(44)}</div>
         <div style="font-size:12px;color:#888;margin-top:4px">Robotics Activation Infrastructure &bull; Las Vegas, NV</div>
       </div>
       <div class="meta">

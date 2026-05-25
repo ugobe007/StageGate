@@ -13,6 +13,7 @@
  */
 
 import type { Request, Response } from "express";
+import { emailLogoHtml } from "@shared/siteBrand";
 import { sdk } from "../_core/sdk";
 import { getDb } from "../db";
 import { bookingRequests } from "../../drizzle/schema";
@@ -103,7 +104,7 @@ export async function quoteFollowupHandler(req: Request, res: Response) {
 </head>
 <body>
   <div class="card">
-    <div class="logo">Stage<span>Gate</span></div>
+    <div class="logo">${emailLogoHtml(44)}</div>
     <h2>Just checking in on your quote</h2>
     <p>Hi ${b.contactName ?? "there"},</p>
     <p>
