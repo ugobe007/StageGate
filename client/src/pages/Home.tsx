@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
 import DemoRequestModal from "@/components/DemoRequestModal";
+import HeirResearchAppendix from "@/components/HeirResearchAppendix";
 import NewsTicker from "@/components/NewsTicker";
 import StageGateLogo from "@/components/StageGateLogo";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -861,6 +862,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <HeirResearchAppendix />
 
       {/* ── FOOTER ───────────────────────────────────────────────────────────── */}
       <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "3rem 0" }}>

@@ -244,4 +244,12 @@ describe("v30.7 — discovery auto-classification", () => {
     const snippet = agent.slice(ingestIdx, ingestIdx + 2000);
     expect(snippet).toContain("robotCategory");
   });
+
+  it("ingest handler accepts BUILT_IN_FORGE_API_KEY bearer from discovery jobs", () => {
+    const agent = readFile("server/agents/salesAgent.ts");
+    expect(agent).toContain("isForgeCronBearer");
+    const ingestIdx = agent.indexOf("salesAgentIngestHandler");
+    const snippet = agent.slice(ingestIdx, ingestIdx + 400);
+    expect(snippet).toContain("isForgeCronBearer");
+  });
 });

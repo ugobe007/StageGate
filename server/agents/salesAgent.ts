@@ -223,15 +223,24 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
   }
 }
 
+/** Bearer token used by discovery/RSS jobs when POSTing to the ingest endpoint. */
+export function isForgeCronBearer(req: Request): boolean {
+  const expected = process.env.BUILT_IN_FORGE_API_KEY;
+  if (!expected) return false;
+  return req.headers.authorization === `Bearer ${expected}`;
+}
+
 // ─── 2. Ingest Handler ────────────────────────────────────────────────────────
 export async function salesAgentIngestHandler(req: Request, res: Response) {
-  try {
-    const user = await sdk.authenticateRequest(req);
-    if (!user.isCron && user.role !== "admin") {
-      return res.status(403).json({ error: "Forbidden" });
+  if (!isForgeCronBearer(req)) {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron && user.role !== "admin") {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+    } catch {
+      return res.status(403).json({ error: "Invalid session" });
     }
-  } catch {
-    return res.status(403).json({ error: "Invalid session" });
   }
 
   const db = await getDb();

@@ -18,7 +18,7 @@ export const SITE = {
 
 /** Absolute URLs for favicons, PWA icons, and social preview images. */
 export const SITE_ASSETS = {
-  faviconSvg: `${SITE_URL}/stagegate-mark.svg`,
+  faviconSvg: `${SITE_URL}/favicon.svg`,
   favicon16: `${SITE_URL}/favicon-16x16.png`,
   favicon32: `${SITE_URL}/favicon-32x32.png`,
   appleTouchIcon: `${SITE_URL}/apple-touch-icon.png`,
