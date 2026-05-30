@@ -11,7 +11,7 @@ import { getLoginUrl } from "@/const";
 import { BRAND, emeraldAlpha } from "@/lib/brand";
 
 /* ── Image URLs ─────────────────────────────────────────────────────────────── */
-const IMG_HERO   = "/manus-storage/ces-unitree-pack_cb20bcdc.png";
+const IMG_COWBOY_SHOW = "/photos/hero-cowboy-show.png";
 const IMG_GRID_1 = "/manus-storage/ces-richtech-robot_e74b2991.png";
 const IMG_GRID_2 = "/manus-storage/ces-hisense-robots_ac1d2332.png";
 const IMG_GRID_3 = "/manus-storage/ces-unitree-rider_fac4d951.png";
@@ -29,7 +29,7 @@ const IMG_HUMANOID_MARCH = "/manus-storage/hero-humanoid-march.png";
 type HeroSlide = { src: string; position: string };
 
 const HERO_SLIDES: HeroSlide[] = [
-  { src: IMG_HERO, position: "center 30%" },
+  { src: IMG_COWBOY_SHOW, position: "center 35%" },
   { src: IMG_GXO_WAREHOUSE, position: "center 35%" },
   { src: IMG_ROKAE_DEMO, position: "center center" },
   { src: IMG_GRID_1, position: "center center" },

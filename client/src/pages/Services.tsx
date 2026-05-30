@@ -409,7 +409,7 @@ export default function Services() {
           {[
             { src: "/photos/fleet-robots.png", alt: "Humanoid robot fleet", caption: "Fleet deployment" },
             { src: "/photos/rokae-demo.png",   alt: "Robot demo activation",  caption: "Show activation" },
-            { src: "/photos/tesla-optimus.png", alt: "Tesla Optimus operating", caption: "Live operations" },
+            { src: "/photos/unitree-show.png", alt: "Unitree humanoid at a trade show demo", caption: "Unitree · show floor" },
             { src: "/photos/tradeshow-floor.png", alt: "Trade show floor", caption: "Show-floor support" },
           ].map((img, i) => (
             <div key={i} style={{ position: "relative", overflow: "hidden", borderLeft: i === 0 ? "none" : `1px solid ${BORDER}` }}>
