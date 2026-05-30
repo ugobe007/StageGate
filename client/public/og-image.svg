@@ -1,21 +1,31 @@
 <svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url("fonts/SpaceGrotesk-Bold.woff2") format("woff2");
+        font-weight: 700;
+        font-style: normal;
+      }
+    </style>
+  </defs>
   <rect width="1200" height="630" fill="#1C1E22"/>
-  <text x="600" y="248" text-anchor="middle" font-family="Space Grotesk, Inter, system-ui, sans-serif" font-size="112" font-weight="700" letter-spacing="-0.03em">
+  <text x="600" y="248" text-anchor="middle" font-family="'Space Grotesk', 'Inter', system-ui, sans-serif" font-size="112" font-weight="700" letter-spacing="-0.03em">
     <tspan fill="#00E87A">[</tspan>
     <tspan fill="#FFFFFF">S</tspan>
     <tspan fill="#00E87A">/</tspan>
     <tspan fill="#FFFFFF">G</tspan>
     <tspan fill="#00E87A">]</tspan>
   </text>
-  <text x="600" y="318" text-anchor="middle" font-family="Space Grotesk, Inter, system-ui, sans-serif" font-size="42" font-weight="700" letter-spacing="0.14em">
+  <text x="600" y="318" text-anchor="middle" font-family="'Space Grotesk', 'Inter', system-ui, sans-serif" font-size="42" font-weight="700" letter-spacing="0.14em">
     <tspan fill="#FFFFFF">STAGE</tspan>
     <tspan fill="#00E87A">/</tspan>
     <tspan fill="#00E87A">GATE</tspan>
   </text>
-  <text x="600" y="392" text-anchor="middle" font-family="Space Grotesk, Inter, system-ui, sans-serif" font-size="28" font-weight="500" fill="#EBEDF0" opacity="0.85">
+  <text x="600" y="392" text-anchor="middle" font-family="'Space Grotesk', 'Inter', system-ui, sans-serif" font-size="28" font-weight="500" fill="#EBEDF0" opacity="0.85">
     Robotics Activation Infrastructure
   </text>
-  <text x="600" y="448" text-anchor="middle" font-family="JetBrains Mono, ui-monospace, monospace" font-size="22" font-weight="500" fill="#00E87A" letter-spacing="0.08em">
+  <text x="600" y="448" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="22" font-weight="500" fill="#00E87A" letter-spacing="0.08em">
     onstage.bot
   </text>
 </svg>

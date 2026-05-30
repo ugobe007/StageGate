@@ -1,9 +1,9 @@
-<svg width="72" height="32" viewBox="0 0 72 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="StageGate">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 32" fill="none" role="img" aria-label="StageGate">
   <defs>
     <style>
       @font-face {
         font-family: "Space Grotesk";
-        src: url("fonts/SpaceGrotesk-Bold.woff2") format("woff2");
+        src: url("../fonts/SpaceGrotesk-Bold.woff2") format("woff2");
         font-weight: 700;
         font-style: normal;
       }
