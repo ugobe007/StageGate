@@ -49,6 +49,7 @@ import AdminServiceRequests from "./pages/AdminServiceRequests";
 import AdminCalendar from "./pages/AdminCalendar";
 import CalendarEventPage from "./pages/CalendarEventPage";
 import Newsletter from "./pages/Newsletter";
+import Marketing from "./pages/Marketing";
 import RobotTracker from "./pages/RobotTracker";
 import LogoPreview from "./pages/LogoPreview";
 
@@ -70,6 +71,7 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/logo-preview" component={LogoPreview} />
       <Route path="/newsletter" component={Newsletter} />
+      <Route path="/marketing" component={Marketing} />
       <Route path="/shows" component={ShowsCalendar} />
       <Route path="/shows/:id" component={ShowDetail} />
 
