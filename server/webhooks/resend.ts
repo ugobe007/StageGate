@@ -5,8 +5,8 @@
  */
 import type { Request, Response } from "express";
 import { getDb } from "../db";
-import { emailTrackingEvents, prospectActivities, draftEmails, salesAgentConversations } from "../../drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { emailTrackingEvents, prospectActivities, draftEmails, salesAgentConversations, emailThreads } from "../../drizzle/schema";
+import { eq, and, sql } from "drizzle-orm";
 import { verifyResendSignature } from "./resendVerify";
 
 export async function resendWebhookHandler(req: Request, res: Response): Promise<void> {
@@ -21,7 +21,7 @@ export async function resendWebhookHandler(req: Request, res: Response): Promise
     data?: {
       email_id?: string;
       message_id?: string;
-      to?: string[];
+      to?: string[] | string;
       click?: { link?: string };
       created_at?: string;
     };
@@ -46,9 +46,13 @@ export async function resendWebhookHandler(req: Request, res: Response): Promise
       return;
     }
 
-    // Try to find the prospect linked to this messageId.
-    // Strategy 1: match by Resend message ID stored on draft_emails (most reliable)
-    // Strategy 2: fall back to recipient email address
+    // Resolve the prospect behind this event. Attribution is best-effort and
+    // layered so a single missing field (e.g. an older send that never stored
+    // its Resend message ID) does not drop the event on the floor:
+    //   1a. Resend message ID on the sent draft.
+    //   1b. Resend message ID on the outbound thread (stored more often).
+    //   2a. Recipient email → prospect (case-insensitive).
+    //   2b. Recipient email → outbound thread's toAddress (case-insensitive).
     let prospectId: number | null = null;
 
     if (messageId) {
@@ -57,22 +61,46 @@ export async function resendWebhookHandler(req: Request, res: Response): Promise
         .from(draftEmails)
         .where(eq(draftEmails.resendMessageId, messageId))
         .limit(1);
-      if (draftRows[0]?.prospectId) {
-        prospectId = draftRows[0].prospectId;
+      prospectId = draftRows[0]?.prospectId ?? null;
+
+      if (!prospectId) {
+        const threadRows = await db
+          .select({ prospectId: emailThreads.prospectId })
+          .from(emailThreads)
+          .where(eq(emailThreads.resendMessageId, messageId))
+          .limit(1);
+        prospectId = threadRows[0]?.prospectId ?? null;
       }
     }
 
     if (!prospectId) {
-      const recipientEmail = Array.isArray(data.to) ? data.to[0] : null;
-      if (recipientEmail) {
+      const rawRecipient = Array.isArray(data.to)
+        ? data.to[0]
+        : typeof data.to === "string"
+          ? data.to
+          : null;
+      const recipient = rawRecipient?.trim().toLowerCase() ?? null;
+      if (recipient) {
         const { prospects: prospectsTable } = await import("../../drizzle/schema");
         const found = await db
           .select({ id: prospectsTable.id })
           .from(prospectsTable)
-          .where(eq(prospectsTable.contactEmail, recipientEmail))
+          .where(sql`lower(${prospectsTable.contactEmail}) = ${recipient}`)
           .limit(1);
-        if (found[0]?.id) {
-          prospectId = found[0].id;
+        prospectId = found[0]?.id ?? null;
+
+        if (!prospectId) {
+          const threadByTo = await db
+            .select({ prospectId: emailThreads.prospectId })
+            .from(emailThreads)
+            .where(
+              and(
+                eq(emailThreads.direction, "outbound"),
+                sql`lower(${emailThreads.toAddress}) = ${recipient}`
+              )
+            )
+            .limit(1);
+          prospectId = threadByTo[0]?.prospectId ?? null;
         }
       }
     }

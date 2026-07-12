@@ -151,8 +151,9 @@ describe("v36: link_clicked follow-up shortening — runtime", () => {
     const selectFn = vi.fn().mockImplementation(() => {
       selectCallCount++;
       if (selectCallCount === 1) return makeChain([]); // draftEmails: no match by messageId
-      if (selectCallCount === 2) return makeChain([{ id: 99 }]); // prospects: found by email
-      if (selectCallCount === 3) return makeChain([{ id: 7, state: "intro_sent", nextFollowUpAt: fiveDaysFromNow }]); // conv
+      if (selectCallCount === 2) return makeChain([]); // emailThreads: no match by messageId
+      if (selectCallCount === 3) return makeChain([{ id: 99 }]); // prospects: found by email
+      if (selectCallCount === 4) return makeChain([{ id: 7, state: "intro_sent", nextFollowUpAt: fiveDaysFromNow }]); // conv
       return makeChain([]);
     });
 
@@ -202,8 +203,9 @@ describe("v36: link_clicked follow-up shortening — runtime", () => {
     const selectFn = vi.fn().mockImplementation(() => {
       selectCallCount++;
       if (selectCallCount === 1) return makeChain([]);
-      if (selectCallCount === 2) return makeChain([{ id: 100 }]);
-      if (selectCallCount === 3) return makeChain([{ id: 8, state: "followup_1", nextFollowUpAt: sixHoursFromNow }]);
+      if (selectCallCount === 2) return makeChain([]);
+      if (selectCallCount === 3) return makeChain([{ id: 100 }]);
+      if (selectCallCount === 4) return makeChain([{ id: 8, state: "followup_1", nextFollowUpAt: sixHoursFromNow }]);
       return makeChain([]);
     });
 
@@ -249,8 +251,9 @@ describe("v36: link_clicked follow-up shortening — runtime", () => {
     const selectFn = vi.fn().mockImplementation(() => {
       selectCallCount++;
       if (selectCallCount === 1) return makeChain([]);
-      if (selectCallCount === 2) return makeChain([{ id: 101 }]);
-      if (selectCallCount === 3) return makeChain([{ id: 9, state: "intro_sent", nextFollowUpAt: null }]);
+      if (selectCallCount === 2) return makeChain([]);
+      if (selectCallCount === 3) return makeChain([{ id: 101 }]);
+      if (selectCallCount === 4) return makeChain([{ id: 9, state: "intro_sent", nextFollowUpAt: null }]);
       return makeChain([]);
     });
 
