@@ -52,6 +52,7 @@ import Newsletter from "./pages/Newsletter";
 import Marketing from "./pages/Marketing";
 import RobotTracker from "./pages/RobotTracker";
 import LogoPreview from "./pages/LogoPreview";
+import AdminOrbital from "./pages/AdminOrbital";
 
 /** Wraps admin pages in the shared DashboardLayout sidebar shell */
 function AdminShell({ children }: { children: React.ReactNode }) {
@@ -111,6 +112,7 @@ function Router() {
       <Route path="/admin/logistics">{() => <AdminShell><AdminLogistics /></AdminShell>}</Route>
       <Route path="/admin/service-requests">{() => <AdminShell><AdminServiceRequests /></AdminShell>}</Route>
       <Route path="/admin/calendar">{() => <AdminShell><AdminCalendar /></AdminShell>}</Route>
+      <Route path="/admin/orbital">{() => <AdminShell><AdminOrbital /></AdminShell>}</Route>
 
       {/* Public calendar share link */}
       <Route path="/calendar/:token" component={CalendarEventPage} />

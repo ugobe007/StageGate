@@ -24,6 +24,7 @@ import { rssIntelligenceHandler } from "../agents/rssIntelligence";
 import { runCheckpointPoller } from "../agents/checkpointPoller";
 import { quoteFollowupHandler } from "../scheduled/quoteFollowup";
 import { runCalendarReminderPoller } from "../agents/calendarReminderPoller";
+import { createOrbitalRouter } from "../integrations/orbital";
 
 export async function createStageGateApp(): Promise<Express> {
   const app = express();
@@ -44,6 +45,10 @@ export async function createStageGateApp(): Promise<Express> {
 
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+
+  // Orbital AI fleet monitor/control — proxied same-origin so the SPA never sees the
+  // cloud URL/key. Returns 503 configured:false when ORBITAL_API_URL is unset.
+  app.use("/api/orbital", createOrbitalRouter());
 
   app.use(
     "/api/trpc",
