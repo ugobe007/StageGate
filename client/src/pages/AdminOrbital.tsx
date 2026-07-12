@@ -28,6 +28,16 @@ interface FleetResponse {
   vendors: string[];
   robots: RobotSummary[];
 }
+interface OrchestratorDecision {
+  id: string; ts: number; robot_id?: string | null;
+  action: "auto_estop" | "dispatch_charge" | "recommend_review" | "monitor";
+  severity: "critical" | "warning" | "info"; rationale: string; auto_executed: boolean;
+}
+interface OrchestratorStatus {
+  enabled: boolean; llm_enabled: boolean; last_run_ts?: number | null;
+  narrative: string; decisions: OrchestratorDecision[];
+  summary?: { total: number; active: number; halted: number; unacked_alerts: number } | null;
+}
 
 const STATE_COLOR: Record<RobotSummary["state"], string> = {
   active: BRAND.emerald,
@@ -70,6 +80,7 @@ export default function AdminOrbital() {
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [fleet, setFleet] = useState<FleetResponse | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [orchestrator, setOrchestrator] = useState<OrchestratorStatus | null>(null);
   const [industry, setIndustry] = useState<string>("All");
   const [selected, setSelected] = useState<RobotDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,12 +90,14 @@ export default function AdminOrbital() {
 
   const refresh = useCallback(async () => {
     try {
-      const [f, a] = await Promise.all([
+      const [f, a, o] = await Promise.all([
         orbitalFetch<FleetResponse>("/fleet"),
         orbitalFetch<Alert[]>("/alerts?limit=25"),
+        orbitalFetch<OrchestratorStatus>("/orchestrator").catch(() => null),
       ]);
       setFleet(f);
       setAlerts(Array.isArray(a) ? a : []);
+      if (o) setOrchestrator(o);
       setError(null);
       setLastSync(new Date());
     } catch (e) {
@@ -258,6 +271,42 @@ export default function AdminOrbital() {
           </div>
         </div>
 
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Autonomy (orchestrator) rail */}
+        <div style={{ background: cardBg, border, borderRadius: 12, padding: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <Bot size={16} color={BRAND.emerald} />
+            <h3 style={{ margin: 0, fontSize: ".95rem" }}>Autonomy</h3>
+            {orchestrator && (
+              <span style={{ marginLeft: "auto", fontSize: ".64rem", textTransform: "uppercase", letterSpacing: ".5px", color: orchestrator.enabled ? BRAND.emerald : "rgba(255,255,255,0.4)" }}>
+                {orchestrator.enabled ? "supervising" : "off"}
+              </span>
+            )}
+          </div>
+          {!orchestrator ? (
+            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".8rem" }}>Orchestrator not reporting.</div>
+          ) : (
+            <>
+              <p style={{ margin: "0 0 10px", fontSize: ".8rem", color: "rgba(255,255,255,0.72)", lineHeight: 1.5 }}>
+                {orchestrator.narrative || "Fleet nominal."}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {orchestrator.decisions.slice(0, 6).map((d) => (
+                  <div key={d.id} style={{ borderLeft: `3px solid ${SEVERITY_COLOR[d.severity]}`, paddingLeft: 10 }}>
+                    <div style={{ fontSize: ".74rem", fontWeight: 600, color: d.auto_executed ? BRAND.emerald : "rgba(255,255,255,0.75)" }}>
+                      {d.action.replace(/_/g, " ")}{d.auto_executed ? " ✓" : ""}
+                    </div>
+                    <div style={{ fontSize: ".7rem", color: "rgba(255,255,255,0.55)" }}>{d.rationale}</div>
+                  </div>
+                ))}
+                {orchestrator.decisions.length === 0 && (
+                  <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".76rem" }}>No supervisory actions taken.</div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
         {/* Alerts rail */}
         <div style={{ background: cardBg, border, borderRadius: 12, padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
@@ -280,6 +329,7 @@ export default function AdminOrbital() {
               </div>
             ))}
           </div>
+        </div>
         </div>
       </div>
 

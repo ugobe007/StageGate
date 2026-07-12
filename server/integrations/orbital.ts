@@ -92,6 +92,10 @@ export function createOrbitalRouter(): Router {
   router.get("/benchmark", (req, res) => void forward(req, res, "/api/dashboard/benchmark"));
   router.get("/benchmark/:vendor", (req, res) => void forward(req, res, `/api/dashboard/benchmark/${encodeURIComponent(req.params.vendor)}`));
 
+  // Autonomy layer (orchestrator) — supervisory status + on-demand pass.
+  router.get("/orchestrator", (req, res) => void forward(req, res, "/api/dashboard/orchestrator"));
+  router.post("/orchestrator/run", (req, res) => void forward(req, res, "/api/dashboard/orchestrator/run"));
+
   // Control surface — E-stop / resume / task dispatch / alert ack.
   router.post("/robot/:id/estop", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/estop`));
   router.post("/robot/:id/resume", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/resume`));
