@@ -36,11 +36,9 @@ function IconMark({
       fontWeight="700"
       letterSpacing="-0.03em"
     >
-      <tspan fill={emerald}>[</tspan>
       <tspan fill={textColor}>S</tspan>
       <tspan fill={emerald}>/</tspan>
       <tspan fill={textColor}>G</tspan>
-      <tspan fill={emerald}>]</tspan>
     </text>
   );
 }
@@ -76,7 +74,7 @@ function Wordmark({
 }
 
 /**
- * StageGate brand mark — [S/G] icon with optional STAGE/GATE lockup.
+ * StageGate brand mark — S/G icon with optional STAGE/GATE lockup.
  */
 export default function StageGateLogo({
   size = 32,

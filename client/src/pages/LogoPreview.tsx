@@ -8,7 +8,7 @@ export default function LogoPreview() {
         StageGate brand mark
       </h1>
       <p style={{ color: BRAND.midGray, marginBottom: "2rem", fontSize: "0.9rem" }}>
-        Official [S/G] icon and STAGE/GATE lockup · Emerald {BRAND.emerald}
+        Official S/G icon and STAGE/GATE lockup · Emerald {BRAND.emerald}
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", maxWidth: "960px" }}>

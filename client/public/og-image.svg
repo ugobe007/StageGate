@@ -11,11 +11,9 @@
   </defs>
   <rect width="1200" height="630" fill="#1C1E22"/>
   <text x="600" y="248" text-anchor="middle" font-family="'Space Grotesk', 'Inter', system-ui, sans-serif" font-size="112" font-weight="700" letter-spacing="-0.03em">
-    <tspan fill="#00E87A">[</tspan>
     <tspan fill="#FFFFFF">S</tspan>
     <tspan fill="#00E87A">/</tspan>
     <tspan fill="#FFFFFF">G</tspan>
-    <tspan fill="#00E87A">]</tspan>
   </text>
   <text x="600" y="318" text-anchor="middle" font-family="'Space Grotesk', 'Inter', system-ui, sans-serif" font-size="42" font-weight="700" letter-spacing="0.14em">
     <tspan fill="#FFFFFF">STAGE</tspan>

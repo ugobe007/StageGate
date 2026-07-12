@@ -10,10 +10,10 @@ export const SITE_BRAND = {
   nearBlack: "#1C1E22",
 } as const;
 
-/** Inline email-safe logo mark (square [S/G] icon). */
+/** Inline email-safe logo mark (square S/G icon). */
 export function emailLogoHtml(size = 48): string {
   return `<img src="${SITE_BRAND.logoIconUrl}" alt="${SITE_BRAND.name}" width="${size}" height="${size}" style="display:block;border:0;border-radius:8px;" />`;
 }
 
 /** Text fallback lockup for plain-text contexts. */
-export const emailLogoText = "[S/G] StageGate";
+export const emailLogoText = "S/G StageGate";

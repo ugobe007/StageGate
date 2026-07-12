@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Rasterize StageGate brand SVGs to PNG favicons and social preview assets.
- * Uses the same [S/G] icon mark as StageGateLogo (72×32) on brand near-black.
+ * Uses the same S/G icon mark as StageGateLogo (72×32) on brand near-black.
  * Run: node scripts/generate-brand-assets.mjs
  */
 import path from "path";
