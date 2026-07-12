@@ -1,17 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity, AlertTriangle, BatteryCharging, Bot, CircleStop, Cpu, Gauge, KeyRound,
-  Loader2, Lock, Play, RefreshCw, Radio, ShieldAlert, Thermometer, X,
+  Loader2, Lock, Map, Play, RefreshCw, Radio, ShieldAlert, Thermometer, X,
 } from "lucide-react";
 import { BRAND, emeraldAlpha } from "@/lib/brand";
 
 // ── Types (mirror orbital_cloud/models.py) ────────────────────────────────────
 interface Pose { x: number; y: number; theta: number }
+interface Point { x: number; y: number }
 interface RobotSummary {
   id: string; vendor: string; model: string; industry: string;
   state: "active" | "idle" | "charging" | "halted" | "offline";
   battery_pct: number; pose_external: Pose; pose_internal: Pose;
   drift_delta_m: number; current_task?: string | null; error_code?: string | null;
+  visual_nav?: boolean; nav_goal?: Point | null; waypoints?: Point[];
+}
+interface WarehouseRack { id: string; x: number; y: number; w: number; h: number }
+interface WarehouseMap {
+  name: string; width_m: number; height_m: number;
+  racks: WarehouseRack[];
+  charge_stations: { id: string; x: number; y: number }[];
+  dock?: { x: number; y: number; w: number; h: number };
 }
 interface BatteryTelemetry { pct?: number | null; temperature_c?: number | null; voltage_v?: number | null; current_a?: number | null; cycles?: number | null }
 interface MotorTelemetry { joint: string; temperature_c?: number | null; current_a?: number | null; torque_nm?: number | null; position_rad?: number | null; velocity_rad_s?: number | null }
@@ -115,6 +124,8 @@ export default function AdminOrbital() {
   const [selected, setSelected] = useState<RobotDetail | null>(null);
   const [oems, setOems] = useState<OEMProfile[]>([]);
   const [manageOem, setManageOem] = useState<OEMProfile | null>(null);
+  const [map, setMap] = useState<WarehouseMap | null>(null);
+  const [mapSel, setMapSel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [lastSync, setLastSync] = useState<Date | null>(null);
@@ -162,6 +173,11 @@ export default function AdminOrbital() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [configured, refresh]);
 
+  useEffect(() => {
+    if (!configured) return;
+    orbitalFetch<WarehouseMap>("/map").then(setMap).catch(() => {});
+  }, [configured]);
+
   const openRobot = useCallback(async (id: string) => {
     try {
       const detail = await orbitalFetch<RobotDetail>(`/robot/${encodeURIComponent(id)}`);
@@ -183,6 +199,23 @@ export default function AdminOrbital() {
       setBusy((b) => ({ ...b, [id]: false }));
     }
   }, [refresh, selected, openRobot]);
+
+  const navigate = useCallback(async (id: string, waypoints: Point[]) => {
+    setBusy((b) => ({ ...b, [id]: true }));
+    try {
+      await orbitalFetch(`/robot/${encodeURIComponent(id)}/navigate`, { method: "POST", body: JSON.stringify({ waypoints }) });
+      await refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy((b) => ({ ...b, [id]: false }));
+    }
+  }, [refresh]);
+
+  const clearRoute = useCallback(async (id: string) => {
+    try { await orbitalFetch(`/robot/${encodeURIComponent(id)}/navigate/clear`, { method: "POST" }); await refresh(); }
+    catch (e) { setError((e as Error).message); }
+  }, [refresh]);
 
   const ackAlert = useCallback(async (id: string) => {
     setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, acknowledged: true } : a)));
@@ -220,6 +253,19 @@ export default function AdminOrbital() {
     const g = new Set(p.granted_scopes);
     return { managed: true, estop: g.has("control.estop"), velocity: g.has("control.velocity"), mission: g.has("mission.dispatch") };
   }, [oems]);
+
+  // Click the floor with a robot selected → set a visual-control waypoint (shift = append).
+  const handleFloorClick = useCallback((x: number, y: number, append: boolean) => {
+    if (!mapSel) return;
+    const r = fleet?.robots.find((rr) => rr.id === mapSel);
+    if (!r) return;
+    if (!vendorControl(r.vendor).velocity) {
+      setError(`${r.vendor} hasn't granted control.velocity — grant it in OEM Partners to set waypoints for ${r.id}.`);
+      return;
+    }
+    const existing = append ? (r.waypoints ?? []).map((w) => ({ x: w.x, y: w.y })) : [];
+    void navigate(mapSel, [...existing, { x: +x.toFixed(2), y: +y.toFixed(2) }]);
+  }, [mapSel, fleet, vendorControl, navigate]);
 
   const cardBg = "#22252A";
   const border = "1px solid rgba(255,255,255,0.08)";
@@ -277,6 +323,44 @@ export default function AdminOrbital() {
         <Kpi label="E-Stopped" value={counts.halted} icon={<CircleStop size={16} color="#ef4444" />} accent={counts.halted > 0 ? "#ef4444" : undefined} />
         <Kpi label="Active alerts" value={activeAlerts.length} icon={<AlertTriangle size={16} color="#f59e0b" />} accent={activeAlerts.length > 0 ? "#f59e0b" : undefined} />
       </div>
+
+      {/* Warehouse map */}
+      {map && (
+        <div style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+            <Map size={16} color={BRAND.emerald} />
+            <h3 style={{ margin: 0, fontSize: ".95rem" }}>Warehouse — Global Spatial Map</h3>
+            <span style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.4)" }}>
+              select a robot, then click the floor to set a visual-control waypoint (bypasses onboard SLAM) · shift-click to chain
+            </span>
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+              {mapSel && (() => {
+                const r = fleet?.robots.find((x) => x.id === mapSel);
+                const routing = !!(r?.waypoints?.length);
+                return (
+                  <>
+                    <span style={{ fontSize: ".72rem", padding: "3px 10px", borderRadius: 999, background: emeraldAlpha(0.14), color: BRAND.emerald }}>
+                      {mapSel}{routing ? " · en route" : ""}
+                    </span>
+                    {routing && (
+                      <button onClick={() => clearRoute(mapSel)} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer" }}>Clear route</button>
+                    )}
+                    <button onClick={() => setMapSel(null)} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer" }}>Deselect</button>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+          <WarehouseMapView map={map} robots={fleet?.robots ?? []} selectedId={mapSel}
+            onSelectRobot={setMapSel} onFloorClick={handleFloorClick} />
+          <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap", fontSize: ".68rem", color: "rgba(255,255,255,0.5)" }}>
+            <Legend color={BRAND.emerald} label="camera pose (ground truth)" />
+            <Legend color="rgba(255,255,255,0.5)" label="robot self-report (SLAM)" ring />
+            <Legend color="#f59e0b" label="visual-nav path → waypoint" bar />
+            <Legend color="#4b5563" label="storage rack" square />
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 20, marginTop: 20, alignItems: "start" }}>
         <div>
@@ -464,6 +548,103 @@ export default function AdminOrbital() {
           onSave={(want) => saveOemScopes(manageOem, want)} onToggleStatus={() => toggleOemStatus(manageOem)} />
       )}
     </div>
+  );
+}
+
+function Legend({ color, label, ring, bar, square }: { color: string; label: string; ring?: boolean; bar?: boolean; square?: boolean }) {
+  const swatch = bar
+    ? <span style={{ width: 14, height: 2, background: color, display: "inline-block" }} />
+    : square
+      ? <span style={{ width: 10, height: 10, background: color, display: "inline-block" }} />
+      : <span style={{ width: 10, height: 10, borderRadius: 999, background: ring ? "transparent" : color, border: ring ? `1px solid ${color}` : "none", display: "inline-block" }} />;
+  return <span style={{ display: "flex", alignItems: "center", gap: 6 }}>{swatch}{label}</span>;
+}
+
+function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick }: {
+  map: WarehouseMap; robots: RobotSummary[]; selectedId: string | null;
+  onSelectRobot: (id: string) => void; onFloorClick: (x: number, y: number, append: boolean) => void;
+}) {
+  const ref = useRef<SVGSVGElement | null>(null);
+  const W = map.width_m, H = map.height_m;
+  const Y = (y: number) => H - y;
+  const amber = "#f59e0b";
+
+  const floorClick = (e: React.MouseEvent) => {
+    const svg = ref.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const fx = (e.clientX - rect.left) / rect.width;
+    const fy = (e.clientY - rect.top) / rect.height;
+    onFloorClick(fx * W, (1 - fy) * H, e.shiftKey);
+  };
+
+  const grid: React.ReactNode[] = [];
+  for (let gx = 2; gx < W; gx += 2) grid.push(<line key={`vx${gx}`} x1={gx} y1={0} x2={gx} y2={H} stroke="#1b2130" strokeWidth={0.02} />);
+  for (let gy = 2; gy < H; gy += 2) grid.push(<line key={`vy${gy}`} x1={0} y1={gy} x2={W} y2={gy} stroke="#1b2130" strokeWidth={0.02} />);
+
+  return (
+    <svg ref={ref} viewBox={`0 0 ${W} ${H}`} onClick={floorClick}
+      style={{ width: "100%", aspectRatio: `${W} / ${H}`, background: "#15171B", borderRadius: 8, cursor: selectedId ? "crosshair" : "default", userSelect: "none", display: "block" }}>
+      <rect x={0} y={0} width={W} height={H} fill="#0f1622" stroke="#26303f" strokeWidth={0.06} />
+      {grid}
+      {map.dock && (
+        <>
+          <rect x={map.dock.x} y={Y(map.dock.y + map.dock.h)} width={map.dock.w} height={map.dock.h} fill="#1e3a5f" stroke="#38bdf8" strokeWidth={0.04} opacity={0.8} />
+          <text x={map.dock.x + map.dock.w / 2} y={Y(map.dock.y + map.dock.h) + map.dock.h / 2 + 0.2} fill="#7dd3fc" fontSize={0.5} textAnchor="middle">DOCK</text>
+        </>
+      )}
+      {map.racks.map((r) => (
+        <g key={r.id}>
+          <rect x={r.x} y={Y(r.y + r.h)} width={r.w} height={r.h} rx={0.1} fill="#333844" stroke="#4b5563" strokeWidth={0.04} />
+          <text x={r.x + r.w / 2} y={Y(r.y + r.h / 2) + 0.18} fill="#94a3b8" fontSize={0.55} textAnchor="middle">{r.id}</text>
+        </g>
+      ))}
+      {(map.charge_stations ?? []).map((c) => (
+        <g key={c.id}>
+          <circle cx={c.x} cy={Y(c.y)} r={0.5} fill="#0ea5e9" opacity={0.2} />
+          <text x={c.x} y={Y(c.y) + 0.2} fill="#38bdf8" fontSize={0.6} textAnchor="middle">⚡</text>
+        </g>
+      ))}
+      {robots.map((r) => {
+        const ex = r.pose_external, ins = r.pose_internal;
+        const selected = r.id === selectedId;
+        const fill = STATE_COLOR[r.state];
+        const hx = ex.x + Math.cos(ex.theta) * 0.6, hy = ex.y + Math.sin(ex.theta) * 0.6;
+        const wps = r.waypoints ?? [];
+        return (
+          <g key={r.id}>
+            {wps.length > 0 && (
+              <>
+                <polyline points={[`${ex.x},${Y(ex.y)}`, ...wps.map((w) => `${w.x},${Y(w.y)}`)].join(" ")}
+                  fill="none" stroke={amber} strokeWidth={0.06} strokeDasharray="0.3 0.2" opacity={0.9} />
+                {wps.map((w, i) => {
+                  const last = i === wps.length - 1;
+                  return (
+                    <g key={i}>
+                      <circle cx={w.x} cy={Y(w.y)} r={last ? 0.32 : 0.22} fill={last ? amber : "none"} stroke={amber} strokeWidth={0.06} />
+                      <line x1={w.x - 0.18} y1={Y(w.y)} x2={w.x + 0.18} y2={Y(w.y)} stroke={last ? "#0f1622" : amber} strokeWidth={0.05} />
+                      <line x1={w.x} y1={Y(w.y) - 0.18} x2={w.x} y2={Y(w.y) + 0.18} stroke={last ? "#0f1622" : amber} strokeWidth={0.05} />
+                    </g>
+                  );
+                })}
+              </>
+            )}
+            {r.drift_delta_m > 0.05 && (
+              <>
+                <line x1={ins.x} y1={Y(ins.y)} x2={ex.x} y2={Y(ex.y)} stroke="#64748b" strokeWidth={0.03} strokeDasharray="0.15 0.15" opacity={0.7} />
+                <circle cx={ins.x} cy={Y(ins.y)} r={0.26} fill="none" stroke="#94a3b8" strokeWidth={0.05} opacity={0.6} />
+              </>
+            )}
+            {selected && <circle cx={ex.x} cy={Y(ex.y)} r={0.6} fill="none" stroke={amber} strokeWidth={0.08} />}
+            <g style={{ cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); onSelectRobot(r.id); }}>
+              <circle cx={ex.x} cy={Y(ex.y)} r={0.36} fill={fill} stroke="#0f1622" strokeWidth={0.06} />
+              <line x1={ex.x} y1={Y(ex.y)} x2={hx} y2={Y(hy)} stroke="#e2e8f0" strokeWidth={0.07} />
+              <text x={ex.x + 0.5} y={Y(ex.y) - 0.35} fill="#cbd5e1" fontSize={0.5}>{r.id}</text>
+            </g>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
