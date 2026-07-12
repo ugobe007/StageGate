@@ -14,9 +14,25 @@ export function getRawBody(req: Request): string | null {
   return null;
 }
 
+/**
+ * Parse RESEND_WEBHOOK_SECRET into a list of candidate secrets. Multiple
+ * secrets (comma- or whitespace-separated) let one server verify several
+ * Resend webhooks that each carry their own signing secret — e.g. the
+ * open/click tracking endpoint and the inbound-reply endpoint — as well as
+ * survive a secret rotation without downtime.
+ */
+function getWebhookSecrets(): string[] {
+  const raw = process.env.RESEND_WEBHOOK_SECRET;
+  if (!raw) return [];
+  return raw
+    .split(/[\s,]+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
 export function verifyResendSignature(req: Request): boolean {
-  const secret = process.env.RESEND_WEBHOOK_SECRET;
-  if (!secret) {
+  const secrets = getWebhookSecrets();
+  if (secrets.length === 0) {
     console.warn("[Resend Webhook] RESEND_WEBHOOK_SECRET not set — skipping signature verification");
     return process.env.NODE_ENV !== "production";
   }
@@ -40,36 +56,39 @@ export function verifyResendSignature(req: Request): boolean {
       return false;
     }
 
-    try {
-      const rawSecret = secret.startsWith("whsec_")
-        ? Buffer.from(secret.slice(6), "base64")
-        : Buffer.from(secret, "base64");
-
-      const toSign = `${svixId}.${svixTimestamp}.${body}`;
-      const hmac = crypto.createHmac("sha256", rawSecret).update(toSign).digest("base64");
-
-      return svixSignature.split(" ").some(sig => {
-        const parts = sig.split(",");
-        return parts.length === 2 && parts[0] === "v1" && parts[1] === hmac;
-      });
-    } catch {
-      return false;
-    }
+    const toSign = `${svixId}.${svixTimestamp}.${body}`;
+    const provided = svixSignature.split(" ");
+    return secrets.some(secret => {
+      try {
+        const rawSecret = secret.startsWith("whsec_")
+          ? Buffer.from(secret.slice(6), "base64")
+          : Buffer.from(secret, "base64");
+        const hmac = crypto.createHmac("sha256", rawSecret).update(toSign).digest("base64");
+        return provided.some(sig => {
+          const parts = sig.split(",");
+          return parts.length === 2 && parts[0] === "v1" && parts[1] === hmac;
+        });
+      } catch {
+        return false;
+      }
+    });
   }
 
   const legacySig = req.headers["resend-signature"] as string | undefined;
   if (legacySig) {
-    try {
-      const parts = Object.fromEntries(legacySig.split(",").map(p => p.split("=")));
-      const ts = parts["t"];
-      const v1 = parts["v1"];
-      if (!ts || !v1) return false;
-      const toSign = `${ts}.${body}`;
-      const hmac = crypto.createHmac("sha256", secret).update(toSign).digest("hex");
-      return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(v1));
-    } catch {
-      return false;
-    }
+    const parts = Object.fromEntries(legacySig.split(",").map(p => p.split("=")));
+    const ts = parts["t"];
+    const v1 = parts["v1"];
+    if (!ts || !v1) return false;
+    const toSign = `${ts}.${body}`;
+    return secrets.some(secret => {
+      try {
+        const hmac = crypto.createHmac("sha256", secret).update(toSign).digest("hex");
+        return hmac.length === v1.length && crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(v1));
+      } catch {
+        return false;
+      }
+    });
   }
 
   return false;

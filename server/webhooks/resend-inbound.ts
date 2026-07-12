@@ -71,15 +71,44 @@ export async function resendInboundHandler(req: Request, res: Response) {
       return res.status(401).json({ error: "Invalid signature" });
     }
 
-    const payload = req.body as ResendInboundPayload;
-    const fromAddress = extractEmail(payload.from ?? "");
-    const toAddress = payload.to ?? FRANK_FROM_EMAIL;
-    const subject = payload.subject ?? "(no subject)";
-    const bodyText = payload.text ?? "";
-    const bodyHtml = payload.html ?? "";
-    const inReplyTo = payload.headers?.["in-reply-to"] ?? payload.inReplyTo ?? null;
-    const references = payload.headers?.["references"] ?? payload.references ?? null;
-    const messageId = payload.headers?.["message-id"] ?? null;
+    const raw = (req.body ?? {}) as ResendInboundEvent;
+
+    // Resend delivers events as { type, data }. Ignore anything that isn't inbound mail.
+    if (raw.type && raw.type !== "email.received") {
+      return res.status(200).json({ ok: true, ignored: true, type: raw.type });
+    }
+
+    // Support both the wrapped event shape and a flat legacy payload.
+    const meta: ResendInboundData = (raw.data ?? raw) as ResendInboundData;
+
+    // This Resend account also receives mail for other domains (e.g. readyforrobots.com);
+    // an email.received webhook fires account-wide, so only handle StageGate recipients.
+    const recipients = normalizeRecipients(meta.to);
+    if (recipients.length > 0 && !recipients.some(r => r.toLowerCase().includes("onstage.bot"))) {
+      return res.status(200).json({ ok: true, ignored: true, reason: "not a StageGate recipient" });
+    }
+
+    const fromAddress = extractEmail(meta.from ?? "");
+    const toAddress = recipients[0] ?? FRANK_FROM_EMAIL;
+    const subject = meta.subject ?? "(no subject)";
+    const emailId = meta.email_id ?? null;
+
+    // The webhook payload carries metadata only — fetch the body + headers separately.
+    let bodyText = meta.text ?? "";
+    let bodyHtml = meta.html ?? "";
+    let headers = normalizeHeaders(meta.headers);
+    if (emailId && !bodyText && !bodyHtml) {
+      const fetched = await fetchReceivedEmail(emailId);
+      if (fetched) {
+        bodyText = fetched.text ?? "";
+        bodyHtml = fetched.html ?? "";
+        headers = { ...headers, ...fetched.headers };
+      }
+    }
+
+    const inReplyTo = headers["in-reply-to"] ?? raw.inReplyTo ?? null;
+    const references = headers["references"] ?? raw.references ?? null;
+    const messageId = headers["message-id"] ?? emailId ?? null;
 
     if (!fromAddress) {
       return res.status(400).json({ error: "missing from address" });
@@ -545,15 +574,72 @@ function extractEmail(raw: string): string {
   return match ? match[1].trim() : raw.trim();
 }
 
-// ─── Payload type ─────────────────────────────────────────────────────────────
+function normalizeRecipients(to: unknown): string[] {
+  if (Array.isArray(to)) return to.map(t => extractEmail(String(t))).filter(Boolean);
+  if (typeof to === "string") return to.split(",").map(s => extractEmail(s.trim())).filter(Boolean);
+  return [];
+}
 
-interface ResendInboundPayload {
+/** Resend returns headers as an object; older/parsed payloads may use an array of {name,value}. */
+function normalizeHeaders(h: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (Array.isArray(h)) {
+    for (const item of h) {
+      const entry = item as { name?: string; value?: unknown };
+      if (entry?.name) out[String(entry.name).toLowerCase()] = String(entry.value ?? "");
+    }
+  } else if (h && typeof h === "object") {
+    for (const [k, v] of Object.entries(h as Record<string, unknown>)) {
+      out[k.toLowerCase()] = typeof v === "string" ? v : String(v);
+    }
+  }
+  return out;
+}
+
+/** Fetch the full inbound email body + headers from Resend's Receiving API (webhooks are metadata-only). */
+async function fetchReceivedEmail(
+  emailId: string,
+): Promise<{ text?: string; html?: string; headers: Record<string, string> } | null> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const r = await fetch(`https://api.resend.com/emails/receiving/${emailId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!r.ok) {
+      console.error("[Inbound] receiving.get failed:", r.status);
+      return null;
+    }
+    const d = (await r.json()) as { text?: string; html?: string; headers?: unknown };
+    return { text: d.text, html: d.html, headers: normalizeHeaders(d.headers) };
+  } catch (err) {
+    console.error("[Inbound] receiving.get error:", String(err).slice(0, 200));
+    return null;
+  }
+}
+
+// ─── Payload types ────────────────────────────────────────────────────────────
+
+interface ResendInboundData {
+  email_id?: string;
   from?: string;
-  to?: string;
+  to?: string[] | string;
   subject?: string;
   text?: string;
   html?: string;
+  headers?: Record<string, string> | Array<{ name: string; value: string }>;
+}
+
+interface ResendInboundEvent {
+  type?: string;
+  data?: ResendInboundData;
+  // Legacy flat fields (pre-envelope payloads / direct calls).
+  from?: string;
+  to?: string[] | string;
+  subject?: string;
+  text?: string;
+  html?: string;
+  headers?: Record<string, string>;
   inReplyTo?: string;
   references?: string;
-  headers?: Record<string, string>;
 }

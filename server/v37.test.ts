@@ -48,9 +48,10 @@ describe("v37: Reply detection — static analysis", () => {
       expect(idx).toBeGreaterThan(-1);
     });
 
-    it("logs an email_replied activity with follow-ups paused message", () => {
+    it("logs an email_replied activity and pauses follow-ups on reply", () => {
       expect(inboundContent).toContain("email_replied");
-      expect(inboundContent).toContain("follow-ups paused");
+      // Follow-ups are paused by clearing nextFollowUpAt when a reply advances state.
+      expect(inboundContent).toContain("nextFollowUpAt: null");
     });
 
     it("includes email_opened and link_clicked in OUTREACH_STAGES set", () => {
@@ -60,7 +61,8 @@ describe("v37: Reply detection — static analysis", () => {
 
     it("handles scheduling intent separately (goes to scheduling, not awaiting_reply)", () => {
       expect(inboundContent).toContain('"scheduling"');
-      expect(inboundContent).toContain("wantsToSchedule");
+      // Scheduling is driven by classified intent categories, not a boolean flag.
+      expect(inboundContent).toContain("POSITIVE_SCHEDULE");
     });
   });
 

@@ -273,8 +273,9 @@ describe("v38: Runtime — inbound webhook reply body capture", () => {
 
   it("inbound webhook falls back to generic message when body is empty", () => {
     const content = fs.readFileSync(INBOUND_WEBHOOK, "utf-8");
-    // When replySnippet is falsy, falls back to generic message
-    expect(content).toContain("Inbound reply from");
-    expect(content).toContain("follow-ups paused");
+    // When replySnippet is falsy, falls back to a generic "Reply from <sender>" message.
+    expect(content).toContain("Reply from ${fromAddress}");
+    // A reply pauses automated follow-ups by clearing nextFollowUpAt.
+    expect(content).toContain("nextFollowUpAt: null");
   });
 });
