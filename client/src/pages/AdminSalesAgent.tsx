@@ -29,9 +29,9 @@ import { Progress } from "@/components/ui/progress";
 const STAGES = [
   { id: "discovery",      label: "Discovered",     color: "text-zinc-400" },
   { id: "intro_sent",     label: "Intro Sent",      color: "text-blue-400" },
-  { id: "followup_1",     label: "Follow-up 1",     color: "text-indigo-400" },
-  { id: "followup_2",     label: "Follow-up 2",     color: "text-violet-400" },
-  { id: "robot_guild",    label: "Robot Guild",     color: "text-amber-400" },
+  { id: "followup_1",     label: "Ask / Learn",     color: "text-indigo-400" },
+  { id: "followup_2",     label: "Recommend",       color: "text-violet-400" },
+  { id: "robot_guild",    label: "Advisory",        color: "text-amber-400" },
   { id: "responded",      label: "Responded",       color: "text-emerald-400" },
   { id: "scheduling",     label: "Scheduling",      color: "text-teal-400" },
   { id: "booked",         label: "Booked",          color: "text-emerald-400" },
@@ -794,6 +794,16 @@ export default function AdminSalesAgent() {
     onError: (err) => toast.error(`Discovery failed: ${err.message}`),
   });
 
+  // Hunter.io — find real, verified decision-maker emails for prospects that
+  // only have guessed or missing contacts.
+  const enrichHunter = trpc.salesAgent.enrichContactsHunter.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      refetchConvs();
+    },
+    onError: (err) => toast.error(`Hunter enrichment failed: ${err.message}`),
+  });
+
   // v38: update prospect notes
   const updateProspectNotes = trpc.salesAgent.updateProspectNotes.useMutation({
     onSuccess: () => {
@@ -967,7 +977,7 @@ export default function AdminSalesAgent() {
                     <div>
                       <h1 className="text-lg font-semibold text-white">Cal</h1>
                       <p className="text-xs text-zinc-500">
-                        Lead Solutions Engineer · approachable, engaging, smart.
+                        Physical AI Deployment Advisor · teaches, asks, earns trust.
                         {lastRun ? ` Last outreach run ${timeAgo(lastRun.startedAt)}.` : ""}
                       </p>
                     </div>
@@ -997,6 +1007,18 @@ export default function AdminSalesAgent() {
                         : verifyProgressOpen
                           ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Running…</>
                           : <><ShieldCheck className="w-3.5 h-3.5" /> Verify All</>}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-emerald-700 text-emerald-400 hover:bg-emerald-950 gap-1.5"
+                      onClick={() => enrichHunter.mutate({ limit: 25 })}
+                      disabled={enrichHunter.isPending}
+                      title="Find real decision-maker emails via Hunter.io for prospects with missing/guessed contacts"
+                    >
+                      {enrichHunter.isPending
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding…</>
+                        : <><MousePointerClick className="w-3.5 h-3.5" /> Find Emails</>}
                     </Button>
                     <Button
                       size="sm"

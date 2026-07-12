@@ -7,15 +7,15 @@ describe("pickCalInsight", () => {
     expect(pickCalInsight(ctx)).toBe(pickCalInsight(ctx));
   });
 
-  it("prefers CES-specific insight when show matches", () => {
-    const insight = pickCalInsight({ companyName: "TestCo", showName: "CES 2026" });
-    expect(insight.toLowerCase()).toMatch(/ces|vegas|paradise|staging/);
+  it("prefers robot-type-specific insight when robotType matches", () => {
+    const insight = pickCalInsight({ companyName: "TestCo", robotType: "humanoid" });
+    expect(insight.toLowerCase()).toMatch(/humanoid|calibration|safety|maintenance/);
   });
 
-  it("does not mention Ready For Robots buyer-signal language", () => {
+  it("returns a deployment-focused lesson, not sales language", () => {
     for (const id of listCalInsightIds()) {
-      const insight = pickCalInsight({ companyName: id, showName: "CES", seed: id });
-      expect(insight).not.toMatch(/Ready For Robots|buyer signal|lead score|sales channel/i);
+      const insight = pickCalInsight({ companyName: id, seed: id });
+      expect(insight).not.toMatch(/Ready For Robots|buyer signal|lead score|sales channel|book a demo|special offer/i);
     }
   });
 });

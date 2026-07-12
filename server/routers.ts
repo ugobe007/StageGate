@@ -3107,6 +3107,23 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         return { runId, showCount: shows.length, message: `Discovery started for ${shows.length} shows. Check Runs tab for progress.` };
       }),
 
+    enrichContactsHunter: adminProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).optional() }).optional())
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const { hunterEnabled } = await import("./integrations/hunter");
+        if (!hunterEnabled()) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "HUNTER_API_KEY not configured" });
+        }
+        const { enrichProspectsBatch } = await import("./agents/prospectEnrichment");
+        const result = await enrichProspectsBatch(dbConn, input?.limit ?? 25);
+        return {
+          ...result,
+          message: `Hunter found real emails for ${result.enriched} of ${result.attempted} prospects.`,
+        };
+      }),
+
     verifyAllUnverified: adminProcedure
       .mutation(async () => {
         const dbConn = await getDb();

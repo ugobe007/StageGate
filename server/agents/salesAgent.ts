@@ -18,7 +18,7 @@
  */
 
 import type { Request, Response } from "express";
-import { eq, and, lte, inArray } from "drizzle-orm";
+import { eq, and, or, lte, gte, isNull, inArray, count, sql } from "drizzle-orm";
 import { getDb, getUpcomingLasVegasShows } from "../db.js";
 import {
   prospects,
@@ -45,8 +45,17 @@ import {
 } from "./frankPlaybook.js";
 import { outreachEmailPolicySummary, selectOutreachEmail } from "../outreachContacts.js";
 import { pickCalInsight } from "./calInsights.js";
+import { hunterEnabled } from "../integrations/hunter.js";
+import { enrichProspectContact, prospectNeedsEnrichment } from "./prospectEnrichment.js";
 
-const OUTREACH_BATCH_SIZE = 8;
+// Emails Cal sends per nightly run. Env-tunable so throughput can be ramped for
+// deliverability. Default 20 (the team's documented Resend-safe ceiling) clears
+// a ~236-lead backlog in ~12 nights vs the ~30 the old value of 8 required.
+const OUTREACH_BATCH_SIZE = Number(process.env.OUTREACH_BATCH_SIZE) || 20;
+// Minimum days between two Cal emails to the same prospect. Guards against
+// duplicate sends from state drift or overlapping runs; long-dormant leads
+// (past campaigns) are outside the window and may re-engage.
+const RECENT_SEND_COOLDOWN_DAYS = Number(process.env.OUTREACH_COOLDOWN_DAYS) || 3;
 const RESEND_API = "https://api.resend.com/emails";
 const ADMIN_BCC = "bob@starsupportinc.com";
 
@@ -93,32 +102,102 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
   try {
     const now = new Date();
 
-    // Find conversations ready for next action (any actionable stage with nextFollowUpAt due)
-    // NOTE: awaiting_reply, responded, scheduling, booked, not_interested, converted are
-    // intentionally excluded — automated follow-ups are paused for these states.
+    // Actionable stages only. awaiting_reply, responded, scheduling, booked,
+    // not_interested, converted are intentionally excluded — automated
+    // follow-ups are paused once a human is (or should be) in the loop.
+    const ACTIONABLE_STATES = [
+      "discovery",
+      "intro_sent",
+      "followup_1",
+      "email_opened",
+      "link_clicked",
+    ] as ConversationStage[];
+
+    // A conversation is "due" when its timer has elapsed OR was never set.
+    // Older discovery seeds left nextFollowUpAt NULL; the previous `<= now`
+    // check silently excluded them (SQL NULL comparison), stranding them
+    // forever. Treating NULL as due is what actually gets Cal talking.
+    const dueFilter = and(
+      inArray(salesAgentConversations.state, ACTIONABLE_STATES),
+      or(
+        lte(salesAgentConversations.nextFollowUpAt, now),
+        isNull(salesAgentConversations.nextFollowUpAt)
+      )
+    );
+
     const readyConvs = await db
       .select({ conv: salesAgentConversations, prospect: prospects })
       .from(salesAgentConversations)
       .innerJoin(prospects, eq(salesAgentConversations.prospectId, prospects.id))
-      .where(
-        and(
-          inArray(salesAgentConversations.state, [
-            "discovery",
-            "intro_sent",
-            "followup_1",
-            "email_opened",
-            "link_clicked",
-          ] as ConversationStage[]),
-          lte(salesAgentConversations.nextFollowUpAt, now)
-        )
+      .where(dueFilter)
+      // Prioritise leads we can actually reach (real inbox on file), then the
+      // longest-waiting, so each capped batch converts to the most real sends.
+      .orderBy(
+        sql`(${prospects.contactEmail} IS NOT NULL AND ${prospects.contactEmail} <> '') DESC`,
+        sql`${salesAgentConversations.nextFollowUpAt} ASC NULLS LAST`
       )
       .limit(OUTREACH_BATCH_SIZE);
 
-    for (const { conv, prospect } of readyConvs) {
-      if ((conv.followUpCount ?? 0) >= MAX_OUTREACH_EMAILS) continue;
+    // Diagnostics: without this, a run that skips every ready conversation looks
+    // identical to a run with nothing to do (status "completed", emailsSent 0).
+    // Record why each candidate was skipped so runs are explainable after the fact.
+    const skips = { cap: 0, noEmail: 0, emptyBody: 0, recentlyContacted: 0 };
+    let hunterEnriched = 0;
+    const totalDue = await db
+      .select({ count: count() })
+      .from(salesAgentConversations)
+      .where(dueFilter)
+      .then((r) => Number(r[0]?.count ?? 0));
 
-      const toEmail = selectOutreachEmail(prospect);
-      if (!toEmail) continue;
+    // Safety rail: never email the same prospect twice inside a short window,
+    // regardless of conversation-state drift or overlapping runs. Prospects
+    // last contacted long ago (e.g. a prior campaign) fall outside this and are
+    // free to re-engage. Fetched once as a Set to avoid a per-lead query.
+    const cooldownSince = new Date(now.getTime() - RECENT_SEND_COOLDOWN_DAYS * 86400000);
+    const recentlyContacted = new Set<number>(
+      (
+        await db
+          .selectDistinct({ prospectId: emailThreads.prospectId })
+          .from(emailThreads)
+          .where(
+            and(
+              eq(emailThreads.direction, "outbound"),
+              gte(emailThreads.createdAt, cooldownSince)
+            )
+          )
+      )
+        .map((r) => r.prospectId)
+        .filter((id): id is number => id != null)
+    );
+
+    console.log(
+      `[Cal outreach] run ${runId}: ${totalDue} conversations due, processing batch of ${readyConvs.length}`
+    );
+
+    for (const { conv, prospect } of readyConvs) {
+      if ((conv.followUpCount ?? 0) >= MAX_OUTREACH_EMAILS) {
+        skips.cap++;
+        continue;
+      }
+      if (recentlyContacted.has(prospect.id)) {
+        skips.recentlyContacted++;
+        continue;
+      }
+
+      let toEmail = selectOutreachEmail(prospect);
+      // No real inbox on file — try Hunter for a verified decision-maker before
+      // falling back to a guessed role inbox. Bounded to the batch size per run.
+      if ((!toEmail || prospectNeedsEnrichment(prospect)) && hunterEnabled()) {
+        const enriched = await enrichProspectContact(prospect, { db });
+        if (enriched) {
+          hunterEnriched++;
+          toEmail = enriched;
+        }
+      }
+      if (!toEmail) {
+        skips.noEmail++;
+        continue;
+      }
       const emailPolicy = outreachEmailPolicySummary(prospect);
 
       try {
@@ -128,7 +207,10 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
           conv,
           currentStage
         );
-        if (!subject || !body) continue;
+        if (!subject || !body) {
+          skips.emptyBody++;
+          continue;
+        }
 
         const messageId = await sendFrankEmail(
           toEmail,
@@ -205,12 +287,21 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
           status: "completed",
           emailsSent,
           completedAt: now,
-          details: { errors: errors.slice(0, 10) },
+          details: {
+            totalDue,
+            batchSize: readyConvs.length,
+            hunterEnriched,
+            skips,
+            errors: errors.slice(0, 10),
+          },
         })
         .where(eq(salesAgentRuns.id, runId));
     }
+    console.log(
+      `[Cal outreach] run ${runId} done: sent ${emailsSent}, hunterEnriched ${hunterEnriched}, skipped ${JSON.stringify(skips)}, errors ${errors.length}`
+    );
 
-    res.json({ ok: true, emailsSent, errors: errors.length, runId });
+    res.json({ ok: true, emailsSent, totalDue, hunterEnriched, skips, errors: errors.length, runId });
   } catch (err) {
     console.error("[Cal outreach fatal]", err);
     if (runId) {
@@ -664,61 +755,45 @@ import {
 } from "../services/partnerEmail.js";
 
 /**
- * For the discovery stage we use the user's exact example as a fill-in-the-blank
- * template — no LLM for the body. This guarantees Cal's voice is always natural
- * and never formulaic. Follow-up stages still use LLM with a minimal prompt.
+ * Stage 1 (Introduce) uses a fixed template — no LLM — so Cal's advisor voice is
+ * always consistent. This is an introduction, not a pitch: it teaches one field
+ * lesson, makes no ask, and offers help only if it's useful. Later stages use
+ * the LLM with the trusted-advisor stage prompts.
  */
 function buildDiscoveryEmail(
   prospect: typeof prospects.$inferSelect,
   showName: string,
-  showCity: string,
-  upcomingLvShows: string[] = []
+  _showCity: string,
+  _upcomingLvShows: string[] = []
 ): { subject: string; body: string } {
   const contactFirstName = prospect.contactName
     ? prospect.contactName.split(" ")[0] ?? prospect.contactName
     : null;
   const greetingName = contactFirstName ?? "there";
 
-  const isVegas = /las vegas/i.test(showCity);
-
-  // Context-aware intro + show hook
-  const introLine = isVegas
-    ? `This is Cal from StageGate. We're based in Las Vegas and help robotics companies with logistics and technical support during trade shows — warehousing, staging, on-site tech support, and customer demos.`
-    : `This is Cal from StageGate. We're the robot logistics and technical operations team here in Las Vegas — we help robotics companies warehouse, stage, and run their robots at shows.`;
-
-  const showLine = isVegas
-    ? `I noticed ${showName} is coming up and wanted to reach out. Are you planning to exhibit, and do you need help with warehousing and staging your robots before and during the show?`
-    : `I noticed you're heading to ${showName} in ${showCity}. Are you planning any Las Vegas shows this year?${
-        upcomingLvShows.length > 0
-          ? ` We have teams ready for ${upcomingLvShows.join(", ")}${upcomingLvShows.length > 1 ? "," : ""} and more — so if you're attending any of those, we can handle everything on the ground.`
-          : ` We have teams ready for upcoming LV shows and would love to be your ground crew.`
-      }`;
-
+  // One field lesson to teach in the intro (deployment-focused, not show-floor).
   const insight = pickCalInsight({
     showName,
     robotType: prospect.robotType,
     companyName: prospect.company,
-    allowHumor: true,
+    allowHumor: false,
   });
 
   const body = [
     `Hi ${greetingName},`,
     ``,
-    introLine,
-    ``,
-    showLine,
+    `This is Cal at StageGate. I spend most of my time helping companies get robots ready for real operations — not demos — so I wanted to introduce myself. Your team looks like it's investing in automation, and we've learned a few things that tend to save people time and money.`,
     ``,
     insight,
     ``,
-    `We operate fully bonded warehouses for robot storage and have teams that can help unpack, test, and fix technical issues that may have occurred during transit. We care for your robots so they are show-ready the moment you arrive.`,
+    `No ask here — I'm not trying to sell you anything. StageGate is the deployment side of physical AI: the logistics, activation, integration, training, and support that turn a robot you bought into a system that actually runs. If that's ever useful, I'm glad to share what works.`,
     ``,
-    `Check out onstage.bot and register — it's free and takes about 2 minutes. Or just reply and I'll send a calendar invite so we can talk through your show plans.`,
+    `onstage.bot has more if you want it. Either way, good luck with what you're building.`,
     ``,
-    `Thanks,`,
     FRANK_PERSONA.signature,
   ].join("\n");
 
-  const subject = `Quick note — ${prospect.company} at ${showName}`;
+  const subject = `Introducing myself — deployment notes for ${prospect.company}`;
 
   return { subject, body };
 }

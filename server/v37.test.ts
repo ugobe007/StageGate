@@ -99,16 +99,16 @@ describe("v37: Reply detection — static analysis", () => {
   });
 
   describe("SalesAgent loop (salesAgent.ts)", () => {
-    it("excludes awaiting_reply from the inArray allowlist", () => {
-      // awaiting_reply should NOT appear in the inArray call
-      const inArrayIdx = salesAgentContent.indexOf("inArray(salesAgentConversations.state");
-      const snippet = salesAgentContent.slice(inArrayIdx, inArrayIdx + 300);
+    it("excludes awaiting_reply from the actionable-state allowlist", () => {
+      // awaiting_reply should NOT appear in the ACTIONABLE_STATES allowlist
+      const idx = salesAgentContent.indexOf("const ACTIONABLE_STATES = [");
+      const snippet = salesAgentContent.slice(idx, idx + 300);
       expect(snippet).not.toContain('"awaiting_reply"');
     });
 
-    it("includes email_opened and link_clicked in the inArray allowlist", () => {
-      const inArrayIdx = salesAgentContent.indexOf("inArray(salesAgentConversations.state");
-      const snippet = salesAgentContent.slice(inArrayIdx, inArrayIdx + 300);
+    it("includes email_opened and link_clicked in the actionable-state allowlist", () => {
+      const idx = salesAgentContent.indexOf("const ACTIONABLE_STATES = [");
+      const snippet = salesAgentContent.slice(idx, idx + 300);
       expect(snippet).toContain('"email_opened"');
       expect(snippet).toContain('"link_clicked"');
     });
