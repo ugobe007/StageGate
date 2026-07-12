@@ -2,7 +2,17 @@
 nixPkgs = ["nodejs_22"]
 
 [phases.install]
-cmds = ["npm install -g pnpm", "pnpm install --frozen-lockfile"]
+# Nixpacks does not provision pnpm on PATH by default, and a bare `npm i -g pnpm`
+# lands in a layer whose bin dir isn't on PATH for later phases (exit 127:
+# "pnpm: command not found"). Drive pnpm through corepack pinned to the version
+# in package.json's `packageManager`; reinstalling corepack to the writable npm
+# global prefix also avoids the read-only Nix store.
+cmds = [
+  "npm install -g corepack@latest",
+  "corepack enable",
+  "corepack prepare pnpm@10.4.1 --activate",
+  "pnpm install --frozen-lockfile",
+]
 
 [phases.build]
 cmds = ["rm -rf dist", "NODE_OPTIONS=--max-old-space-size=4096 pnpm run build"]
