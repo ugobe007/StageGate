@@ -88,6 +88,7 @@ export function createOrbitalRouter(): Router {
   router.get("/fleet", (req, res) => void forward(req, res, "/api/dashboard/fleet"));
   router.get("/robot/:id", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}`));
   router.get("/robot/:id/sensors", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/sensors`));
+  router.get("/map", (req, res) => void forward(req, res, "/api/dashboard/map"));
   router.get("/alerts", (req, res) => void forward(req, res, "/api/dashboard/alerts"));
   router.get("/tasks", (req, res) => void forward(req, res, "/api/dashboard/tasks"));
   router.get("/benchmark", (req, res) => void forward(req, res, "/api/dashboard/benchmark"));
@@ -100,6 +101,8 @@ export function createOrbitalRouter(): Router {
   // Control surface — E-stop / resume / task dispatch / alert ack.
   router.post("/robot/:id/estop", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/estop`));
   router.post("/robot/:id/resume", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/resume`));
+  router.post("/robot/:id/navigate", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/navigate`));
+  router.post("/robot/:id/navigate/clear", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/navigate/clear`));
   router.post("/tasks", (req, res) => void forward(req, res, "/api/dashboard/tasks"));
   router.post("/alerts/:id/ack", (req, res) => void forward(req, res, `/api/dashboard/alerts/${encodeURIComponent(req.params.id)}/ack`));
 
