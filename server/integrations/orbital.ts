@@ -87,6 +87,7 @@ export function createOrbitalRouter(): Router {
   // Fleet Management Dashboard (Module 7) read surface.
   router.get("/fleet", (req, res) => void forward(req, res, "/api/dashboard/fleet"));
   router.get("/robot/:id", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}`));
+  router.get("/robot/:id/sensors", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/sensors`));
   router.get("/alerts", (req, res) => void forward(req, res, "/api/dashboard/alerts"));
   router.get("/tasks", (req, res) => void forward(req, res, "/api/dashboard/tasks"));
   router.get("/benchmark", (req, res) => void forward(req, res, "/api/dashboard/benchmark"));
@@ -101,6 +102,14 @@ export function createOrbitalRouter(): Router {
   router.post("/robot/:id/resume", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/resume`));
   router.post("/tasks", (req, res) => void forward(req, res, "/api/dashboard/tasks"));
   router.post("/alerts/:id/ack", (req, res) => void forward(req, res, `/api/dashboard/alerts/${encodeURIComponent(req.params.id)}/ack`));
+
+  // OEM governance — list partners and manage their granted API scopes (operator surface).
+  router.get("/oems", (req, res) => void forward(req, res, "/api/dashboard/oems"));
+  router.get("/oems/:id", (req, res) => void forward(req, res, `/api/dashboard/oems/${encodeURIComponent(req.params.id)}`));
+  router.post("/oems/:id/grant", (req, res) => void forward(req, res, `/api/dashboard/oems/${encodeURIComponent(req.params.id)}/grant`));
+  router.post("/oems/:id/revoke", (req, res) => void forward(req, res, `/api/dashboard/oems/${encodeURIComponent(req.params.id)}/revoke`));
+  router.post("/oems/:id/suspend", (req, res) => void forward(req, res, `/api/dashboard/oems/${encodeURIComponent(req.params.id)}/suspend`));
+  router.post("/oems/:id/reactivate", (req, res) => void forward(req, res, `/api/dashboard/oems/${encodeURIComponent(req.params.id)}/reactivate`));
 
   return router;
 }

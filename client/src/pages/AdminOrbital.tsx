@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Activity, AlertTriangle, BatteryCharging, Bot, CircleStop, Loader2,
-  Play, RefreshCw, Radio, ShieldAlert, X,
+  Activity, AlertTriangle, BatteryCharging, Bot, CircleStop, Cpu, Gauge, KeyRound,
+  Loader2, Lock, Play, RefreshCw, Radio, ShieldAlert, Thermometer, X,
 } from "lucide-react";
 import { BRAND, emeraldAlpha } from "@/lib/brand";
 
@@ -13,10 +13,27 @@ interface RobotSummary {
   battery_pct: number; pose_external: Pose; pose_internal: Pose;
   drift_delta_m: number; current_task?: string | null; error_code?: string | null;
 }
+interface BatteryTelemetry { pct?: number | null; temperature_c?: number | null; voltage_v?: number | null; current_a?: number | null; cycles?: number | null }
+interface MotorTelemetry { joint: string; temperature_c?: number | null; current_a?: number | null; torque_nm?: number | null; position_rad?: number | null; velocity_rad_s?: number | null }
+interface ImuTelemetry { accel: number[]; gyro: number[] }
+interface SpatialTelemetry { x: number; y: number; z: number; roll: number; pitch: number; yaw: number; linear_velocity_mps?: number | null; angular_velocity_rps?: number | null }
+interface SensorSnapshot {
+  ts?: number | null; battery?: BatteryTelemetry | null; motors: MotorTelemetry[];
+  imu?: ImuTelemetry | null; spatial?: SpatialTelemetry | null;
+  temperatures_c: Record<string, number>; extra: Record<string, number>;
+}
+interface ControlGrants { managed: boolean; estop: boolean; velocity: boolean; mission: boolean }
 interface RobotDetail extends RobotSummary {
   facility_id: string; mtbd_seconds?: number | null;
   recovery_latency_seconds?: number | null; env_degradation_score?: number | null;
   oem_brief: string; uptime_seconds: number;
+  sensors?: SensorSnapshot | null; control?: ControlGrants;
+}
+interface OEMProfile {
+  oem_id: string; company_name: string; vendor: string; transport: string;
+  status: "pending" | "active" | "suspended";
+  ceiling_scopes: string[]; granted_scopes: string[]; missing_scopes: string[];
+  control_ready: boolean; monitor_ready: boolean;
 }
 interface Alert {
   id: string; robot_id: string; type: string; severity: "critical" | "warning" | "info";
@@ -56,15 +73,28 @@ const SEVERITY_COLOR: Record<Alert["severity"], string> = {
 const DRIFT_DEGRADED_M = 0.1;
 const DRIFT_HALT_M = 0.5;
 
+const ALL_SCOPES = [
+  "telemetry.read", "state.read", "control.velocity", "control.estop",
+  "control.teleop", "mission.dispatch", "camera.read", "map.read",
+];
+const OEM_STATUS_COLOR: Record<OEMProfile["status"], string> = {
+  active: BRAND.emerald, pending: "#f59e0b", suspended: "#ef4444",
+};
+function tempColor(t: number | null | undefined, warn: number, hot: number): string {
+  if (t == null) return BRAND.white;
+  return t >= hot ? "#ef4444" : t >= warn ? "#f59e0b" : BRAND.emerald;
+}
+
 async function orbitalFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api/orbital${path}`, {
     ...init,
     headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
   });
-  const body = (await res.json().catch(() => ({}))) as T & { configured?: boolean; error?: string };
+  const body = (await res.json().catch(() => ({}))) as T & { configured?: boolean; error?: string; detail?: string };
   if (!res.ok) {
-    const err = new Error(body?.error || `Orbital request failed (${res.status})`) as Error & { configured?: boolean };
+    const err = new Error(body?.error || body?.detail || `Orbital request failed (${res.status})`) as Error & { configured?: boolean; status?: number };
     err.configured = body?.configured;
+    err.status = res.status;
     throw err;
   }
   return body as T;
@@ -83,6 +113,8 @@ export default function AdminOrbital() {
   const [orchestrator, setOrchestrator] = useState<OrchestratorStatus | null>(null);
   const [industry, setIndustry] = useState<string>("All");
   const [selected, setSelected] = useState<RobotDetail | null>(null);
+  const [oems, setOems] = useState<OEMProfile[]>([]);
+  const [manageOem, setManageOem] = useState<OEMProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [lastSync, setLastSync] = useState<Date | null>(null);
@@ -90,14 +122,16 @@ export default function AdminOrbital() {
 
   const refresh = useCallback(async () => {
     try {
-      const [f, a, o] = await Promise.all([
+      const [f, a, o, oem] = await Promise.all([
         orbitalFetch<FleetResponse>("/fleet"),
         orbitalFetch<Alert[]>("/alerts?limit=25"),
         orbitalFetch<OrchestratorStatus>("/orchestrator").catch(() => null),
+        orbitalFetch<OEMProfile[]>("/oems").catch(() => [] as OEMProfile[]),
       ]);
       setFleet(f);
       setAlerts(Array.isArray(a) ? a : []);
       if (o) setOrchestrator(o);
+      setOems(Array.isArray(oem) ? oem : []);
       setError(null);
       setLastSync(new Date());
     } catch (e) {
@@ -155,6 +189,37 @@ export default function AdminOrbital() {
     try { await orbitalFetch(`/alerts/${encodeURIComponent(id)}/ack`, { method: "POST" }); }
     catch { await refresh(); }
   }, [refresh]);
+
+  const saveOemScopes = useCallback(async (oem: OEMProfile, want: Set<string>) => {
+    const granted = new Set(oem.granted_scopes);
+    const toGrant = [...want].filter((s) => !granted.has(s));
+    const toRevoke = [...granted].filter((s) => !want.has(s));
+    try {
+      if (toGrant.length) await orbitalFetch(`/oems/${encodeURIComponent(oem.oem_id)}/grant`, { method: "POST", body: JSON.stringify({ scopes: toGrant }) });
+      if (toRevoke.length) await orbitalFetch(`/oems/${encodeURIComponent(oem.oem_id)}/revoke`, { method: "POST", body: JSON.stringify({ scopes: toRevoke }) });
+      setManageOem(null);
+      await refresh();
+    } catch (e) { setError((e as Error).message); }
+  }, [refresh]);
+
+  const toggleOemStatus = useCallback(async (oem: OEMProfile) => {
+    const action = oem.status === "suspended" ? "reactivate" : "suspend";
+    try {
+      await orbitalFetch(`/oems/${encodeURIComponent(oem.oem_id)}/${action}`, { method: "POST" });
+      setManageOem(null);
+      await refresh();
+    } catch (e) { setError((e as Error).message); }
+  }, [refresh]);
+
+  // Mirror cloud scope resolution so grid controls can disable + explain locally.
+  const vendorControl = useCallback((vendor: string): ControlGrants => {
+    const matches = oems.filter((o) => o.vendor.toLowerCase() === vendor.toLowerCase());
+    if (!matches.length) return { managed: false, estop: true, velocity: true, mission: true };
+    const p = matches.find((x) => x.status === "active") ?? matches[0];
+    if (p.status === "suspended") return { managed: true, estop: false, velocity: false, mission: false };
+    const g = new Set(p.granted_scopes);
+    return { managed: true, estop: g.has("control.estop"), velocity: g.has("control.velocity"), mission: g.has("mission.dispatch") };
+  }, [oems]);
 
   const cardBg = "#22252A";
   const border = "1px solid rgba(255,255,255,0.08)";
@@ -255,13 +320,21 @@ export default function AdminOrbital() {
                 )}
 
                 <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-                  {r.state === "halted" ? (
-                    <ControlBtn label="Resume" icon={<Play size={13} />} color={BRAND.emerald}
-                      busy={busy[r.id]} onClick={(e) => { e.stopPropagation(); control(r.id, "resume"); }} />
-                  ) : (
-                    <ControlBtn label="E-Stop" icon={<CircleStop size={13} />} color="#ef4444"
-                      busy={busy[r.id]} onClick={(e) => { e.stopPropagation(); control(r.id, "estop"); }} />
-                  )}
+                  {(() => {
+                    const canControl = vendorControl(r.vendor).estop;
+                    if (!canControl) {
+                      return <ControlBtn label={r.state === "halted" ? "Resume" : "E-Stop"} locked
+                        icon={<CircleStop size={13} />} color="rgba(255,255,255,0.4)"
+                        title="OEM has not granted control.estop" onClick={(e) => e.stopPropagation()} />;
+                    }
+                    return r.state === "halted" ? (
+                      <ControlBtn label="Resume" icon={<Play size={13} />} color={BRAND.emerald}
+                        busy={busy[r.id]} onClick={(e) => { e.stopPropagation(); control(r.id, "resume"); }} />
+                    ) : (
+                      <ControlBtn label="E-Stop" icon={<CircleStop size={13} />} color="#ef4444"
+                        busy={busy[r.id]} onClick={(e) => { e.stopPropagation(); control(r.id, "estop"); }} />
+                    );
+                  })()}
                 </div>
               </div>
             ))}
@@ -333,9 +406,62 @@ export default function AdminOrbital() {
         </div>
       </div>
 
+      {/* OEM governance */}
+      <div style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <KeyRound size={16} color={BRAND.emerald} />
+          <h3 style={{ margin: 0, fontSize: ".95rem" }}>OEM Partners &amp; API Scopes</h3>
+          <span style={{ marginLeft: "auto", fontSize: ".72rem", color: "rgba(255,255,255,0.4)" }}>
+            control Orbital exercises is bounded by what each OEM unlocks
+          </span>
+        </div>
+        {oems.length === 0 ? (
+          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".82rem", marginTop: 10 }}>
+            No OEM partners registered yet. Onboard one with <code style={{ color: BRAND.emerald }}>scripts/oem_onboard.py register</code>.
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto", marginTop: 8 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".82rem" }}>
+              <thead>
+                <tr style={{ textAlign: "left", color: "rgba(255,255,255,0.45)" }}>
+                  {["Company", "Vendor", "Transport", "Status", "Granted / Ceiling", "Readiness", ""].map((h) => (
+                    <th key={h} style={{ padding: "6px 10px", fontWeight: 500, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {oems.map((o) => (
+                  <tr key={o.oem_id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <td style={{ padding: "8px 10px", fontWeight: 600 }}>{o.company_name}</td>
+                    <td style={{ padding: "8px 10px", color: "rgba(255,255,255,0.6)" }}>{o.vendor}</td>
+                    <td style={{ padding: "8px 10px", color: "rgba(255,255,255,0.6)" }}>{o.transport}</td>
+                    <td style={{ padding: "8px 10px" }}>
+                      <span style={{ fontSize: ".68rem", textTransform: "uppercase", letterSpacing: ".5px", color: OEM_STATUS_COLOR[o.status], fontWeight: 700 }}>{o.status}</span>
+                    </td>
+                    <td style={{ padding: "8px 10px", color: "rgba(255,255,255,0.75)" }}>{o.granted_scopes.length} / {o.ceiling_scopes.length}</td>
+                    <td style={{ padding: "8px 10px", fontSize: ".72rem" }}>
+                      <span style={{ color: o.monitor_ready ? BRAND.emerald : "rgba(255,255,255,0.35)" }}>monitor</span>
+                      <span style={{ color: "rgba(255,255,255,0.3)" }}> · </span>
+                      <span style={{ color: o.control_ready ? BRAND.emerald : "rgba(255,255,255,0.35)" }}>control</span>
+                    </td>
+                    <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                      <button onClick={() => setManageOem(o)} style={{ padding: "5px 12px", borderRadius: 7, border, background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer", fontSize: ".74rem" }}>Manage</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {selected && (
         <RobotModal detail={selected} busy={busy[selected.id]} onClose={() => setSelected(null)}
           onControl={(action) => control(selected.id, action)} />
+      )}
+      {manageOem && (
+        <OEMModal oem={manageOem} onClose={() => setManageOem(null)}
+          onSave={(want) => saveOemScopes(manageOem, want)} onToggleStatus={() => toggleOemStatus(manageOem)} />
       )}
     </div>
   );
@@ -370,15 +496,66 @@ function Kpi({ label, value, icon, accent }: { label: string; value: React.React
   );
 }
 
-function ControlBtn({ label, icon, color, busy, onClick }: { label: string; icon: React.ReactNode; color: string; busy?: boolean; onClick: (e: React.MouseEvent) => void }) {
+function ControlBtn({ label, icon, color, busy, locked, title, onClick }: { label: string; icon: React.ReactNode; color: string; busy?: boolean; locked?: boolean; title?: string; onClick: (e: React.MouseEvent) => void }) {
   return (
-    <button disabled={busy} onClick={onClick} style={{
+    <button disabled={busy || locked} onClick={onClick} title={title} style={{
       display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 7,
-      border: `1px solid ${color}`, background: `${color}1A`, color, cursor: busy ? "wait" : "pointer",
+      border: `1px solid ${locked ? "rgba(255,255,255,0.15)" : color}`, background: locked ? "rgba(255,255,255,0.04)" : `${color}1A`,
+      color, cursor: locked ? "not-allowed" : busy ? "wait" : "pointer",
       fontSize: ".76rem", fontWeight: 600, opacity: busy ? 0.6 : 1,
     }}>
-      {busy ? <Loader2 size={13} className="animate-spin" /> : icon} {label}
+      {busy ? <Loader2 size={13} className="animate-spin" /> : locked ? <Lock size={12} /> : icon} {label}
     </button>
+  );
+}
+
+function ScopeChip({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <span style={{ fontSize: ".68rem", padding: "2px 8px", borderRadius: 999, background: ok ? emeraldAlpha(0.14) : "rgba(239,68,68,0.14)", color: ok ? BRAND.emerald : "#fca5a5" }}>
+      {ok ? "✓" : "✕"} {label}
+    </span>
+  );
+}
+
+function Vitals({ s }: { s?: SensorSnapshot | null }) {
+  if (!s) return <div style={{ marginTop: 14, fontSize: ".78rem", color: "rgba(255,255,255,0.4)", fontStyle: "italic" }}>No live sensor telemetry yet.</div>;
+  const cells: React.ReactNode[] = [];
+  const cell = (label: string, value: React.ReactNode, color = BRAND.white, icon?: React.ReactNode) => (
+    <div key={label} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 10px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: ".68rem", color: "rgba(255,255,255,0.5)" }}>{icon}{label}</div>
+      <div style={{ fontWeight: 600, marginTop: 3, color, fontSize: ".82rem" }}>{value}</div>
+    </div>
+  );
+  const b = s.battery;
+  if (b) {
+    if (b.pct != null) cells.push(cell("Battery", `${Math.round(b.pct)}%`, undefined, <BatteryCharging size={12} />));
+    if (b.temperature_c != null) cells.push(cell("Batt temp", `${b.temperature_c.toFixed(1)} °C`, tempColor(b.temperature_c, 45, 55), <Thermometer size={12} />));
+    if (b.voltage_v != null) cells.push(cell("Voltage", `${b.voltage_v.toFixed(1)} V`));
+    if (b.current_a != null) cells.push(cell("Current", `${b.current_a.toFixed(1)} A`));
+  }
+  if (s.motors?.length) {
+    const hottest = s.motors.reduce((m, x) => ((x.temperature_c ?? -1) > (m.temperature_c ?? -1) ? x : m), s.motors[0]);
+    cells.push(cell(`Hottest motor (${s.motors.length})`, hottest.temperature_c != null ? `${hottest.joint} ${hottest.temperature_c.toFixed(0)}°C` : hottest.joint, tempColor(hottest.temperature_c, 60, 75), <Gauge size={12} />));
+  }
+  if (s.spatial) {
+    const sp = s.spatial;
+    cells.push(cell("Position x,y,z", `${sp.x.toFixed(1)}, ${sp.y.toFixed(1)}, ${sp.z.toFixed(1)}`));
+    cells.push(cell("Yaw", `${(sp.yaw ?? 0).toFixed(2)} rad`));
+    if (sp.linear_velocity_mps != null) cells.push(cell("Lin. vel", `${sp.linear_velocity_mps.toFixed(2)} m/s`));
+  }
+  if (s.imu?.accel?.length === 3) {
+    const mag = Math.hypot(...s.imu.accel);
+    cells.push(cell("IMU |a|", `${mag.toFixed(2)} m/s²`, undefined, <Cpu size={12} />));
+  }
+  Object.entries(s.temperatures_c ?? {}).forEach(([k, v]) => cells.push(cell(`Temp: ${k}`, `${Number(v).toFixed(1)} °C`, tempColor(Number(v), 65, 80), <Thermometer size={12} />)));
+  Object.entries(s.extra ?? {}).forEach(([k, v]) => cells.push(cell(k, typeof v === "number" ? v.toFixed(1) : String(v))));
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ fontSize: ".68rem", textTransform: "uppercase", letterSpacing: ".5px", color: "rgba(255,255,255,0.4)", marginBottom: 8 }}>
+        Live vitals{s.ts ? ` · ${new Date(s.ts * 1000).toLocaleTimeString()}` : ""}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8 }}>{cells}</div>
+    </div>
   );
 }
 
@@ -425,12 +602,75 @@ function RobotModal({ detail, busy, onClose, onControl }: {
           </div>
         )}
 
+        <Vitals s={detail.sensors} />
+
+        {detail.control?.managed && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+            <span style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.45)" }}>OEM grants:</span>
+            <ScopeChip ok={detail.control.estop} label="E-Stop" />
+            <ScopeChip ok={detail.control.velocity} label="Velocity" />
+            <ScopeChip ok={detail.control.mission} label="Mission" />
+          </div>
+        )}
+
         <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-          {detail.state === "halted" ? (
+          {detail.control && !detail.control.estop ? (
+            <ControlBtn label={detail.state === "halted" ? "Resume robot" : "Emergency stop"} locked
+              icon={<CircleStop size={14} />} color="rgba(255,255,255,0.4)"
+              title="OEM has not granted control.estop" onClick={() => {}} />
+          ) : detail.state === "halted" ? (
             <ControlBtn label="Resume robot" icon={<Play size={14} />} color={BRAND.emerald} busy={busy} onClick={() => onControl("resume")} />
           ) : (
             <ControlBtn label="Emergency stop" icon={<CircleStop size={14} />} color="#ef4444" busy={busy} onClick={() => onControl("estop")} />
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OEMModal({ oem, onClose, onSave, onToggleStatus }: {
+  oem: OEMProfile; onClose: () => void; onSave: (want: Set<string>) => void; onToggleStatus: () => void;
+}) {
+  const ceiling = new Set(oem.ceiling_scopes);
+  const [want, setWant] = useState<Set<string>>(new Set(oem.granted_scopes));
+  const suspended = oem.status === "suspended";
+  const toggle = (s: string) => setWant((prev) => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n; });
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "#1C1E22", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 14, padding: 24, width: 480, maxWidth: "92vw", maxHeight: "88vh", overflowY: "auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: "1.1rem", color: BRAND.white }}>{oem.company_name}</h2>
+            <div style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.45)", marginTop: 2 }}>
+              {oem.oem_id} · {oem.vendor} · {oem.transport} · <span style={{ color: OEM_STATUS_COLOR[oem.status], textTransform: "uppercase" }}>{oem.status}</span>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer" }}><X size={18} /></button>
+        </div>
+        <p style={{ fontSize: ".76rem", color: "rgba(255,255,255,0.55)", marginTop: 10, lineHeight: 1.5 }}>
+          Toggle the API scopes this OEM has unlocked. Scopes outside their protocol's capability ceiling can't be granted.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px", marginTop: 14 }}>
+          {ALL_SCOPES.map((s) => {
+            const inCeiling = ceiling.has(s);
+            return (
+              <label key={s} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", opacity: inCeiling ? 1 : 0.4, cursor: inCeiling ? "pointer" : "not-allowed" }}>
+                <input type="checkbox" disabled={!inCeiling} checked={want.has(s)} onChange={() => toggle(s)} style={{ accentColor: BRAND.emerald }} />
+                <span style={{ fontSize: ".8rem", color: BRAND.white }}>{s}</span>
+                {!inCeiling && <span style={{ fontSize: ".64rem", color: "rgba(255,255,255,0.35)" }}>(outside ceiling)</span>}
+              </label>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}>
+          <button onClick={onToggleStatus} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: suspended ? BRAND.emerald : "#fca5a5", cursor: "pointer", fontSize: ".78rem" }}>
+            {suspended ? "Reactivate access" : "Suspend access"}
+          </button>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={onClose} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer", fontSize: ".78rem" }}>Cancel</button>
+            <button onClick={() => onSave(want)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: BRAND.emerald, color: "#0b0f14", cursor: "pointer", fontSize: ".78rem", fontWeight: 700 }}>Save scopes</button>
+          </div>
         </div>
       </div>
     </div>
