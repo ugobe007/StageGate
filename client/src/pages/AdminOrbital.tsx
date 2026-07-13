@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Activity, AlertTriangle, BatteryCharging, Bot, CircleStop, Cpu, Gauge, KeyRound,
-  Loader2, Lock, Map, Play, RefreshCw, Radio, ShieldAlert, Thermometer, X,
+  Activity, AlertTriangle, BatteryCharging, Bot, CircleStop, Cpu, Crosshair, Gauge, Heart,
+  KeyRound, Loader2, Lock, Map, Navigation, Play, RefreshCw, Radio, Send, ShieldAlert,
+  SlidersHorizontal, Thermometer, Video, X,
 } from "lucide-react";
 import { BRAND, emeraldAlpha } from "@/lib/brand";
 
@@ -107,6 +108,20 @@ const ALL_SCOPES = [
 const OEM_STATUS_COLOR: Record<OEMProfile["status"], string> = {
   active: BRAND.emerald, pending: "#f59e0b", suspended: "#ef4444",
 };
+
+// The control surface Orbital exposes to operators. Each capability is gated by an API scope
+// the OEM must unlock — this is the contract 3rd-party robot vendors integrate against.
+type Capability = { scope: string; label: string; kind: "monitor" | "control"; desc: string; icon: React.ReactNode };
+const CAPABILITIES: Capability[] = [
+  { scope: "telemetry.read", label: "Telemetry", kind: "monitor", desc: "Live sensor + drift stream", icon: <Radio size={14} /> },
+  { scope: "state.read", label: "State", kind: "monitor", desc: "Battery, mode, health", icon: <Heart size={14} /> },
+  { scope: "map.read", label: "Spatial map", kind: "monitor", desc: "Facility floor + localization", icon: <Map size={14} /> },
+  { scope: "camera.read", label: "Camera", kind: "monitor", desc: "Overhead + onboard feeds", icon: <Video size={14} /> },
+  { scope: "control.velocity", label: "Drive", kind: "control", desc: "Speed, direction & visual waypoints", icon: <Navigation size={14} /> },
+  { scope: "control.estop", label: "Safety stop", kind: "control", desc: "Emergency stop / resume", icon: <CircleStop size={14} /> },
+  { scope: "control.teleop", label: "Teleop", kind: "control", desc: "Direct remote operation", icon: <Crosshair size={14} /> },
+  { scope: "mission.dispatch", label: "Mission", kind: "control", desc: "Assign tasks & routes", icon: <Send size={14} /> },
+];
 function tempColor(t: number | null | undefined, warn: number, hot: number): string {
   if (t == null) return BRAND.white;
   return t >= hot ? "#ef4444" : t >= warn ? "#f59e0b" : BRAND.emerald;
@@ -195,6 +210,16 @@ export default function AdminOrbital() {
     if (!configured) return;
     orbitalFetch<WarehouseMap>("/map").then(setMap).catch(() => {});
   }, [configured]);
+
+  // Auto-select a live robot the first time the fleet loads so the control surface is
+  // populated on arrival instead of showing an empty "select a robot" state.
+  const autoSelected = useRef(false);
+  useEffect(() => {
+    if (autoSelected.current || !fleet?.robots?.length) return;
+    autoSelected.current = true;
+    const r = fleet.robots.find((x) => x.state !== "halted") ?? fleet.robots[0];
+    setMapSel(r?.id ?? null);
+  }, [fleet]);
 
   const openRobot = useCallback(async (id: string) => {
     try {
@@ -285,6 +310,15 @@ export default function AdminOrbital() {
     if (p.status === "suspended") return { managed: true, estop: false, velocity: false, mission: false };
     const g = new Set(p.granted_scopes);
     return { managed: true, estop: g.has("control.estop"), velocity: g.has("control.velocity"), mission: g.has("mission.dispatch") };
+  }, [oems]);
+
+  // Generic scope check for any capability (unmanaged vendors are open; suspended grant nothing).
+  const vendorHasScope = useCallback((vendor: string, scope: string): boolean => {
+    const matches = oems.filter((o) => o.vendor.toLowerCase() === vendor.toLowerCase());
+    if (!matches.length) return true;
+    const p = matches.find((x) => x.status === "active") ?? matches[0];
+    if (p.status === "suspended") return false;
+    return new Set(p.granted_scopes).has(scope);
   }, [oems]);
 
   // Click the floor with a robot selected → set a visual-control waypoint (shift = append).
@@ -395,6 +429,9 @@ export default function AdminOrbital() {
           </div>
         </div>
       )}
+
+      {/* Control capabilities catalog — the operator/OEM control contract */}
+      <CapabilitiesPanel robots={fleet?.robots ?? []} oems={oems} vendorHasScope={vendorHasScope} cardBg={cardBg} border={border} />
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 20, marginTop: 20, alignItems: "start" }}>
         <div>
@@ -751,6 +788,24 @@ function ControlBtn({ label, icon, color, busy, locked, title, onClick }: { labe
   );
 }
 
+function ScopeTag({ scope, ok }: { scope: string; ok: boolean }) {
+  return (
+    <span style={{
+      fontSize: ".6rem", fontFamily: "monospace", padding: "2px 6px", borderRadius: 5,
+      background: ok ? emeraldAlpha(0.12) : "rgba(255,255,255,0.05)",
+      color: ok ? BRAND.emerald : "rgba(255,255,255,0.4)",
+    }}>{ok ? "" : "🔒 "}{scope}</span>
+  );
+}
+function SectionHead({ title, scope, ok }: { title: string; scope: string; ok: boolean }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+      <span style={{ fontSize: ".64rem", textTransform: "uppercase", letterSpacing: ".5px", color: "rgba(255,255,255,0.45)" }}>{title}</span>
+      <ScopeTag scope={scope} ok={ok} />
+    </div>
+  );
+}
+
 function ScopeChip({ ok, label }: { ok: boolean; label: string }) {
   return (
     <span style={{ fontSize: ".68rem", padding: "2px 8px", borderRadius: 999, background: ok ? emeraldAlpha(0.14) : "rgba(239,68,68,0.14)", color: ok ? BRAND.emerald : "#fca5a5" }}>
@@ -965,6 +1020,7 @@ function ControlPanel({ robot, grants, busy, onSpeed, onDrive, onStopDrive, onCl
       )}
 
       <div style={{ marginTop: 14, opacity: canVel ? 1 : 0.5 }}>
+        <SectionHead title="Drive" scope="control.velocity" ok={canVel} />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".72rem", color: "rgba(255,255,255,0.6)", marginBottom: 6 }}>
           <span>Speed</span><span>{speed.toFixed(2)} m/s</span>
         </div>
@@ -992,7 +1048,7 @@ function ControlPanel({ robot, grants, busy, onSpeed, onDrive, onStopDrive, onCl
       </div>
 
       <div style={{ marginTop: 14, paddingTop: 12, borderTop: border }}>
-        <div style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.6)", marginBottom: 6 }}>Waypoints (visual control)</div>
+        <SectionHead title="Navigate — visual waypoints" scope="control.velocity" ok={canVel} />
         {routing ? (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: ".76rem", color: BRAND.emerald }}>en route · {robot.waypoints!.length} pt{robot.waypoints!.length > 1 ? "s" : ""}</span>
@@ -1003,15 +1059,65 @@ function ControlPanel({ robot, grants, busy, onSpeed, onDrive, onStopDrive, onCl
         )}
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-        {!canEstop ? (
-          <ControlBtn label={halted ? "Resume" : "E-Stop"} locked icon={<CircleStop size={13} />} color="rgba(255,255,255,0.4)" title="OEM has not granted control.estop" onClick={() => {}} />
-        ) : halted ? (
-          <ControlBtn label="Resume" icon={<Play size={13} />} color={BRAND.emerald} busy={busy} onClick={onResume} />
-        ) : (
-          <ControlBtn label="E-Stop" icon={<CircleStop size={13} />} color="#ef4444" busy={busy} onClick={onEstop} />
-        )}
-        <ControlBtn label="Details" icon={<Bot size={13} />} color="rgba(255,255,255,0.7)" onClick={onDetails} />
+      <div style={{ marginTop: 14, paddingTop: 12, borderTop: border }}>
+        <SectionHead title="Safety" scope="control.estop" ok={canEstop} />
+        <div style={{ display: "flex", gap: 8 }}>
+          {!canEstop ? (
+            <ControlBtn label={halted ? "Resume" : "E-Stop"} locked icon={<CircleStop size={13} />} color="rgba(255,255,255,0.4)" title="OEM has not granted control.estop" onClick={() => {}} />
+          ) : halted ? (
+            <ControlBtn label="Resume" icon={<Play size={13} />} color={BRAND.emerald} busy={busy} onClick={onResume} />
+          ) : (
+            <ControlBtn label="E-Stop" icon={<CircleStop size={13} />} color="#ef4444" busy={busy} onClick={onEstop} />
+          )}
+          <ControlBtn label="Details" icon={<Bot size={13} />} color="rgba(255,255,255,0.7)" onClick={onDetails} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CapabilitiesPanel({ robots, oems, vendorHasScope, cardBg, border }: {
+  robots: RobotSummary[]; oems: OEMProfile[]; vendorHasScope: (vendor: string, scope: string) => boolean;
+  cardBg: string; border: string;
+}) {
+  const activeOems = oems.filter((o) => o.status === "active");
+  return (
+    <div style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+        <SlidersHorizontal size={16} color={BRAND.emerald} />
+        <h3 style={{ margin: 0, fontSize: ".95rem" }}>Control Capabilities</h3>
+        <span style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.4)" }}>
+          the operator control surface — each capability is unlocked per-OEM via an API scope
+        </span>
+        <span style={{ marginLeft: "auto", fontSize: ".66rem", color: "rgba(255,255,255,0.4)" }}>
+          <span style={{ color: BRAND.emerald }}>■</span> live · <span style={{ color: "#38bdf8" }}>■</span> monitor · <span style={{ color: "#555" }}>■</span> not unlocked
+        </span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 10, marginTop: 12 }}>
+        {CAPABILITIES.map((cap) => {
+          const partners = activeOems.filter((o) => o.granted_scopes.includes(cap.scope)).length;
+          const controllable = robots.filter((r) => vendorHasScope(r.vendor, cap.scope)).length;
+          const live = controllable > 0;
+          const accent = cap.kind === "control" ? BRAND.emerald : "#38bdf8";
+          const dim = live ? accent : "rgba(255,255,255,0.35)";
+          return (
+            <div key={cap.scope} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${live ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)"}`, borderRadius: 10, padding: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${dim}`, color: dim }}>{cap.icon}</span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: ".82rem", fontWeight: 600 }}>{cap.label}</div>
+                  <div style={{ fontSize: ".62rem", fontFamily: "monospace", color: "rgba(255,255,255,0.4)" }}>{cap.scope}</div>
+                </div>
+                <span style={{ marginLeft: "auto", fontSize: ".58rem", textTransform: "uppercase", letterSpacing: ".5px", padding: "2px 6px", borderRadius: 5, background: emeraldAlpha(cap.kind === "control" ? 0.14 : 0.0), color: accent, border: cap.kind === "monitor" ? "1px solid rgba(56,189,248,0.25)" : "none" }}>{cap.kind}</span>
+              </div>
+              <div style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.6)", marginTop: 8, lineHeight: 1.4 }}>{cap.desc}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: ".66rem", fontFamily: "monospace", color: "rgba(255,255,255,0.45)" }}>
+                <span>{partners} partner{partners === 1 ? "" : "s"}</span>
+                <span style={{ color: live ? BRAND.emerald : undefined }}>{controllable} robot{controllable === 1 ? "" : "s"}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
