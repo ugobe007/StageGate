@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Activity, AlertTriangle, BatteryCharging, Bot, CircleStop, Cpu, Crosshair, Gauge, Heart,
-  KeyRound, LayoutDashboard, Loader2, Lock, Map, Navigation, Play, RefreshCw, Radio, Send,
-  Settings, ShieldAlert, SlidersHorizontal, Thermometer, Users, Video, X,
+  Activity, AlertTriangle, BatteryCharging, Bot, Check, CircleStop, Copy, Cpu, Crosshair, Gauge, Heart,
+  KeyRound, LayoutDashboard, Loader2, Lock, Map, Navigation, Play, Plus, RefreshCw, Radio, Send,
+  Settings, ShieldAlert, SlidersHorizontal, Thermometer, Trash2, Users, Video, X,
 } from "lucide-react";
 import { BRAND, emeraldAlpha } from "@/lib/brand";
 
@@ -39,6 +39,7 @@ interface RobotSummary {
   drift_delta_m: number; current_task?: string | null; error_code?: string | null;
   handoff_partner?: string | null;
   visual_nav?: boolean; nav_goal?: Point | null; waypoints?: Point[];
+  path?: Point[];  // camera-planned route (bends around racks)
   speed_mps?: number; manual_drive?: boolean; control_mode?: ControlMode;
 }
 interface WarehouseRack { id: string; x: number; y: number; w: number; h: number }
@@ -64,11 +65,22 @@ interface RobotDetail extends RobotSummary {
   oem_brief: string; uptime_seconds: number;
   sensors?: SensorSnapshot | null; control?: ControlGrants;
 }
+interface OEMPolicies {
+  max_speed_mps: number; drift_halt_threshold_m: number;
+  auto_estop_on_critical: boolean; require_approval_for_teleop: boolean; geofence: string;
+}
 interface OEMProfile {
   oem_id: string; company_name: string; vendor: string; transport: string;
   status: "pending" | "active" | "suspended";
   ceiling_scopes: string[]; granted_scopes: string[]; missing_scopes: string[];
+  policies?: OEMPolicies;
   control_ready: boolean; monitor_ready: boolean;
+}
+interface OEMCatalog {
+  vendors: { vendor: string; ceiling_scopes: string[] }[];
+  transports: string[];
+  scopes: { value: string; label: string }[];
+  default_policies: OEMPolicies;
 }
 interface Alert {
   id: string; robot_id: string; type: string; severity: "critical" | "warning" | "info";
@@ -133,6 +145,26 @@ const OEM_STATUS_COLOR: Record<OEMProfile["status"], string> = {
   active: MC.green, pending: MC.amber, suspended: MC.crimson,
 };
 
+// Fleet states, ordered for the overview distribution bar + interactive filter chips.
+const STATUS_META: { key: RobotSummary["state"]; label: string; color: string }[] = [
+  { key: "active", label: "Working", color: MC.green },
+  { key: "cooldown", label: "Between tasks", color: MC.crimson },
+  { key: "idle", label: "Idle", color: MC.amber },
+  { key: "charging", label: "Charging", color: MC.azure },
+  { key: "halted", label: "Halted", color: "#ff3b6b" },
+  { key: "offline", label: "Offline", color: "#5b667a" },
+];
+const SCOPE_LABELS: Record<string, string> = {
+  "telemetry.read": "Stream pose, battery, and health telemetry",
+  "state.read": "Read task/state machine and mission status",
+  "control.velocity": "Command velocity (visual-nav, jog, speed)",
+  "control.estop": "Trigger and clear emergency stop",
+  "control.teleop": "Full teleoperation hand-on control",
+  "mission.dispatch": "Dispatch and cancel missions",
+  "camera.read": "Read onboard camera frames",
+  "map.read": "Read the robot's onboard map / SLAM graph",
+};
+
 // The control surface Orbital exposes to operators. Each capability is gated by an API scope
 // the OEM must unlock — this is the contract 3rd-party robot vendors integrate against.
 type Capability = { scope: string; label: string; kind: "monitor" | "control"; desc: string; icon: React.ReactNode };
@@ -181,6 +213,9 @@ export default function AdminOrbital() {
   const [selected, setSelected] = useState<RobotDetail | null>(null);
   const [oems, setOems] = useState<OEMProfile[]>([]);
   const [manageOem, setManageOem] = useState<OEMProfile | null>(null);
+  const [catalog, setCatalog] = useState<OEMCatalog | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<RobotSummary["state"] | null>(null);
   const [map, setMap] = useState<WarehouseMap | null>(null);
   const [mapSel, setMapSel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -247,7 +282,20 @@ export default function AdminOrbital() {
   useEffect(() => {
     if (!configured) return;
     orbitalFetch<WarehouseMap>("/map").then(setMap).catch(() => {});
+    orbitalFetch<OEMCatalog>("/oem-catalog").then(setCatalog).catch(() => {});
   }, [configured]);
+
+  const onboardOem = useCallback(async (body: Record<string, unknown>) => {
+    const out = await orbitalFetch<{ profile: OEMProfile; credential: { api_key: string; key_prefix: string } }>(
+      "/oems", { method: "POST", body: JSON.stringify(body) });
+    await refresh();
+    return out;
+  }, [refresh]);
+
+  const removeOem = useCallback(async (oem: OEMProfile) => {
+    try { await orbitalFetch(`/oems/${encodeURIComponent(oem.oem_id)}`, { method: "DELETE" }); setManageOem(null); await refresh(); }
+    catch (e) { setError((e as Error).message); }
+  }, [refresh]);
 
   // Auto-select a live robot the first time the fleet loads so the control surface is
   // populated on arrival instead of showing an empty "select a robot" state.
@@ -403,19 +451,34 @@ export default function AdminOrbital() {
     );
   }
 
-  const robots = (fleet?.robots ?? []).filter((r) => industry === "All" || r.industry === industry);
+  const robots = (fleet?.robots ?? [])
+    .filter((r) => industry === "All" || r.industry === industry)
+    .filter((r) => !statusFilter || r.state === statusFilter);
   const tabs = ["All", ...(fleet?.industries ?? [])];
   const activeAlerts = alerts.filter((a) => !a.acknowledged);
-  const counts = {
-    active: fleet?.robots.filter((r) => r.state === "active").length ?? 0,
-    halted: fleet?.robots.filter((r) => r.state === "halted").length ?? 0,
-    total: fleet?.robots.length ?? 0,
+  const allRobots = fleet?.robots ?? [];
+  const stateCounts = STATUS_META.reduce((acc, s) => {
+    acc[s.key] = allRobots.filter((r) => r.state === s.key).length; return acc;
+  }, {} as Record<string, number>);
+  const metrics = {
+    total: allRobots.length,
+    navCount: allRobots.filter((r) => r.control_mode === "visual_nav").length,
+    avgDrift: allRobots.length ? allRobots.reduce((s, r) => s + (r.drift_delta_m || 0), 0) / allRobots.length : 0,
+    avgBatt: allRobots.length ? allRobots.reduce((s, r) => s + (r.battery_pct || 0), 0) / allRobots.length : 0,
+    openAlerts: activeAlerts.length,
+  };
+  const toggleStatusFilter = (k: RobotSummary["state"]) => {
+    setStatusFilter((cur) => (cur === k ? null : k));
+    sectionRefs.current["fleet"]?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
     <div style={{ padding: "2rem", paddingLeft: "calc(2rem + 56px)", color: MC.ink, background: MC.bg, minHeight: "100vh", fontFamily: SG }}>
       <NavRail active={activeSec} onSelect={scrollToSec} />
-      <Header facilityName={fleet?.facility?.name ?? null} lastSync={lastSync} onRefresh={refresh} />
+      <Header facilityName={fleet?.facility?.name ?? null} lastSync={lastSync} onRefresh={refresh} onOnboard={() => setWizardOpen(true)} />
+
+      <Ticker metrics={metrics} stateCounts={stateCounts} facility={fleet?.facility?.name ?? null}
+        oems={oems} live={!error} />
 
       {error && (
         <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: 8, color: "#fca5a5", fontSize: ".85rem" }}>
@@ -423,11 +486,10 @@ export default function AdminOrbital() {
         </div>
       )}
 
-      {/* KPI strip */}
-      <div ref={reg("overview")} data-sec="overview" style={{ display: "flex", gap: 12, marginTop: 18, flexWrap: "wrap", scrollMarginTop: 80 }}>
-        <Kpi label="Robots online" value={`${counts.active}/${counts.total}`} icon={<Activity size={16} color={BRAND.emerald} />} />
-        <Kpi label="E-Stopped" value={counts.halted} icon={<CircleStop size={16} color="#ef4444" />} accent={counts.halted > 0 ? "#ef4444" : undefined} />
-        <Kpi label="Active alerts" value={activeAlerts.length} icon={<AlertTriangle size={16} color="#f59e0b" />} accent={activeAlerts.length > 0 ? "#f59e0b" : undefined} />
+      {/* Live overview — headline metrics + interactive status distribution */}
+      <div ref={reg("overview")} data-sec="overview" style={{ scrollMarginTop: 80, marginTop: 18 }}>
+        <Overview metrics={metrics} stateCounts={stateCounts} statusFilter={statusFilter}
+          onToggle={toggleStatusFilter} cardBg={cardBg} border={border} />
       </div>
 
       {/* Warehouse map */}
@@ -477,7 +539,7 @@ export default function AdminOrbital() {
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 20, marginTop: 20, alignItems: "start" }}>
         <div ref={reg("fleet")} data-sec="fleet" style={{ scrollMarginTop: 80 }}>
           {/* Industry tabs */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
             {tabs.map((t) => (
               <button key={t} onClick={() => setIndustry(t)} style={{
                 padding: "6px 14px", borderRadius: 999, cursor: "pointer", fontSize: ".8rem",
@@ -486,6 +548,15 @@ export default function AdminOrbital() {
                 color: industry === t ? BRAND.emerald : "rgba(255,255,255,0.7)",
               }}>{t}</button>
             ))}
+            {statusFilter && (() => {
+              const s = STATUS_META.find((x) => x.key === statusFilter);
+              return (
+                <button onClick={() => setStatusFilter(null)} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 999, cursor: "pointer", fontSize: ".76rem", border, background: MC.input, color: MC.inkMut }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 999, background: s?.color, boxShadow: `0 0 6px ${s?.color}` }} />
+                  {s?.label} <span style={{ color: MC.inkDim }}>✕ clear</span>
+                </button>
+              );
+            })()}
           </div>
 
           {/* Robot grid */}
@@ -634,13 +705,16 @@ export default function AdminOrbital() {
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <KeyRound size={16} color={BRAND.emerald} />
           <h3 style={{ margin: 0, fontSize: ".95rem" }}>OEM Partners &amp; API Scopes</h3>
-          <span style={{ marginLeft: "auto", fontSize: ".72rem", color: "rgba(255,255,255,0.4)" }}>
+          <span style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.4)" }}>
             control Orbital exercises is bounded by what each OEM unlocks
           </span>
+          <button onClick={() => setWizardOpen(true)} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: ".76rem", fontWeight: 600, background: "#0e2230", border: "1px solid rgba(0,165,218,0.5)", color: "#7fd6f2" }}>
+            <Plus size={13} /> Onboard robot API
+          </button>
         </div>
         {oems.length === 0 ? (
           <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".82rem", marginTop: 10 }}>
-            No OEM partners registered yet. Onboard one with <code style={{ color: BRAND.emerald }}>scripts/oem_onboard.py register</code>.
+            No OEM partners registered yet. Use <button onClick={() => setWizardOpen(true)} style={{ color: MC.azure, background: "transparent", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Onboard robot API</button> to register one.
           </div>
         ) : (
           <div style={{ overflowX: "auto", marginTop: 8 }}>
@@ -684,7 +758,11 @@ export default function AdminOrbital() {
       )}
       {manageOem && (
         <OEMModal oem={manageOem} onClose={() => setManageOem(null)}
-          onSave={(want) => saveOemScopes(manageOem, want)} onToggleStatus={() => toggleOemStatus(manageOem)} />
+          onSave={(want) => saveOemScopes(manageOem, want)} onToggleStatus={() => toggleOemStatus(manageOem)}
+          onRemove={() => removeOem(manageOem)} />
+      )}
+      {wizardOpen && catalog && (
+        <OnboardWizard catalog={catalog} onClose={() => setWizardOpen(false)} onCreate={onboardOem} />
       )}
     </div>
   );
@@ -764,7 +842,7 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
             )}
             {wps.length > 0 && (
               <>
-                <polyline points={[`${ex.x},${Y(ex.y)}`, ...wps.map((w) => `${w.x},${Y(w.y)}`)].join(" ")}
+                <polyline points={[`${ex.x},${Y(ex.y)}`, ...((r.path && r.path.length ? r.path : wps)).map((w) => `${w.x},${Y(w.y)}`)].join(" ")}
                   fill="none" stroke={nav} strokeWidth={0.05} strokeDasharray="0.25 0.18" opacity={0.9} />
                 {wps.map((w, i) => {
                   const last = i === wps.length - 1;
@@ -842,9 +920,9 @@ function NavRail({ active, onSelect }: { active: string; onSelect: (id: string) 
   );
 }
 
-function Header({ facilityName, lastSync, onRefresh }: { facilityName: string | null; lastSync: Date | null; onRefresh: () => void }) {
+function Header({ facilityName, lastSync, onRefresh, onOnboard }: { facilityName: string | null; lastSync: Date | null; onRefresh: () => void; onOnboard?: () => void }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ width: 30, height: 30, borderRadius: 8, overflow: "hidden", background: "#0c1119", border: "1px solid rgba(0,165,218,0.5)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 12px rgba(0,165,218,0.3)" }}>
@@ -857,9 +935,16 @@ function Header({ facilityName, lastSync, onRefresh }: { facilityName: string | 
           {lastSync ? ` · synced ${lastSync.toLocaleTimeString()}` : ""}
         </p>
       </div>
-      <button onClick={onRefresh} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer", fontSize: ".82rem" }}>
-        <RefreshCw size={14} /> Refresh
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {onOnboard && (
+          <button onClick={onOnboard} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(0,165,218,0.5)", background: "#0e2230", color: "#7fd6f2", cursor: "pointer", fontSize: ".82rem", fontWeight: 600, boxShadow: "0 0 12px rgba(0,165,218,0.25)" }}>
+            <Plus size={14} /> Onboard robot API
+          </button>
+        )}
+        <button onClick={onRefresh} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer", fontSize: ".82rem" }}>
+          <RefreshCw size={14} /> Refresh
+        </button>
+      </div>
     </div>
   );
 }
@@ -1024,13 +1109,18 @@ function RobotModal({ detail, busy, onClose, onControl }: {
   );
 }
 
-function OEMModal({ oem, onClose, onSave, onToggleStatus }: {
-  oem: OEMProfile; onClose: () => void; onSave: (want: Set<string>) => void; onToggleStatus: () => void;
+function OEMModal({ oem, onClose, onSave, onToggleStatus, onRemove }: {
+  oem: OEMProfile; onClose: () => void; onSave: (want: Set<string>) => void; onToggleStatus: () => void; onRemove: () => void;
 }) {
   const ceiling = new Set(oem.ceiling_scopes);
   const [want, setWant] = useState<Set<string>>(new Set(oem.granted_scopes));
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const suspended = oem.status === "suspended";
+  const p = oem.policies;
   const toggle = (s: string) => setWant((prev) => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n; });
+  const policyChip = (label: string, on = true) => (
+    <span style={{ fontSize: ".68rem", fontFamily: MONO, padding: "2px 7px", borderRadius: 5, background: MC.input, color: on ? MC.inkMut : MC.inkDim }}>{label}</span>
+  );
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: MC.card, border: `1px solid ${MC.lineStrong}`, borderRadius: 14, padding: 24, width: 480, maxWidth: "92vw", maxHeight: "88vh", overflowY: "auto" }}>
@@ -1058,10 +1148,28 @@ function OEMModal({ oem, onClose, onSave, onToggleStatus }: {
             );
           })}
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}>
-          <button onClick={onToggleStatus} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: suspended ? BRAND.emerald : "#fca5a5", cursor: "pointer", fontSize: ".78rem" }}>
-            {suspended ? "Reactivate access" : "Suspend access"}
-          </button>
+        {p && (
+          <div style={{ marginTop: 16, paddingTop: 12, borderTop: `1px solid ${MC.line}` }}>
+            <div style={{ fontSize: ".64rem", textTransform: "uppercase", letterSpacing: ".5px", color: MC.inkDim, marginBottom: 8 }}>Governance policies</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {policyChip(`max ${p.max_speed_mps.toFixed(2)} m/s`)}
+              {policyChip(`drift halt ${p.drift_halt_threshold_m.toFixed(2)} m`)}
+              {policyChip(`auto-estop ${p.auto_estop_on_critical ? "on" : "off"}`, p.auto_estop_on_critical)}
+              {policyChip(`teleop approval ${p.require_approval_for_teleop ? "on" : "off"}`, p.require_approval_for_teleop)}
+              {policyChip(`zone: ${p.geofence}`)}
+            </div>
+          </div>
+        )}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={onToggleStatus} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: suspended ? BRAND.emerald : "#fca5a5", cursor: "pointer", fontSize: ".78rem" }}>
+              {suspended ? "Reactivate access" : "Suspend access"}
+            </button>
+            <button onClick={() => (confirmRemove ? onRemove() : setConfirmRemove(true))}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: confirmRemove ? "#fca5a5" : "rgba(255,255,255,0.55)", cursor: "pointer", fontSize: ".78rem" }}>
+              <Trash2 size={13} /> {confirmRemove ? "Click to confirm" : "Remove"}
+            </button>
+          </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={onClose} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer", fontSize: ".78rem" }}>Cancel</button>
             <button onClick={() => onSave(want)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: BRAND.emerald, color: "#0b0f14", cursor: "pointer", fontSize: ".78rem", fontWeight: 700 }}>Save scopes</button>
@@ -1248,6 +1356,335 @@ function LogicPanel({ orchestrator, cardBg, border }: { orchestrator: Orchestrat
             <div style={{ fontSize: ".78rem", color: "rgba(255,255,255,0.6)", lineHeight: 1.55 }}>{body}</div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function battColor(pct: number): string {
+  return pct < 25 ? MC.crimson : pct < 50 ? MC.amber : MC.green;
+}
+
+// Scrolling live-monitoring ticker — mirrors the standalone "Mission Control" strip.
+function Ticker({ metrics, stateCounts, facility, oems, live }: {
+  metrics: { total: number; navCount: number; avgDrift: number; avgBatt: number; openAlerts: number };
+  stateCounts: Record<string, number>; facility: string | null; oems: OEMProfile[]; live: boolean;
+}) {
+  const activeOems = oems.filter((o) => o.status === "active").length;
+  const items: { dot: string; label: string; val: React.ReactNode }[] = [
+    { dot: live ? MC.green : MC.crimson, label: "Link", val: live ? "LIVE" : "RECONNECTING" },
+    { dot: MC.azure, label: "Monitoring", val: `${metrics.total} robots` },
+    { dot: MC.green, label: "Working", val: stateCounts.active ?? 0 },
+    { dot: MC.crimson, label: "Between tasks", val: stateCounts.cooldown ?? 0 },
+    { dot: MC.azureLight, label: "Visual-nav", val: metrics.navCount },
+    { dot: MC.amber, label: "Idle", val: stateCounts.idle ?? 0 },
+    { dot: "#ff3b6b", label: "Halted", val: stateCounts.halted ?? 0 },
+    { dot: MC.amber, label: "Open alerts", val: metrics.openAlerts },
+    { dot: MC.azure, label: "Avg drift Δ", val: `${metrics.avgDrift.toFixed(3)} m` },
+    { dot: battColor(metrics.avgBatt), label: "Fleet battery", val: `${Math.round(metrics.avgBatt)}%` },
+    { dot: "#7fd6f2", label: "OEM partners", val: `${activeOems}/${oems.length}` },
+    { dot: MC.inkDim, label: "Facility", val: facility || "—" },
+  ];
+  const strip = (prefix: string) => items.map((it, i) => (
+    <span key={`${prefix}-${i}`} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "0 20px", borderRight: `1px solid ${MC.line}`, whiteSpace: "nowrap" }}>
+      <span style={{ width: 7, height: 7, borderRadius: 999, background: it.dot, boxShadow: `0 0 7px ${it.dot}` }} />
+      <span style={{ fontSize: ".68rem", textTransform: "uppercase", letterSpacing: ".06em", color: MC.inkDim }}>{it.label}</span>
+      <span style={{ fontSize: ".76rem", fontFamily: MONO, color: MC.ink, fontVariantNumeric: "tabular-nums" }}>{it.val}</span>
+    </span>
+  ));
+  return (
+    <div style={{ marginTop: 14, background: MC.panel, border: `1px solid ${MC.line}`, borderRadius: 10, overflow: "hidden", position: "relative", WebkitMaskImage: "linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent)", maskImage: "linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent)" }}>
+      <style>{`@keyframes orbital-ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}} .orbital-ticker-track{animation:orbital-ticker 46s linear infinite} .orbital-ticker-track:hover{animation-play-state:paused}`}</style>
+      <div className="orbital-ticker-track" style={{ display: "inline-flex", alignItems: "center", padding: "9px 0" }}>
+        {strip("a")}{strip("b")}
+      </div>
+    </div>
+  );
+}
+
+// Live fleet overview — headline metrics + an interactive status distribution bar whose
+// segments/chips filter the fleet grid below.
+function Overview({ metrics, stateCounts, statusFilter, onToggle, cardBg, border }: {
+  metrics: { total: number; navCount: number; avgDrift: number; avgBatt: number; openAlerts: number };
+  stateCounts: Record<string, number>; statusFilter: RobotSummary["state"] | null;
+  onToggle: (k: RobotSummary["state"]) => void; cardBg: string; border: string;
+}) {
+  const total = Math.max(1, metrics.total);
+  const tiles: { label: string; value: React.ReactNode; color: string }[] = [
+    { label: "Fleet", value: metrics.total, color: MC.ink },
+    { label: "Avg drift Δ", value: `${metrics.avgDrift.toFixed(3)} m`, color: driftColor(metrics.avgDrift) },
+    { label: "Fleet battery", value: `${Math.round(metrics.avgBatt)}%`, color: battColor(metrics.avgBatt) },
+    { label: "Open alerts", value: metrics.openAlerts, color: metrics.openAlerts ? MC.amber : MC.ink },
+  ];
+  const present = STATUS_META.filter((s) => (stateCounts[s.key] ?? 0) > 0);
+  return (
+    <div style={{ background: cardBg, border, borderRadius: 12, padding: 14, display: "grid", gridTemplateColumns: "minmax(0, 360px) minmax(0, 1fr)", gap: 14, alignItems: "stretch" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        {tiles.map((t) => (
+          <div key={t.label} style={{ background: MC.panel, border, borderRadius: 9, padding: "10px 12px" }}>
+            <div style={{ fontSize: ".64rem", textTransform: "uppercase", letterSpacing: ".06em", color: MC.inkDim }}>{t.label}</div>
+            <div style={{ fontSize: "1.25rem", fontWeight: 700, marginTop: 3, color: t.color, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{t.value}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ background: MC.panel, border, borderRadius: 9, padding: "10px 12px", display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <Activity size={14} color={MC.azure} />
+          <span style={{ fontSize: ".64rem", textTransform: "uppercase", letterSpacing: ".06em", color: MC.inkDim }}>Fleet status</span>
+          <span style={{ marginLeft: "auto", fontSize: ".64rem", color: MC.inkDim }}>{statusFilter ? "filtering — click again to clear" : "click a state to filter"}</span>
+        </div>
+        <div style={{ display: "flex", height: 10, borderRadius: 999, overflow: "hidden", background: MC.input, marginBottom: 10 }}>
+          {present.map((s) => (
+            <div key={s.key} onClick={() => onToggle(s.key)} title={`${s.label}: ${stateCounts[s.key]}`}
+              style={{ width: `${((stateCounts[s.key] ?? 0) / total) * 100}%`, background: s.color, cursor: "pointer", opacity: statusFilter && statusFilter !== s.key ? 0.3 : 1, transition: "opacity .15s" }} />
+          ))}
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {STATUS_META.map((s) => {
+            const n = stateCounts[s.key] ?? 0;
+            const on = statusFilter === s.key;
+            return (
+              <button key={s.key} onClick={() => onToggle(s.key)} disabled={n === 0}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 9px", borderRadius: 999, cursor: n ? "pointer" : "default",
+                  border: `1px solid ${on ? s.color : MC.line}`, background: on ? `${s.color}22` : "transparent",
+                  color: n ? MC.inkMut : MC.inkDim, fontSize: ".72rem", opacity: n ? 1 : 0.45 }}>
+                <span style={{ width: 7, height: 7, borderRadius: 999, background: s.color }} />
+                {s.label} <span style={{ fontFamily: MONO, color: MC.ink }}>{n}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// OEM onboarding wizard — register a partner, grant scopes (bounded by protocol ceiling),
+// and set governance policies; returns a one-time API credential. Mirrors the standalone flow.
+function OnboardWizard({ catalog, onClose, onCreate }: {
+  catalog: OEMCatalog; onClose: () => void;
+  onCreate: (body: Record<string, unknown>) => Promise<{ profile: OEMProfile; credential: { api_key: string; key_prefix: string } }>;
+}) {
+  const [step, setStep] = useState(1);
+  const [company, setCompany] = useState("");
+  const [vendor, setVendor] = useState("");
+  const [customVendor, setCustomVendor] = useState("");
+  const [transport, setTransport] = useState(catalog.transports[0] ?? "ros2");
+  const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState("");
+  const [scopes, setScopes] = useState<Set<string>>(new Set(["telemetry.read", "state.read"]));
+  const [policies, setPolicies] = useState<OEMPolicies>({ ...catalog.default_policies });
+  const [creating, setCreating] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [result, setResult] = useState<{ profile: OEMProfile; credential: { api_key: string; key_prefix: string } } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const vendorName = vendor === "__other__" ? customVendor.trim() : vendor;
+  const allScopeValues = catalog.scopes.map((s) => s.value);
+  const ceiling = new Set<string>(
+    vendor && vendor !== "__other__"
+      ? (catalog.vendors.find((v) => v.vendor === vendor)?.ceiling_scopes ?? allScopeValues)
+      : allScopeValues,
+  );
+  const step1Valid = !!company.trim() && !!vendorName && /.+@.+\..+/.test(email.trim());
+  const inp: React.CSSProperties = { width: "100%", background: MC.input, border: `1px solid ${MC.line}`, borderRadius: 8, padding: "9px 11px", color: MC.ink, fontSize: ".84rem", fontFamily: SG };
+  const lbl: React.CSSProperties = { fontSize: ".68rem", textTransform: "uppercase", letterSpacing: ".06em", color: MC.inkDim, marginBottom: 5, display: "block" };
+
+  // Drop scopes that fall outside the chosen vendor's ceiling when the vendor changes.
+  useEffect(() => { setScopes((prev) => new Set(Array.from(prev).filter((s) => ceiling.has(s)))); /* eslint-disable-next-line */ }, [vendor]);
+
+  const toggleScope = (s: string) => setScopes((prev) => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n; });
+
+  const submit = async () => {
+    setCreating(true); setErr(null);
+    try {
+      const out = await onCreate({
+        company_name: company.trim(), vendor: vendorName, contact_email: email.trim(),
+        transport, website: website.trim() || null, scopes: Array.from(scopes), policies,
+      });
+      setResult(out);
+    } catch (e) { setErr((e as Error).message); } finally { setCreating(false); }
+  };
+
+  const copyKey = () => {
+    if (!result) return;
+    navigator.clipboard?.writeText(result.credential.api_key).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); });
+  };
+
+  const Switch = ({ on, onClick }: { on: boolean; onClick: () => void }) => (
+    <button onClick={onClick} style={{ width: 38, height: 22, borderRadius: 999, border: "none", cursor: "pointer", background: on ? MC.green : MC.input, position: "relative", transition: "background .15s" }}>
+      <span style={{ position: "absolute", top: 3, left: on ? 19 : 3, width: 16, height: 16, borderRadius: 999, background: "#fff", transition: "left .15s" }} />
+    </button>
+  );
+
+  const steps = ["Partner", "Scopes", "Policies", "Review"];
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60, padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: MC.card, border: `1px solid ${MC.lineStrong}`, borderRadius: 16, padding: 24, width: 620, maxWidth: "96vw", maxHeight: "90vh", overflowY: "auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <KeyRound size={18} color={MC.azure} />
+              <h2 style={{ margin: 0, fontSize: "1.15rem", color: BRAND.white }}>{result ? "Partner onboarded" : "Onboard a robot API"}</h2>
+            </div>
+            <div style={{ fontSize: ".74rem", color: MC.inkDim, marginTop: 3 }}>
+              {result ? "Share the API key securely — it is shown only once." : "Register an OEM, grant API scopes, and set governance policies."}
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", color: MC.inkDim, cursor: "pointer" }}><X size={18} /></button>
+        </div>
+
+        {!result && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "16px 0 18px" }}>
+            {steps.map((s, i) => {
+              const n = i + 1; const done = n < step; const on = n === step;
+              return (
+                <div key={s} style={{ display: "flex", alignItems: "center", gap: 6, flex: i < steps.length - 1 ? 1 : "0 0 auto" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ width: 22, height: 22, borderRadius: 999, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".7rem", fontWeight: 700, background: on ? MC.azure : done ? emeraldAlpha(0.2) : MC.input, color: on ? "#04121a" : done ? MC.green : MC.inkDim, border: `1px solid ${on ? MC.azure : done ? MC.green : MC.line}` }}>{done ? "✓" : n}</span>
+                    <span style={{ fontSize: ".72rem", color: on ? MC.ink : MC.inkDim }}>{s}</span>
+                  </span>
+                  {i < steps.length - 1 && <span style={{ flex: 1, height: 1, background: MC.line }} />}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {err && <div style={{ padding: "9px 12px", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: 8, color: "#fca5a5", fontSize: ".8rem", marginBottom: 14 }}>{err}</div>}
+
+        {result ? (
+          <div style={{ marginTop: 4 }}>
+            <div style={{ background: MC.panel, border: `1px solid ${MC.line}`, borderRadius: 10, padding: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".8rem", color: MC.inkMut }}>
+                <span>{result.profile.company_name}</span>
+                <span style={{ fontFamily: MONO, color: MC.inkDim }}>{result.profile.oem_id}</span>
+              </div>
+              <div style={{ ...lbl, marginTop: 14 }}>API key (shown once)</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <code style={{ flex: 1, background: MC.input, border: `1px solid ${MC.line}`, borderRadius: 8, padding: "9px 11px", color: MC.green, fontFamily: MONO, fontSize: ".8rem", wordBreak: "break-all" }}>{result.credential.api_key}</code>
+                <button onClick={copyKey} style={{ display: "flex", alignItems: "center", gap: 5, padding: "9px 12px", borderRadius: 8, border: `1px solid ${MC.line}`, background: MC.input, color: MC.inkMut, cursor: "pointer", fontSize: ".76rem" }}>
+                  {copied ? <Check size={13} color={MC.green} /> : <Copy size={13} />} {copied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <div style={{ fontSize: ".72rem", color: MC.inkDim, marginTop: 8 }}>Granted {result.profile.granted_scopes.length} scope(s). Manage anytime from OEM Partners.</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 18 }}>
+              <button onClick={onClose} style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: MC.azure, color: "#04121a", cursor: "pointer", fontSize: ".82rem", fontWeight: 700 }}>Done</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {step === 1 && (
+              <div style={{ display: "grid", gap: 14 }}>
+                <div><label style={lbl}>Company name</label><input style={inp} value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Acme Robotics" /></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={lbl}>Vendor / protocol</label>
+                    <select style={inp} value={vendor} onChange={(e) => setVendor(e.target.value)}>
+                      <option value="">Select…</option>
+                      {catalog.vendors.map((v) => <option key={v.vendor} value={v.vendor}>{v.vendor}</option>)}
+                      <option value="__other__">Other…</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lbl}>Transport</label>
+                    <select style={inp} value={transport} onChange={(e) => setTransport(e.target.value)}>
+                      {catalog.transports.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+                {vendor === "__other__" && (
+                  <div><label style={lbl}>Vendor name</label><input style={inp} value={customVendor} onChange={(e) => setCustomVendor(e.target.value)} placeholder="New robot OEM" /></div>
+                )}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div><label style={lbl}>Contact email</label><input style={inp} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ops@acme.dev" /></div>
+                  <div><label style={lbl}>Website (optional)</label><input style={inp} value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="acme.dev" /></div>
+                </div>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div>
+                <div style={{ fontSize: ".78rem", color: MC.inkMut, marginBottom: 12 }}>Grant the API scopes this partner unlocks. Scopes outside <b>{vendorName || "the"}</b>'s protocol ceiling are locked.</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {catalog.scopes.map((s) => {
+                    const locked = !ceiling.has(s.value);
+                    const on = scopes.has(s.value);
+                    return (
+                      <button key={s.value} disabled={locked} onClick={() => toggleScope(s.value)}
+                        style={{ textAlign: "left", padding: "9px 11px", borderRadius: 9, cursor: locked ? "not-allowed" : "pointer",
+                          border: `1px solid ${on ? MC.azure : MC.line}`, background: on ? "rgba(0,165,218,0.12)" : MC.panel, opacity: locked ? 0.4 : 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          {locked && <Lock size={11} color={MC.inkDim} />}
+                          <span style={{ fontFamily: MONO, fontSize: ".74rem", color: on ? MC.azureLight : MC.ink }}>{s.value}</span>
+                        </div>
+                        <div style={{ fontSize: ".68rem", color: MC.inkDim, marginTop: 3 }}>{SCOPE_LABELS[s.value] ?? s.label}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div style={{ display: "grid", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={lbl}>Max speed — {policies.max_speed_mps.toFixed(2)} m/s</label>
+                    <input type="range" min={0.1} max={MAX_SPEED} step={0.05} value={policies.max_speed_mps}
+                      onChange={(e) => setPolicies((p) => ({ ...p, max_speed_mps: +e.target.value }))} style={{ width: "100%", accentColor: MC.azure }} />
+                  </div>
+                  <div>
+                    <label style={lbl}>Drift halt threshold — {policies.drift_halt_threshold_m.toFixed(2)} m</label>
+                    <input type="range" min={0.1} max={1.5} step={0.05} value={policies.drift_halt_threshold_m}
+                      onChange={(e) => setPolicies((p) => ({ ...p, drift_halt_threshold_m: +e.target.value }))} style={{ width: "100%", accentColor: MC.azure }} />
+                  </div>
+                </div>
+                <div><label style={lbl}>Geofence zone</label><input style={inp} value={policies.geofence} onChange={(e) => setPolicies((p) => ({ ...p, geofence: e.target.value }))} placeholder="facility-wide" /></div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderTop: `1px solid ${MC.line}` }}>
+                  <span style={{ fontSize: ".82rem", color: MC.ink }}>Auto E-Stop on critical anomaly</span>
+                  <Switch on={policies.auto_estop_on_critical} onClick={() => setPolicies((p) => ({ ...p, auto_estop_on_critical: !p.auto_estop_on_critical }))} />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderTop: `1px solid ${MC.line}` }}>
+                  <span style={{ fontSize: ".82rem", color: MC.ink }}>Require operator approval for teleop</span>
+                  <Switch on={policies.require_approval_for_teleop} onClick={() => setPolicies((p) => ({ ...p, require_approval_for_teleop: !p.require_approval_for_teleop }))} />
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div style={{ display: "grid", gap: 10, fontSize: ".82rem" }}>
+                {[["Company", company], ["Vendor", vendorName], ["Transport", transport], ["Contact", email],
+                  ["Scopes", Array.from(scopes).join(", ") || "none"], ["Max speed", `${policies.max_speed_mps.toFixed(2)} m/s`],
+                  ["Drift halt", `${policies.drift_halt_threshold_m.toFixed(2)} m`], ["Geofence", policies.geofence],
+                  ["Auto E-Stop", policies.auto_estop_on_critical ? "on" : "off"], ["Teleop approval", policies.require_approval_for_teleop ? "required" : "off"],
+                ].map(([k, v]) => (
+                  <div key={k as string} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "6px 0", borderBottom: `1px solid ${MC.line}` }}>
+                    <span style={{ color: MC.inkDim }}>{k}</span>
+                    <span style={{ color: MC.ink, textAlign: "right", wordBreak: "break-word" }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+              <button onClick={() => (step === 1 ? onClose() : setStep(step - 1))} style={{ padding: "9px 16px", borderRadius: 8, border: `1px solid ${MC.line}`, background: "transparent", color: MC.inkMut, cursor: "pointer", fontSize: ".82rem" }}>
+                {step === 1 ? "Cancel" : "Back"}
+              </button>
+              {step < 4 ? (
+                <button disabled={step === 1 && !step1Valid} onClick={() => setStep(step + 1)}
+                  style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: step === 1 && !step1Valid ? MC.input : MC.azure, color: step === 1 && !step1Valid ? MC.inkDim : "#04121a", cursor: step === 1 && !step1Valid ? "not-allowed" : "pointer", fontSize: ".82rem", fontWeight: 700 }}>
+                  Continue
+                </button>
+              ) : (
+                <button disabled={creating} onClick={submit} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 18px", borderRadius: 8, border: "none", background: MC.green, color: "#04121a", cursor: creating ? "wait" : "pointer", fontSize: ".82rem", fontWeight: 700 }}>
+                  {creating && <Loader2 size={14} className="animate-spin" />} Create partner
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

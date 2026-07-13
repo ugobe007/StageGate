@@ -110,10 +110,14 @@ export function createOrbitalRouter(): Router {
   router.post("/alerts/:id/ack", (req, res) => void forward(req, res, `/api/dashboard/alerts/${encodeURIComponent(req.params.id)}/ack`));
 
   // OEM governance — list partners and manage their granted API scopes (operator surface).
+  router.get("/oem-catalog", (req, res) => void forward(req, res, "/api/dashboard/oem-catalog"));
   router.get("/oems", (req, res) => void forward(req, res, "/api/dashboard/oems"));
+  router.post("/oems", (req, res) => void forward(req, res, "/api/dashboard/oems"));
   router.get("/oems/:id", (req, res) => void forward(req, res, `/api/dashboard/oems/${encodeURIComponent(req.params.id)}`));
+  router.delete("/oems/:id", (req, res) => void forward(req, res, `/api/dashboard/oems/${encodeURIComponent(req.params.id)}`));
   router.post("/oems/:id/grant", (req, res) => void forward(req, res, `/api/dashboard/oems/${encodeURIComponent(req.params.id)}/grant`));
   router.post("/oems/:id/revoke", (req, res) => void forward(req, res, `/api/dashboard/oems/${encodeURIComponent(req.params.id)}/revoke`));
+  router.post("/oems/:id/policies", (req, res) => void forward(req, res, `/api/dashboard/oems/${encodeURIComponent(req.params.id)}/policies`));
   router.post("/oems/:id/suspend", (req, res) => void forward(req, res, `/api/dashboard/oems/${encodeURIComponent(req.params.id)}/suspend`));
   router.post("/oems/:id/reactivate", (req, res) => void forward(req, res, `/api/dashboard/oems/${encodeURIComponent(req.params.id)}/reactivate`));
 
