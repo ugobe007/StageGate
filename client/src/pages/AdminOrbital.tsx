@@ -704,25 +704,38 @@ export default function AdminOrbital() {
           )}
         </div>
 
-        {/* Alerts rail */}
-        <div ref={reg("alerts")} data-sec="alerts" style={{ background: cardBg, border, borderRadius: 12, padding: 16, scrollMarginTop: 80 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <AlertTriangle size={16} color="#f59e0b" />
-            <h3 style={{ margin: 0, fontSize: ".95rem" }}>Alerts</h3>
+        {/* Alerts rail — compact, unacknowledged first, capped + scrollable so it doesn't
+            stretch the section past the fleet grid */}
+        <div ref={reg("alerts")} data-sec="alerts" style={{ background: cardBg, border, borderRadius: 12, padding: 14, scrollMarginTop: 80 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <AlertTriangle size={15} color="#f59e0b" />
+            <h3 style={{ margin: 0, fontSize: ".9rem" }}>Alerts</h3>
+            {(() => {
+              const unacked = alerts.filter((a) => !a.acknowledged);
+              return (
+                <>
+                  <span style={{ fontSize: ".62rem", fontFamily: MONO, padding: "1px 7px", borderRadius: 999, background: MC.input, color: unacked.length ? "#f59e0b" : "rgba(255,255,255,0.4)" }}>{unacked.length}</span>
+                  {unacked.length > 0 && (
+                    <button onClick={() => { void Promise.all(unacked.map((a) => ackAlert(a.id))); }}
+                      style={{ marginLeft: "auto", fontSize: ".68rem", color: BRAND.emerald, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
+                      Ack all
+                    </button>
+                  )}
+                </>
+              );
+            })()}
           </div>
-          {alerts.length === 0 && <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".8rem" }}>No alerts — fleet nominal.</div>}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {alerts.slice(0, 25).map((a) => (
-              <div key={a.id} style={{ opacity: a.acknowledged ? 0.45 : 1, borderLeft: `3px solid ${SEVERITY_COLOR[a.severity]}`, paddingLeft: 10 }}>
-                <div style={{ fontSize: ".78rem", fontWeight: 600, color: SEVERITY_COLOR[a.severity] }}>
-                  {a.type.replace(/_/g, " ")}
-                </div>
-                <div style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.6)" }}>{a.robot_id}{a.message ? ` — ${a.message}` : ""}</div>
-                {!a.acknowledged && (
-                  <button onClick={() => ackAlert(a.id)} style={{ marginTop: 4, fontSize: ".68rem", color: BRAND.emerald, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
-                    Acknowledge
-                  </button>
-                )}
+          {alerts.length === 0 && <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".78rem" }}>No alerts — fleet nominal.</div>}
+          <div style={{ maxHeight: 240, overflowY: "auto", margin: "0 -6px" }}>
+            {[...alerts].sort((a, b) => Number(a.acknowledged) - Number(b.acknowledged)).slice(0, 40).map((a) => (
+              <div key={a.id} onClick={() => { if (!a.acknowledged) ackAlert(a.id); }}
+                title={`${a.type.replace(/_/g, " ")}${a.message ? ` — ${a.message}` : ""}`}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 6px", borderRadius: 6, opacity: a.acknowledged ? 0.4 : 1, cursor: a.acknowledged ? "default" : "pointer" }}>
+                <span style={{ width: 6, height: 6, borderRadius: 999, background: SEVERITY_COLOR[a.severity], flexShrink: 0 }} />
+                <span style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.7)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {a.robot_id}{a.message ? ` — ${a.message}` : ` — ${a.type.replace(/_/g, " ")}`}
+                </span>
+                <span style={{ fontSize: ".6rem", fontFamily: MONO, color: "rgba(255,255,255,0.35)", flexShrink: 0 }}>{a.acknowledged ? "✓" : "ack"}</span>
               </div>
             ))}
           </div>
