@@ -1316,15 +1316,25 @@ function ControlPanel({ robot, grants, busy, onSpeed, onDrive, onStopDrive, onCl
         <button onClick={onDeselect} style={{ fontSize: ".7rem", padding: "3px 9px", borderRadius: 7, border, background: "transparent", color: "rgba(255,255,255,0.7)", cursor: "pointer" }}>Deselect</button>
       </div>
 
-      {robot.mission && (
-        <div style={{ marginTop: 12, borderRadius: 10, border, padding: 10, background: "#12101f" }}>
-          <div style={{ fontSize: ".58rem", textTransform: "uppercase", letterSpacing: ".06em", color: "rgba(255,255,255,0.4)" }}>Current mission</div>
-          <div style={{ fontSize: ".8rem", fontWeight: 500, marginTop: 3 }}>{robot.mission}</div>
-          <div style={{ fontSize: ".68rem", marginTop: 3 }}>
-            <span style={{ color: PHASE_COLOR[robot.mission_phase ?? "idle"] ?? "rgba(255,255,255,0.35)" }}>●</span> {robot.current_task ?? PHASE_LABEL[robot.mission_phase ?? "idle"] ?? ""}
+      {(() => {
+        const missionText = robot.mission
+          ?? (robot.state === "charging" ? "Charging at the dock"
+            : robot.state === "halted" ? "Safety stop engaged — awaiting resume"
+            : robot.state === "idle" ? "Idle — will join the next sequence"
+            : "Autonomous patrol");
+        const activity = robot.current_task ?? PHASE_LABEL[robot.mission_phase ?? "idle"] ?? MODE_LABEL[mode];
+        return (
+          <div style={{ marginTop: 12, borderRadius: 10, border: "1px solid #2a2440", padding: 10, background: "#12101f" }}>
+            <div style={{ fontSize: ".56rem", textTransform: "uppercase", letterSpacing: ".06em", color: "rgba(255,255,255,0.4)" }}>What it's doing now</div>
+            <div style={{ fontSize: ".8rem", fontWeight: 500, marginTop: 3, lineHeight: 1.3 }}>{missionText}</div>
+            {activity && (
+              <div style={{ fontSize: ".68rem", marginTop: 3, color: "rgba(255,255,255,0.6)" }}>
+                <span style={{ color: PHASE_COLOR[robot.mission_phase ?? "idle"] ?? "rgba(255,255,255,0.35)" }}>●</span> {activity}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {!canVel && (
         <div style={{ marginTop: 12, fontSize: ".72rem", color: "#fca5a5", lineHeight: 1.4 }}>
