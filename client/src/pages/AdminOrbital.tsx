@@ -8,12 +8,14 @@ import { BRAND, emeraldAlpha } from "@/lib/brand";
 // ── Types (mirror orbital_cloud/models.py) ────────────────────────────────────
 interface Pose { x: number; y: number; theta: number }
 interface Point { x: number; y: number }
+type ControlMode = "patrol" | "visual_nav" | "manual" | "charging" | "halted" | "idle";
 interface RobotSummary {
   id: string; vendor: string; model: string; industry: string;
   state: "active" | "idle" | "charging" | "halted" | "offline";
   battery_pct: number; pose_external: Pose; pose_internal: Pose;
   drift_delta_m: number; current_task?: string | null; error_code?: string | null;
   visual_nav?: boolean; nav_goal?: Point | null; waypoints?: Point[];
+  speed_mps?: number; manual_drive?: boolean; control_mode?: ControlMode;
 }
 interface WarehouseRack { id: string; x: number; y: number; w: number; h: number }
 interface WarehouseMap {
@@ -81,6 +83,22 @@ const SEVERITY_COLOR: Record<Alert["severity"], string> = {
 
 const DRIFT_DEGRADED_M = 0.1;
 const DRIFT_HALT_M = 0.5;
+const MAX_SPEED = 2.5; // mirrors ORBITAL_MAX_SPEED_MPS
+
+const MODE_LABEL: Record<ControlMode, string> = {
+  patrol: "Autonomous patrol", visual_nav: "Visual-nav (SLAM bypass)", manual: "Manual jog",
+  charging: "Charging", halted: "Halted", idle: "Idle",
+};
+const MODE_COLOR: Record<ControlMode, string> = {
+  patrol: "rgba(255,255,255,0.55)", visual_nav: BRAND.emerald, manual: "#f59e0b",
+  charging: "#38bdf8", halted: "#ef4444", idle: "rgba(255,255,255,0.4)",
+};
+// 3×3 direction pad → heading in degrees (world y-up, 0 = east, CCW). null = stop.
+const DIRS: [string, number | null][] = [
+  ["↖", 135], ["↑", 90], ["↗", 45],
+  ["←", 180], ["■", null], ["→", 0],
+  ["↙", 225], ["↓", 270], ["↘", 315],
+];
 
 const ALL_SCOPES = [
   "telemetry.read", "state.read", "control.velocity", "control.estop",
@@ -214,6 +232,21 @@ export default function AdminOrbital() {
 
   const clearRoute = useCallback(async (id: string) => {
     try { await orbitalFetch(`/robot/${encodeURIComponent(id)}/navigate/clear`, { method: "POST" }); await refresh(); }
+    catch (e) { setError((e as Error).message); }
+  }, [refresh]);
+
+  const setSpeed = useCallback(async (id: string, mps: number) => {
+    try { await orbitalFetch(`/robot/${encodeURIComponent(id)}/speed`, { method: "POST", body: JSON.stringify({ speed_mps: mps }) }); await refresh(); }
+    catch (e) { setError((e as Error).message); }
+  }, [refresh]);
+
+  const drive = useCallback(async (id: string, heading_deg: number, speed_mps: number) => {
+    try { await orbitalFetch(`/robot/${encodeURIComponent(id)}/drive`, { method: "POST", body: JSON.stringify({ heading_deg, speed_mps }) }); await refresh(); }
+    catch (e) { setError((e as Error).message); }
+  }, [refresh]);
+
+  const stopDrive = useCallback(async (id: string) => {
+    try { await orbitalFetch(`/robot/${encodeURIComponent(id)}/drive/stop`, { method: "POST" }); await refresh(); }
     catch (e) { setError((e as Error).message); }
   }, [refresh]);
 
@@ -356,8 +389,9 @@ export default function AdminOrbital() {
           <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap", fontSize: ".68rem", color: "rgba(255,255,255,0.5)" }}>
             <Legend color={BRAND.emerald} label="camera pose (ground truth)" />
             <Legend color="rgba(255,255,255,0.5)" label="robot self-report (SLAM)" ring />
-            <Legend color="#f59e0b" label="visual-nav path → waypoint" bar />
-            <Legend color="#4b5563" label="storage rack" square />
+            <Legend color={BRAND.emerald} label="visual-nav path → waypoint" bar />
+            <Legend color="#f59e0b" label="manual jog" ring />
+            <Legend color="#3a3a3a" label="storage rack" square />
           </div>
         </div>
       )}
@@ -399,11 +433,17 @@ export default function AdminOrbital() {
                     <ShieldAlert size={14} /> {r.drift_delta_m.toFixed(3)} m
                   </span>
                 </div>
-                {r.current_task && (
-                  <div style={{ marginTop: 10, fontSize: ".72rem", color: "rgba(255,255,255,0.5)" }}>▸ {r.current_task}</div>
-                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: ".72rem", color: MODE_COLOR[r.control_mode ?? "patrol"] }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: "currentColor", opacity: 0.85 }} />
+                  {MODE_LABEL[r.control_mode ?? "patrol"]}
+                  {typeof r.speed_mps === "number" && (
+                    <span style={{ marginLeft: "auto", color: "rgba(255,255,255,0.55)" }}>{r.speed_mps.toFixed(2)} m/s</span>
+                  )}
+                </div>
 
                 <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                  <ControlBtn label="Control" icon={<Gauge size={13} />} color={BRAND.emerald}
+                    onClick={(e) => { e.stopPropagation(); setMapSel(r.id); }} />
                   {(() => {
                     const canControl = vendorControl(r.vendor).estop;
                     if (!canControl) {
@@ -429,6 +469,24 @@ export default function AdminOrbital() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Robot control panel (driven by map selection) */}
+        {(() => {
+          const r = fleet?.robots.find((x) => x.id === mapSel) ?? null;
+          return (
+            <ControlPanel
+              key={r?.id ?? "none"} robot={r} grants={r ? vendorControl(r.vendor) : null} busy={r ? busy[r.id] : false}
+              onSpeed={(mps) => r && setSpeed(r.id, mps)}
+              onDrive={(h, mps) => r && drive(r.id, h, mps)}
+              onStopDrive={() => r && stopDrive(r.id)}
+              onClearRoute={() => r && clearRoute(r.id)}
+              onEstop={() => r && control(r.id, "estop")}
+              onResume={() => r && control(r.id, "resume")}
+              onDetails={() => r && openRobot(r.id)}
+              onDeselect={() => setMapSel(null)}
+            />
+          );
+        })()}
+
         {/* Autonomy (orchestrator) rail */}
         <div style={{ background: cardBg, border, borderRadius: 12, padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
@@ -489,6 +547,9 @@ export default function AdminOrbital() {
         </div>
         </div>
       </div>
+
+      {/* How the live simulation works */}
+      <LogicPanel orchestrator={orchestrator} cardBg={cardBg} border={border} />
 
       {/* OEM governance */}
       <div style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20 }}>
@@ -567,6 +628,7 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
   const ref = useRef<SVGSVGElement | null>(null);
   const W = map.width_m, H = map.height_m;
   const Y = (y: number) => H - y;
+  const green = BRAND.emerald;
   const amber = "#f59e0b";
 
   const floorClick = (e: React.MouseEvent) => {
@@ -584,7 +646,7 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
 
   return (
     <svg ref={ref} viewBox={`0 0 ${W} ${H}`} onClick={floorClick}
-      style={{ width: "100%", aspectRatio: `${W} / ${H}`, background: "#15171B", borderRadius: 8, cursor: selectedId ? "crosshair" : "default", userSelect: "none", display: "block" }}>
+      style={{ width: "100%", maxHeight: "60vh", aspectRatio: `${W} / ${H}`, background: "#15171B", borderRadius: 8, cursor: selectedId ? "crosshair" : "default", userSelect: "none", display: "block" }}>
       <rect x={0} y={0} width={W} height={H} fill="#0f1622" stroke="#26303f" strokeWidth={0.06} />
       {grid}
       {map.dock && (
@@ -595,51 +657,50 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
       )}
       {map.racks.map((r) => (
         <g key={r.id}>
-          <rect x={r.x} y={Y(r.y + r.h)} width={r.w} height={r.h} rx={0.1} fill="#333844" stroke="#4b5563" strokeWidth={0.04} />
-          <text x={r.x + r.w / 2} y={Y(r.y + r.h / 2) + 0.18} fill="#94a3b8" fontSize={0.55} textAnchor="middle">{r.id}</text>
+          <rect x={r.x} y={Y(r.y + r.h)} width={r.w} height={r.h} rx={0.08} fill="#242424" stroke="#3a3a3a" strokeWidth={0.03} />
+          <text x={r.x + r.w / 2} y={Y(r.y + r.h / 2) + 0.14} fill="#6f6f6f" fontSize={0.42} textAnchor="middle">{r.id}</text>
         </g>
       ))}
       {(map.charge_stations ?? []).map((c) => (
         <g key={c.id}>
-          <circle cx={c.x} cy={Y(c.y)} r={0.5} fill="#0ea5e9" opacity={0.2} />
-          <text x={c.x} y={Y(c.y) + 0.2} fill="#38bdf8" fontSize={0.6} textAnchor="middle">⚡</text>
+          <circle cx={c.x} cy={Y(c.y)} r={0.42} fill="#38bdf8" opacity={0.14} />
+          <text x={c.x} y={Y(c.y) + 0.16} fill="#38bdf8" fontSize={0.5} textAnchor="middle">⚡</text>
         </g>
       ))}
       {robots.map((r) => {
         const ex = r.pose_external, ins = r.pose_internal;
         const selected = r.id === selectedId;
         const fill = STATE_COLOR[r.state];
-        const hx = ex.x + Math.cos(ex.theta) * 0.6, hy = ex.y + Math.sin(ex.theta) * 0.6;
+        const hx = ex.x + Math.cos(ex.theta) * 0.4, hy = ex.y + Math.sin(ex.theta) * 0.4;
         const wps = r.waypoints ?? [];
         return (
           <g key={r.id}>
             {wps.length > 0 && (
               <>
                 <polyline points={[`${ex.x},${Y(ex.y)}`, ...wps.map((w) => `${w.x},${Y(w.y)}`)].join(" ")}
-                  fill="none" stroke={amber} strokeWidth={0.06} strokeDasharray="0.3 0.2" opacity={0.9} />
+                  fill="none" stroke={green} strokeWidth={0.05} strokeDasharray="0.25 0.18" opacity={0.85} />
                 {wps.map((w, i) => {
                   const last = i === wps.length - 1;
                   return (
-                    <g key={i}>
-                      <circle cx={w.x} cy={Y(w.y)} r={last ? 0.32 : 0.22} fill={last ? amber : "none"} stroke={amber} strokeWidth={0.06} />
-                      <line x1={w.x - 0.18} y1={Y(w.y)} x2={w.x + 0.18} y2={Y(w.y)} stroke={last ? "#0f1622" : amber} strokeWidth={0.05} />
-                      <line x1={w.x} y1={Y(w.y) - 0.18} x2={w.x} y2={Y(w.y) + 0.18} stroke={last ? "#0f1622" : amber} strokeWidth={0.05} />
-                    </g>
+                    <circle key={i} cx={w.x} cy={Y(w.y)} r={last ? 0.24 : 0.16} fill={last ? green : "none"} stroke={green} strokeWidth={0.05} />
                   );
                 })}
               </>
             )}
+            {r.control_mode === "manual" && (
+              <circle cx={ex.x} cy={Y(ex.y)} r={0.42} fill="none" stroke={amber} strokeWidth={0.04} strokeDasharray="0.12 0.1" />
+            )}
             {r.drift_delta_m > 0.05 && (
               <>
-                <line x1={ins.x} y1={Y(ins.y)} x2={ex.x} y2={Y(ex.y)} stroke="#64748b" strokeWidth={0.03} strokeDasharray="0.15 0.15" opacity={0.7} />
-                <circle cx={ins.x} cy={Y(ins.y)} r={0.26} fill="none" stroke="#94a3b8" strokeWidth={0.05} opacity={0.6} />
+                <line x1={ins.x} y1={Y(ins.y)} x2={ex.x} y2={Y(ex.y)} stroke="#5a5a5a" strokeWidth={0.025} strokeDasharray="0.12 0.12" opacity={0.7} />
+                <circle cx={ins.x} cy={Y(ins.y)} r={0.16} fill="none" stroke="#8a8a8a" strokeWidth={0.04} opacity={0.6} />
               </>
             )}
-            {selected && <circle cx={ex.x} cy={Y(ex.y)} r={0.6} fill="none" stroke={amber} strokeWidth={0.08} />}
+            {selected && <circle cx={ex.x} cy={Y(ex.y)} r={0.42} fill="none" stroke={green} strokeWidth={0.06} />}
             <g style={{ cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); onSelectRobot(r.id); }}>
-              <circle cx={ex.x} cy={Y(ex.y)} r={0.36} fill={fill} stroke="#0f1622" strokeWidth={0.06} />
-              <line x1={ex.x} y1={Y(ex.y)} x2={hx} y2={Y(hy)} stroke="#e2e8f0" strokeWidth={0.07} />
-              <text x={ex.x + 0.5} y={Y(ex.y) - 0.35} fill="#cbd5e1" fontSize={0.5}>{r.id}</text>
+              <circle cx={ex.x} cy={Y(ex.y)} r={0.22} fill={fill} stroke="#141414" strokeWidth={0.05} />
+              <line x1={ex.x} y1={Y(ex.y)} x2={hx} y2={Y(hy)} stroke="#ededed" strokeWidth={0.05} />
+              <text x={ex.x + 0.32} y={Y(ex.y) - 0.24} fill="#9a9a9a" fontSize={0.36}>{r.id}</text>
             </g>
           </g>
         );
@@ -853,6 +914,136 @@ function OEMModal({ oem, onClose, onSave, onToggleStatus }: {
             <button onClick={() => onSave(want)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: BRAND.emerald, color: "#0b0f14", cursor: "pointer", fontSize: ".78rem", fontWeight: 700 }}>Save scopes</button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ControlPanel({ robot, grants, busy, onSpeed, onDrive, onStopDrive, onClearRoute, onEstop, onResume, onDetails, onDeselect }: {
+  robot: RobotSummary | null; grants: ControlGrants | null; busy?: boolean;
+  onSpeed: (mps: number) => void; onDrive: (heading: number, mps: number) => void; onStopDrive: () => void;
+  onClearRoute: () => void; onEstop: () => void; onResume: () => void; onDetails: () => void; onDeselect: () => void;
+}) {
+  const cardBg = "#22252A";
+  const border = "1px solid rgba(255,255,255,0.08)";
+  const [speed, setSpeedLocal] = useState<number>(robot?.speed_mps ?? 0.6);
+  if (!robot) {
+    return (
+      <div style={{ background: cardBg, border, borderRadius: 12, padding: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <Gauge size={16} color={BRAND.emerald} />
+          <h3 style={{ margin: 0, fontSize: ".95rem" }}>Robot Control</h3>
+        </div>
+        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".8rem", lineHeight: 1.5 }}>
+          Select a robot on the map or a fleet card to drive it — set speed, jog a direction, or click the floor to set a waypoint.
+        </div>
+      </div>
+    );
+  }
+  const canVel = !grants || grants.velocity;
+  const canEstop = !grants || grants.estop;
+  const halted = robot.state === "halted";
+  const routing = !!(robot.waypoints?.length);
+  const mode = robot.control_mode ?? "patrol";
+  return (
+    <div style={{ background: cardBg, border, borderRadius: 12, padding: 16 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Gauge size={16} color={BRAND.emerald} />
+            <h3 style={{ margin: 0, fontSize: ".95rem" }}>{robot.vendor} {robot.model}</h3>
+          </div>
+          <div style={{ fontSize: ".7rem", color: MODE_COLOR[mode], marginTop: 3 }}>{robot.id} · {MODE_LABEL[mode]}</div>
+        </div>
+        <button onClick={onDeselect} style={{ fontSize: ".7rem", padding: "3px 9px", borderRadius: 7, border, background: "transparent", color: "rgba(255,255,255,0.7)", cursor: "pointer" }}>Deselect</button>
+      </div>
+
+      {!canVel && (
+        <div style={{ marginTop: 12, fontSize: ".72rem", color: "#fca5a5", lineHeight: 1.4 }}>
+          Drive controls need <code style={{ color: "#fca5a5" }}>control.velocity</code> — grant it to {robot.vendor} in OEM Partners.
+        </div>
+      )}
+
+      <div style={{ marginTop: 14, opacity: canVel ? 1 : 0.5 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".72rem", color: "rgba(255,255,255,0.6)", marginBottom: 6 }}>
+          <span>Speed</span><span>{speed.toFixed(2)} m/s</span>
+        </div>
+        <input type="range" min={0.05} max={MAX_SPEED} step={0.05} value={speed} disabled={!canVel}
+          onChange={(e) => setSpeedLocal(+e.target.value)}
+          onMouseUp={() => onSpeed(speed)} onTouchEnd={() => onSpeed(speed)}
+          style={{ width: "100%", accentColor: BRAND.emerald }} />
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".62rem", color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
+          <span>0.05</span><span>{MAX_SPEED.toFixed(1)} m/s</span>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 14, opacity: canVel ? 1 : 0.5 }}>
+        <div style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.6)", marginBottom: 6 }}>Manual jog — drive along a heading</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, maxWidth: 168, margin: "0 auto" }}>
+          {DIRS.map(([glyph, heading], i) => heading === null ? (
+            <button key={i} disabled={!canVel} onClick={onStopDrive} title="Stop jog"
+              style={{ aspectRatio: "1", borderRadius: 8, border: "1px solid rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.12)", color: "#f87171", cursor: canVel ? "pointer" : "not-allowed", fontSize: 14 }}>{glyph}</button>
+          ) : (
+            <button key={i} disabled={!canVel} onClick={() => onDrive(heading, speed)} title={`${heading}°`}
+              style={{ aspectRatio: "1", borderRadius: 8, border, background: "rgba(255,255,255,0.04)", color: BRAND.white, cursor: canVel ? "pointer" : "not-allowed", fontSize: 15 }}>{glyph}</button>
+          ))}
+        </div>
+        <div style={{ fontSize: ".64rem", color: "rgba(255,255,255,0.4)", textAlign: "center", marginTop: 6 }}>overrides patrol · clears waypoints until stopped</div>
+      </div>
+
+      <div style={{ marginTop: 14, paddingTop: 12, borderTop: border }}>
+        <div style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.6)", marginBottom: 6 }}>Waypoints (visual control)</div>
+        {routing ? (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: ".76rem", color: BRAND.emerald }}>en route · {robot.waypoints!.length} pt{robot.waypoints!.length > 1 ? "s" : ""}</span>
+            <button onClick={onClearRoute} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer" }}>Clear route</button>
+          </div>
+        ) : (
+          <div style={{ fontSize: ".74rem", color: "rgba(255,255,255,0.45)" }}>Click the map to set a waypoint. Shift-click to chain multiple.</div>
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+        {!canEstop ? (
+          <ControlBtn label={halted ? "Resume" : "E-Stop"} locked icon={<CircleStop size={13} />} color="rgba(255,255,255,0.4)" title="OEM has not granted control.estop" onClick={() => {}} />
+        ) : halted ? (
+          <ControlBtn label="Resume" icon={<Play size={13} />} color={BRAND.emerald} busy={busy} onClick={onResume} />
+        ) : (
+          <ControlBtn label="E-Stop" icon={<CircleStop size={13} />} color="#ef4444" busy={busy} onClick={onEstop} />
+        )}
+        <ControlBtn label="Details" icon={<Bot size={13} />} color="rgba(255,255,255,0.7)" onClick={onDetails} />
+      </div>
+    </div>
+  );
+}
+
+function LogicPanel({ orchestrator, cardBg, border }: { orchestrator: OrchestratorStatus | null; cardBg: string; border: string }) {
+  const decisions = orchestrator?.decisions ?? [];
+  const auto = decisions.filter((d) => d.auto_executed).length;
+  const orchLine = orchestrator
+    ? `${orchestrator.enabled ? "on" : "off"} · ${decisions.length} decision${decisions.length === 1 ? "" : "s"} · ${auto} auto-executed`
+    : "—";
+  const cards: [string, React.ReactNode][] = [
+    ["1 · Control hierarchy", <>Each tick resolves one command source per robot in priority order: <b style={{ color: BRAND.emerald }}>visual-nav waypoints</b> → <b style={{ color: "#f59e0b" }}>manual jog</b> → <span style={{ color: "rgba(255,255,255,0.6)" }}>autonomous patrol</span>. Setting one supersedes the others.</>],
+    ["2 · Drift & ARIA correction", <>Overhead cameras give the <b style={{ color: BRAND.emerald }}>ground-truth pose</b>; the robot's onboard SLAM <span style={{ color: "rgba(255,255,255,0.6)" }}>self-report</span> accumulates drift. ARIA decays it toward zero each tick — the dashed link on the map is the live gap.</>],
+    ["3 · Safety halt", <>When drift crosses the halt threshold, ARIA fires an <b style={{ color: "#ef4444" }}>auto E-Stop</b> + alert. Sim-triggered halts auto-recover; a manual E-Stop waits for an operator Resume.</>],
+    ["4 · Orchestrator", <>A supervisory loop scans the fleet on a fixed cadence and takes safety-first actions — proactive charge dispatch on low battery, auto E-Stop on critical anomalies. <span style={{ color: "rgba(255,255,255,0.5)" }}>{orchLine}</span></>],
+  ];
+  return (
+    <div style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        <Cpu size={16} color={BRAND.emerald} />
+        <h3 style={{ margin: 0, fontSize: ".95rem" }}>How the live simulation works</h3>
+        <span style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.4)" }}>the logic driving this fleet</span>
+        {orchestrator && <span style={{ marginLeft: "auto", fontSize: ".68rem", color: "rgba(255,255,255,0.5)" }}>orchestrator {orchLine}</span>}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+        {cards.map(([title, body]) => (
+          <div key={title} style={{ background: "rgba(255,255,255,0.03)", border, borderRadius: 10, padding: 14 }}>
+            <div style={{ fontWeight: 600, fontSize: ".82rem", marginBottom: 6 }}>{title}</div>
+            <div style={{ fontSize: ".78rem", color: "rgba(255,255,255,0.6)", lineHeight: 1.55 }}>{body}</div>
+          </div>
+        ))}
       </div>
     </div>
   );

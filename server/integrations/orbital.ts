@@ -103,6 +103,9 @@ export function createOrbitalRouter(): Router {
   router.post("/robot/:id/resume", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/resume`));
   router.post("/robot/:id/navigate", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/navigate`));
   router.post("/robot/:id/navigate/clear", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/navigate/clear`));
+  router.post("/robot/:id/speed", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/speed`));
+  router.post("/robot/:id/drive", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/drive`));
+  router.post("/robot/:id/drive/stop", (req, res) => void forward(req, res, `/api/dashboard/robot/${encodeURIComponent(req.params.id)}/drive/stop`));
   router.post("/tasks", (req, res) => void forward(req, res, "/api/dashboard/tasks"));
   router.post("/alerts/:id/ack", (req, res) => void forward(req, res, `/api/dashboard/alerts/${encodeURIComponent(req.params.id)}/ack`));
 
