@@ -41,13 +41,24 @@ interface RobotSummary {
   visual_nav?: boolean; nav_goal?: Point | null; waypoints?: Point[];
   path?: Point[];  // camera-planned route (bends around racks)
   speed_mps?: number; manual_drive?: boolean; control_mode?: ControlMode;
+  mission?: string | null;        // "Move tote: Aisle AB → Dock"
+  mission_phase?: string | null;  // en_route_pickup | working | carrying | idle
 }
 interface WarehouseRack { id: string; x: number; y: number; w: number; h: number }
+interface WarehouseStation { id: string; x: number; y: number; kind?: string }
+interface WarehouseCamera { id: string; x: number; y: number; coverage_m?: number }
 interface WarehouseMap {
   name: string; width_m: number; height_m: number;
   racks: WarehouseRack[];
   charge_stations: { id: string; x: number; y: number }[];
+  stations?: WarehouseStation[];
+  cameras?: WarehouseCamera[];
   dock?: { x: number; y: number; w: number; h: number };
+}
+interface FleetSequence {
+  id: number; theme: string; label: string; objective: string;
+  started_at: number; period_s: number; ends_in_s?: number;
+  assignments?: { robot_id: string; goal: string | null; phase: string | null }[];
 }
 interface BatteryTelemetry { pct?: number | null; temperature_c?: number | null; voltage_v?: number | null; current_a?: number | null; cycles?: number | null }
 interface MotorTelemetry { joint: string; temperature_c?: number | null; current_a?: number | null; torque_nm?: number | null; position_rad?: number | null; velocity_rad_s?: number | null }
@@ -91,6 +102,7 @@ interface FleetResponse {
   industries: string[];
   vendors: string[];
   robots: RobotSummary[];
+  sequence?: FleetSequence;
 }
 interface OrchestratorDecision {
   id: string; ts: number; robot_id?: string | null;
@@ -221,6 +233,10 @@ export default function AdminOrbital() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [lastSync, setLastSync] = useState<Date | null>(null);
+  // Current mission sequence + the wall-clock time we received it, so the countdown ticks
+  // smoothly between the 4s polls.
+  const [seq, setSeq] = useState<{ data: FleetSequence; rcvd: number } | null>(null);
+  const [nowSec, setNowSec] = useState(() => Date.now() / 1000);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Left nav rail: section anchors + scroll-spy
@@ -246,6 +262,7 @@ export default function AdminOrbital() {
         orbitalFetch<OEMProfile[]>("/oems").catch(() => [] as OEMProfile[]),
       ]);
       setFleet(f);
+      if (f.sequence) setSeq({ data: f.sequence, rcvd: Date.now() / 1000 });
       setAlerts(Array.isArray(a) ? a : []);
       if (o) setOrchestrator(o);
       setOems(Array.isArray(oem) ? oem : []);
@@ -278,6 +295,12 @@ export default function AdminOrbital() {
     pollRef.current = setInterval(refresh, 4000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [configured, refresh]);
+
+  // Smooth per-second countdown for the mission-sequence banner.
+  useEffect(() => {
+    const t = setInterval(() => setNowSec(Date.now() / 1000), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     if (!configured) return;
@@ -519,13 +542,17 @@ export default function AdminOrbital() {
               })()}
             </div>
           </div>
+          <SequenceBar seq={seq?.data ?? null} robots={fleet?.robots ?? []}
+            secondsLeft={seq ? Math.max(0, Math.round((seq.data.ends_in_s ?? 0) - (nowSec - seq.rcvd))) : 0}
+            border={border} />
           <WarehouseMapView map={map} robots={fleet?.robots ?? []} selectedId={mapSel}
             onSelectRobot={setMapSel} onFloorClick={handleFloorClick} />
           <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap", fontSize: ".68rem", color: "rgba(255,255,255,0.5)" }}>
-            <Legend color={BRAND.emerald} label="camera pose (ground truth)" />
-            <Legend color="rgba(255,255,255,0.5)" label="robot self-report (SLAM)" ring />
+            <Legend color={BRAND.emerald} label="robot (camera-tracked)" />
+            <Legend color="#7c5cff" label="overhead camera" square />
+            <Legend color="#3dbfe2" label="named station (pick / drop)" square />
             <Legend color={BRAND.emerald} label="visual-nav path → waypoint" bar />
-            <Legend color="#f59e0b" label="manual jog" ring />
+            <Legend color="rgba(255,255,255,0.5)" label="SLAM self-report (drift)" ring />
             <Legend color="#3a3a3a" label="storage rack" square />
           </div>
         </div>
@@ -589,6 +616,12 @@ export default function AdminOrbital() {
                     <span style={{ marginLeft: "auto", color: "rgba(255,255,255,0.55)", fontFamily: MONO }}>{r.speed_mps.toFixed(2)} m/s</span>
                   )}
                 </div>
+                {r.mission && (
+                  <div style={{ marginTop: 6, fontSize: ".68rem", color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.mission}>
+                    <span style={{ color: PHASE_COLOR[r.mission_phase ?? "idle"] ?? "rgba(255,255,255,0.35)" }}>●</span> {r.mission}
+                    {r.current_task ? <span style={{ color: "rgba(255,255,255,0.4)" }}> · {r.current_task}</span> : null}
+                  </div>
+                )}
 
                 <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
                   <ControlBtn label="Control" icon={<Gauge size={13} />} color={BRAND.emerald}
@@ -768,6 +801,48 @@ export default function AdminOrbital() {
   );
 }
 
+const PHASE_LABEL: Record<string, string> = {
+  en_route_pickup: "→ pickup", working: "working", carrying: "carrying", idle: "idle",
+};
+const PHASE_COLOR: Record<string, string> = {
+  en_route_pickup: "#00a5da", working: "#f59e0b", carrying: MC.green, idle: "rgba(255,255,255,0.35)",
+};
+
+function SequenceBar({ seq, robots, secondsLeft, border }: {
+  seq: FleetSequence | null; robots: RobotSummary[]; secondsLeft: number; border: string;
+}) {
+  const goals = robots.filter((r) => r.mission).slice(0, 9);
+  return (
+    <div style={{ border, borderRadius: 10, padding: "10px 12px", marginBottom: 12, background: "#12101f" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ fontSize: ".62rem", fontFamily: MONO, letterSpacing: ".06em", padding: "2px 8px", borderRadius: 5, background: "#1b1533", color: "#b7a6ff", border: "1px solid #7c5cff" }}>
+          SEQUENCE {seq?.id ?? ""}
+        </span>
+        <span style={{ fontSize: ".9rem", fontWeight: 600 }}>{seq?.label ?? "Warming up"}</span>
+        <span style={{ fontSize: ".76rem", color: "rgba(255,255,255,0.55)" }}>{seq?.objective ?? "Bringing the fleet online…"}</span>
+        <span style={{ flex: 1 }} />
+        <span style={{ fontSize: ".7rem", fontFamily: MONO, color: "rgba(255,255,255,0.5)" }}>
+          new sequence in <span style={{ color: "#b7a6ff" }}>{secondsLeft}s</span>
+        </span>
+      </div>
+      {goals.length > 0 && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+          {goals.map((r) => {
+            const ph = r.mission_phase ?? "idle";
+            return (
+              <span key={r.id} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: ".64rem", padding: "2px 7px", borderRadius: 6, background: "rgba(255,255,255,0.04)", border }}>
+                <span style={{ fontFamily: MONO, color: "rgba(255,255,255,0.55)" }}>{r.id}</span>
+                <span style={{ color: "rgba(255,255,255,0.75)" }}>{r.mission}</span>
+                <span style={{ fontFamily: MONO, fontSize: ".58rem", color: PHASE_COLOR[ph] ?? "rgba(255,255,255,0.35)" }}>{PHASE_LABEL[ph] ?? ph}</span>
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Legend({ color, label, ring, bar, square }: { color: string; label: string; ring?: boolean; bar?: boolean; square?: boolean }) {
   const swatch = bar
     ? <span style={{ width: 14, height: 2, background: color, display: "inline-block" }} />
@@ -824,6 +899,28 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
           <text x={c.x} y={Y(c.y) + 0.16} fill={MC.azureLight} fontSize={0.5} textAnchor="middle">⚡</text>
         </g>
       ))}
+      {/* Named work stations — the pick/drop points missions reference by name. */}
+      {(map.stations ?? []).map((s) => (
+        <g key={`st-${s.id}`}>
+          <rect x={s.x - 0.34} y={Y(s.y) - 0.34} width={0.68} height={0.68} rx={0.1} fill="#0b2e3a" stroke="#2f6d82" strokeWidth={0.035} />
+          <text x={s.x} y={Y(s.y) + 0.5} fill="#5f7486" fontSize={0.3} textAnchor="middle">{s.id}</text>
+        </g>
+      ))}
+      {/* Overhead camera rig — ground-truth localization; violet camera glyph + coverage halo. */}
+      {(map.cameras ?? []).map((cam) => {
+        const cov = cam.coverage_m ?? 4.0;
+        return (
+          <g key={`cam-${cam.id}`}>
+            <circle cx={cam.x} cy={Y(cam.y)} r={cov} fill="#7c5cff" opacity={0.05} />
+            <circle cx={cam.x} cy={Y(cam.y)} r={cov} fill="none" stroke="#7c5cff" strokeWidth={0.02} strokeDasharray="0.2 0.22" opacity={0.35} />
+            <g transform={`translate(${cam.x},${Y(cam.y)})`}>
+              <rect x={-0.26} y={-0.19} width={0.52} height={0.38} rx={0.08} fill="#1b1533" stroke="#7c5cff" strokeWidth={0.045} />
+              <circle cx={0} cy={0} r={0.11} fill="none" stroke="#b7a6ff" strokeWidth={0.05} />
+              <rect x={0.2} y={-0.1} width={0.14} height={0.2} rx={0.04} fill="#7c5cff" />
+            </g>
+          </g>
+        );
+      })}
       {robots.map((r) => {
         const ex = r.pose_external, ins = r.pose_internal;
         const selected = r.id === selectedId;
@@ -1218,6 +1315,16 @@ function ControlPanel({ robot, grants, busy, onSpeed, onDrive, onStopDrive, onCl
         </div>
         <button onClick={onDeselect} style={{ fontSize: ".7rem", padding: "3px 9px", borderRadius: 7, border, background: "transparent", color: "rgba(255,255,255,0.7)", cursor: "pointer" }}>Deselect</button>
       </div>
+
+      {robot.mission && (
+        <div style={{ marginTop: 12, borderRadius: 10, border, padding: 10, background: "#12101f" }}>
+          <div style={{ fontSize: ".58rem", textTransform: "uppercase", letterSpacing: ".06em", color: "rgba(255,255,255,0.4)" }}>Current mission</div>
+          <div style={{ fontSize: ".8rem", fontWeight: 500, marginTop: 3 }}>{robot.mission}</div>
+          <div style={{ fontSize: ".68rem", marginTop: 3 }}>
+            <span style={{ color: PHASE_COLOR[robot.mission_phase ?? "idle"] ?? "rgba(255,255,255,0.35)" }}>●</span> {robot.current_task ?? PHASE_LABEL[robot.mission_phase ?? "idle"] ?? ""}
+          </div>
+        </div>
+      )}
 
       {!canVel && (
         <div style={{ marginTop: 12, fontSize: ".72rem", color: "#fca5a5", lineHeight: 1.4 }}>
