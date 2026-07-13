@@ -31,12 +31,13 @@ const SG = "'Space Grotesk', ui-sans-serif, system-ui";
 // ── Types (mirror orbital_cloud/models.py) ────────────────────────────────────
 interface Pose { x: number; y: number; theta: number }
 interface Point { x: number; y: number }
-type ControlMode = "patrol" | "visual_nav" | "manual" | "charging" | "halted" | "idle";
+type ControlMode = "patrol" | "visual_nav" | "manual" | "charging" | "halted" | "idle" | "cooldown";
 interface RobotSummary {
   id: string; vendor: string; model: string; industry: string;
-  state: "active" | "idle" | "charging" | "halted" | "offline";
+  state: "active" | "idle" | "charging" | "cooldown" | "halted" | "offline";
   battery_pct: number; pose_external: Pose; pose_internal: Pose;
   drift_delta_m: number; current_task?: string | null; error_code?: string | null;
+  handoff_partner?: string | null;
   visual_nav?: boolean; nav_goal?: Point | null; waypoints?: Point[];
   speed_mps?: number; manual_drive?: boolean; control_mode?: ControlMode;
 }
@@ -94,6 +95,7 @@ const STATE_COLOR: Record<RobotSummary["state"], string> = {
   active: MC.green,
   idle: MC.amber,
   charging: MC.azure,
+  cooldown: MC.crimson,
   halted: MC.crimson,
   offline: "rgba(255,255,255,0.20)",
 };
@@ -110,11 +112,11 @@ const MAX_SPEED = 2.5; // mirrors ORBITAL_MAX_SPEED_MPS
 
 const MODE_LABEL: Record<ControlMode, string> = {
   patrol: "Autonomous patrol", visual_nav: "Visual-nav (SLAM bypass)", manual: "Manual jog",
-  charging: "Charging", halted: "Halted", idle: "Idle",
+  charging: "Charging", halted: "Halted", idle: "Idle", cooldown: "Between tasks",
 };
 const MODE_COLOR: Record<ControlMode, string> = {
   patrol: "rgba(255,255,255,0.55)", visual_nav: MC.azure, manual: MC.amber,
-  charging: MC.azure, halted: MC.crimson, idle: MC.amber,
+  charging: MC.azure, halted: MC.crimson, idle: MC.amber, cooldown: MC.crimson,
 };
 // 3×3 direction pad → heading in degrees (world y-up, 0 = east, CCW). null = stop.
 const DIRS: [string, number | null][] = [
@@ -750,8 +752,16 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
         const fill = STATE_COLOR[r.state];
         const hx = ex.x + Math.cos(ex.theta) * 0.4, hy = ex.y + Math.sin(ex.theta) * 0.4;
         const wps = r.waypoints ?? [];
+        const partner = r.handoff_partner ? robots.find((x) => x.id === r.handoff_partner) : null;
         return (
           <g key={r.id}>
+            {partner && (
+              <>
+                <line x1={ex.x} y1={Y(ex.y)} x2={partner.pose_external.x} y2={Y(partner.pose_external.y)}
+                  stroke={amber} strokeWidth={0.05} strokeDasharray="0.2 0.16" opacity={0.85} />
+                <circle cx={partner.pose_external.x} cy={Y(partner.pose_external.y)} r={0.16} fill={amber} opacity={0.9} />
+              </>
+            )}
             {wps.length > 0 && (
               <>
                 <polyline points={[`${ex.x},${Y(ex.y)}`, ...wps.map((w) => `${w.x},${Y(w.y)}`)].join(" ")}
@@ -803,7 +813,9 @@ function NavRail({ active, onSelect }: { active: string; onSelect: (id: string) 
       background: "#08090e", borderRight: `1px solid ${MC.line}`,
       display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 0", gap: 4,
     }}>
-      <div style={{ width: 36, height: 36, borderRadius: 9, background: MC.azure, color: "#04121a", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18, boxShadow: "0 0 14px rgba(0,165,218,0.4)", marginBottom: 10 }}>◎</div>
+      <div style={{ width: 36, height: 36, borderRadius: 9, overflow: "hidden", background: "#0c1119", border: "1px solid rgba(0,165,218,0.4)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 14px rgba(0,165,218,0.25)", marginBottom: 10 }}>
+        <img src="/orbital-logo.png" alt="Orbital AI" style={{ width: 30, height: 30, objectFit: "contain" }} />
+      </div>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
         {RAIL_ITEMS.map((it) => {
           const on = active === it.id;
@@ -835,7 +847,9 @@ function Header({ facilityName, lastSync, onRefresh }: { facilityName: string | 
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ width: 30, height: 30, borderRadius: 8, background: MC.azure, color: "#04121a", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18, boxShadow: "0 0 12px rgba(0,165,218,0.4)" }}>◎</span>
+          <span style={{ width: 30, height: 30, borderRadius: 8, overflow: "hidden", background: "#0c1119", border: "1px solid rgba(0,165,218,0.5)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 12px rgba(0,165,218,0.3)" }}>
+            <img src="/orbital-logo.png" alt="Orbital AI" style={{ width: 26, height: 26, objectFit: "contain" }} />
+          </span>
           <h1 style={{ margin: 0, fontSize: "1.5rem", letterSpacing: "-0.01em" }}>Orbital<span style={{ color: MC.azure, fontWeight: 300 }}> AI</span> — Fleet Control</h1>
         </div>
         <p style={{ margin: "6px 0 0", color: MC.inkDim, fontSize: ".82rem", fontFamily: MONO, letterSpacing: ".02em" }}>
