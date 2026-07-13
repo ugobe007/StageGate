@@ -563,7 +563,10 @@ export default function AdminOrbital() {
         <CapabilitiesPanel robots={fleet?.robots ?? []} oems={oems} vendorHasScope={vendorHasScope} cardBg={cardBg} border={border} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 20, marginTop: 20, alignItems: "start" }}>
+      {/* Fleet + control/alerts: two columns on wide screens, stacked (with a capped control
+          rail so it never stretches full-width) once the viewport gets narrow. */}
+      <style>{`.orbital-split{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;margin-top:20px;align-items:start}@media (max-width:1100px){.orbital-split{grid-template-columns:1fr}.orbital-split>.orbital-rail{max-width:560px}}`}</style>
+      <div className="orbital-split">
         <div ref={reg("fleet")} data-sec="fleet" style={{ scrollMarginTop: 80 }}>
           {/* Industry tabs */}
           <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
@@ -650,7 +653,7 @@ export default function AdminOrbital() {
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="orbital-rail" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {/* Robot control panel (driven by map selection) */}
         {(() => {
           const r = fleet?.robots.find((x) => x.id === mapSel) ?? null;
