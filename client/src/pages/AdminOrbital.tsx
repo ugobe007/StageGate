@@ -1,10 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity, AlertTriangle, BatteryCharging, Bot, CircleStop, Cpu, Crosshair, Gauge, Heart,
-  KeyRound, Loader2, Lock, Map, Navigation, Play, RefreshCw, Radio, Send, ShieldAlert,
-  SlidersHorizontal, Thermometer, Video, X,
+  KeyRound, LayoutDashboard, Loader2, Lock, Map, Navigation, Play, RefreshCw, Radio, Send,
+  Settings, ShieldAlert, SlidersHorizontal, Thermometer, Users, Video, X,
 } from "lucide-react";
 import { BRAND, emeraldAlpha } from "@/lib/brand";
+
+// "Mission Control" palette — obsidian surfaces + semantic accents (azure=telemetry,
+// emerald=healthy, amber=CTA/warn, crimson=critical). Mirrors the standalone Orbital console.
+const MC = {
+  bg: "#0a0d14",
+  panel: "#0c0f17",
+  card: "#10141d",
+  raised: "#161c28",
+  input: "#1b2230",
+  line: "#242c3a",
+  lineStrong: "#2f3a4c",
+  ink: "#e6eaef",
+  inkMut: "#aab4c1",
+  inkDim: "#828c9b",
+  azure: "#00a5da",
+  azureLight: "#3dbfe2",
+  green: BRAND.emerald,
+  amber: "#ffa01f",
+  crimson: "#e5484d",
+} as const;
+const MONO = "'JetBrains Mono', ui-monospace, 'Space Mono', monospace";
+const SG = "'Space Grotesk', ui-sans-serif, system-ui";
 
 // ── Types (mirror orbital_cloud/models.py) ────────────────────────────────────
 interface Pose { x: number; y: number; theta: number }
@@ -69,16 +91,16 @@ interface OrchestratorStatus {
 }
 
 const STATE_COLOR: Record<RobotSummary["state"], string> = {
-  active: BRAND.emerald,
-  idle: "rgba(255,255,255,0.45)",
-  charging: "#f59e0b",
-  halted: "#ef4444",
+  active: MC.green,
+  idle: MC.amber,
+  charging: MC.azure,
+  halted: MC.crimson,
   offline: "rgba(255,255,255,0.20)",
 };
 
 const SEVERITY_COLOR: Record<Alert["severity"], string> = {
-  critical: "#ef4444",
-  warning: "#f59e0b",
+  critical: MC.crimson,
+  warning: MC.amber,
   info: "rgba(255,255,255,0.55)",
 };
 
@@ -91,8 +113,8 @@ const MODE_LABEL: Record<ControlMode, string> = {
   charging: "Charging", halted: "Halted", idle: "Idle",
 };
 const MODE_COLOR: Record<ControlMode, string> = {
-  patrol: "rgba(255,255,255,0.55)", visual_nav: BRAND.emerald, manual: "#f59e0b",
-  charging: "#38bdf8", halted: "#ef4444", idle: "rgba(255,255,255,0.4)",
+  patrol: "rgba(255,255,255,0.55)", visual_nav: MC.azure, manual: MC.amber,
+  charging: MC.azure, halted: MC.crimson, idle: MC.amber,
 };
 // 3×3 direction pad → heading in degrees (world y-up, 0 = east, CCW). null = stop.
 const DIRS: [string, number | null][] = [
@@ -106,7 +128,7 @@ const ALL_SCOPES = [
   "control.teleop", "mission.dispatch", "camera.read", "map.read",
 ];
 const OEM_STATUS_COLOR: Record<OEMProfile["status"], string> = {
-  active: BRAND.emerald, pending: "#f59e0b", suspended: "#ef4444",
+  active: MC.green, pending: MC.amber, suspended: MC.crimson,
 };
 
 // The control surface Orbital exposes to operators. Each capability is gated by an API scope
@@ -163,6 +185,20 @@ export default function AdminOrbital() {
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Left nav rail: section anchors + scroll-spy
+  const [activeSec, setActiveSec] = useState<string>("overview");
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const reg = (id: string) => (el: HTMLDivElement | null) => { sectionRefs.current[id] = el; };
+  const scrollToSec = (id: string) => sectionRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  useEffect(() => {
+    const obs = new IntersectionObserver((entries) => {
+      const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+      if (vis.length) setActiveSec((vis[0].target as HTMLElement).dataset.sec || "overview");
+    }, { rootMargin: "-30% 0px -55% 0px", threshold: [0, 0.25, 0.5] });
+    Object.values(sectionRefs.current).forEach((el) => el && obs.observe(el));
+    return () => obs.disconnect();
+  }, [map, fleet, oems, configured]);
 
   const refresh = useCallback(async () => {
     try {
@@ -334,12 +370,12 @@ export default function AdminOrbital() {
     void navigate(mapSel, [...existing, { x: +x.toFixed(2), y: +y.toFixed(2) }]);
   }, [mapSel, fleet, vendorControl, navigate]);
 
-  const cardBg = "#22252A";
-  const border = "1px solid rgba(255,255,255,0.08)";
+  const cardBg = MC.card;
+  const border = `1px solid ${MC.line}`;
 
   if (configured === false) {
     return (
-      <div style={{ padding: "2rem", color: BRAND.white }}>
+      <div style={{ padding: "2rem", color: MC.ink, background: MC.bg, minHeight: "100vh", fontFamily: SG }}>
         <Header facilityName={null} lastSync={null} onRefresh={refresh} />
         <div style={{ marginTop: "2rem", padding: "2rem", background: cardBg, border, borderRadius: 12, maxWidth: 620 }}>
           <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}>
@@ -359,7 +395,7 @@ export default function AdminOrbital() {
 
   if (configured === null || (!fleet && !error)) {
     return (
-      <div style={{ padding: "2rem", color: BRAND.white, display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ padding: "2rem", color: MC.ink, background: MC.bg, minHeight: "100vh", fontFamily: SG, display: "flex", alignItems: "center", gap: 10 }}>
         <Loader2 className="animate-spin" size={18} /> Connecting to Orbital AI…
       </div>
     );
@@ -375,7 +411,8 @@ export default function AdminOrbital() {
   };
 
   return (
-    <div style={{ padding: "2rem", color: BRAND.white }}>
+    <div style={{ padding: "2rem", paddingLeft: "calc(2rem + 56px)", color: MC.ink, background: MC.bg, minHeight: "100vh", fontFamily: SG }}>
+      <NavRail active={activeSec} onSelect={scrollToSec} />
       <Header facilityName={fleet?.facility?.name ?? null} lastSync={lastSync} onRefresh={refresh} />
 
       {error && (
@@ -385,7 +422,7 @@ export default function AdminOrbital() {
       )}
 
       {/* KPI strip */}
-      <div style={{ display: "flex", gap: 12, marginTop: 18, flexWrap: "wrap" }}>
+      <div ref={reg("overview")} data-sec="overview" style={{ display: "flex", gap: 12, marginTop: 18, flexWrap: "wrap", scrollMarginTop: 80 }}>
         <Kpi label="Robots online" value={`${counts.active}/${counts.total}`} icon={<Activity size={16} color={BRAND.emerald} />} />
         <Kpi label="E-Stopped" value={counts.halted} icon={<CircleStop size={16} color="#ef4444" />} accent={counts.halted > 0 ? "#ef4444" : undefined} />
         <Kpi label="Active alerts" value={activeAlerts.length} icon={<AlertTriangle size={16} color="#f59e0b" />} accent={activeAlerts.length > 0 ? "#f59e0b" : undefined} />
@@ -393,7 +430,7 @@ export default function AdminOrbital() {
 
       {/* Warehouse map */}
       {map && (
-        <div style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20 }}>
+        <div ref={reg("map")} data-sec="map" style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20, scrollMarginTop: 80 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
             <Map size={16} color={BRAND.emerald} />
             <h3 style={{ margin: 0, fontSize: ".95rem" }}>Warehouse — Global Spatial Map</h3>
@@ -431,10 +468,12 @@ export default function AdminOrbital() {
       )}
 
       {/* Control capabilities catalog — the operator/OEM control contract */}
-      <CapabilitiesPanel robots={fleet?.robots ?? []} oems={oems} vendorHasScope={vendorHasScope} cardBg={cardBg} border={border} />
+      <div ref={reg("capabilities")} data-sec="capabilities" style={{ scrollMarginTop: 80 }}>
+        <CapabilitiesPanel robots={fleet?.robots ?? []} oems={oems} vendorHasScope={vendorHasScope} cardBg={cardBg} border={border} />
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 20, marginTop: 20, alignItems: "start" }}>
-        <div>
+        <div ref={reg("fleet")} data-sec="fleet" style={{ scrollMarginTop: 80 }}>
           {/* Industry tabs */}
           <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
             {tabs.map((t) => (
@@ -464,7 +503,7 @@ export default function AdminOrbital() {
 
                 <div style={{ display: "flex", gap: 16, marginTop: 14, fontSize: ".78rem" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 5, color: "rgba(255,255,255,0.7)" }}>
-                    <BatteryCharging size={14} /> {r.battery_pct.toFixed(0)}%
+                    <BatteryCharging size={14} /> <span style={{ fontFamily: MONO }}>{r.battery_pct.toFixed(0)}%</span>
                   </span>
                   <span style={{ display: "flex", alignItems: "center", gap: 5, color: driftColor(r.drift_delta_m) }} title="ARIA drift Δ (external vs internal pose)">
                     <ShieldAlert size={14} /> {r.drift_delta_m.toFixed(3)} m
@@ -474,7 +513,7 @@ export default function AdminOrbital() {
                   <span style={{ width: 6, height: 6, borderRadius: 999, background: "currentColor", opacity: 0.85 }} />
                   {MODE_LABEL[r.control_mode ?? "patrol"]}
                   {typeof r.speed_mps === "number" && (
-                    <span style={{ marginLeft: "auto", color: "rgba(255,255,255,0.55)" }}>{r.speed_mps.toFixed(2)} m/s</span>
+                    <span style={{ marginLeft: "auto", color: "rgba(255,255,255,0.55)", fontFamily: MONO }}>{r.speed_mps.toFixed(2)} m/s</span>
                   )}
                 </div>
 
@@ -560,7 +599,7 @@ export default function AdminOrbital() {
         </div>
 
         {/* Alerts rail */}
-        <div style={{ background: cardBg, border, borderRadius: 12, padding: 16 }}>
+        <div ref={reg("alerts")} data-sec="alerts" style={{ background: cardBg, border, borderRadius: 12, padding: 16, scrollMarginTop: 80 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <AlertTriangle size={16} color="#f59e0b" />
             <h3 style={{ margin: 0, fontSize: ".95rem" }}>Alerts</h3>
@@ -589,7 +628,7 @@ export default function AdminOrbital() {
       <LogicPanel orchestrator={orchestrator} cardBg={cardBg} border={border} />
 
       {/* OEM governance */}
-      <div style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20 }}>
+      <div ref={reg("partners")} data-sec="partners" style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20, scrollMarginTop: 80 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <KeyRound size={16} color={BRAND.emerald} />
           <h3 style={{ margin: 0, fontSize: ".95rem" }}>OEM Partners &amp; API Scopes</h3>
@@ -665,8 +704,9 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
   const ref = useRef<SVGSVGElement | null>(null);
   const W = map.width_m, H = map.height_m;
   const Y = (y: number) => H - y;
-  const green = BRAND.emerald;
-  const amber = "#f59e0b";
+  const green = MC.green;
+  const amber = MC.amber;
+  const nav = MC.azure;
 
   const floorClick = (e: React.MouseEvent) => {
     const svg = ref.current;
@@ -678,30 +718,30 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
   };
 
   const grid: React.ReactNode[] = [];
-  for (let gx = 2; gx < W; gx += 2) grid.push(<line key={`vx${gx}`} x1={gx} y1={0} x2={gx} y2={H} stroke="#1b2130" strokeWidth={0.02} />);
-  for (let gy = 2; gy < H; gy += 2) grid.push(<line key={`vy${gy}`} x1={0} y1={gy} x2={W} y2={gy} stroke="#1b2130" strokeWidth={0.02} />);
+  for (let gx = 2; gx < W; gx += 2) grid.push(<line key={`vx${gx}`} x1={gx} y1={0} x2={gx} y2={H} stroke="#141a26" strokeWidth={0.02} />);
+  for (let gy = 2; gy < H; gy += 2) grid.push(<line key={`vy${gy}`} x1={0} y1={gy} x2={W} y2={gy} stroke="#141a26" strokeWidth={0.02} />);
 
   return (
     <svg ref={ref} viewBox={`0 0 ${W} ${H}`} onClick={floorClick}
-      style={{ width: "100%", maxHeight: "60vh", aspectRatio: `${W} / ${H}`, background: "#15171B", borderRadius: 8, cursor: selectedId ? "crosshair" : "default", userSelect: "none", display: "block" }}>
-      <rect x={0} y={0} width={W} height={H} fill="#0f1622" stroke="#26303f" strokeWidth={0.06} />
+      style={{ width: "100%", maxHeight: "60vh", aspectRatio: `${W} / ${H}`, background: MC.bg, borderRadius: 8, cursor: selectedId ? "crosshair" : "default", userSelect: "none", display: "block" }}>
+      <rect x={0} y={0} width={W} height={H} fill="#0b0f18" stroke="#1b2230" strokeWidth={0.06} />
       {grid}
       {map.dock && (
         <>
-          <rect x={map.dock.x} y={Y(map.dock.y + map.dock.h)} width={map.dock.w} height={map.dock.h} fill="#1e3a5f" stroke="#38bdf8" strokeWidth={0.04} opacity={0.8} />
-          <text x={map.dock.x + map.dock.w / 2} y={Y(map.dock.y + map.dock.h) + map.dock.h / 2 + 0.2} fill="#7dd3fc" fontSize={0.5} textAnchor="middle">DOCK</text>
+          <rect x={map.dock.x} y={Y(map.dock.y + map.dock.h)} width={map.dock.w} height={map.dock.h} fill="#0b2e3a" stroke={MC.azure} strokeWidth={0.04} opacity={0.85} />
+          <text x={map.dock.x + map.dock.w / 2} y={Y(map.dock.y + map.dock.h) + map.dock.h / 2 + 0.2} fill={MC.azureLight} fontSize={0.5} textAnchor="middle">DOCK</text>
         </>
       )}
       {map.racks.map((r) => (
         <g key={r.id}>
-          <rect x={r.x} y={Y(r.y + r.h)} width={r.w} height={r.h} rx={0.08} fill="#242424" stroke="#3a3a3a" strokeWidth={0.03} />
-          <text x={r.x + r.w / 2} y={Y(r.y + r.h / 2) + 0.14} fill="#6f6f6f" fontSize={0.42} textAnchor="middle">{r.id}</text>
+          <rect x={r.x} y={Y(r.y + r.h)} width={r.w} height={r.h} rx={0.08} fill="#161c28" stroke="#2f3a4c" strokeWidth={0.03} />
+          <text x={r.x + r.w / 2} y={Y(r.y + r.h / 2) + 0.14} fill="#828c9b" fontSize={0.42} textAnchor="middle">{r.id}</text>
         </g>
       ))}
       {(map.charge_stations ?? []).map((c) => (
         <g key={c.id}>
-          <circle cx={c.x} cy={Y(c.y)} r={0.42} fill="#38bdf8" opacity={0.14} />
-          <text x={c.x} y={Y(c.y) + 0.16} fill="#38bdf8" fontSize={0.5} textAnchor="middle">⚡</text>
+          <circle cx={c.x} cy={Y(c.y)} r={0.42} fill={MC.azure} opacity={0.16} />
+          <text x={c.x} y={Y(c.y) + 0.16} fill={MC.azureLight} fontSize={0.5} textAnchor="middle">⚡</text>
         </g>
       ))}
       {robots.map((r) => {
@@ -715,11 +755,11 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
             {wps.length > 0 && (
               <>
                 <polyline points={[`${ex.x},${Y(ex.y)}`, ...wps.map((w) => `${w.x},${Y(w.y)}`)].join(" ")}
-                  fill="none" stroke={green} strokeWidth={0.05} strokeDasharray="0.25 0.18" opacity={0.85} />
+                  fill="none" stroke={nav} strokeWidth={0.05} strokeDasharray="0.25 0.18" opacity={0.9} />
                 {wps.map((w, i) => {
                   const last = i === wps.length - 1;
                   return (
-                    <circle key={i} cx={w.x} cy={Y(w.y)} r={last ? 0.24 : 0.16} fill={last ? green : "none"} stroke={green} strokeWidth={0.05} />
+                    <circle key={i} cx={w.x} cy={Y(w.y)} r={last ? 0.24 : 0.16} fill={last ? nav : "#0b0f18"} stroke={nav} strokeWidth={0.05} />
                   );
                 })}
               </>
@@ -729,15 +769,16 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
             )}
             {r.drift_delta_m > 0.05 && (
               <>
-                <line x1={ins.x} y1={Y(ins.y)} x2={ex.x} y2={Y(ex.y)} stroke="#5a5a5a" strokeWidth={0.025} strokeDasharray="0.12 0.12" opacity={0.7} />
-                <circle cx={ins.x} cy={Y(ins.y)} r={0.16} fill="none" stroke="#8a8a8a" strokeWidth={0.04} opacity={0.6} />
+                <line x1={ins.x} y1={Y(ins.y)} x2={ex.x} y2={Y(ex.y)} stroke="#4a5568" strokeWidth={0.03} strokeDasharray="0.12 0.12" opacity={0.85} />
+                <circle cx={ins.x} cy={Y(ins.y)} r={0.16} fill="none" stroke="#828c9b" strokeWidth={0.045} opacity={0.85} />
               </>
             )}
-            {selected && <circle cx={ex.x} cy={Y(ex.y)} r={0.42} fill="none" stroke={green} strokeWidth={0.06} />}
+            {selected && <circle cx={ex.x} cy={Y(ex.y)} r={0.46} fill="none" stroke={MC.azure} strokeWidth={0.07} />}
             <g style={{ cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); onSelectRobot(r.id); }}>
-              <circle cx={ex.x} cy={Y(ex.y)} r={0.22} fill={fill} stroke="#141414" strokeWidth={0.05} />
-              <line x1={ex.x} y1={Y(ex.y)} x2={hx} y2={Y(hy)} stroke="#ededed" strokeWidth={0.05} />
-              <text x={ex.x + 0.32} y={Y(ex.y) - 0.24} fill="#9a9a9a" fontSize={0.36}>{r.id}</text>
+              {r.state === "active" && <circle cx={ex.x} cy={Y(ex.y)} r={0.4} fill={fill} opacity={0.16}><animate attributeName="opacity" values="0.22;0.06;0.22" dur="2.4s" repeatCount="indefinite" /></circle>}
+              <circle cx={ex.x} cy={Y(ex.y)} r={0.22} fill={fill} stroke="#0b0f18" strokeWidth={0.05} />
+              <line x1={ex.x} y1={Y(ex.y)} x2={hx} y2={Y(hy)} stroke="#e6eaef" strokeWidth={0.05} />
+              <text x={ex.x + 0.32} y={Y(ex.y) - 0.24} fill="#aab4c1" fontSize={0.36}>{r.id}</text>
             </g>
           </g>
         );
@@ -746,16 +787,59 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
   );
 }
 
+const RAIL_ITEMS: { id: string; label: string; icon: React.ReactNode }[] = [
+  { id: "overview", label: "Overview", icon: <LayoutDashboard size={18} /> },
+  { id: "map", label: "Spatial Map", icon: <Map size={18} /> },
+  { id: "fleet", label: "Fleet", icon: <Bot size={18} /> },
+  { id: "alerts", label: "Alerts", icon: <AlertTriangle size={18} /> },
+  { id: "capabilities", label: "Capabilities", icon: <Cpu size={18} /> },
+  { id: "partners", label: "OEM Partners", icon: <Users size={18} /> },
+];
+
+function NavRail({ active, onSelect }: { active: string; onSelect: (id: string) => void }) {
+  return (
+    <nav style={{
+      position: "fixed", left: 0, top: 0, bottom: 0, width: 56, zIndex: 40,
+      background: "#08090e", borderRight: `1px solid ${MC.line}`,
+      display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 0", gap: 4,
+    }}>
+      <div style={{ width: 36, height: 36, borderRadius: 9, background: MC.azure, color: "#04121a", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18, boxShadow: "0 0 14px rgba(0,165,218,0.4)", marginBottom: 10 }}>◎</div>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+        {RAIL_ITEMS.map((it) => {
+          const on = active === it.id;
+          return (
+            <button key={it.id} title={it.label} aria-label={it.label} onClick={() => onSelect(it.id)}
+              style={{
+                width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center",
+                borderRadius: 9, cursor: "pointer",
+                color: on ? MC.azure : MC.inkDim,
+                background: on ? "rgba(0,165,218,0.15)" : "transparent",
+                border: `1px solid ${on ? "rgba(0,165,218,0.4)" : "transparent"}`,
+                transition: "color .14s, background .14s, border-color .14s",
+              }}>
+              {it.icon}
+            </button>
+          );
+        })}
+      </div>
+      <button title="Settings — coming soon" aria-label="Settings"
+        style={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 9, cursor: "pointer", color: MC.inkDim, background: "transparent", border: "1px solid transparent" }}>
+        <Settings size={18} />
+      </button>
+    </nav>
+  );
+}
+
 function Header({ facilityName, lastSync, onRefresh }: { facilityName: string | null; lastSync: Date | null; onRefresh: () => void }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Radio size={22} color={BRAND.emerald} />
-          <h1 style={{ margin: 0, fontSize: "1.5rem" }}>Orbital AI — Fleet Control</h1>
+          <span style={{ width: 30, height: 30, borderRadius: 8, background: MC.azure, color: "#04121a", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18, boxShadow: "0 0 12px rgba(0,165,218,0.4)" }}>◎</span>
+          <h1 style={{ margin: 0, fontSize: "1.5rem", letterSpacing: "-0.01em" }}>Orbital<span style={{ color: MC.azure, fontWeight: 300 }}> AI</span> — Fleet Control</h1>
         </div>
-        <p style={{ margin: "6px 0 0", color: "rgba(255,255,255,0.45)", fontSize: ".85rem" }}>
-          {facilityName ? `${facilityName} · ` : ""}Live monitor & control for deployed robots
+        <p style={{ margin: "6px 0 0", color: MC.inkDim, fontSize: ".82rem", fontFamily: MONO, letterSpacing: ".02em" }}>
+          {facilityName ? `${facilityName} · ` : ""}FLEET·CTRL · ARIA·EDGE · live monitor & control
           {lastSync ? ` · synced ${lastSync.toLocaleTimeString()}` : ""}
         </p>
       </div>
@@ -768,9 +852,9 @@ function Header({ facilityName, lastSync, onRefresh }: { facilityName: string | 
 
 function Kpi({ label, value, icon, accent }: { label: string; value: React.ReactNode; icon: React.ReactNode; accent?: string }) {
   return (
-    <div style={{ background: "#22252A", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 18px", minWidth: 140 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,0.5)", fontSize: ".72rem" }}>{icon}{label}</div>
-      <div style={{ fontSize: "1.4rem", fontWeight: 700, marginTop: 4, color: accent ?? BRAND.white }}>{value}</div>
+    <div style={{ background: MC.card, border: `1px solid ${MC.line}`, borderRadius: 10, padding: "12px 18px", minWidth: 140 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, color: MC.inkDim, fontSize: ".72rem" }}>{icon}{label}</div>
+      <div style={{ fontSize: "1.4rem", fontWeight: 700, marginTop: 4, color: accent ?? MC.ink, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{value}</div>
     </div>
   );
 }
@@ -862,13 +946,13 @@ function RobotModal({ detail, busy, onClose, onControl }: {
   const row = (k: string, v: React.ReactNode) => (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.06)", fontSize: ".82rem" }}>
       <span style={{ color: "rgba(255,255,255,0.5)" }}>{k}</span>
-      <span style={{ color: BRAND.white }}>{v}</span>
+      <span style={{ color: MC.ink, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{v}</span>
     </div>
   );
   const secs = (s?: number | null) => (s == null ? "—" : s >= 3600 ? `${(s / 3600).toFixed(1)}h` : `${Math.round(s)}s`);
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "#1C1E22", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 14, padding: 24, width: 460, maxWidth: "92vw", maxHeight: "88vh", overflowY: "auto" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: MC.card, border: `1px solid ${MC.lineStrong}`, borderRadius: 14, padding: 24, width: 460, maxWidth: "92vw", maxHeight: "88vh", overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -935,7 +1019,7 @@ function OEMModal({ oem, onClose, onSave, onToggleStatus }: {
   const toggle = (s: string) => setWant((prev) => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n; });
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "#1C1E22", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 14, padding: 24, width: 480, maxWidth: "92vw", maxHeight: "88vh", overflowY: "auto" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: MC.card, border: `1px solid ${MC.lineStrong}`, borderRadius: 14, padding: 24, width: 480, maxWidth: "92vw", maxHeight: "88vh", overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <h2 style={{ margin: 0, fontSize: "1.1rem", color: BRAND.white }}>{oem.company_name}</h2>
@@ -979,8 +1063,8 @@ function ControlPanel({ robot, grants, busy, onSpeed, onDrive, onStopDrive, onCl
   onSpeed: (mps: number) => void; onDrive: (heading: number, mps: number) => void; onStopDrive: () => void;
   onClearRoute: () => void; onEstop: () => void; onResume: () => void; onDetails: () => void; onDeselect: () => void;
 }) {
-  const cardBg = "#22252A";
-  const border = "1px solid rgba(255,255,255,0.08)";
+  const cardBg = MC.card;
+  const border = `1px solid ${MC.line}`;
   const [speed, setSpeedLocal] = useState<number>(robot?.speed_mps ?? 0.6);
   if (!robot) {
     return (
@@ -1098,7 +1182,7 @@ function CapabilitiesPanel({ robots, oems, vendorHasScope, cardBg, border }: {
           const partners = activeOems.filter((o) => o.granted_scopes.includes(cap.scope)).length;
           const controllable = robots.filter((r) => vendorHasScope(r.vendor, cap.scope)).length;
           const live = controllable > 0;
-          const accent = cap.kind === "control" ? BRAND.emerald : "#38bdf8";
+          const accent = cap.kind === "control" ? MC.green : MC.azure;
           const dim = live ? accent : "rgba(255,255,255,0.35)";
           return (
             <div key={cap.scope} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${live ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)"}`, borderRadius: 10, padding: 12 }}>
