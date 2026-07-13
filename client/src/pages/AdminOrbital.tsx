@@ -1524,7 +1524,7 @@ function Ticker({ metrics, stateCounts, facility, oems, live }: {
   ));
   return (
     <div style={{ marginTop: 14, background: MC.panel, border: `1px solid ${MC.line}`, borderRadius: 10, overflow: "hidden", position: "relative", WebkitMaskImage: "linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent)", maskImage: "linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent)" }}>
-      <style>{`@keyframes orbital-ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}} .orbital-ticker-track{animation:orbital-ticker 46s linear infinite} .orbital-ticker-track:hover{animation-play-state:paused}`}</style>
+      <style>{`@keyframes orbital-ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}} .orbital-ticker-track{animation:orbital-ticker 92s linear infinite} .orbital-ticker-track:hover{animation-play-state:paused}`}</style>
       <div className="orbital-ticker-track" style={{ display: "inline-flex", alignItems: "center", padding: "9px 0" }}>
         {strip("a")}{strip("b")}
       </div>
