@@ -1083,7 +1083,7 @@ export default function AdminSalesAgent() {
                     <div>
                       <h1 className="text-lg font-semibold text-white">Cal</h1>
                       <p className="text-xs text-zinc-500">
-                        Physical AI Deployment Advisor · teaches, asks, earns trust.
+                        Studious Observer · field notes on work and flow, not sales emails.
                         {lastRun ? ` Last outreach run ${timeAgo(lastRun.startedAt)}.` : ""}
                       </p>
                     </div>

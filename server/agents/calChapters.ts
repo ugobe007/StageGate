@@ -1,14 +1,11 @@
 /**
- * Cal's rotating outreach chapters — each email is a self-contained lesson.
+ * Cal's Field Notes — short observations from the Studious Observer.
  *
- * Structure (every email):
- *   1. Observation — insight opens immediately, no self-intro
- *   2. Opinion — what most companies get wrong
- *   3. Lesson — one memorable takeaway the reader keeps even if they never reply
- *   4. Question — invite conversation, not a meeting
+ * Cal is not a salesperson. He is an anthropologist of work: obsessed with flow,
+ * not robotics. Robots are one tool; people, materials, and time are the story.
  *
- * StageGate positioning appears once, quietly — live deployment intelligence,
- * not a pitch. Same seed + stage → same chapter (deterministic for drafts).
+ * Every email is a field note or deployment diary entry — no pitch, no CTA,
+ * one curious question at the end. Same seed + stage → same note (deterministic).
  */
 
 import { FRANK_PERSONA } from "./frankPlaybook.js";
@@ -28,130 +25,153 @@ export type CalChapterContext = {
   seed?: string | number | null;
 };
 
-type CalChapter = {
+type FieldNoteFormat = "field_note" | "diary";
+
+type CalFieldNote = {
   id: string;
+  format: FieldNoteFormat;
+  noteNumber: number;
   subject: string;
-  observation: string;
-  opinion: string;
-  lesson: string;
-  intel: string;
+  /** Narrative body — observation, reflection, lesson. Plain paragraphs. */
+  body: string[];
+  /** Optional one-line closer before the question (e.g. "That's what I spend my time studying."). */
+  closer?: string;
   question: string;
-  robotPattern?: RegExp;
+  settingPattern?: RegExp;
 };
 
-const CAL_CHAPTERS: CalChapter[] = [
+/** Sparse, memorable note numbers — feels like a long-running series. */
+const NOTE_NUMBERS = [7, 14, 22, 31, 38, 44, 52, 61, 73, 89];
+
+const FIELD_NOTES: CalFieldNote[] = [
   {
-    id: "workflow_before_robot",
-    subject: "The robot usually isn't what determines success",
-    observation:
-      "One thing I've learned from watching warehouse robot deployments is that the robot usually isn't what determines success.",
-    opinion:
-      "The companies that see the best results don't start by comparing vendors. They start by identifying the workflow that's creating the biggest operational drag.",
-    lesson:
-      "Receiving. Replenishment. Returns. Internal pallet movement. Once that decision is right, choosing the robot becomes much easier.",
-    intel:
-      "At StageGate, we don't sell robots — we spend our time studying which deployments are still creating value months after installation, not just the ones that look impressive in a demo.",
+    id: "watch_people_first",
+    format: "field_note",
+    noteNumber: 14,
+    subject: "I watch people before I look at machines",
+    body: [
+      "Whenever I visit a warehouse, I ignore the robots for the first fifteen minutes. I watch people instead.",
+      "Where do they stop? Where do they wait? Where do they walk farther than they should?",
+      "Almost every operation has one workflow that quietly steals hours every day. Most teams know it's there — they've just learned to work around it.",
+      "That's usually where automation creates the biggest return. Not because of the robot. Because the workflow was finally fixed.",
+    ],
+    closer: "That's what I spend my time studying.",
     question:
-      "I'm curious whether automation is already part of your roadmap at {{company}}, or if it's something your team is still evaluating.",
+      "I'm curious — if you could remove one repetitive task from your operation tomorrow, what would it be?",
   },
   {
-    id: "pilots_fail",
-    subject: "Why most warehouse pilots fail",
-    observation:
-      "Most warehouse pilots I've watched fail for the same reason — and it's rarely the hardware.",
-    opinion:
-      "Teams spend weeks stress-testing the robot and almost no time defining what success looks like in their actual operation.",
-    lesson:
-      "The pilots that work set clear metrics first: labor hours saved, throughput, error rates. They run in conditions that match a real shift, not a cleaned-up demo lane.",
-    intel:
-      "Lately I'm seeing more operators pause vendor selection until they can answer one question: what would we measure at 90 days to know this worked?",
-    question:
-      "How is {{company}} thinking about proving ROI before scaling?",
+    id: "forklift_waiting",
+    format: "field_note",
+    noteNumber: 38,
+    subject: "Forklifts spent more time waiting than moving",
+    body: [
+      "I watched a warehouse this week where forklifts spent more time waiting than moving.",
+      "Nobody noticed because everyone was focused on picker productivity.",
+      "Turns out the bottleneck wasn't labor. It was aisle congestion.",
+    ],
+    question: "Interesting. Does that match anything you've seen on your floor?",
   },
   {
-    id: "first_workflow",
-    subject: "The first workflow I'd automate in almost every warehouse",
-    observation:
-      "Here's something I notice in almost every warehouse automation conversation: everyone wants the flashy use case first.",
-    opinion:
-      "Most companies get this backward. The best first automation target is usually boring — repetitive, measurable, and already costing labor hours every week.",
-    lesson:
-      "Internal transport, case picking to pack-out, or returns sortation often beat 'full autonomy' as a starting point. Win one workflow, then expand.",
-    intel:
-      "StageGate tracks deployments across the industry — the ones that scale almost always start narrow and prove labor impact before adding complexity.",
-    question:
-      "If you had to pick one workflow at {{company}} where labor hours hurt most, where would you start?",
+    id: "slowest_robot",
+    format: "field_note",
+    noteNumber: 44,
+    subject: "The slowest machine created the most value",
+    body: [
+      "The fastest robot in the building wasn't creating the most value. The slowest one was.",
+      "Why? Because it eliminated the one task nobody wanted to do — the one that had been patched over with overtime for years.",
+      "Speed on a spec sheet tells you almost nothing about whether work actually gets easier.",
+    ],
+    closer: "I notice this more than I notice vendor logos.",
+    question: "Is there a task on your floor that everyone avoids but nobody has time to fix?",
   },
   {
-    id: "integration_over_speed",
-    subject: "Integration matters more than robot speed",
-    observation:
-      "One pattern I see constantly: a robot arrives on site faster than the systems around it are ready to use it.",
-    opinion:
-      "Throughput on a spec sheet rarely matches throughput on the floor when WMS, safety zones, and exception handling aren't mapped first.",
-    lesson:
-      "The longest pole is usually integration — handoffs, data flows, and who owns exceptions when the robot stops mid-shift. Scoping that before hardware ships saves months.",
-    intel:
-      "We're watching a wave of deployments where integration planning, not robot selection, separated the projects that stuck from the ones that stalled.",
-    question:
-      "At {{company}}, is integration already scoped — or still an open question?",
+    id: "longest_line",
+    format: "field_note",
+    noteNumber: 22,
+    subject: "The longest line usually isn't where management thinks",
+    body: [
+      "The longest line in a warehouse usually isn't where management thinks it is.",
+      "It's often in the handoff — between receiving and put-away, between pick and pack, between returns and disposition.",
+      "Work stacks up where two processes meet and neither team owns the gap.",
+    ],
+    closer: "Every facility has one place where work quietly stacks up.",
+    question: "Where does work pile up when you're not looking?",
   },
   {
-    id: "fifty_deployments",
-    subject: "What surprised me after watching hundreds of deployments",
-    observation:
-      "After hundreds of robot deployments, the surprise isn't which vendor wins — it's how often the same preventable mistakes repeat.",
-    opinion:
-      "Most delays aren't technical. They're sequencing problems: training, commissioning, and go-live compressed into the same week.",
-    lesson:
-      "Teams that sequence realistically — site ready, then integrate, then train, then run — hit production dates more often than teams that hero-launch.",
-    intel:
-      "StageGate exists for everything after the purchase: activation, integration, training, and support so a robot becomes an operation, not a science project.",
-    question:
-      "What's the part of deployment at {{company}} that worries your team most — timing, integration, or operations?",
+    id: "crossing_paths",
+    format: "diary",
+    noteNumber: 31,
+    subject: "Two employees crossed paths three hundred times",
+    body: [
+      "This week I noticed two pickers crossing the same aisle intersection all morning. Same paths. Same timing. No collision — just wasted steps.",
+      "Three hundred crossings in a shift adds up to miles nobody planned for.",
+      "Layout problems don't show up in a dashboard. They show up in tired feet.",
+    ],
+    question: "Have you ever mapped where people actually walk versus where the floor plan says they should?",
   },
   {
-    id: "humanoid_misconception",
-    subject: "The biggest misconception about humanoid robots",
-    observation:
-      "Humanoids get the headlines — but in the field, the misconception I hear most is that they'll slot into any workflow a person does today.",
-    opinion:
-      "Most companies underestimate the operating discipline: calibration, safety zones, predictable maintenance windows, and clear task boundaries.",
-    lesson:
-      "Humanoids can excel at specific, repeatable tasks — not open-ended 'be helpful' roles. The deployments that work define the task first, then match the form factor.",
-    intel:
-      "Right now we're seeing more operators ask 'which task, which shift, which metric' before asking 'which humanoid.' That shift alone prevents a lot of pilot waste.",
-    question:
-      "Is {{company}} evaluating humanoids for a specific workflow — or still exploring where they'd fit?",
-    robotPattern: /\b(humanoid|biped|figure|optimus|digit|apollo)\b/i,
+    id: "inventory_trips",
+    format: "field_note",
+    noteNumber: 52,
+    subject: "Inventory made three unnecessary trips",
+    body: [
+      "I traced one SKU through a facility last month. It made three trips it didn't need to make — staging, re-staging, then finally to pick.",
+      "Nobody designed it that way. It accumulated, one workaround at a time.",
+      "Materials move more than people talk about. Every extra touch is a tax on throughput.",
+    ],
+    closer: "That's the kind of thing I can't unsee once I start watching.",
+    question: "If you traced one product line end to end, would the path surprise you?",
   },
   {
-    id: "labor_math",
-    subject: "The labor math most automation projects skip",
-    observation:
-      "Here's something I've noticed: operations leaders feel automation pressure from labor cost — but the business case often skips the baseline.",
-    opinion:
-      "Without measuring labor hours, error rates, and throughput before the robot arrives, ROI becomes a story instead of a number six months later.",
-    lesson:
-      "A one-week baseline on the target workflow — same shift, same volume — makes the pilot answerable. It's a small investment that prevents expensive ambiguity.",
-    intel:
-      "StageGate helps teams capture that baseline and track post-deployment performance so automation decisions stay grounded in operations, not demos.",
-    question:
-      "Does {{company}} already have baseline metrics on the workflows you're considering — or is that still being defined?",
+    id: "two_fifteen_stop",
+    format: "diary",
+    noteNumber: 61,
+    subject: "Everyone stopped walking at 2:15",
+    body: [
+      "Today I noticed everyone on one shift stop moving at 2:15 PM. Not a break — a bottleneck upstream.",
+      "A conveyor jam three zones away had frozen the whole flow. The floor looked busy. Nothing was moving.",
+      "Flow is fragile. One stuck handoff looks like a labor problem from a distance.",
+    ],
+    question: "What time of day does your operation feel busiest but accomplish the least?",
   },
   {
-    id: "operator_question",
-    subject: "The question that predicts deployment success",
-    observation:
-      "One question predicts deployment success better than almost any robot spec.",
-    opinion:
-      "Most companies focus on payload, speed, and price. The teams that succeed ask: who operates this on a Tuesday afternoon when something goes wrong?",
-    lesson:
-      "If the answer is 'the vendor' or 'we're not sure yet,' the deployment isn't ready — regardless of how good the hardware looks in a video.",
-    intel:
-      "We're seeing more mature operators build training and escalation paths before go-live, not after the first line-down event.",
-    question:
-      "How is {{company}} thinking about ownership once automation is live — internal ops, vendor support, or a mix?",
+    id: "industry_pattern",
+    format: "field_note",
+    noteNumber: 73,
+    subject: "Something I'm seeing across operations this year",
+    body: [
+      "Across warehouses, restaurants, and light manufacturing this year, the same pattern keeps appearing.",
+      "Teams buy automation to fix a labor gap — then discover the gap was actually a process gap wearing a labor costume.",
+      "The companies getting value aren't the ones with the newest hardware. They're the ones who fixed the workflow first and let the tool fit.",
+    ],
+    closer: "I write these down because the pattern is easy to miss from inside one building.",
+    question: "Does that land — or does your operation feel different?",
+  },
+  {
+    id: "flow_not_robots",
+    format: "field_note",
+    noteNumber: 7,
+    subject: "Cal walks in and ignores the robots",
+    body: [
+      "Whenever I visit an operation, I watch people before I look at machines.",
+      "Why are those two employees crossing paths all day? Why is inventory taking the long way? Why does everyone pause at the same hour?",
+      "I'm obsessed with flow. Not robotics. Flow.",
+      "Robots are simply one way to improve a system — after you understand where the system leaks.",
+    ],
+    question: "What's one place in your operation where time disappears without anyone naming it?",
+  },
+  {
+    id: "task_nobody_wants",
+    format: "diary",
+    noteNumber: 89,
+    subject: "One mistake I keep seeing",
+    body: [
+      "One mistake I keep seeing: automating the task that looks impressive instead of the task that hurts.",
+      "The painful jobs — re-labeling, re-staging, walking empty aisles — rarely get discussed in vendor meetings. They're where the hours actually go.",
+      "Fix that workflow and almost any reasonable tool starts to pay for itself.",
+    ],
+    closer: "That's what I mean when I say I study work, not robots.",
+    question: "What's the unglamorous task that costs you the most hours?",
   },
 ];
 
@@ -170,28 +190,23 @@ const STAGE_OFFSET: Record<CalChapterStage, number> = {
   followup_1: 2,
 };
 
-function fillCompany(text: string, company: string): string {
-  return text.replace(/\{\{company\}\}/g, company);
+function formatHeader(note: CalFieldNote, seedKey: string, stage: CalChapterStage): string {
+  if (note.format === "diary") return "Deployment Diary";
+  const offset = STAGE_OFFSET[stage];
+  const num = NOTE_NUMBERS[(hashSeed(seedKey) + note.noteNumber + offset) % NOTE_NUMBERS.length]!;
+  return `Field Note #${num}`;
 }
 
-/** Pick the chapter for this prospect and outreach stage (never the same chapter twice in sequence). */
-export function pickCalChapter(ctx: CalChapterContext, stage: CalChapterStage): CalChapter {
+/** Pick the field note for this prospect and outreach stage. */
+export function pickCalChapter(ctx: CalChapterContext, stage: CalChapterStage): CalFieldNote {
   const seedKey = String(ctx.seed ?? ctx.companyName ?? "stagegate");
-  const robotType = (ctx.robotType ?? "").trim();
-
-  let pool = CAL_CHAPTERS;
-  const robotMatches = robotType
-    ? pool.filter((c) => c.robotPattern?.test(robotType))
-    : [];
-  if (robotMatches.length > 0) pool = robotMatches;
-
   const offset = STAGE_OFFSET[stage];
-  const idx = (hashSeed(seedKey) + offset) % pool.length;
-  return pool[idx]!;
+  const idx = (hashSeed(seedKey) + offset) % FIELD_NOTES.length;
+  return FIELD_NOTES[idx]!;
 }
 
 export function listCalChapterIds(): string[] {
-  return CAL_CHAPTERS.map((c) => c.id);
+  return FIELD_NOTES.map((n) => n.id);
 }
 
 type ProspectLike = {
@@ -201,18 +216,19 @@ type ProspectLike = {
   robotType?: string | null;
 };
 
-/** Build a full Cal email from a chapter — insight-first, ~150 words, conversation invite. */
+/** Build a Field Note email — anthropologist of work, not a sales touch. */
 export function buildCalChapterEmail(
   prospect: ProspectLike,
   stage: CalChapterStage,
 ): { subject: string; body: string; chapterId: string } {
-  const chapter = pickCalChapter(
+  const seedKey = prospect.company;
+  const note = pickCalChapter(
     {
       companyName: prospect.company,
       contactName: prospect.contactName,
       contactEmail: prospect.contactEmail,
       robotType: prospect.robotType,
-      seed: prospect.company,
+      seed: seedKey,
     },
     stage,
   );
@@ -223,21 +239,18 @@ export function buildCalChapterEmail(
     company: prospect.company,
   });
   const salutation = greetingLine(resolved.greetingName, prospect.company);
+  const header = formatHeader(note, seedKey, stage);
 
-  const paragraphs = [
-    fillCompany(chapter.observation, prospect.company),
-    fillCompany(chapter.opinion, prospect.company),
-    fillCompany(chapter.lesson, prospect.company),
-    fillCompany(chapter.intel, prospect.company),
-    fillCompany(chapter.question, prospect.company),
-    FRANK_PERSONA.signature,
-  ];
+  const parts: string[] = [header, ...note.body];
+  if (note.closer) parts.push(note.closer);
+  parts.push(note.question);
+  parts.push(FRANK_PERSONA.signature);
 
-  const body = normalizeCalEmailGreeting(paragraphs.join("\n\n"), salutation);
+  const body = normalizeCalEmailGreeting(parts.join("\n\n"), salutation);
 
   return {
-    subject: fillCompany(chapter.subject, prospect.company),
+    subject: note.subject,
     body,
-    chapterId: chapter.id,
+    chapterId: note.id,
   };
 }

@@ -1,50 +1,50 @@
 import { describe, expect, it } from "vitest";
+import { CAL_CHARACTER, FRANK_PERSONA } from "./frankPlaybook.js";
 import {
   buildCalChapterEmail,
   listCalChapterIds,
   pickCalChapter,
 } from "./calChapters.js";
 
-describe("pickCalChapter", () => {
-  it("returns different chapters per stage for the same company", () => {
-    const ctx = { companyName: "Acme Robotics", seed: "Acme Robotics" };
-    const a = pickCalChapter(ctx, "discovery");
-    const b = pickCalChapter(ctx, "intro_sent");
-    const c = pickCalChapter(ctx, "followup_1");
-    expect(a.id).not.toBe(b.id);
-    expect(b.id).not.toBe(c.id);
+describe("CAL_CHARACTER", () => {
+  it("defines Cal as Studious Observer, not a robot expert", () => {
+    expect(CAL_CHARACTER.archetype).toBe("Studious Observer");
+    expect(CAL_CHARACTER.lens).toMatch(/flow/i);
+    expect(CAL_CHARACTER.never.join(" ")).toMatch(/sales/i);
   });
+});
 
-  it("is deterministic for the same company and stage", () => {
-    const ctx = { companyName: "Robust AI", seed: "Robust AI" };
-    expect(pickCalChapter(ctx, "discovery").id).toBe(pickCalChapter(ctx, "discovery").id);
+describe("pickCalChapter", () => {
+  it("returns different field notes per stage for the same company", () => {
+    const ctx = { companyName: "Acme Robotics", seed: "Acme Robotics" };
+    expect(pickCalChapter(ctx, "discovery").id).not.toBe(pickCalChapter(ctx, "intro_sent").id);
   });
 });
 
 describe("buildCalChapterEmail", () => {
-  it("opens with insight, not a Cal self-intro", () => {
+  it("reads as a field note, not outreach", () => {
     const { body, subject } = buildCalChapterEmail(
       { company: "UPS Supply Chain Solutions", contactEmail: "ops@ups.com" },
       "discovery",
     );
-    expect(body).not.toMatch(/This is Cal/i);
-    expect(body).not.toMatch(/I wanted to introduce myself/i);
-    expect(body).toMatch(/One thing I've learned|Here's something|Most warehouse|After hundreds|Humanoids get|One question predicts|One pattern I see/i);
-    expect(subject).not.toMatch(/Introducing myself/i);
+    expect(body).toMatch(/Field Note #|Deployment Diary/);
+    expect(body).not.toMatch(/This is Cal|Physical AI Deployment Advisor|onstage\.bot/i);
+    expect(body).not.toMatch(/would you like to meet|schedule a call|book a demo/i);
+    expect(body).toContain("— Cal");
+    expect(FRANK_PERSONA.signature).toBe("— Cal");
+    expect(subject).not.toMatch(/Introducing myself|quick question/i);
   });
 
-  it("includes observation, lesson, and conversation question", () => {
+  it("focuses on work and flow, not robot specs", () => {
     const { body } = buildCalChapterEmail(
       { company: "Vention", contactName: "Mathieu Desmarais" },
       "discovery",
     );
-    expect(body).toContain("Hi Mathieu,");
-    expect(body).toMatch(/I'm curious|How is|What's the|Does |If you had|Is /);
-    expect(body).toContain("Vention");
-    expect(body).toContain("StageGate");
+    expect(body).toMatch(/people|flow|work|walk|wait|handoff|warehouse|operation/i);
+    expect(body).toMatch(/I'm curious|Does that|Have you|What's the|If you/i);
   });
 
-  it("covers multiple chapter themes", () => {
-    expect(listCalChapterIds().length).toBeGreaterThanOrEqual(6);
+  it("has a library of distinct field notes", () => {
+    expect(listCalChapterIds().length).toBeGreaterThanOrEqual(8);
   });
 });

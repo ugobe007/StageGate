@@ -56,10 +56,10 @@ const STAGE_DELAYS_DAYS: Record<ConversationStage, number> = {
 };
 
 const FRANK_PERSONA = {
-  name: "Frank",
-  fromName: "Frank at StageGate",
-  fromEmail: "frank@onstage.bot",
-  signature: "Frank\nStageGate — Robotics Activation Infrastructure\nonstage.bot",
+  name: "Cal",
+  fromName: "Cal",
+  fromEmail: "cal@onstage.bot",
+  signature: "— Cal",
   robotGuildEmail: "start@therobotguild.com",
   robotGuildUrl: "https://www.therobotguild.com/",
 };
@@ -165,12 +165,12 @@ describe("Frank's playbook — stage delay configuration", () => {
 // ─── 3. Frank's Persona ───────────────────────────────────────────────────────
 
 describe("Frank's persona configuration", () => {
-  it("Frank sends from frank@onstage.bot", () => {
-    expect(FRANK_PERSONA.fromEmail).toBe("frank@onstage.bot");
+  it("Cal sends from cal@onstage.bot", () => {
+    expect(FRANK_PERSONA.fromEmail).toBe("cal@onstage.bot");
   });
 
-  it("Frank's display name is 'Frank at StageGate'", () => {
-    expect(FRANK_PERSONA.fromName).toBe("Frank at StageGate");
+  it("Cal's display name is 'Cal'", () => {
+    expect(FRANK_PERSONA.fromName).toBe("Cal");
   });
 
   it("Robot Guild email is start@therobotguild.com", () => {
@@ -181,9 +181,9 @@ describe("Frank's persona configuration", () => {
     expect(FRANK_PERSONA.robotGuildUrl).toBe("https://www.therobotguild.com/");
   });
 
-  it("Frank's signature includes StageGate branding", () => {
-    expect(FRANK_PERSONA.signature).toContain("StageGate");
-    expect(FRANK_PERSONA.signature).toContain("Frank");
+  it("Cal's signature is minimal — not a sales title block", () => {
+    expect(FRANK_PERSONA.signature).toBe("— Cal");
+    expect(FRANK_PERSONA.name).toBe("Cal");
   });
 });
 

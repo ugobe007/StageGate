@@ -905,7 +905,7 @@ async function generateFrankEmail(
     salutation,
   );
 
-  const body = bodyClean + `\n\nThanks,\n${FRANK_PERSONA.signature}`;
+  const body = bodyClean + `\n\n${FRANK_PERSONA.signature}`;
 
   return {
     subject: parsed.subject ?? `Following up — ${prospect.company}`,
