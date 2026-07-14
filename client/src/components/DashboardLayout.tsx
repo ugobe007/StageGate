@@ -47,15 +47,17 @@ const COLLAPSED_WIDTH = 52;
 // ─── Dark palette tokens ──────────────────────────────────────────────────────
 const D = {
   bg:         BRAND.nearBlack,
-  surface:    "#111111",   // card surface
-  surface2:   "#1a1a1a",   // hover / raised
-  border:     "rgba(255,255,255,0.08)",
-  borderStrong: "rgba(255,255,255,0.14)",
-  text:       "#ececec",   // primary text
-  text2:      "rgba(255,255,255,0.55)", // secondary
-  text3:      "rgba(255,255,255,0.30)", // muted
+  bgGradient: "linear-gradient(180deg,#202329 0%,#1C1E22 60%)",
+  surface:    "#17191e",   // sidebar surface
+  sidebarGrad:"linear-gradient(180deg,#1b1e23 0%,#141519 100%)",
+  surface2:   "#23262d",   // hover / raised
+  border:     "rgba(255,255,255,0.10)",
+  borderStrong: "rgba(255,255,255,0.16)",
+  text:       "#f3f4f6",   // primary text
+  text2:      "rgba(255,255,255,0.64)", // secondary
+  text3:      "rgba(255,255,255,0.40)", // muted
   emerald:    BRAND.emerald,
-  emeraldDim: emeraldAlpha(0.10),
+  emeraldDim: emeraldAlpha(0.14),
   amber:      "#f59e0b",
   font:       "'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif",
 };
@@ -200,7 +202,7 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
         width: isMobile ? 220 : effectiveWidth,
         minWidth: isMobile ? 220 : effectiveWidth,
         transition: isResizing ? "none" : "width 0.15s",
-        background: D.surface,
+        background: D.sidebarGrad,
         borderRight: `1px solid ${D.border}`,
         display: "flex",
         flexDirection: "column",
@@ -256,12 +258,13 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
                 gap: collapsed ? 0 : "0.5rem",
                 padding: collapsed ? "0.375rem 0" : "0.375rem 0.625rem",
                 justifyContent: collapsed ? "center" : "flex-start",
-                borderRadius: "0.25rem",
+                borderRadius: "0.375rem",
                 fontSize: "0.8125rem",
                 fontWeight: isActive ? 600 : 400,
                 color: isActive ? D.emerald : D.text2,
                 background: isActive ? D.emeraldDim : "transparent",
-                border: isActive ? `1px solid ${emeraldAlpha(0.15)}` : "1px solid transparent",
+                border: isActive ? `1px solid ${emeraldAlpha(0.22)}` : "1px solid transparent",
+                boxShadow: isActive && !collapsed ? `inset 3px 0 0 ${D.emerald}` : "none",
                 cursor: "pointer",
                 width: "100%",
                 textAlign: "left",
@@ -276,7 +279,12 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
                 <>
                   <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</span>
                   {count > 0 && (
-                    <span style={{ fontSize: "11px", fontWeight: 600, color: D.amber }}>
+                    <span style={{
+                      fontSize: "10px", fontWeight: 700, color: "#1C1E22",
+                      background: D.amber, borderRadius: "999px",
+                      minWidth: "17px", height: "17px", padding: "0 5px",
+                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    }}>
                       {count}
                     </span>
                   )}
@@ -338,7 +346,7 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: D.bg, fontFamily: D.font }}>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: D.bgGradient, fontFamily: D.font }}>
       {/* Desktop sidebar */}
       {!isMobile && (
         <div style={{ flexShrink: 0, display: "flex", width: effectiveWidth, transition: isResizing ? "none" : "width 0.15s" }}>
@@ -373,7 +381,7 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
             <span style={{ fontWeight: 700, fontSize: "0.875rem", color: D.emerald, letterSpacing: "0.04em", textTransform: "uppercase" }}>StageGate</span>
           </div>
         )}
-        <main style={{ flex: 1, overflowY: "auto", background: D.bg, color: D.text, fontFamily: D.font }}>
+        <main style={{ flex: 1, overflowY: "auto", background: "transparent", color: D.text, fontFamily: D.font }}>
           {children}
         </main>
       </div>

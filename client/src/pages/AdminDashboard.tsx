@@ -14,19 +14,26 @@ import DailyBriefPanel from "@/components/DailyBriefPanel";
 import { BRAND, emeraldAlpha } from "@/lib/brand";
 
 // ── Dark palette tokens ────────────────────────────────────────────────────
+// Panels are LIGHTER than the page bg + carry a soft shadow so they read as
+// raised surfaces (the old scheme had near-black cards on a lighter bg, which
+// made every panel look like a recessed hole — the source of the "drab" feel).
 const D = {
   bg:         "#1C1E22",
-  surface:    "#111111",
-  s2:         "#1a1a1a",
-  border:     "rgba(255,255,255,0.08)",
-  text:       "#ececec",
-  text2:      "rgba(255,255,255,0.55)",
-  text3:      "rgba(255,255,255,0.28)",
+  bgGradient: "linear-gradient(180deg,#202329 0%,#1C1E22 60%)",
+  surface:    "#24272e",
+  surfaceGrad:"linear-gradient(180deg,#282c34 0%,#22252c 100%)",
+  s2:         "#2b2f38",
+  border:     "rgba(255,255,255,0.10)",
+  borderHi:   "rgba(255,255,255,0.16)",
+  text:       "#f3f4f6",
+  text2:      "rgba(255,255,255,0.64)",
+  text3:      "rgba(255,255,255,0.40)",
   emerald:    `${BRAND.emerald}`,
   emeraldDim: emeraldAlpha(0.10),
   amber:      "#f59e0b",
   blue:       "#60a5fa",
   red:        "#ef4444",
+  shadow:     "0 1px 2px rgba(0,0,0,0.40), 0 6px 20px rgba(0,0,0,0.22)",
   font:       "'Space Grotesk','Inter',ui-sans-serif,system-ui,sans-serif",
 };
 
@@ -36,7 +43,7 @@ const Card = ({ children, style, onMouseEnter, onMouseLeave }: {
   onMouseLeave?: React.MouseEventHandler<HTMLDivElement>;
 }) => (
   <div
-    style={{ background: D.surface, border: `1px solid ${D.border}`, borderRadius: "0.375rem", ...style }}
+    style={{ background: D.surfaceGrad, border: `1px solid ${D.border}`, borderRadius: "0.625rem", boxShadow: D.shadow, ...style }}
     onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}
   >
     {children}
@@ -127,12 +134,16 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div style={{ padding: "1.5rem", maxWidth: "1200px", margin: "0 auto", fontFamily: D.font, color: D.text }}>
+    <div style={{ minHeight: "100%", background: D.bgGradient, fontFamily: D.font, color: D.text }}>
+    <div style={{ padding: "1.5rem", maxWidth: "1200px", margin: "0 auto" }}>
 
       {/* ── Header ── */}
       <div style={{ marginBottom: "1.5rem", borderBottom: `1px solid ${D.border}`, paddingBottom: "1rem" }}>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: D.text3, margin: "0 0 0.25rem" }}>STAGEGATE / ADMIN</p>
-        <h1 style={{ fontSize: "1.125rem", fontWeight: 700, color: D.text, margin: "0 0 0.25rem", letterSpacing: "-0.02em" }}>Dashboard</h1>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5625rem", letterSpacing: "0.12em", textTransform: "uppercase", color: D.emerald, margin: "0 0 0.4rem", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: D.emerald, boxShadow: `0 0 8px ${D.emerald}` }} />
+          STAGEGATE / ADMIN
+        </p>
+        <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: D.text, margin: "0 0 0.25rem", letterSpacing: "-0.02em" }}>Dashboard</h1>
         <p style={{ fontSize: "0.8125rem", color: D.text2, margin: 0 }}>Manage shows, leads, orders, and logistics partners.</p>
       </div>
 
@@ -144,16 +155,23 @@ export default function AdminDashboard() {
           <Link key={s.label} href={s.href}>
             <a style={{ textDecoration: "none", display: "block" }}>
               <Card
-                style={{ padding: "1rem", cursor: "pointer", transition: "border-color 0.15s" }}
-                onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.borderColor = s.color + "40")}
-                onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.borderColor = D.border)}
+                style={{
+                  padding: "1rem", cursor: "pointer", position: "relative", overflow: "hidden",
+                  background: `linear-gradient(180deg, ${s.color}14 0%, ${D.surface} 70%)`,
+                  transition: "border-color 0.15s, transform 0.15s, box-shadow 0.15s",
+                }}
+                onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => { e.currentTarget.style.borderColor = s.color + "66"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 8px 24px rgba(0,0,0,0.28), 0 0 0 1px ${s.color}22`; }}
+                onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => { e.currentTarget.style.borderColor = D.border; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = D.shadow; }}
               >
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: s.color, opacity: 0.85 }} />
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                  <s.icon size={15} style={{ color: s.color }} />
+                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "0.5rem", background: `${s.color}1f`, border: `1px solid ${s.color}33` }}>
+                    <s.icon size={15} style={{ color: s.color }} />
+                  </span>
                   <ArrowRight size={12} style={{ color: D.text3 }} />
                 </div>
-                <div style={{ fontSize: "1.625rem", fontWeight: 700, color: s.color, lineHeight: 1, fontFamily: "var(--font-mono)" }}>{s.value}</div>
-                <div style={{ fontSize: "0.75rem", color: D.text2, marginTop: "0.25rem" }}>{s.label}</div>
+                <div style={{ fontSize: "1.75rem", fontWeight: 700, color: s.color, lineHeight: 1, fontFamily: "var(--font-mono)" }}>{s.value}</div>
+                <div style={{ fontSize: "0.75rem", color: D.text2, marginTop: "0.3rem" }}>{s.label}</div>
               </Card>
             </a>
           </Link>
@@ -176,7 +194,11 @@ export default function AdminDashboard() {
           ].map(s => (
             <Link key={s.label} href={s.href}>
               <a style={{ textDecoration: "none" }}>
-                <Card style={{ padding: "0.75rem", cursor: "pointer" }}>
+                <Card
+                  style={{ padding: "0.75rem 0.75rem 0.75rem 0.85rem", cursor: "pointer", borderLeft: `2px solid ${s.color}`, transition: "border-color 0.15s, transform 0.15s" }}
+                  onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => { e.currentTarget.style.borderColor = D.borderHi; e.currentTarget.style.borderLeftColor = s.color; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                  onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => { e.currentTarget.style.borderColor = D.border; e.currentTarget.style.borderLeftColor = s.color; e.currentTarget.style.transform = "translateY(0)"; }}
+                >
                   <div style={{ fontSize: "1.25rem", fontWeight: 700, color: s.color, lineHeight: 1, fontFamily: "var(--font-mono)" }}>{s.value}</div>
                   <div style={{ fontSize: "0.6875rem", color: D.text, marginTop: "0.25rem", fontWeight: 500 }}>{s.label}</div>
                   <div style={{ fontSize: "0.625rem", color: D.text3 }}>{s.sub}</div>
@@ -422,6 +444,7 @@ export default function AdminDashboard() {
           </p>
         </Card>
       )}
+    </div>
     </div>
   );
 }
