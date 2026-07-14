@@ -358,15 +358,12 @@ describe("v44: buildDiscoveryEmail — Cal's fixed-template voice (no LLM)", () 
     expect(salesAgentContent).toContain("FRANK_PERSONA.signature");
   });
 
-  it("Cal introduces himself as Cal at StageGate in the template", () => {
-    expect(salesAgentContent).toContain("This is Cal at StageGate");
+  it("buildDiscoveryEmail delegates to chapter templates", () => {
+    expect(salesAgentContent).toContain("buildCalChapterEmail(prospect, \"discovery\")");
   });
 
-  it("template references onstage.bot CTA URL", () => {
-    expect(salesAgentContent).toContain("onstage.bot");
-  });
-
-  it("discovery email subject uses prospect company name", () => {
-    expect(salesAgentContent).toContain("Introducing myself — deployment notes for ${prospect.company}");
+  it("chapter emails use insight-first voice, not self-intro", () => {
+    expect(salesAgentContent).toContain("buildCalChapterEmail");
+    expect(salesAgentContent).not.toContain("Introducing myself — deployment notes for ${prospect.company}");
   });
 });

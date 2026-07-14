@@ -45,6 +45,7 @@ import {
 } from "./frankPlaybook.js";
 import { outreachEmailPolicySummary } from "../outreachContacts.js";
 import { pickCalInsight } from "./calInsights.js";
+import { buildCalChapterEmail } from "./calChapters.js";
 import { prepareProspectOutreachRecipient } from "./prospectEnrichment.js";
 import { outreachDisabled, shouldPauseNewIntros } from "../outreachGate.js";
 
@@ -784,49 +785,16 @@ import {
 } from "../services/partnerEmail.js";
 
 /**
- * Stage 1 (Introduce) uses a fixed template — no LLM — so Cal's advisor voice is
- * always consistent. This is an introduction, not a pitch: it teaches one field
- * lesson, makes no ask, and offers help only if it's useful. Later stages use
- * the LLM with the trusted-advisor stage prompts.
+ * Stage 1 (Introduce) uses a fixed chapter template — no LLM — so Cal's voice is
+ * always insight-first: expertise, one lesson, conversation invite.
  */
 function buildDiscoveryEmail(
   prospect: typeof prospects.$inferSelect,
-  showName: string,
+  _showName: string,
   _showCity: string,
-  _upcomingLvShows: string[] = []
+  _upcomingLvShows: string[] = [],
 ): { subject: string; body: string } {
-  const resolved = resolveGreetingName({
-    contactName: prospect.contactName,
-    contactEmail: prospect.contactEmail,
-    company: prospect.company,
-  });
-  const salutation = greetingLine(resolved.greetingName, prospect.company);
-
-  // One field lesson to teach in the intro (deployment-focused, not show-floor).
-  const insight = pickCalInsight({
-    showName,
-    robotType: prospect.robotType,
-    companyName: prospect.company,
-    allowHumor: false,
-  });
-
-  const body = normalizeCalEmailGreeting(
-    [
-      `This is Cal at StageGate. I spend most of my time helping companies get robots ready for real operations — not demos — so I wanted to introduce myself. Your team looks like it's investing in automation, and we've learned a few things that tend to save people time and money.`,
-      ``,
-      insight,
-      ``,
-      `No ask here — I'm not trying to sell you anything. StageGate is the deployment side of physical AI: the logistics, activation, integration, training, and support that turn a robot you bought into a system that actually runs. If that's ever useful, I'm glad to share what works.`,
-      ``,
-      `onstage.bot has more if you want it. Either way, good luck with what you're building.`,
-      ``,
-      FRANK_PERSONA.signature,
-    ].join("\n"),
-    salutation,
-  );
-
-  const subject = `Introducing myself — deployment notes for ${prospect.company}`;
-
+  const { subject, body } = buildCalChapterEmail(prospect, "discovery");
   return { subject, body };
 }
 
@@ -841,24 +809,21 @@ async function generateFrankEmail(
     ? prospect.shows[0]!
     : "the upcoming show";
 
-  // Discovery: template only — no LLM, guaranteed Cal's voice
-  if (stage === "discovery") {
-    const showCity = await resolveShowCity(primaryShow);
-    // Fetch upcoming LV shows so Cal can name them in non-LV emails
-    const lvShows = await getUpcomingLasVegasShows(6);
-    const lvShowNames = lvShows
-      .filter(s => s.name !== primaryShow)
-      .map(s => s.name)
-      .slice(0, 3);
-    const { subject, body } = isPartnerProspect(prospect)
-      ? buildCalPartnerEmail({
-          company: prospect.company,
-          contactName: prospect.contactName,
-          vendorType: prospect.vendorType,
-          showName: primaryShow,
-          showCity,
-        })
-      : buildDiscoveryEmail(prospect, primaryShow, showCity, lvShowNames);
+  // Discovery + first two follow-ups: chapter templates — insight-first, no LLM drift
+  if (stage === "discovery" || stage === "intro_sent" || stage === "followup_1") {
+    if (stage === "discovery" && isPartnerProspect(prospect)) {
+      const showCity = await resolveShowCity(primaryShow);
+      const { subject, body } = buildCalPartnerEmail({
+        company: prospect.company,
+        contactName: prospect.contactName,
+        vendorType: prospect.vendorType,
+        showName: primaryShow,
+        showCity: showCity || "Las Vegas",
+      });
+      return { subject, body, nextStage };
+    }
+    const chapterStage = stage as "discovery" | "intro_sent" | "followup_1";
+    const { subject, body } = buildCalChapterEmail(prospect, chapterStage);
     return { subject, body, nextStage };
   }
 
