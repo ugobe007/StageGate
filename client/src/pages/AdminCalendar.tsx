@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { BRAND, emeraldAlpha } from "@/lib/brand";
+import { ADMIN, adminCardStyle } from "@/lib/adminTheme";
 import {
   Calendar, Plus, Edit2, Trash2, Copy, ExternalLink,
   Clock, User, Building2, Phone, Video, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, Check, CheckCircle, RefreshCw, XCircle
@@ -415,12 +416,12 @@ export default function AdminCalendar() {
   }
 
   return (
-    <div style={{ background: "#0a0a0a", minHeight: "100vh", color: "#e2e8f0", fontFamily: "var(--font-mono)" }}>
+    <div style={{ background: ADMIN.bgGradient, minHeight: "100%", color: ADMIN.text, fontFamily: ADMIN.font }}>
       {/* Header */}
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+      <div style={{ borderBottom: `1px solid ${ADMIN.border}`, padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <Calendar size={18} color={BRAND.emerald} />
-          <span style={{ fontSize: "0.875rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#e2e8f0" }}>Calendar</span>
+          <Calendar size={18} color={ADMIN.emerald} />
+          <span style={{ fontSize: "0.875rem", fontWeight: 700, letterSpacing: "0.04em", color: ADMIN.text }}>Calendar</span>
           {upcomingCount > 0 && (
             <span style={{ background: emeraldAlpha(0.15), color: `${BRAND.emerald}`, fontSize: "0.5625rem", fontWeight: 700, padding: "2px 7px", borderRadius: "999px", letterSpacing: "0.08em" }}>
               {upcomingCount} UPCOMING

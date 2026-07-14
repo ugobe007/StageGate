@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import OutreachDraftQueue from "@/components/OutreachDraftQueue";
 import { BRAND, emeraldAlpha } from "@/lib/brand";
+import { ADMIN, adminPageOuterStyle } from "@/lib/adminTheme";
 import {
   ArrowLeft, Loader2, Mail, Sparkles, Building2, AlertCircle, User,
   CheckSquare, Square, Users, ClipboardList, Send,
@@ -228,15 +229,15 @@ export default function AdminPartnerOutreach() {
 
   if (!isAuthenticated || user?.role !== "admin") {
     return (
-      <div className="min-h-0 flex items-center justify-center" style={{ background: "#1C1E22", color: "#64748b" }}>
+      <div className="min-h-0 flex items-center justify-center" style={{ ...adminPageOuterStyle, color: ADMIN.text2 }}>
         <p>Admin access required.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-0 flex flex-col" style={{ background: "#1C1E22", color: "#ececec", height: "calc(100vh - 0px)" }}>
-      <header className="border-b px-5 py-3 flex flex-wrap items-center gap-3 shrink-0" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+    <div className="min-h-0 flex flex-col" style={{ ...adminPageOuterStyle, height: "calc(100vh - 0px)" }}>
+      <header className="border-b px-5 py-3 flex flex-wrap items-center gap-3 shrink-0" style={{ borderColor: ADMIN.border }}>
         <Link href="/admin/partners">
           <Button variant="ghost" size="sm" className="gap-1.5 h-8" style={{ color: "#64748b" }}>
             <ArrowLeft size={14} /> Back
@@ -251,7 +252,7 @@ export default function AdminPartnerOutreach() {
             variant="outline"
             size="sm"
             className="h-8 text-xs gap-1"
-            style={{ borderColor: "rgba(255,255,255,0.12)", color: "#cbd5e1", background: "#111111" }}
+            style={{ borderColor: ADMIN.borderHi, color: ADMIN.text, background: ADMIN.surface }}
             disabled={bulkBusy}
             onClick={handleBulkDraft}
           >
@@ -273,13 +274,13 @@ export default function AdminPartnerOutreach() {
 
       <div className="flex-1 flex min-h-0">
         {/* Recipient list */}
-        <aside className="w-72 shrink-0 border-r flex flex-col" style={{ borderColor: "rgba(255,255,255,0.08)", background: "#111111" }}>
+        <aside className="w-72 shrink-0 border-r flex flex-col" style={{ borderColor: ADMIN.border, background: ADMIN.surfaceGrad }}>
           <div className="p-3 border-b space-y-2" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
             <select
               value={filterSource}
               onChange={(e) => setFilterSource(e.target.value as typeof filterSource)}
               className="w-full text-xs rounded-md px-2 py-1.5"
-              style={{ background: "#1C1E22", border: "1px solid rgba(255,255,255,0.12)", color: "#ececec" }}
+              style={{ background: ADMIN.s2, border: `1px solid ${ADMIN.borderHi}`, color: ADMIN.text }}
             >
               <option value="all">All partners & vendors</option>
               <option value="prospect">Discovered partners</option>
@@ -353,7 +354,7 @@ export default function AdminPartnerOutreach() {
                     onClick={handleBulkDraft}
                     disabled={bulkBusy}
                     className="gap-1"
-                    style={{ borderColor: "rgba(255,255,255,0.12)", color: "#cbd5e1", background: "#111111" }}
+                    style={{ borderColor: ADMIN.borderHi, color: ADMIN.text, background: ADMIN.surface }}
                   >
                     <Sparkles size={12} /> Cal draft {selected.size} selected
                   </Button>
@@ -421,7 +422,7 @@ export default function AdminPartnerOutreach() {
 
                 <div
                   className="px-5 py-3 border-t flex items-center justify-end gap-2 shrink-0 flex-wrap"
-                  style={{ borderColor: "rgba(255,255,255,0.08)", background: "#111111" }}
+                  style={{ borderColor: ADMIN.border, background: ADMIN.surfaceGrad }}
                 >
                   <Button
                     variant="outline"

@@ -10,6 +10,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { ArrowLeft, Plus, Trash2, Edit, Loader2, Globe, Phone, Mail, Building2, TrendingUp, Send } from "lucide-react";
 import { Link as WLink } from "wouter";
 import { toast } from "sonner";
+import { AdminPage, AdminPageHeader, adminTw } from "@/lib/adminTheme";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -100,23 +101,17 @@ export default function AdminPartners() {
   const getCategoryConfig = (svcType: string) => CATEGORIES.find(c => c.value === svcType) || CATEGORIES[CATEGORIES.length - 1];
 
   return (
-    <div className="min-h-0 bg-background text-foreground">
-      <div className="pt-24 pb-16">
-        <div className="container">
-          <div className="flex flex-wrap items-center gap-4 mb-8">
-            <Link href="/admin">
-              <Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5">
-                <ArrowLeft size={14} /> Admin
-              </Button>
-            </Link>
-            <div className="flex-1">
-              <h1 className="text-2xl font-display font-bold text-foreground flex items-center gap-2">
-                <TrendingUp size={20} className="text-primary" /> Logistics Partner Directory
-              </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Customs agents, transporters, insurance brokers, and parts suppliers.</p>
-            </div>
+    <AdminPage maxWidth="960px">
+      <AdminPageHeader
+        kicker="STAGEGATE / PARTNERS"
+        title="Logistics Partner Directory"
+        description="Customs agents, transporters, insurance brokers, and parts suppliers."
+        icon={TrendingUp}
+        backHref="/admin"
+        actions={
+          <>
             <WLink href="/admin/partner-outreach?source=logistics_partner">
-              <Button variant="outline" className="gap-2 border-border">
+              <Button variant="outline" className={`gap-2 ${adminTw.divider}`}>
                 <Send size={14} /> Email Partners
               </Button>
             </WLink>
@@ -180,9 +175,11 @@ export default function AdminPartners() {
                 </form>
               </DialogContent>
             </Dialog>
-          </div>
+          </>
+        }
+      />
 
-          {/* Category Filter */}
+      {/* Category Filter */}
           <div className="flex gap-2 flex-wrap mb-6">
             <button
               onClick={() => setFilterCategory("all")}
@@ -216,7 +213,7 @@ export default function AdminPartners() {
               {filteredPartners.map((partner) => {
                     const cat = getCategoryConfig(partner.serviceType);
                 return (
-                  <div key={partner.id} className="p-5 rounded-xl border border-border bg-card hover:border-primary/30 transition-all">
+                  <div key={partner.id} className={`p-5 ${adminTw.card} ${adminTw.cardHover} hover:border-[#00E87A]/30`}>
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <h3 className="font-display font-bold text-foreground text-sm leading-tight">{partner.name}</h3>
                       <Badge className={`text-xs shrink-0 ${cat.color}`}>{cat.label}</Badge>
@@ -270,8 +267,6 @@ export default function AdminPartners() {
               })}
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </AdminPage>
   );
 }

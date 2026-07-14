@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Package, ArrowLeft, Loader2, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { Package, Loader2, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { BRAND } from "@/lib/brand";
+import { ADMIN, AdminPage, AdminPageHeader } from "@/lib/adminTheme";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -57,21 +58,17 @@ export default function AdminOrders() {
   );
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "56rem", margin: "0 auto", color: "#ececec" }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem" }}>
-        <Link href="/admin">
-          <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", color: "#64748b", background: "none", border: "none", cursor: "pointer", padding: "0.25rem 0" }}>
-            <ArrowLeft size={14} /> Admin
-          </button>
-        </Link>
-        <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <Package size={18} style={{ color: `${BRAND.emerald}` }} /> Service Orders
-        </h1>
-      </div>
+    <AdminPage maxWidth="56rem">
+      <AdminPageHeader
+        kicker="STAGEGATE / ORDERS"
+        title="Service Orders"
+        description={`${filteredOrders.length} order${filteredOrders.length !== 1 ? "s" : ""}${filterStatus !== "all" ? ` · ${STATUS_CONFIG[filterStatus]?.label ?? filterStatus}` : ""}`}
+        icon={Package}
+        backHref="/admin"
+      />
 
       {/* Filter tabs */}
-      <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: "1.5rem" }}>
+      <div style={{ display: "flex", borderBottom: `1px solid ${ADMIN.border}`, marginBottom: "1.5rem" }}>
         {["all", "pending", "confirmed", "in_progress", "completed", "cancelled"].map((s) => (
           <button
             key={s}
@@ -79,14 +76,14 @@ export default function AdminOrders() {
             style={{
               padding: "0.5rem 0.875rem", fontSize: "0.875rem", fontWeight: 500,
               background: "none", border: "none",
-              borderBottom: `2px solid ${filterStatus === s ? `${BRAND.emerald}` : "transparent"}`,
-              color: filterStatus === s ? "#ececec" : "#64748b",
+              borderBottom: `2px solid ${filterStatus === s ? ADMIN.emerald : "transparent"}`,
+              color: filterStatus === s ? ADMIN.text : ADMIN.text2,
               cursor: "pointer", marginBottom: "-1px",
             }}
           >
             {s === "all" ? "All" : STATUS_CONFIG[s]?.label}
             {s !== "all" && (
-              <span style={{ marginLeft: "0.375rem", fontSize: "0.75rem", background: "#1a1a1a", color: "#64748b", padding: "0.0625rem 0.3125rem", borderRadius: "0.1875rem" }}>
+              <span style={{ marginLeft: "0.375rem", fontSize: "0.75rem", background: ADMIN.s2, color: ADMIN.text2, padding: "0.0625rem 0.3125rem", borderRadius: "0.1875rem" }}>
                 {(allOrders || []).filter(o => o.status === s).length}
               </span>
             )}
@@ -96,12 +93,12 @@ export default function AdminOrders() {
 
       {isLoading ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "4rem 0" }}>
-          <Loader2 size={24} style={{ color: "rgba(255,255,255,0.30)", animation: "spin 1s linear infinite" }} />
+          <Loader2 size={24} style={{ color: "rgba(255,255,255,0.42)", animation: "spin 1s linear infinite" }} />
         </div>
       ) : filteredOrders.length === 0 ? (
         <div style={{ textAlign: "center", padding: "4rem 0" }}>
           <Package size={40} style={{ color: "#cbd5e1", margin: "0 auto 1rem" }} />
-          <p style={{ color: "rgba(255,255,255,0.30)", fontWeight: 500 }}>No orders found</p>
+          <p style={{ color: "rgba(255,255,255,0.42)", fontWeight: 500 }}>No orders found</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -111,13 +108,13 @@ export default function AdminOrders() {
             const isExpanded = expandedOrder === order.id;
 
             return (
-              <div key={order.id} style={{ border: `1px solid ${isExpanded ? `${BRAND.emerald}` : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#111111", overflow: "hidden", transition: "border-color 0.1s" }}>
+              <div key={order.id} style={{ border: `1px solid ${isExpanded ? `${BRAND.emerald}` : "rgba(255,255,255,0.10)"}`, borderRadius: "0.625rem", background: "linear-gradient(180deg,#282c34 0%,#22252c 100%)", boxShadow: "0 1px 2px rgba(0,0,0,0.40), 0 6px 20px rgba(0,0,0,0.22)", overflow: "hidden", transition: "border-color 0.1s" }}>
                 <div style={{ padding: "0.875rem 1rem", display: "flex", alignItems: "flex-start", gap: "1rem" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.25rem" }}>
                       <Link href={`/admin/orders/${order.id}`} onClick={e => e.stopPropagation()}>
-                        <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec", display: "flex", alignItems: "center", gap: "0.25rem", cursor: "pointer" }}>
-                          Order #{order.id} <ExternalLink size={11} style={{ color: "rgba(255,255,255,0.30)" }} />
+                        <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#f3f4f6", display: "flex", alignItems: "center", gap: "0.25rem", cursor: "pointer" }}>
+                          Order #{order.id} <ExternalLink size={11} style={{ color: "rgba(255,255,255,0.42)" }} />
                         </span>
                       </Link>
                       <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: status.color }}>{status.label}</span>
@@ -130,7 +127,7 @@ export default function AdminOrders() {
                         </Link>
                       )}
                     </div>
-                    <div style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.30)" }}>
+                    <div style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.42)" }}>
                       Placed {new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </div>
                     {order.notes && (
@@ -139,7 +136,7 @@ export default function AdminOrders() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
                     {order.totalAmount && (
-                      <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec" }}>${parseFloat(order.totalAmount).toLocaleString()}</span>
+                      <span style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#f3f4f6" }}>${parseFloat(order.totalAmount).toLocaleString()}</span>
                     )}
                     <Select
                       value={order.status}
@@ -156,7 +153,7 @@ export default function AdminOrders() {
                     </Select>
                     <button
                       onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.30)", padding: "0.25rem", display: "flex", alignItems: "center" }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.42)", padding: "0.25rem", display: "flex", alignItems: "center" }}
                     >
                       {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                     </button>
@@ -164,13 +161,13 @@ export default function AdminOrders() {
                 </div>
 
                 {isExpanded && (
-                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "1rem", background: "#1C1E22" }}>
+                  <div style={{ borderTop: `1px solid ${ADMIN.border}`, padding: "1rem", background: ADMIN.s2 }}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                       <div>
-                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.30)", marginBottom: "0.5rem" }}>Show Details</p>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.42)", marginBottom: "0.5rem" }}>Show Details</p>
                         {show ? (
                           <div style={{ fontSize: "0.875rem" }}>
-                            <div style={{ fontWeight: 500, color: "#ececec" }}>{show.name}</div>
+                            <div style={{ fontWeight: 500, color: "#f3f4f6" }}>{show.name}</div>
                             {show.venue && <div style={{ color: "#64748b", fontSize: "0.8125rem", marginTop: "0.125rem" }}>{show.venue}, {show.city}</div>}
                             {show.startDate && (
                               <div style={{ fontSize: "0.8125rem", color: `${BRAND.emerald}`, marginTop: "0.25rem" }}>
@@ -179,31 +176,31 @@ export default function AdminOrders() {
                             )}
                           </div>
                         ) : (
-                          <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.30)" }}>Show #{order.showId}</p>
+                          <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.42)" }}>Show #{order.showId}</p>
                         )}
                       </div>
                       <div>
-                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.30)", marginBottom: "0.5rem" }}>Services Ordered</p>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.42)", marginBottom: "0.5rem" }}>Services Ordered</p>
                         {parseServiceIds((order as any).serviceIds).length > 0 ? (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
                             {parseServiceIds((order as any).serviceIds).map((svcId: number) => {
                               const svc = (services || []).find(s => s.id === svcId);
                               return svc ? (
-                                <span key={svcId} style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.55)", background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>
+                                <span key={svcId} style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.64)", background: "#2b2f38", border: "1px solid rgba(255,255,255,0.10)", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>
                                   {svc.name}
                                 </span>
                               ) : null;
                             })}
                           </div>
                         ) : (
-                          <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.30)" }}>No services listed</p>
+                          <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.42)" }}>No services listed</p>
                         )}
                       </div>
                     </div>
                     {order.notes && (
                       <div style={{ marginTop: "1rem" }}>
-                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.30)", marginBottom: "0.5rem" }}>Notes</p>
-                        <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.55)" }}>{order.notes}</p>
+                        <p style={{ fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.42)", marginBottom: "0.5rem" }}>Notes</p>
+                        <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.64)" }}>{order.notes}</p>
                       </div>
                     )}
                   </div>
@@ -213,6 +210,6 @@ export default function AdminOrders() {
           })}
         </div>
       )}
-    </div>
+    </AdminPage>
   );
 }

@@ -16,6 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { AdminPage } from "@/lib/adminTheme";
 import {
   Bot, Mail, Clock, MessageSquare,
   Zap, Send, RefreshCw, Eye, Users,
@@ -118,7 +119,7 @@ function InlineDraftPanel({ prospectId }: { prospectId: number }) {
 
   if (!draft?.body) {
     return (
-      <div className="rounded-lg border border-zinc-800/60 bg-zinc-900/40 px-3 py-2.5 flex items-center justify-between gap-2">
+      <div className="rounded-lg border border-white/10/60 bg-[#24272e]/40 px-3 py-2.5 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-xs text-zinc-600">
           <FileText className="w-3 h-3" />
           <span>No draft yet</span>
@@ -213,7 +214,7 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) { onClose(); setPreview(null); } }}>
-      <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="bg-[#24272e] border-white/10 text-white max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <Eye className="w-4 h-4 text-amber-400" />
@@ -224,7 +225,7 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center gap-3 py-3 border-b border-zinc-800">
+        <div className="flex items-center gap-3 py-3 border-b border-white/10">
           <span className="text-xs text-zinc-500 whitespace-nowrap">Stage:</span>
           <div className="flex gap-1.5 flex-wrap">
             {PREVIEW_STAGES.map(s => {
@@ -236,7 +237,7 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
                   className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                     selectedStage === s
                       ? (stageInfo?.color ?? "bg-zinc-700 text-white") + " ring-1 ring-current"
-                      : "text-zinc-500 hover:text-zinc-300 bg-zinc-800"
+                      : "text-zinc-500 hover:text-zinc-300 bg-[#2b2f38]"
                   }`}
                 >
                   {stageInfo?.label ?? s}
@@ -247,7 +248,7 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
           <Button
             size="sm"
             variant="outline"
-            className="ml-auto border-zinc-700 text-zinc-400 hover:text-white gap-1.5 flex-shrink-0 text-xs"
+            className="ml-auto border-white/10 text-zinc-400 hover:text-white gap-1.5 flex-shrink-0 text-xs"
             disabled={previewMutation.isPending || !prospectId}
             onClick={() => {
               if (!prospectId) return;
@@ -281,7 +282,7 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
                   <span className="text-xs text-emerald-400">Cal's saved draft — ready to send. Use Regenerate for a fresh version.</span>
                 </div>
               )}
-              <div className="bg-zinc-800/60 rounded-lg p-4 space-y-3">
+              <div className="bg-[#2b2f38]/60 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-zinc-500 uppercase tracking-wide">Subject</span>
                   <div className="flex items-center gap-1.5">
@@ -292,7 +293,7 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
                 </div>
                 <p className="text-white font-medium text-sm">{preview.subject}</p>
               </div>
-              <div className="bg-zinc-800/60 rounded-lg p-4 space-y-2">
+              <div className="bg-[#2b2f38]/60 rounded-lg p-4 space-y-2">
                 <span className="text-xs text-zinc-500 uppercase tracking-wide">Body</span>
                 <pre className="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap font-sans">{preview.body}</pre>
               </div>
@@ -426,7 +427,7 @@ function PendingDraftsTab() {
           <Button
             size="sm"
             variant="outline"
-            className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 gap-1.5"
+            className="border-white/10 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
             onClick={() => refetch()}
           >
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
@@ -491,10 +492,10 @@ function PendingDraftsTab() {
       {(drafts as Array<{ draft: { id: number; subject: string; body: string; createdAt: Date | string; agentReasoning?: string | null }; prospect: { id: number; company: string; contactEmail?: string | null; robotType?: string | null } }>).map(({ draft, prospect }) => (
         <div
           key={draft.id}
-          className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden"
+          className="bg-[#24272e] border border-white/10 rounded-xl overflow-hidden"
         >
           {/* Draft header */}
-          <div className="px-5 py-4 border-b border-zinc-800">
+          <div className="px-5 py-4 border-b border-white/10">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-medium text-white text-sm">{prospect.company}</p>
@@ -520,7 +521,7 @@ function PendingDraftsTab() {
                   <input
                     value={editSubject}
                     onChange={e => setEditSubject(e.target.value)}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+                    className="w-full bg-[#2b2f38] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
                 <div>
@@ -529,7 +530,7 @@ function PendingDraftsTab() {
                     value={editBody}
                     onChange={e => setEditBody(e.target.value)}
                     rows={10}
-                    className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200 resize-none focus:border-amber-500"
+                    className="w-full bg-[#2b2f38] border-white/10 text-sm text-zinc-200 resize-none focus:border-amber-500"
                   />
                 </div>
               </div>
@@ -544,7 +545,7 @@ function PendingDraftsTab() {
                   <pre className="text-zinc-300 text-xs leading-relaxed whitespace-pre-wrap font-sans max-h-48 overflow-y-auto">{draft.body}</pre>
                 </div>
                 {draft.agentReasoning && (
-                  <div className="bg-zinc-800/50 rounded-lg p-3">
+                  <div className="bg-[#2b2f38]/50 rounded-lg p-3">
                     <span className="text-xs text-zinc-600 uppercase tracking-wide block mb-1">Cal's Reasoning</span>
                     <p className="text-xs text-zinc-500 leading-relaxed">{draft.agentReasoning}</p>
                   </div>
@@ -554,7 +555,7 @@ function PendingDraftsTab() {
           </div>
 
           {/* Actions */}
-          <div className="px-5 py-3 border-t border-zinc-800 flex items-center gap-2">
+          <div className="px-5 py-3 border-t border-white/10 flex items-center gap-2">
             {editingId === draft.id ? (
               <>
                 <Button
@@ -571,7 +572,7 @@ function PendingDraftsTab() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                  className="border-white/10 text-zinc-300 hover:bg-[#2b2f38]"
                   onClick={() => setEditingId(null)}
                 >
                   Cancel
@@ -596,7 +597,7 @@ function PendingDraftsTab() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 gap-1.5"
+                  className="border-white/10 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
                   onClick={() => {
                     setEditingId(draft.id);
                     setEditSubject(draft.subject);
@@ -608,7 +609,7 @@ function PendingDraftsTab() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-zinc-700 text-red-400 hover:bg-red-950/30 hover:border-red-800 gap-1.5 ml-auto"
+                  className="border-white/10 text-red-400 hover:bg-red-950/30 hover:border-red-800 gap-1.5 ml-auto"
                   disabled={discardingId === draft.id}
                   onClick={() => {
                     setDiscardingId(draft.id);
@@ -920,10 +921,11 @@ export default function AdminSalesAgent() {
 
   return (
     <>
-      <div className="flex flex-col h-full bg-zinc-950 text-white overflow-hidden">
+      <AdminPage fullHeight noPadding maxWidth="none">
+      <div className="flex flex-col h-full bg-transparent text-white overflow-hidden">
 
         {/* ── Top tab bar ── */}
-        <div className="flex items-center gap-1 px-6 pt-4 border-b border-zinc-800">
+        <div className="flex items-center gap-1 px-6 pt-4 border-b border-white/10">
           <button
             onClick={() => setActiveTab("pipeline")}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border-b-2 -mb-px ${
@@ -972,7 +974,7 @@ export default function AdminSalesAgent() {
             {/* Left panel */}
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Header */}
-              <div className="px-6 pt-5 pb-4 border-b border-zinc-800">
+              <div className="px-6 pt-5 pb-4 border-b border-white/10">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center">
@@ -1027,7 +1029,7 @@ export default function AdminSalesAgent() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-zinc-600 text-zinc-300 hover:bg-zinc-800 gap-1.5"
+                      className="border-zinc-600 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
                       onClick={() => { setCsvText(""); setCsvImportResult(null); setCsvModalOpen(true); }}
                       title="Import prospects from CSV"
                     >
@@ -1036,7 +1038,7 @@ export default function AdminSalesAgent() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 gap-1.5"
+                      className="border-white/10 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
                       onClick={() => refetchConvs()}
                     >
                       <RefreshCw className="w-3.5 h-3.5" /> Refresh
@@ -1052,7 +1054,7 @@ export default function AdminSalesAgent() {
                     { label: "Booked",    value: stats.booked,    icon: Calendar,      color: "text-teal-400" },
                     { label: "Converted", value: stats.converted, icon: Star,          color: "text-yellow-400" },
                   ].map(({ label, value, icon: Icon, color }) => (
-                    <div key={label} className="bg-zinc-900 rounded-lg px-3 py-2.5 border border-zinc-800">
+                    <div key={label} className="bg-[#24272e] rounded-lg px-3 py-2.5 border border-white/10">
                       <div className="flex items-center gap-1.5 mb-1">
                         <Icon className={`w-3.5 h-3.5 ${color}`} />
                         <span className="text-xs text-zinc-500">{label}</span>
@@ -1064,7 +1066,7 @@ export default function AdminSalesAgent() {
               </div>
 
               {/* Filter bar */}
-              <div className="px-6 py-3 border-b border-zinc-800 flex items-center gap-2 overflow-x-auto">
+              <div className="px-6 py-3 border-b border-white/10 flex items-center gap-2 overflow-x-auto">
                 <button
                   onClick={() => setFilterStage("all")}
                   className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "all" ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
@@ -1104,7 +1106,7 @@ export default function AdminSalesAgent() {
                     <p className="text-sm">No conversations in this filter</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-zinc-800/50">
+                  <div className="divide-y divide-white/10">
                     {filtered.map((item) => {
                       const { conv, prospect } = item;
                       const eng = (item as { engagement?: { opens: number; clicks: number } }).engagement ?? { opens: 0, clicks: 0 };
@@ -1115,7 +1117,7 @@ export default function AdminSalesAgent() {
                         <div
                           key={conv.id}
                           onClick={() => setSelectedProspectId(prospect.id)}
-                          className={`px-6 py-3.5 cursor-pointer transition-colors hover:bg-zinc-900 ${isSelected ? "bg-zinc-900 border-l-2 border-amber-500" : "border-l-2 border-transparent"}`}
+                          className={`px-6 py-3.5 cursor-pointer transition-colors hover:bg-[#24272e] ${isSelected ? "bg-[#24272e] border-l-2 border-amber-500" : "border-l-2 border-transparent"}`}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
@@ -1159,10 +1161,10 @@ export default function AdminSalesAgent() {
             </div>
 
             {/* Right panel — detail */}
-            <div className="w-96 border-l border-zinc-800 flex flex-col overflow-hidden">
+            <div className="w-96 border-l border-white/10 flex flex-col overflow-hidden">
               {selectedConv ? (
                 <>
-                  <div className="px-5 pt-5 pb-4 border-b border-zinc-800">
+                  <div className="px-5 pt-5 pb-4 border-b border-white/10">
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <h2 className="font-semibold text-white">{selectedConv.prospect.company}</h2>
@@ -1220,7 +1222,7 @@ export default function AdminSalesAgent() {
                       const eng = (selectedConv as { engagement?: { opens: number; clicks: number; lastOpenedAt?: string | null; lastClickedAt?: string | null } }).engagement;
                       if (!eng || (eng.opens === 0 && eng.clicks === 0)) return null;
                       return (
-                        <div className="mt-2.5 flex items-center gap-3 px-2.5 py-2 rounded-lg bg-zinc-900/60 border border-zinc-800">
+                        <div className="mt-2.5 flex items-center gap-3 px-2.5 py-2 rounded-lg bg-[#24272e]/60 border border-white/10">
                           {eng.opens > 0 && (
                             <div className="flex items-center gap-1.5 text-sky-400" title={eng.lastOpenedAt ? `Last opened: ${new Date(eng.lastOpenedAt).toLocaleString()}` : undefined}>
                               <Eye className="w-3.5 h-3.5" />
@@ -1243,7 +1245,7 @@ export default function AdminSalesAgent() {
                     })()}
                   </div>
 
-                  <div className="px-5 py-3 border-b border-zinc-800 space-y-2">
+                  <div className="px-5 py-3 border-b border-white/10 space-y-2">
                     {!["booked","not_interested","converted"].includes(selectedConv.conv.state ?? "") && (
                       <Button
                         size="sm"
@@ -1277,7 +1279,7 @@ export default function AdminSalesAgent() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 gap-1.5"
+                      className="w-full border-white/10 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
                       onClick={() => setPreviewOpen(true)}
                     >
                       <Eye className="w-3.5 h-3.5" /> Preview Cal's Email
@@ -1308,7 +1310,7 @@ export default function AdminSalesAgent() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="w-full border-zinc-700 text-emerald-400 hover:bg-emerald-950/30 hover:border-emerald-700 gap-1.5"
+                      className="w-full border-white/10 text-emerald-400 hover:bg-emerald-950/30 hover:border-emerald-700 gap-1.5"
                       disabled={verifyingId === selectedConv.prospect.id}
                       onClick={() => {
                         setVerifyingId(selectedConv.prospect.id);
@@ -1333,10 +1335,10 @@ export default function AdminSalesAgent() {
                         }}
                         disabled={updatingId === selectedConv.conv.id}
                       >
-                        <SelectTrigger className="h-7 text-xs bg-zinc-900 border-zinc-700 flex-1">
+                        <SelectTrigger className="h-7 text-xs bg-[#24272e] border-white/10 flex-1">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-700">
+                        <SelectContent className="bg-[#24272e] border-white/10">
                           {STAGES.map(s => (
                             <SelectItem key={s.id} value={s.id} className="text-xs text-zinc-300">
                               {s.label}
@@ -1352,7 +1354,7 @@ export default function AdminSalesAgent() {
                     <div>
                       <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">Notes</h3>
                       <Textarea
-                        className="w-full text-xs bg-zinc-900 border-zinc-700 text-zinc-300 placeholder:text-zinc-600 resize-none min-h-[72px]"
+                        className="w-full text-xs bg-[#24272e] border-white/10 text-zinc-300 placeholder:text-zinc-600 resize-none min-h-[72px]"
                         placeholder="Add notes about this prospect… (auto-saves on blur)"
                         value={notesValue}
                         onChange={(e) => setNotesValue(e.target.value)}
@@ -1390,7 +1392,7 @@ export default function AdminSalesAgent() {
                           key={email.id}
                           className={`rounded-lg p-3 text-xs space-y-1.5 ${
                             email.direction === "outbound"
-                              ? "bg-zinc-900 border border-zinc-800"
+                              ? "bg-[#24272e] border border-white/10"
                               : "bg-emerald-950/40 border border-emerald-900/40"
                           }`}
                         >
@@ -1410,7 +1412,7 @@ export default function AdminSalesAgent() {
                     <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wide pt-2">Activity</h3>
                     {activitiesLoading ? (
                       <div className="space-y-2">
-                        {[1,2,3].map(i => <div key={i} className="h-10 bg-zinc-800/60 rounded animate-pulse" />)}
+                        {[1,2,3].map(i => <div key={i} className="h-10 bg-[#2b2f38]/60 rounded animate-pulse" />)}
                       </div>
                     ) : (prospectActivities as unknown[]).length === 0 ? (
                       <p className="text-xs text-zinc-600 py-2">No activity recorded yet.</p>
@@ -1439,7 +1441,7 @@ export default function AdminSalesAgent() {
                             : null;
                           const isExpanded = expandedActivities.has(act.id);
                           return (
-                            <div key={act.id} className="flex gap-2.5 py-2.5 border-b border-zinc-800/60 last:border-0">
+                            <div key={act.id} className="flex gap-2.5 py-2.5 border-b border-white/10/60 last:border-0">
                               <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${dotColorMap[act.type] ?? "bg-zinc-600"}`} />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2">
@@ -1464,7 +1466,7 @@ export default function AdminSalesAgent() {
                                       {isExpanded ? "Collapse ▴" : "View full reply ▾"}
                                     </button>
                                     {isExpanded && (
-                                      <div className="mt-1.5 max-h-48 overflow-y-auto rounded border border-zinc-700/60 bg-zinc-900/80 p-2">
+                                      <div className="mt-1.5 max-h-48 overflow-y-auto rounded border border-white/10/60 bg-[#24272e]/80 p-2">
                                         <pre className="text-[10px] text-zinc-400 whitespace-pre-wrap break-words leading-relaxed font-sans">
                                           {fullReplyBody}
                                         </pre>
@@ -1537,18 +1539,18 @@ export default function AdminSalesAgent() {
                       call: "text-emerald-400 border-emerald-800",
                       demo: "text-amber-400 border-amber-800",
                       event: "bg-purple-500/20 text-purple-400 border-purple-800",
-                      follow_up: "bg-zinc-500/20 text-zinc-400 border-zinc-700",
+                      follow_up: "bg-zinc-500/20 text-zinc-400 border-white/10",
                     };
                     const typeColor = typeColors[evt.type] ?? typeColors.meeting;
                     const statusColors: Record<string, string> = {
                       scheduled: "text-zinc-400",
                       confirmed: "bg-emerald-600/30 text-emerald-300",
-                      completed: "bg-zinc-800 text-zinc-500",
+                      completed: "bg-[#2b2f38] text-zinc-500",
                       cancelled: "bg-red-900/30 text-red-400",
                     };
                     const statusColor = statusColors[evt.status] ?? statusColors.scheduled;
                     return (
-                      <div key={evt.id} className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+                      <div key={evt.id} className="rounded-lg border border-white/10 bg-[#24272e]/60 p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
@@ -1581,11 +1583,11 @@ export default function AdminSalesAgent() {
                           </div>
                         </div>
                         {evt.notes && (
-                          <p className="text-xs text-zinc-600 mt-2 border-t border-zinc-800 pt-2">{evt.notes}</p>
+                          <p className="text-xs text-zinc-600 mt-2 border-t border-white/10 pt-2">{evt.notes}</p>
                         )}
                         {/* Confirm / Reschedule actions */}
                         {(evt.status === "scheduled" || evt.status === "confirmed") && (
-                          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-zinc-800">
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
                             {evt.status === "scheduled" && (
                               <Button size="sm" variant="outline"
                                 className="border-emerald-700 text-emerald-400 hover:bg-emerald-950 gap-1 text-xs h-7"
@@ -1598,7 +1600,7 @@ export default function AdminSalesAgent() {
                               </Button>
                             )}
                             <Button size="sm" variant="outline"
-                              className="border-zinc-600 text-zinc-300 hover:bg-zinc-800 gap-1 text-xs h-7"
+                              className="border-zinc-600 text-zinc-300 hover:bg-[#2b2f38] gap-1 text-xs h-7"
                               onClick={() => {
                                 const s = new Date(evt.startAt);
                                 const e2 = new Date(evt.endAt);
@@ -1628,7 +1630,7 @@ export default function AdminSalesAgent() {
 
       {/* ── Schedule Meeting Modal (v66) ── */}
       <Dialog open={scheduleModalOpen} onOpenChange={(v) => { setScheduleModalOpen(v); if (!v) setSchedulingProspect(null); }}>
-        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-md">
+        <DialogContent className="bg-[#24272e] border-white/10 text-white max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-white">
               <Calendar className="w-4 h-4 text-teal-400" />
@@ -1648,7 +1650,7 @@ export default function AdminSalesAgent() {
                 value={scheduleTitle}
                 onChange={e => setScheduleTitle(e.target.value)}
                 placeholder="e.g. Intro Call — Unitree Robotics"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-600"
+                className="w-full bg-[#2b2f38] border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-600"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -1658,7 +1660,7 @@ export default function AdminSalesAgent() {
                   type="date"
                   value={scheduleDate}
                   onChange={e => setScheduleDate(e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-600"
+                  className="w-full bg-[#2b2f38] border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-600"
                 />
               </div>
               <div>
@@ -1667,7 +1669,7 @@ export default function AdminSalesAgent() {
                   type="time"
                   value={scheduleTime}
                   onChange={e => setScheduleTime(e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-600"
+                  className="w-full bg-[#2b2f38] border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-600"
                 />
               </div>
             </div>
@@ -1675,10 +1677,10 @@ export default function AdminSalesAgent() {
               <div>
                 <label className="text-xs text-zinc-400 mb-1 block">Type</label>
                 <Select value={scheduleType} onValueChange={v => setScheduleType(v as "meeting" | "call" | "demo")}>
-                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white text-sm">
+                  <SelectTrigger className="bg-[#2b2f38] border-white/10 text-white text-sm">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
+                  <SelectContent className="bg-[#2b2f38] border-white/10">
                     <SelectItem value="call">Call</SelectItem>
                     <SelectItem value="meeting">Meeting</SelectItem>
                     <SelectItem value="demo">Demo</SelectItem>
@@ -1688,10 +1690,10 @@ export default function AdminSalesAgent() {
               <div>
                 <label className="text-xs text-zinc-400 mb-1 block">Duration</label>
                 <Select value={String(scheduleDuration)} onValueChange={v => setScheduleDuration(Number(v))}>
-                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white text-sm">
+                  <SelectTrigger className="bg-[#2b2f38] border-white/10 text-white text-sm">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
+                  <SelectContent className="bg-[#2b2f38] border-white/10">
                     <SelectItem value="15">15 min</SelectItem>
                     <SelectItem value="30">30 min</SelectItem>
                     <SelectItem value="45">45 min</SelectItem>
@@ -1706,12 +1708,12 @@ export default function AdminSalesAgent() {
                 value={scheduleNotes}
                 onChange={e => setScheduleNotes(e.target.value)}
                 placeholder="Optional context for the meeting"
-                className="bg-zinc-800 border-zinc-700 text-white text-sm resize-none h-20"
+                className="bg-[#2b2f38] border-white/10 text-white text-sm resize-none h-20"
               />
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" className="border-zinc-700 text-zinc-400" onClick={() => setScheduleModalOpen(false)}>
+            <Button variant="outline" className="border-white/10 text-zinc-400" onClick={() => setScheduleModalOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -1756,7 +1758,7 @@ export default function AdminSalesAgent() {
 
       {/* Apollo Verify Result Modal */}
       <Dialog open={verifyModalOpen} onOpenChange={(v) => { if (!v) { setVerifyModalOpen(false); setVerifyResult(null); } }}>
-        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-lg">
+        <DialogContent className="bg-[#24272e] border-white/10 text-white max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-white">
               <CheckCircle className="w-4 h-4 text-emerald-400" />
@@ -1795,7 +1797,7 @@ export default function AdminSalesAgent() {
                   <p className="text-sm text-zinc-400">No verified email found. Suggested patterns to try:</p>
                   <div className="space-y-1">
                     {verifyResult.suggestions.slice(0, 6).map((s, i) => (
-                      <div key={i} className="flex items-center gap-2 font-mono text-xs text-zinc-300 bg-zinc-800 rounded px-3 py-1.5">
+                      <div key={i} className="flex items-center gap-2 font-mono text-xs text-zinc-300 bg-[#2b2f38] rounded px-3 py-1.5">
                         <Mail className="w-3 h-3 text-zinc-500" /> {s}
                       </div>
                     ))}
@@ -1804,7 +1806,7 @@ export default function AdminSalesAgent() {
               )}
               <Button
                 size="sm"
-                className="w-full bg-zinc-800 hover:text-zinc-400"
+                className="w-full bg-[#2b2f38] hover:text-zinc-400"
                 onClick={() => { setVerifyModalOpen(false); setVerifyResult(null); }}
               >Close</Button>
             </div>
@@ -1814,7 +1816,7 @@ export default function AdminSalesAgent() {
 
       {/* v34: Real-Time Verify All Progress Modal */}
       <Dialog open={verifyProgressOpen} onOpenChange={(v) => { if (!v) handleCloseProgressModal(); }}>
-        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogContent className="bg-[#24272e] border-white/10 text-white max-w-md" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-white">
               {verifyProgress?.status === "complete" ? (
@@ -1840,13 +1842,13 @@ export default function AdminSalesAgent() {
               </div>
               <Progress
                 value={verifyProgress?.total ? Math.round(((verifyProgress.current) / verifyProgress.total) * 100) : 0}
-                className="h-2 bg-zinc-800 [&>div]:bg-blue-500"
+                className="h-2 bg-[#2b2f38] [&>div]:bg-blue-500"
               />
             </div>
 
             {/* Current company being verified */}
             {verifyProgress?.status === "running" && verifyProgress.currentCompany && (
-              <div className="bg-zinc-800/60 rounded-lg px-3 py-2">
+              <div className="bg-[#2b2f38]/60 rounded-lg px-3 py-2">
                 <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-0.5">Currently checking</p>
                 <p className="text-sm text-zinc-200 font-medium truncate">{verifyProgress.currentCompany}</p>
               </div>
@@ -1854,7 +1856,7 @@ export default function AdminSalesAgent() {
 
             {/* Live counters */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-zinc-800 rounded-lg p-3 text-center">
+              <div className="bg-[#2b2f38] rounded-lg p-3 text-center">
                 <p className="text-2xl font-bold text-white">{verifyProgress?.current ?? 0}</p>
                 <p className="text-xs text-zinc-500 mt-0.5">Checked</p>
               </div>
@@ -1862,7 +1864,7 @@ export default function AdminSalesAgent() {
                 <p className="text-2xl font-bold text-emerald-400">{verifyProgress?.verified ?? 0}</p>
                 <p className="text-xs text-zinc-500 mt-0.5">Verified</p>
               </div>
-              <div className="bg-zinc-800 rounded-lg p-3 text-center">
+              <div className="bg-[#2b2f38] rounded-lg p-3 text-center">
                 <p className="text-2xl font-bold text-zinc-400">{verifyProgress?.notFound ?? 0}</p>
                 <p className="text-xs text-zinc-500 mt-0.5">Not Found</p>
               </div>
@@ -1882,7 +1884,7 @@ export default function AdminSalesAgent() {
             {(verifyProgress?.status === "complete" || verifyProgress?.status === "error") && (
               <Button
                 size="sm"
-                className="w-full bg-zinc-800 hover:text-zinc-400"
+                className="w-full bg-[#2b2f38] hover:text-zinc-400"
                 onClick={handleCloseProgressModal}
               >
                 {verifyProgress.status === "complete" ? "View Summary" : "Close"}
@@ -1894,7 +1896,7 @@ export default function AdminSalesAgent() {
 
       {/* Bulk Verify Result Modal */}
       <Dialog open={bulkVerifyModalOpen} onOpenChange={setBulkVerifyModalOpen}>
-        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-md">
+        <DialogContent className="bg-[#24272e] border-white/10 text-white max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-white">
               <ShieldCheck className="w-4 h-4 text-blue-400" />
@@ -1907,7 +1909,7 @@ export default function AdminSalesAgent() {
           {bulkVerifyResult && (
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-3">
-                <div className="bg-zinc-800 rounded-lg p-3 text-center">
+                <div className="bg-[#2b2f38] rounded-lg p-3 text-center">
                   <p className="text-2xl font-bold text-white">{bulkVerifyResult.total}</p>
                   <p className="text-xs text-zinc-500 mt-0.5">Checked</p>
                 </div>
@@ -1915,13 +1917,13 @@ export default function AdminSalesAgent() {
                   <p className="text-2xl font-bold text-emerald-400">{bulkVerifyResult.verified}</p>
                   <p className="text-xs text-zinc-500 mt-0.5">Verified</p>
                 </div>
-                <div className="bg-zinc-800 rounded-lg p-3 text-center">
+                <div className="bg-[#2b2f38] rounded-lg p-3 text-center">
                   <p className="text-2xl font-bold text-zinc-400">{bulkVerifyResult.notFound}</p>
                   <p className="text-xs text-zinc-500 mt-0.5">Not Found</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">{bulkVerifyResult.message}</p>
-              <Button size="sm" className="w-full bg-zinc-800 hover:text-zinc-400"
+              <Button size="sm" className="w-full bg-[#2b2f38] hover:text-zinc-400"
                 onClick={() => setBulkVerifyModalOpen(false)}>Close</Button>
             </div>
           )}
@@ -1930,7 +1932,7 @@ export default function AdminSalesAgent() {
 
       {/* CSV Import Modal */}
       <Dialog open={csvModalOpen} onOpenChange={(v) => { if (!v) { setCsvModalOpen(false); setCsvImportResult(null); } }}>
-        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-2xl">
+        <DialogContent className="bg-[#24272e] border-white/10 text-white max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-white">
               <FileText className="w-4 h-4 text-amber-400" />
@@ -1947,11 +1949,11 @@ export default function AdminSalesAgent() {
                   <p className="text-2xl font-bold text-emerald-400">{csvImportResult.imported}</p>
                   <p className="text-xs text-zinc-500 mt-0.5">Imported</p>
                 </div>
-                <div className="bg-zinc-800 rounded-lg p-3 text-center">
+                <div className="bg-[#2b2f38] rounded-lg p-3 text-center">
                   <p className="text-2xl font-bold text-zinc-400">{csvImportResult.skipped}</p>
                   <p className="text-xs text-zinc-500 mt-0.5">Skipped (dup)</p>
                 </div>
-                <div className="bg-zinc-800 rounded-lg p-3 text-center">
+                <div className="bg-[#2b2f38] rounded-lg p-3 text-center">
                   <p className="text-2xl font-bold text-zinc-400">{csvImportResult.total}</p>
                   <p className="text-xs text-zinc-500 mt-0.5">Total Rows</p>
                 </div>
@@ -1970,7 +1972,7 @@ export default function AdminSalesAgent() {
           ) : (
             <div className="space-y-4">
               <Textarea
-                className="bg-zinc-800 border-zinc-700 text-zinc-200 font-mono text-xs h-64 resize-none"
+                className="bg-[#2b2f38] border-white/10 text-zinc-200 font-mono text-xs h-64 resize-none"
                 placeholder={`company,contact_name,contact_email,contact_title,website,robot_type,robot_category,show_name\nAgility Robotics,Damion Shelton,ceo@agilityrobotics.com,CEO,https://agilityrobotics.com,Humanoid,light,CES 2026`}
                 value={csvText}
                 onChange={(e) => setCsvText(e.target.value)}
@@ -1986,7 +1988,7 @@ export default function AdminSalesAgent() {
                     ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Importing…</>
                     : <><Upload className="w-3.5 h-3.5" /> Import</>}
                 </Button>
-                <Button size="sm" variant="outline" className="border-zinc-700 text-zinc-400"
+                <Button size="sm" variant="outline" className="border-white/10 text-zinc-400"
                   onClick={() => setCsvModalOpen(false)}>Cancel</Button>
               </div>
             </div>
@@ -1996,7 +1998,7 @@ export default function AdminSalesAgent() {
 
       {/* v67: Reschedule modal */}
       <Dialog open={!!reschedulingCalEvt} onOpenChange={(open) => { if (!open) setReschedulingCalEvt(null); }}>
-        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-sm">
+        <DialogContent className="bg-[#24272e] border-white/10 text-white max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-white">
               <RefreshCw className="w-4 h-4 text-zinc-400" /> Reschedule Meeting
@@ -2009,13 +2011,13 @@ export default function AdminSalesAgent() {
                 <label className="block text-xs text-zinc-500 mb-1">New Start Time</label>
                 <input type="datetime-local" value={rescheduleStartAt}
                   onChange={e => setRescheduleStartAt(e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white outline-none" />
+                  className="w-full bg-[#2b2f38] border border-white/10 rounded px-3 py-2 text-sm text-white outline-none" />
               </div>
               <div>
                 <label className="block text-xs text-zinc-500 mb-1">New End Time</label>
                 <input type="datetime-local" value={rescheduleEndAt}
                   onChange={e => setRescheduleEndAt(e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white outline-none" />
+                  className="w-full bg-[#2b2f38] border border-white/10 rounded px-3 py-2 text-sm text-white outline-none" />
               </div>
               <p className="text-xs text-zinc-600">Emails will be sent to the prospect, Tommy, and the owner.</p>
               <div className="flex gap-2 pt-2">
@@ -2033,7 +2035,7 @@ export default function AdminSalesAgent() {
                     ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Sending…</>
                     : "Reschedule & Notify"}
                 </Button>
-                <Button variant="outline" className="border-zinc-700 text-zinc-400"
+                <Button variant="outline" className="border-white/10 text-zinc-400"
                   onClick={() => setReschedulingCalEvt(null)}>Cancel</Button>
               </div>
             </div>
@@ -2043,7 +2045,7 @@ export default function AdminSalesAgent() {
 
       {/* v69: Cancel Event confirm dialog */}
       <Dialog open={!!cancellingCalEvt} onOpenChange={(open) => { if (!open) { setCancellingCalEvt(null); setCancelCalReason(""); } }}>
-        <DialogContent className="bg-zinc-900 border-red-800/40 text-white max-w-sm">
+        <DialogContent className="bg-[#24272e] border-red-800/40 text-white max-w-sm">
           <div className="flex items-center gap-2 mb-3">
             <XCircle className="w-5 h-5 text-red-400" />
             <h2 className="text-sm font-bold tracking-widest uppercase text-red-400">Cancel Event</h2>
@@ -2062,11 +2064,11 @@ export default function AdminSalesAgent() {
                   value={cancelCalReason}
                   onChange={e => setCancelCalReason(e.target.value)}
                   placeholder="e.g. Scheduling conflict, prospect unavailable…"
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none focus:border-red-700"
+                  className="w-full bg-[#2b2f38] border border-white/10 rounded-md px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none focus:border-red-700"
                 />
               </div>
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" className="border-zinc-700 text-zinc-400"
+                <Button variant="outline" className="border-white/10 text-zinc-400"
                   onClick={() => { setCancellingCalEvt(null); setCancelCalReason(""); }}>
                   Keep Event
                 </Button>
@@ -2083,6 +2085,7 @@ export default function AdminSalesAgent() {
           )}
         </DialogContent>
       </Dialog>
+      </AdminPage>
     </>
   );
 }

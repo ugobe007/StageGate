@@ -3,7 +3,8 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
-import { BRAND } from "@/lib/brand";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
+import { ADMIN, AdminPage, AdminPageHeader, adminCardStyle } from "@/lib/adminTheme";
 import {
   Play, ArrowLeft, Bot, Calendar, Building2,
   ChevronDown, ChevronUp, CheckCircle2,
@@ -86,31 +87,21 @@ export default function AdminDemoRequests() {
   const currentSortLabel = SORT_OPTIONS.find((o) => o.key === sortKey)?.label ?? "Sort";
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "56rem", margin: "0 auto", color: "#ececec" }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <Link href="/admin">
-            <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", color: "#64748b", background: "none", border: "none", cursor: "pointer", padding: "0.25rem 0" }}>
-              <ArrowLeft size={14} /> Admin
-            </button>
-          </Link>
-          <div style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(62,207,142,0.1)" }}>
-            <Play size={14} style={{ color: `${BRAND.emerald}` }} />
-          </div>
-          <div>
-            <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0 }}>Demo Requests</h1>
-            <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.125rem 0 0" }}>
-              {demos?.length || 0} total · {counts["new"] || 0} new
-            </p>
-          </div>
-        </div>
-        {(counts["new"] || 0) > 0 && (
-          <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: `${BRAND.emerald}` }}>
-            {counts["new"]} new
-          </span>
-        )}
-      </div>
+    <AdminPage maxWidth="56rem">
+      <AdminPageHeader
+        kicker="STAGEGATE / DEMOS"
+        title="Demo Requests"
+        description={`${demos?.length || 0} total · ${counts["new"] || 0} new`}
+        icon={Play}
+        backHref="/admin"
+        actions={
+          (counts["new"] || 0) > 0 ? (
+            <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: ADMIN.emerald }}>
+              {counts["new"]} new
+            </span>
+          ) : undefined
+        }
+      />
 
       {/* Search */}
       <div style={{ position: "relative", marginBottom: "1rem" }}>
@@ -123,7 +114,7 @@ export default function AdminDemoRequests() {
           style={{
             width: "100%", paddingLeft: "2.25rem", paddingRight: "2.25rem", paddingTop: "0.5rem", paddingBottom: "0.5rem",
             fontSize: "0.875rem", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem",
-            background: "#111111", color: "#ececec", outline: "none", boxSizing: "border-box",
+            background: ADMIN.s2, color: ADMIN.text, outline: "none", boxSizing: "border-box",
           }}
         />
         {searchQuery && (
@@ -147,14 +138,14 @@ export default function AdminDemoRequests() {
                 padding: "0.3125rem 0.75rem",
                 fontSize: "0.8125rem", fontWeight: 500,
                 border: `1px solid ${statusFilter === key ? `${BRAND.emerald}` : "rgba(255,255,255,0.08)"}`,
-                background: statusFilter === key ? "rgba(62,207,142,0.08)" : "#111111",
+                background: statusFilter === key ? emeraldAlpha(0.08) : ADMIN.surface,
                 color: statusFilter === key ? `${BRAND.emerald}` : "#64748b",
                 borderRadius: "0.25rem", cursor: "pointer",
                 display: "flex", alignItems: "center", gap: "0.375rem",
               }}
             >
               {label}
-              <span style={{ fontSize: "0.75rem", background: "#1a1a1a", color: "#64748b", padding: "0.0625rem 0.3125rem", borderRadius: "0.1875rem" }}>{count}</span>
+              <span style={{ fontSize: "0.75rem", background: ADMIN.s2, color: ADMIN.text2, padding: "0.0625rem 0.3125rem", borderRadius: "0.1875rem" }}>{count}</span>
             </button>
           ))}
           {hasActiveFilters && (
@@ -178,7 +169,7 @@ export default function AdminDemoRequests() {
             <ChevronDown size={12} style={{ transform: sortOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
           </button>
           {sortOpen && (
-            <div style={{ position: "absolute", right: 0, top: "calc(100% + 0.25rem)", background: "#111111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem", overflow: "hidden", zIndex: 20, minWidth: "11rem", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+            <div style={{ position: "absolute", right: 0, top: "calc(100% + 0.25rem)", ...adminCardStyle, overflow: "hidden", zIndex: 20, minWidth: "11rem" }}>
               {SORT_OPTIONS.map((opt) => (
                 <button
                   key={opt.key}
@@ -214,7 +205,7 @@ export default function AdminDemoRequests() {
 
       {/* Empty state */}
       {!isLoading && processed.length === 0 && (
-        <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "4rem 1rem", textAlign: "center", background: "#111111" }}>
+        <div style={{ ...adminCardStyle, padding: "4rem 1rem", textAlign: "center" }}>
           <Play size={28} style={{ color: "#cbd5e1", margin: "0 auto 0.75rem" }} />
           <p style={{ fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
             {searchQuery.trim() ? `No results for "${searchQuery.trim()}"` : statusFilter === "all" ? "No demo requests yet" : `No ${STATUS_CONFIG[statusFilter as DemoStatus]?.label.toLowerCase()} requests`}
@@ -243,7 +234,7 @@ export default function AdminDemoRequests() {
             return (
               <div
                 key={d.id}
-                style={{ border: `1px solid ${isExpanded ? `${BRAND.emerald}` : "rgba(255,255,255,0.08)"}`, borderRadius: "0.5rem", background: "#111111", overflow: "hidden", transition: "border-color 0.1s" }}
+                style={{ ...adminCardStyle, overflow: "hidden", transition: "border-color 0.1s", border: `1px solid ${isExpanded ? ADMIN.emerald : ADMIN.border}` }}
               >
                 {/* Row summary */}
                 <button
@@ -331,7 +322,7 @@ export default function AdminDemoRequests() {
                               style={{
                                 padding: "0.3125rem 0.75rem", fontSize: "0.8125rem", fontWeight: 500,
                                 border: `1px solid ${isCurrent ? scfg.color : "rgba(255,255,255,0.08)"}`,
-                                background: isCurrent ? `${scfg.color}15` : "#111111",
+                                background: isCurrent ? `${scfg.color}15` : ADMIN.surface,
                                 color: isCurrent ? scfg.color : "#64748b",
                                 borderRadius: "0.25rem", cursor: isCurrent ? "default" : "pointer",
                                 display: "flex", alignItems: "center", gap: "0.375rem",
@@ -361,6 +352,6 @@ export default function AdminDemoRequests() {
       {sortOpen && (
         <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setSortOpen(false)} />
       )}
-    </div>
+    </AdminPage>
   );
 }

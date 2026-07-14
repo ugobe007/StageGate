@@ -2,28 +2,20 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { BRAND } from "@/lib/brand";
+import { ADMIN, AdminPage, AdminPageHeader, adminCardStyle } from "@/lib/adminTheme";
 import {
   Clock, CheckCircle2, XCircle, Loader2, AlertTriangle,
   ChevronDown, ChevronUp, Search, Bot, Calendar, Zap, Paperclip, RefreshCw, ExternalLink
 } from "lucide-react";
 
-// ── Supabase light tokens ────────────────────────────────────────────────────
+// ── Admin theme tokens (shared with dashboard) ───────────────────────────────
 const S = {
-  bg:      "#1C1E22",
-  surface: "#111111",
-  surface2:"#1a1a1a",
-  border:  "rgba(255,255,255,0.08)",
-  text:    "#ececec",
-  text2:   "rgba(255,255,255,0.55)",
-  text3:   "rgba(255,255,255,0.30)",
-  green:   `${BRAND.emerald}`,
-  greenDim:"rgba(62,207,142,0.12)",
-  amber:   "#f59e0b",
-  blue:    "#3b82f6",
-  red:     "#ef4444",
-  purple:  "#8b5cf6",
-  cyan:    "#06b6d4",
-  font:    "'Inter','Space Grotesk',ui-sans-serif,system-ui,sans-serif",
+  ...ADMIN,
+  green: ADMIN.emerald,
+  greenDim: "rgba(0,232,122,0.12)",
+  purple: "#8b5cf6",
+  cyan: "#06b6d4",
+  font: ADMIN.font,
 };
 
 // Inline status text — dot + label, no pill
@@ -109,25 +101,23 @@ export default function AdminServiceRequests() {
   }, {} as Record<string, number>);
 
   return (
-    <div style={{ padding: "1.75rem 2rem", maxWidth: "64rem", margin: "0 auto", fontFamily: S.font, color: S.text }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-        <div>
-          <h1 style={{ fontSize: "1.125rem", fontWeight: 600, color: S.text, margin: 0, letterSpacing: "-0.01em" }}>
-            Service Requests
-          </h1>
-          <p style={{ fontSize: "0.8125rem", color: S.text2, margin: "0.25rem 0 0" }}>
-            Incoming requests from robot companies — review, quote, and update status.
-          </p>
-        </div>
-        <button
-          onClick={() => refetch()}
-          style={{ padding: "0.375rem", border: `1px solid ${S.border}`, borderRadius: "0.375rem", background: S.surface, color: S.text3, cursor: "pointer", display: "flex", alignItems: "center" }}
-          title="Refresh"
-        >
-          <RefreshCw size={14} />
-        </button>
-      </div>
+    <AdminPage maxWidth="64rem">
+      <AdminPageHeader
+        kicker="STAGEGATE / SERVICE REQUESTS"
+        title="Service Requests"
+        description={`${requests?.length ?? 0} request${(requests?.length ?? 0) !== 1 ? "s" : ""}`}
+        icon={Bot}
+        backHref="/admin"
+        actions={
+          <button
+            onClick={() => refetch()}
+            style={{ padding: "0.375rem", border: `1px solid ${S.border}`, borderRadius: "0.375rem", background: S.surface, color: S.text3, cursor: "pointer", display: "flex", alignItems: "center" }}
+            title="Refresh"
+          >
+            <RefreshCw size={14} />
+          </button>
+        }
+      />
 
       {/* Status filter tabs — inline text, no pills */}
       <div style={{ display: "flex", alignItems: "center", gap: "0", borderBottom: `1px solid ${S.border}`, marginBottom: "1.25rem", overflowX: "auto" }}>
@@ -194,7 +184,7 @@ export default function AdminServiceRequests() {
           <p style={{ fontSize: "0.875rem" }}>No service requests match your filters.</p>
         </div>
       ) : (
-        <div style={{ border: `1px solid ${S.border}`, borderRadius: "0.5rem", overflow: "hidden", background: S.surface }}>
+        <div style={{ border: `1px solid ${S.border}`, borderRadius: "0.625rem", overflow: "hidden", background: S.surfaceGrad, boxShadow: S.shadow }}>
           {/* Table header */}
           <div style={{
             display: "grid",
@@ -229,7 +219,7 @@ export default function AdminServiceRequests() {
                     cursor: "pointer",
                     transition: "background 0.1s",
                   }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = S.surface2; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = S.s2; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
                 >
                   {/* Request type + meta */}
@@ -404,7 +394,7 @@ export default function AdminServiceRequests() {
                             setEditNotes(req.adminNotes ?? "");
                           }}
                           style={{ padding: "0.375rem 0.875rem", border: `1px solid ${S.border}`, borderRadius: "0.375rem", background: S.surface, color: S.text2, fontSize: "0.8125rem", cursor: "pointer", transition: "background 0.1s, color 0.1s" }}
-                          onMouseEnter={e => { e.currentTarget.style.background = S.surface2; e.currentTarget.style.color = S.text; }}
+                          onMouseEnter={e => { e.currentTarget.style.background = S.s2; e.currentTarget.style.color = S.text; }}
                           onMouseLeave={e => { e.currentTarget.style.background = S.surface; e.currentTarget.style.color = S.text2; }}
                         >
                           Update Status / Add Quote
@@ -413,7 +403,7 @@ export default function AdminServiceRequests() {
                           <Link
                             to={`/admin/prospects?highlight=${encodeURIComponent(req.contactEmail)}`}
                             style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", padding: "0.375rem 0.875rem", border: `1px solid ${S.border}`, borderRadius: "0.375rem", background: S.surface, color: S.text2, fontSize: "0.8125rem", cursor: "pointer", textDecoration: "none", transition: "background 0.1s, color 0.1s" }}
-                            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = S.surface2; e.currentTarget.style.color = S.text; }}
+                            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = S.s2; e.currentTarget.style.color = S.text; }}
                             onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = S.surface; e.currentTarget.style.color = S.text2; }}
                           >
                             <ExternalLink size={11} />
@@ -429,6 +419,6 @@ export default function AdminServiceRequests() {
           })}
         </div>
       )}
-    </div>
+    </AdminPage>
   );
 }

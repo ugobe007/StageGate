@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Link } from "wouter";
+import { ADMIN, AdminPage, AdminPageHeader, adminTw } from "@/lib/adminTheme";
 import { toast } from "sonner";
 import {
   FileText, ArrowLeft, Bot, Calendar, Wrench, Mail,
@@ -68,33 +68,16 @@ export default function AdminQuotes() {
   }
 
   return (
-    <div className="min-h-0" style={{ background: "#1C1E22", color: "#ececec" }}>
-      {/* Header */}
-      <div className="border-b" style={{ borderColor: "oklch(0.16 0.010 240)", background: "oklch(0.10 0.006 240)" }}>
-        <div className="container py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Link href="/admin">
-              <button className="p-2 rounded-lg transition-colors" style={{ color: "oklch(0.55 0.008 240)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "oklch(0.88 0.008 240)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "oklch(0.55 0.008 240)")}
-              >
-                <ArrowLeft size={18} />
-              </button>
-            </Link>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "oklch(0.55 0.18 145 / 0.15)" }}>
-              <FileText size={16} style={{ color: "oklch(0.72 0.21 145)" }} />
-            </div>
-            <div>
-              <h1 className="font-display font-bold text-lg">Quote Requests</h1>
-              <p className="text-xs" style={{ color: "oklch(0.50 0.008 240)" }}>
-                {quotes?.length || 0} total requests
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <AdminPage maxWidth="960px">
+      <AdminPageHeader
+        kicker="STAGEGATE / QUOTES"
+        title="Quote Requests"
+        description={`${quotes?.length || 0} total requests`}
+        icon={FileText}
+        backHref="/admin"
+      />
 
-      <div className="container py-6 space-y-6">
+      <div className="space-y-6">
         {/* Status filter + counts */}
         <div className="flex flex-wrap gap-2">
           {[
@@ -108,15 +91,15 @@ export default function AdminQuotes() {
               onClick={() => setStatusFilter(key)}
               className="px-3 py-1.5 rounded-lg text-sm border transition-all flex items-center gap-1.5"
               style={{
-                borderColor: statusFilter === key ? "oklch(0.72 0.21 145)" : "oklch(0.20 0.008 240)",
-                background: statusFilter === key ? "oklch(0.72 0.21 145 / 0.10)" : "transparent",
-                color: statusFilter === key ? "oklch(0.72 0.21 145)" : "oklch(0.55 0.008 240)",
+                borderColor: statusFilter === key ? ADMIN.emerald : ADMIN.border,
+                background: statusFilter === key ? "rgba(0,232,122,0.10)" : "transparent",
+                color: statusFilter === key ? ADMIN.emerald : ADMIN.text2,
               }}
             >
               {label}
               <span
                 className="px-1.5 py-0.5 rounded text-xs font-mono"
-                style={{ background: "oklch(0.15 0.006 240)", color: "oklch(0.60 0.008 240)" }}
+                style={{ background: ADMIN.s2, color: ADMIN.text2 }}
               >
                 {count}
               </span>
@@ -130,10 +113,10 @@ export default function AdminQuotes() {
             <Loader2 size={24} className="animate-spin" style={{ color: "oklch(0.55 0.008 240)" }} />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 rounded-xl border" style={{ borderColor: "oklch(0.16 0.010 240)", background: "oklch(0.10 0.006 240)" }}>
-            <FileText size={32} className="mx-auto mb-3" style={{ color: "oklch(0.30 0.008 240)" }} />
-            <p className="font-medium" style={{ color: "oklch(0.55 0.008 240)" }}>No quote requests yet</p>
-            <p className="text-sm mt-1" style={{ color: "oklch(0.40 0.006 240)" }}>
+          <div className={`text-center py-16 ${adminTw.card}`}>
+            <FileText size={32} className="mx-auto mb-3" style={{ color: ADMIN.text3 }} />
+            <p className="font-medium" style={{ color: ADMIN.text2 }}>No quote requests yet</p>
+            <p className="text-sm mt-1" style={{ color: ADMIN.text3 }}>
               Requests submitted via the "Get a Quote" form will appear here.
             </p>
           </div>
@@ -146,8 +129,8 @@ export default function AdminQuotes() {
               return (
                 <div
                   key={q.id}
-                  className="rounded-xl border overflow-hidden transition-all"
-                  style={{ borderColor: isExpanded ? "oklch(0.72 0.21 145 / 0.30)" : "oklch(0.16 0.010 240)", background: "oklch(0.10 0.006 240)" }}
+                  className={`rounded-xl overflow-hidden ${adminTw.card} ${adminTw.cardHover}`}
+                  style={{ borderColor: isExpanded ? `${ADMIN.emerald}55` : undefined }}
                 >
                   {/* Row header */}
                   <button
@@ -301,6 +284,6 @@ export default function AdminQuotes() {
           </div>
         )}
       </div>
-    </div>
+    </AdminPage>
   );
 }

@@ -4,6 +4,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { BRAND } from "@/lib/brand";
+import { ADMIN, AdminPage, adminPageOuterStyle } from "@/lib/adminTheme";
 import {
   ClipboardList, ChevronDown, ChevronUp, ExternalLink,
   Mail, Phone, Globe, Bot, Calendar, Package,
@@ -421,7 +422,7 @@ export default function AdminBookings() {
 
   if (authLoading) {
     return (
-      <div style={{ minHeight: "auto", background: "#1C1E22", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ ...adminPageOuterStyle, minHeight: "auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ width: 24, height: 24, border: "2px solid rgba(255,255,255,0.10)", borderTopColor: `${BRAND.emerald}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       </div>
     );
@@ -442,27 +443,30 @@ export default function AdminBookings() {
   const selectedBooking = selectedId != null ? bookings.find(b => b.id === selectedId) ?? null : null;
 
   return (
-    <div style={{ minHeight: "auto", background: "#1C1E22", color: "#ececec" }}>
+    <AdminPage maxWidth="none" noPadding fullHeight>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       {/* Page header */}
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", padding: "1.5rem 2rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+      <div style={{ borderBottom: `1px solid ${ADMIN.border}`, padding: "1.5rem 2rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <ClipboardList size={18} style={{ color: "rgba(255,255,255,0.55)" }} />
+          <ClipboardList size={18} style={{ color: ADMIN.emerald }} />
           <div>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.46)", margin: "0 0 0.15rem" }}>Admin / Bookings</p>
-            <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0 }}>Intake Requests</h1>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.14em", textTransform: "uppercase", color: ADMIN.emerald, margin: "0 0 0.15rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+              <span style={{ width: 4, height: 4, borderRadius: "50%", background: ADMIN.emerald, boxShadow: `0 0 6px ${ADMIN.emerald}` }} />
+              Admin / Bookings
+            </p>
+            <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: ADMIN.text, margin: 0 }}>Intake Requests</h1>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: "rgba(255,255,255,0.48)" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", color: ADMIN.text2 }}>
             {bookings.length} request{bookings.length !== 1 ? "s" : ""}
           </span>
           <button
             onClick={() => refetch()}
-            style={{ background: "none", border: '1px solid rgba(255,255,255,0.08)', borderRadius: "0.375rem", padding: "0.35rem 0.6rem", color: "rgba(255,255,255,0.55)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem" }}
+            style={{ background: "transparent", border: `1px solid ${ADMIN.border}`, borderRadius: "0.375rem", padding: "0.35rem 0.6rem", color: ADMIN.text2, cursor: "pointer", display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem" }}
           >
             <RefreshCw size={12} /> Refresh
           </button>
@@ -470,7 +474,7 @@ export default function AdminBookings() {
       </div>
 
       {/* Stats bar */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", borderBottom: `1px solid ${ADMIN.border}` }}>
         {(["new", "reviewed", "quoted", "confirmed", "cancelled", "converted"] as BookingStatus[]).map(s => {
           const cfg = STATUS_CONFIG[s];
           const n = counts[s] ?? 0;
@@ -536,7 +540,7 @@ export default function AdminBookings() {
                     gap: "1rem",
                     alignItems: "center",
                     padding: "0.875rem 0",
-                    borderBottom: "1px solid #1a1a1a",
+                    borderBottom: `1px solid ${ADMIN.border}`,
                     cursor: "pointer",
                     transition: "background 0.12s",
                   }}
@@ -632,6 +636,6 @@ export default function AdminBookings() {
           onConverted={() => { refetch(); setSelectedId(null); }}
         />
       )}
-    </div>
+    </AdminPage>
   );
 }

@@ -35,6 +35,7 @@ import {
   CheckCircle2, XCircle, Bot, RefreshCw, Send,
 } from "lucide-react";
 import { Link } from "wouter";
+import { AdminPage, AdminPageHeader, adminTw } from "@/lib/adminTheme";
 
 const VENDOR_TYPES = [
   { value: "freight", label: "Freight", icon: Truck, color: "text-blue-500" },
@@ -571,29 +572,32 @@ export default function AdminVendors() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <AdminPage maxWidth="72rem">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Vendors & Warehouse</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Las Vegas logistics partners and warehouse bay management
-          </p>
-        </div>
-        {activeTab === "vendors" && (
-          <>
-            <Link href="/admin/partner-outreach?source=vendor">
-              <Button variant="outline" className="gap-2 mr-2">
-                <Send className="h-4 w-4" /> Email Vendors
+      <AdminPageHeader
+        kicker="STAGEGATE / VENDORS"
+        title="Vendors & Warehouse"
+        description="Las Vegas logistics partners and warehouse bay management"
+        icon={Building2}
+        backHref="/admin"
+        actions={
+          activeTab === "vendors" ? (
+            <>
+              <Link href="/admin/partner-outreach?source=vendor">
+                <Button variant="outline" className="gap-2 mr-2">
+                  <Send className="h-4 w-4" /> Email Vendors
+                </Button>
+              </Link>
+              <Button onClick={() => setShowAddDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Vendor
               </Button>
-            </Link>
-            <Button onClick={() => setShowAddDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Vendor
-            </Button>
-          </>
-        )}
-      </div>
+            </>
+          ) : undefined
+        }
+      />
+
+      <div className="space-y-6">
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">
@@ -776,6 +780,8 @@ export default function AdminVendors() {
         </>
       )}
 
+      </div>
+
       {/* Add Vendor Dialog */}
       <Dialog open={showAddDialog} onOpenChange={open => { setShowAddDialog(open); if (!open) resetForm(); }}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
@@ -901,6 +907,6 @@ export default function AdminVendors() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminPage>
   );
 }

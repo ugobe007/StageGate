@@ -34,6 +34,7 @@ import {
   Calendar, Clock, Plus, CheckCircle, User, Pencil, Trash2,
   RefreshCw, AlertCircle,
 } from "lucide-react";
+import { AdminPage, AdminPageHeader, adminTw } from "@/lib/adminTheme";
 
 const TEAM_MEMBERS = [
   { name: "Bob", email: "bob@onstage.bot" },
@@ -183,45 +184,45 @@ export default function AdminScheduling() {
   }, [slotDate, slotTime, duration, bulkDays]);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Scheduling</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage robot team availability for prospect calls
-          </p>
-        </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Availability
-        </Button>
-      </div>
+    <AdminPage maxWidth="64rem">
+      <AdminPageHeader
+        kicker="STAGEGATE / SCHEDULING"
+        title="Scheduling"
+        description="Manage robot team availability for prospect calls"
+        icon={Calendar}
+        backHref="/admin"
+        actions={
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Availability
+          </Button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <Card>
+        <Card className={adminTw.card}>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-amber-500">{availableCount}</div>
+            <div className={`${adminTw.statValue} text-amber-500`}>{availableCount}</div>
             <div className="text-sm text-muted-foreground">Open slots</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={adminTw.card}>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-500">{bookedCount}</div>
+            <div className={`${adminTw.statValue} text-green-500`}>{bookedCount}</div>
             <div className="text-sm text-muted-foreground">Booked calls</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={adminTw.card}>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{allSlots.length}</div>
+            <div className={adminTw.statValue}>{allSlots.length}</div>
             <div className="text-sm text-muted-foreground">Total slots</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Upcoming availability */}
-      <Card>
+      <Card className={adminTw.card}>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Calendar className="h-4 w-4 text-amber-500" />
@@ -297,7 +298,7 @@ export default function AdminScheduling() {
 
       {/* Booked calls */}
       {bookedSlots.length > 0 && (
-        <Card>
+        <Card className={adminTw.card}>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-500" />
@@ -551,6 +552,6 @@ export default function AdminScheduling() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminPage>
   );
 }

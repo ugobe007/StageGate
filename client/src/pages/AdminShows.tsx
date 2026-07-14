@@ -6,7 +6,8 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Calendar, Plus, Trash2, Edit, ArrowLeft, Loader2, Globe, Bell, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
-import { BRAND } from "@/lib/brand";
+import { BRAND, emeraldAlpha } from "@/lib/brand";
+import { ADMIN, AdminPage, AdminPageHeader, adminCardStyle } from "@/lib/adminTheme";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -102,25 +103,20 @@ export default function AdminShows() {
   }
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "72rem", margin: "0 auto", color: "#ececec" }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem" }}>
-        <Link href="/admin">
-          <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", color: "#64748b", background: "none", border: "none", cursor: "pointer", padding: "0.25rem 0" }}>
-            <ArrowLeft size={14} /> Admin
-          </button>
-        </Link>
-        <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#ececec", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Calendar size={18} style={{ color: `${BRAND.emerald}` }} /> Trade Shows
-          </h1>
-        </div>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setForm(EMPTY_FORM); } }}>
-          <DialogTrigger asChild>
-            <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: `1px solid ${BRAND.emerald}`, background: "transparent", color: `${BRAND.emerald}`, borderRadius: "0.375rem", cursor: "pointer" }}>
-              <Plus size={14} /> Add Show
-            </button>
-          </DialogTrigger>
+    <AdminPage maxWidth="72rem">
+      <AdminPageHeader
+        kicker="STAGEGATE / SHOWS"
+        title="Trade Shows"
+        description={`${(shows || []).length} show${(shows || []).length !== 1 ? "s" : ""} on file`}
+        icon={Calendar}
+        backHref="/admin"
+        actions={
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setForm(EMPTY_FORM); } }}>
+            <DialogTrigger asChild>
+              <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", fontWeight: 600, padding: "0.5rem 1rem", border: `1px solid ${ADMIN.emerald}`, background: "transparent", color: ADMIN.emerald, borderRadius: "0.375rem", cursor: "pointer" }}>
+                <Plus size={14} /> Add Show
+              </button>
+            </DialogTrigger>
           <DialogContent className="bg-card border-border max-w-lg">
             <DialogHeader>
               <DialogTitle>{editId ? "Edit Show" : "Add Trade Show"}</DialogTitle>
@@ -175,14 +171,15 @@ export default function AdminShows() {
                   {(createShow.isPending || updateShow.isPending) ? <Loader2 size={14} className="animate-spin" /> : editId ? "Update Show" : "Create Show"}
                 </button>
                 <button type="button" onClick={() => { setOpen(false); setEditId(null); setForm(EMPTY_FORM); }}
-                  style={{ fontSize: "0.875rem", padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.12)", background: "#0b0b0b", color: "#cbd5e1", borderRadius: "0.375rem", cursor: "pointer" }}>
+                  style={{ fontSize: "0.875rem", padding: "0.5rem 1rem", border: `1px solid ${ADMIN.border}`, background: ADMIN.s2, color: ADMIN.text, borderRadius: "0.375rem", cursor: "pointer" }}>
                   Cancel
                 </button>
               </div>
             </form>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        }
+      />
 
       {isLoading ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "5rem 0" }}>
@@ -196,9 +193,9 @@ export default function AdminShows() {
             const showingNotifs = selectedShowForNotifs === show.id;
 
             return (
-              <div key={show.id} style={{ padding: "1.25rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", background: "#111111" }}>
+              <div key={show.id} style={{ ...adminCardStyle, padding: "1.25rem" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                  <h3 style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#ececec", lineHeight: 1.3, margin: 0 }}>{show.name}</h3>
+                  <h3 style={{ fontWeight: 600, fontSize: "0.9375rem", color: "#f3f4f6", lineHeight: 1.3, margin: 0 }}>{show.name}</h3>
                   <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: statusColor, flexShrink: 0 }}>{show.status}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.8125rem", color: "#64748b", marginBottom: "1rem" }}>
@@ -217,16 +214,16 @@ export default function AdminShows() {
                 </div>
                 <div style={{ display: "flex", gap: "0.5rem" }}>
                   <button onClick={() => openEdit(show)}
-                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: "1px solid rgba(255,255,255,0.12)", background: "#0b0b0b", color: "#cbd5e1", borderRadius: "0.25rem", cursor: "pointer" }}>
+                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.25rem", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: `1px solid ${ADMIN.border}`, background: ADMIN.s2, color: ADMIN.text, borderRadius: "0.25rem", cursor: "pointer" }}>
                     <Edit size={12} /> Edit
                   </button>
                   <Link href={`/admin/leads?showId=${show.id}`} style={{ flex: 1 }}>
-                    <button style={{ width: "100%", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: "1px solid rgba(62,207,142,0.45)", background: "#0b0b0b", color: `${BRAND.emerald}`, borderRadius: "0.25rem", cursor: "pointer" }}>
+                    <button style={{ width: "100%", fontSize: "0.8125rem", fontWeight: 500, padding: "0.375rem 0.625rem", border: `1px solid ${emeraldAlpha(0.45)}`, background: ADMIN.s2, color: ADMIN.emerald, borderRadius: "0.25rem", cursor: "pointer" }}>
                       Leads
                     </button>
                   </Link>
                   <button onClick={() => { if (confirm("Delete this show?")) deleteShow.mutate({ id: show.id }); }}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "0.375rem 0.625rem", border: "1px solid rgba(239,68,68,0.45)", background: "#0b0b0b", color: "#f87171", borderRadius: "0.25rem", cursor: "pointer" }}>
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "0.375rem 0.625rem", border: "1px solid rgba(239,68,68,0.45)", background: ADMIN.s2, color: "#f87171", borderRadius: "0.25rem", cursor: "pointer" }}>
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -245,13 +242,13 @@ export default function AdminShows() {
 
                 {/* Notification list */}
                 {showingNotifs && (
-                  <div style={{ marginTop: "0.5rem", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.375rem", overflow: "hidden" }}>
-                    <div style={{ padding: "0.375rem 0.75rem", background: "#1C1E22", fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b" }}>
+                  <div style={{ marginTop: "0.5rem", border: "1px solid rgba(255,255,255,0.10)", borderRadius: "0.375rem", overflow: "hidden" }}>
+                    <div style={{ padding: "0.375rem 0.75rem", background: ADMIN.s2, fontSize: "0.6875rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: ADMIN.text2 }}>
                       Notification Requests
                     </div>
                     <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
                       {(showNotifs || []).map((n: any) => (
-                        <li key={n.id} style={{ padding: "0.5rem 0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", borderTop: "1px solid #1a1a1a" }}>
+                        <li key={n.id} style={{ padding: "0.5rem 0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", borderTop: `1px solid ${ADMIN.border}` }}>
                           <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.email}</span>
                           <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)", flexShrink: 0 }}>
                             {new Date(n.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
@@ -266,6 +263,6 @@ export default function AdminShows() {
           })}
         </div>
       )}
-    </div>
+    </AdminPage>
   );
 }
