@@ -479,12 +479,28 @@ function PendingDraftsTab() {
 
   if (drafts.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-zinc-600 gap-3">
-        <Inbox className="w-10 h-10" />
-        <p className="text-sm font-medium text-zinc-500">No pending drafts</p>
-        <p className="text-xs text-center max-w-xs">
-          Cal's drafts will appear here. Review each one, edit if needed, then approve and send — or bulk approve all at once.
-        </p>
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <CalDeliverabilityBanner />
+        <div className="flex flex-col items-center justify-center h-64 text-zinc-600 gap-4">
+          <Inbox className="w-10 h-10" />
+          <p className="text-sm font-medium text-zinc-500">No pending drafts</p>
+          <p className="text-xs text-center max-w-md text-zinc-500">
+            Use <strong className="text-zinc-400">Draft All Prospects</strong> on the Pipeline tab to create drafts,
+            or <strong className="text-zinc-400">Regenerate drafts</strong> there when you already have pending ones
+            and Cal&apos;s voice has been updated.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-amber-700 text-amber-300 hover:bg-amber-950/40 gap-1.5"
+            disabled={generateDrafts.isPending}
+            onClick={() => generateDrafts.mutate({})}
+          >
+            {generateDrafts.isPending
+              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Drafting…</>
+              : <><Bot className="w-3.5 h-3.5" /> Draft All Prospects</>}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -496,7 +512,7 @@ function PendingDraftsTab() {
         <p className="text-sm text-zinc-400">
           <span className="text-white font-medium">{drafts.length}</span> draft{drafts.length !== 1 ? "s" : ""} awaiting review
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
             size="sm"
             variant="outline"
@@ -514,7 +530,7 @@ function PendingDraftsTab() {
           >
             {redraftPending.isPending
               ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Redrafting…</>
-              : <><RefreshCw className="w-3.5 h-3.5" /> Redraft All Pending</>
+              : <><RefreshCw className="w-3.5 h-3.5" /> Regenerate drafts ({drafts.length})</>
             }
           </Button>
           <Button
@@ -552,7 +568,7 @@ function PendingDraftsTab() {
           <RefreshCw className="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <span className="text-sky-300">
-              Cal redrafted <strong>{redraftResult.redrafted}</strong> pending email{redraftResult.redrafted !== 1 ? "s" : ""} with updated greetings.
+              Cal regenerated <strong>{redraftResult.redrafted}</strong> draft{redraftResult.redrafted !== 1 ? "s" : ""} with the latest field-note voice.
             </span>
             {redraftResult.errors.length > 0 && (
               <p className="text-red-400 text-xs mt-1">{redraftResult.errors.length} error{redraftResult.errors.length !== 1 ? "s" : ""}: {redraftResult.errors[0]}</p>
@@ -909,6 +925,20 @@ export default function AdminSalesAgent() {
     onError: (err) => toast.error(`Hunter enrichment failed: ${err.message}`),
   });
 
+  const regenerateDrafts = trpc.admin.redraftPendingDrafts.useMutation({
+    onSuccess: (data) => {
+      const r = (data as { result: { redrafted: number; errors: string[] } }).result;
+      if (r.redrafted === 0) {
+        toast.info("No pending drafts to regenerate.");
+      } else {
+        toast.success(`Regenerated ${r.redrafted} draft${r.redrafted !== 1 ? "s" : ""} with Cal's current voice`);
+      }
+      utils.admin.getDraftCount.invalidate();
+      utils.admin.getDrafts.invalidate();
+    },
+    onError: (err) => toast.error(`Regenerate failed: ${err.message}`),
+  });
+
   // v38: update prospect notes
   const updateProspectNotes = trpc.salesAgent.updateProspectNotes.useMutation({
     onSuccess: () => {
@@ -1088,7 +1118,7 @@ export default function AdminSalesAgent() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
                     <Button
                       size="sm"
                       variant="outline"
@@ -1125,6 +1155,31 @@ export default function AdminSalesAgent() {
                       {enrichHunter.isPending
                         ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding…</>
                         : <><MousePointerClick className="w-3.5 h-3.5" /> Find Emails</>}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-sky-700 text-sky-300 hover:bg-sky-950 gap-1.5"
+                      onClick={() => regenerateDrafts.mutate()}
+                      disabled={regenerateDrafts.isPending || pendingCount === 0}
+                      title={
+                        pendingCount === 0
+                          ? "No pending drafts — open Pending Drafts tab after drafting prospects"
+                          : "Rewrite all pending drafts using Cal's latest field-note voice"
+                      }
+                    >
+                      {regenerateDrafts.isPending
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Regenerating…</>
+                        : <><RefreshCw className="w-3.5 h-3.5" /> Regenerate drafts{pendingCount > 0 ? ` (${pendingCount})` : ""}</>}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-zinc-600 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
+                      onClick={() => setActiveTab("drafts")}
+                      title="Review and send pending email drafts"
+                    >
+                      <Inbox className="w-3.5 h-3.5" /> Pending drafts{pendingCount > 0 ? ` (${pendingCount})` : ""}
                     </Button>
                     <Button
                       size="sm"
