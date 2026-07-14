@@ -321,7 +321,7 @@ function PendingDraftsTab() {
   const [editSubject, setEditSubject] = useState("");
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [discardingId, setDiscardingId] = useState<number | null>(null);
-  const [bulkResult, setBulkResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
+  const [bulkResult, setBulkResult] = useState<{ sent: number; failed: number; errors: string[] } | null>(null);
   const [draftAllResult, setDraftAllResult] = useState<{ generated: number; skipped: number; errors: string[]; total: number } | null>(null);
 
   const { data: drafts = [], isLoading, refetch } = trpc.admin.getDrafts.useQuery(
@@ -330,7 +330,7 @@ function PendingDraftsTab() {
 
   const generateDrafts = trpc.admin.generateDrafts.useMutation({
     onSuccess: (data) => {
-      const r = data as { generated: number; skipped: number; errors: string[]; total: number };
+      const r = (data as { result: { generated: number; skipped: number; errors: string[]; total: number } }).result;
       setDraftAllResult(r);
       toast.success(`Cal drafted ${r.generated} new email${r.generated !== 1 ? "s" : ""} (${r.skipped} skipped)`);
       utils.admin.getDraftCount.invalidate();
@@ -385,7 +385,7 @@ function PendingDraftsTab() {
 
   const bulkSend = trpc.admin.bulkSendDrafts.useMutation({
     onSuccess: (data) => {
-      const result = data as { sent: number; failed: number; total: number };
+      const result = data as { sent: number; failed: number; errors: string[] };
       setBulkResult(result);
       toast.success(`Cal sent ${result.sent} email${result.sent !== 1 ? "s" : ""}${result.failed > 0 ? ` (${result.failed} failed)` : ""}`);
       utils.admin.getDraftCount.invalidate();
@@ -447,7 +447,11 @@ function PendingDraftsTab() {
             size="sm"
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-1.5"
             disabled={bulkSend.isPending || drafts.length === 0}
-            onClick={() => bulkSend.mutate({})}
+            onClick={() =>
+              bulkSend.mutate({
+                draftIds: (drafts as Array<{ draft: { id: number } }>).map((d) => d.draft.id),
+              })
+            }
           >
             {bulkSend.isPending
               ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Sending all…</>
