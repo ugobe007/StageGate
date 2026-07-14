@@ -465,13 +465,19 @@ export async function sendUnifiedDraftEntry(
     }
   }
 
+  let body = entry.draft.body;
+  {
+    const { calSalutationForProspect, normalizeCalEmailGreeting } = await import("./services/partnerEmail.js");
+    body = normalizeCalEmailGreeting(body, calSalutationForProspect(entry.prospect));
+  }
+
   let sendResult: { id: string; warning?: string } | undefined;
   let deliveryWarning: string | undefined;
   try {
     sendResult = await sendEmail({
       to: toEmail,
       subject: entry.draft.subject,
-      body: entry.draft.body,
+      body,
     });
     if (sendResult?.warning) deliveryWarning = sendResult.warning;
   } catch (sendErr) {

@@ -794,6 +794,10 @@ async function resolveShowCity(showName: string): Promise<string> {
 import {
   buildCalPartnerEmail,
   isPartnerProspect,
+  resolveGreetingName,
+  greetingLine,
+  normalizeCalEmailGreeting,
+  calSalutationForProspect,
 } from "../services/partnerEmail.js";
 
 /**
@@ -808,10 +812,12 @@ function buildDiscoveryEmail(
   _showCity: string,
   _upcomingLvShows: string[] = []
 ): { subject: string; body: string } {
-  const contactFirstName = prospect.contactName
-    ? prospect.contactName.split(" ")[0] ?? prospect.contactName
-    : null;
-  const greetingName = contactFirstName ?? "there";
+  const resolved = resolveGreetingName({
+    contactName: prospect.contactName,
+    contactEmail: prospect.contactEmail,
+    company: prospect.company,
+  });
+  const salutation = greetingLine(resolved.greetingName);
 
   // One field lesson to teach in the intro (deployment-focused, not show-floor).
   const insight = pickCalInsight({
@@ -821,19 +827,20 @@ function buildDiscoveryEmail(
     allowHumor: false,
   });
 
-  const body = [
-    `Hi ${greetingName},`,
-    ``,
-    `This is Cal at StageGate. I spend most of my time helping companies get robots ready for real operations — not demos — so I wanted to introduce myself. Your team looks like it's investing in automation, and we've learned a few things that tend to save people time and money.`,
-    ``,
-    insight,
-    ``,
-    `No ask here — I'm not trying to sell you anything. StageGate is the deployment side of physical AI: the logistics, activation, integration, training, and support that turn a robot you bought into a system that actually runs. If that's ever useful, I'm glad to share what works.`,
-    ``,
-    `onstage.bot has more if you want it. Either way, good luck with what you're building.`,
-    ``,
-    FRANK_PERSONA.signature,
-  ].join("\n");
+  const body = normalizeCalEmailGreeting(
+    [
+      `This is Cal at StageGate. I spend most of my time helping companies get robots ready for real operations — not demos — so I wanted to introduce myself. Your team looks like it's investing in automation, and we've learned a few things that tend to save people time and money.`,
+      ``,
+      insight,
+      ``,
+      `No ask here — I'm not trying to sell you anything. StageGate is the deployment side of physical AI: the logistics, activation, integration, training, and support that turn a robot you bought into a system that actually runs. If that's ever useful, I'm glad to share what works.`,
+      ``,
+      `onstage.bot has more if you want it. Either way, good luck with what you're building.`,
+      ``,
+      FRANK_PERSONA.signature,
+    ].join("\n"),
+    salutation,
+  );
 
   const subject = `Introducing myself — deployment notes for ${prospect.company}`;
 
@@ -878,10 +885,13 @@ async function generateFrankEmail(
     .filter(Boolean)
     .join(" — ") || "your robot";
 
-  const contactFirstName = prospect.contactName
-    ? prospect.contactName.split(" ")[0] ?? prospect.contactName
-    : null;
-  const greetingName = contactFirstName ?? "there";
+  const resolved = resolveGreetingName({
+    contactName: prospect.contactName,
+    contactEmail: prospect.contactEmail,
+    company: prospect.company,
+  });
+  const salutation = greetingLine(resolved.greetingName);
+  const contactLabel = resolved.greetingName ?? "the team";
 
   const promptTemplate = STAGE_PROMPTS[stage] ?? STAGE_PROMPTS["followup_1"]!;
 
@@ -895,7 +905,8 @@ async function generateFrankEmail(
 
   const userPrompt = promptTemplate
     .replace(/\{\{companyName\}\}/g, prospect.company)
-    .replace(/\{\{contactName\}\}/g, greetingName)
+    .replace(/\{\{contactName\}\}/g, contactLabel)
+    .replace(/\{\{greetingLine\}\}/g, salutation)
     .replace(/\{\{showName\}\}/g, primaryShow)
     .replace(/\{\{showDates\}\}/g, "")
     .replace(/\{\{showLocation\}\}/g, "Las Vegas")
@@ -939,9 +950,12 @@ async function generateFrankEmail(
   }
 
   // Strip any LLM-generated sign-off and append the canonical signature
-  const bodyClean = (parsed.body ?? "")
-    .replace(/\n*(Thanks[,.]?|Best[,.]?|Cheers[,.]?)[\s\S]*$/i, "")
-    .trimEnd();
+  const bodyClean = normalizeCalEmailGreeting(
+    (parsed.body ?? "")
+      .replace(/\n*(Thanks[,.]?|Best[,.]?|Cheers[,.]?)[\s\S]*$/i, "")
+      .trimEnd(),
+    salutation,
+  );
 
   const body = bodyClean + `\n\nThanks,\n${FRANK_PERSONA.signature}`;
 
@@ -1107,6 +1121,26 @@ export async function advanceProspectConversationAfterSend(
     .where(eq(salesAgentConversations.id, conv.id));
 }
 
+/** Fix pending drafts that open with "Hey there," / "Hi there," etc. */
+async function repairPendingDraftGreetings(db: NonNullable<Awaited<ReturnType<typeof getDb>>>): Promise<number> {
+  const emailHelpers = await import("../email.js");
+  const entries = await emailHelpers.getDraftsWithRecipients(["pending", "approved"], "prospect");
+  let fixed = 0;
+  for (const entry of entries) {
+    if (!entry.prospect) continue;
+    const salutation = calSalutationForProspect(entry.prospect);
+    const normalized = normalizeCalEmailGreeting(entry.draft.body, salutation);
+    if (normalized !== entry.draft.body) {
+      await db.update(draftEmails).set({ body: normalized }).where(eq(draftEmails.id, entry.draft.id));
+      fixed++;
+    }
+  }
+  if (fixed > 0) {
+    console.log(`[Cal] Repaired greeting on ${fixed} pending draft(s)`);
+  }
+  return fixed;
+}
+
 /** Draft the next Cal email for each lead (weekly cadence, max 3 emails per lead). */
 export async function generateCalDraftsCore(options?: {
   prospectIds?: number[];
@@ -1116,6 +1150,8 @@ export async function generateCalDraftsCore(options?: {
 
   const { listProspects } = await import("../db.js");
   const emailHelpers = await import("../email.js");
+
+  await repairPendingDraftGreetings(db);
 
   const allProspects = await listProspects();
   const targets = options?.prospectIds

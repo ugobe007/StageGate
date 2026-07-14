@@ -152,6 +152,47 @@ export function greetingLine(greetingName: string | null): string {
   return greetingName ? `Hi ${greetingName},` : "Hi team,";
 }
 
+/** Impersonal salutations Cal must never use (LLM drift or legacy templates). */
+const IMPERSONAL_GREETING =
+  /^(?:(?:hi|hey|hello)\s+there|hey|hello\s+there)\s*,?\s*$/i;
+
+/**
+ * Remove the opening salutation line so we can prepend the correct one.
+ * Strips "Hey there,", "Hi Jane,", etc. — anything that looks like a greeting opener.
+ */
+export function stripLeadingGreetingLine(body: string): string {
+  const lines = body.replace(/^\uFEFF/, "").split("\n");
+  let i = 0;
+  while (i < lines.length && lines[i]!.trim() === "") i++;
+  if (i < lines.length) {
+    const line = lines[i]!.trim();
+    if (IMPERSONAL_GREETING.test(line) || /^(?:hi|hey|hello)\b/i.test(line)) {
+      lines.splice(i, 1);
+      while (i < lines.length && lines[i]!.trim() === "") lines.splice(i, 1);
+    }
+  }
+  return lines.join("\n").trimStart();
+}
+
+/** Force Cal's email to open with a real name or "Hi team," — never "Hey there,". */
+export function normalizeCalEmailGreeting(body: string, salutation: string): string {
+  const rest = stripLeadingGreetingLine(body);
+  return rest ? `${salutation}\n\n${rest}` : salutation;
+}
+
+export function calSalutationForProspect(prospect: {
+  contactName?: string | null;
+  contactEmail?: string | null;
+  company: string;
+}): string {
+  const resolved = resolveGreetingName({
+    contactName: prospect.contactName,
+    contactEmail: prospect.contactEmail,
+    company: prospect.company,
+  });
+  return greetingLine(resolved.greetingName);
+}
+
 export function buildCalPartnerEmail(input: {
   company: string;
   contactName?: string | null;

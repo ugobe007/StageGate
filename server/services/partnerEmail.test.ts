@@ -6,6 +6,8 @@ import {
   isPartnerProspect,
   resolveGreetingName,
   isGenericInbox,
+  normalizeCalEmailGreeting,
+  greetingLine,
   PARTNER_SIGNUP_URL,
 } from "./partnerEmail";
 
@@ -74,6 +76,19 @@ describe("partnerEmail", () => {
     expect(out).toContain("Jane");
     expect(out).toContain("Freeman");
     expect(out).toContain("exhibit teams");
+  });
+
+  it("normalizes impersonal Hey there opener", () => {
+    const fixed = normalizeCalEmailGreeting(
+      "Hey there,\n\nThis is Cal at StageGate.",
+      "Hi Jane,",
+    );
+    expect(fixed).toBe("Hi Jane,\n\nThis is Cal at StageGate.");
+    expect(fixed).not.toMatch(/Hey there/i);
+  });
+
+  it("uses Hi team when no contact name", () => {
+    expect(greetingLine(null)).toBe("Hi team,");
   });
 
   it("identifies partner prospects", () => {
