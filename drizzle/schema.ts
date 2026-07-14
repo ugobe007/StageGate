@@ -500,6 +500,21 @@ export const emailTrackingEvents = pgTable("email_tracking_events", {
 export type EmailTrackingEvent = typeof emailTrackingEvents.$inferSelect;
 export type InsertEmailTrackingEvent = typeof emailTrackingEvents.$inferInsert;
 
+// ─── Outreach Suppressions (bounce/complaint safety) ─────────────────────────
+// Durable, address-level block list. Populated from Resend bounce/complaint
+// webhooks; consulted before every send and used to compute the trailing
+// bounce-rate circuit breaker. See server/outreachGate.ts.
+export const outreachSuppressions = pgTable("outreach_suppressions", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  reason: text("reason").notNull().default("bounce"), // bounce | complaint | manual
+  source: text("source"), // resend_webhook | admin | ...
+  prospectId: integer("prospect_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+export type OutreachSuppression = typeof outreachSuppressions.$inferSelect;
+export type InsertOutreachSuppression = typeof outreachSuppressions.$inferInsert;
+
 // ─── Email Threads (inbound + outbound conversation history) ─────────────────
 export const emailThreads = pgTable("email_threads", {
   id: serial("id").primaryKey(),

@@ -33,6 +33,40 @@ export async function resendWebhookHandler(req: Request, res: Response): Promise
   const occurredAt = data.created_at ? new Date(data.created_at) : new Date();
   const clickUrl = data.click?.link ?? null;
 
+  const recipientOf = (): string | null => {
+    const raw = Array.isArray(data.to) ? data.to[0] : typeof data.to === "string" ? data.to : null;
+    return raw?.trim().toLowerCase() ?? null;
+  };
+
+  // Deliverability: a bounce or complaint is a hard signal never to send to this
+  // address again. Record it in the suppression store (blocks future sends and
+  // feeds the trailing-bounce-rate circuit breaker). Previously these events
+  // were ignored, so bad addresses were re-sent every cycle.
+  if (eventType === "email.bounced" || eventType === "email.complained") {
+    try {
+      const db = await getDb();
+      const recipient = recipientOf();
+      if (db && recipient) {
+        const { recordSuppression } = await import("../outreachGate");
+        const reason = eventType === "email.complained" ? "complaint" : "bounce";
+        await recordSuppression(db, recipient, reason, { source: "resend_webhook" });
+        await db.insert(emailTrackingEvents).values({
+          messageId,
+          eventType,
+          occurredAt,
+          raw: event as Record<string, unknown>,
+        });
+        console.warn(`[Resend Webhook] ${eventType} → suppressed ${recipient}`);
+      }
+      res.status(200).json({ received: true, suppressed: recipient ?? undefined, eventType });
+      return;
+    } catch (err) {
+      console.error("[Resend Webhook] Error recording suppression:", err);
+      res.status(200).json({ received: true, eventType, error: "suppression_failed" });
+      return;
+    }
+  }
+
   // Handle email.opened, email.clicked, and email.replied
   if (eventType !== "email.opened" && eventType !== "email.clicked" && eventType !== "email.replied") {
     res.status(200).json({ received: true, ignored: true });

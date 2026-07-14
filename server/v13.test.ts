@@ -320,7 +320,9 @@ describe("Resend webhook handler", () => {
     const origSecret = process.env.RESEND_WEBHOOK_SECRET;
     delete process.env.RESEND_WEBHOOK_SECRET;
     try {
-      const { req, res, statusMock, jsonMock } = makeReqRes({ type: "email.bounced", data: { email_id: "msg_123", to: [] } });
+      // email.delivery_delayed is a genuinely non-actionable type (bounces and
+      // complaints are now handled → suppression, so they are not "ignored").
+      const { req, res, statusMock, jsonMock } = makeReqRes({ type: "email.delivery_delayed", data: { email_id: "msg_123", to: [] } });
       const getDb = vi.mocked(dbModule.getDb);
       getDb.mockResolvedValue(null);
       await resendWebhookHandler(req as never, res as never);

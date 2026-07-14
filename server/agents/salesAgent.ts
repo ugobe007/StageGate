@@ -47,6 +47,7 @@ import { outreachEmailPolicySummary, selectOutreachEmail } from "../outreachCont
 import { pickCalInsight } from "./calInsights.js";
 import { hunterEnabled } from "../integrations/hunter.js";
 import { enrichProspectContact, prospectNeedsEnrichment } from "./prospectEnrichment.js";
+import { outreachDisabled, screenRecipient, shouldPauseNewIntros } from "../outreachGate.js";
 
 // Emails Cal sends per nightly run. Env-tunable so throughput can be ramped for
 // deliverability. Default 20 (the team's documented Resend-safe ceiling) clears
@@ -89,6 +90,24 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
 
   const db = await getDb();
   if (!db) return res.status(503).json({ error: "db unavailable" });
+
+  // Hard kill switch — stop all automated sends immediately when set.
+  if (outreachDisabled()) {
+    console.warn("[Cal outreach] OUTREACH_DISABLED is set — skipping run");
+    return res.json({ ok: true, emailsSent: 0, disabled: true });
+  }
+
+  // Deliverability circuit breaker: if the trailing bounce rate is over
+  // threshold, HOLD new intros this cycle to protect sender reputation.
+  // Follow-ups to already-engaged threads still run (they land in real inboxes).
+  const { paused: introsPaused, stats: bounceStats } = await shouldPauseNewIntros(db);
+  if (introsPaused) {
+    console.warn(
+      `[Cal outreach] circuit breaker OPEN — new intros paused. ` +
+        `Trailing ${bounceStats.windowDays}d: ${bounceStats.bounced}/${bounceStats.sent} bounced ` +
+        `(${(bounceStats.rate * 100).toFixed(1)}%), threshold ${(bounceStats.threshold * 100).toFixed(0)}%`,
+    );
+  }
 
   const [runRecord] = await db
     .insert(salesAgentRuns)
@@ -141,7 +160,7 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
     // Diagnostics: without this, a run that skips every ready conversation looks
     // identical to a run with nothing to do (status "completed", emailsSent 0).
     // Record why each candidate was skipped so runs are explainable after the fact.
-    const skips = { cap: 0, noEmail: 0, emptyBody: 0, recentlyContacted: 0 };
+    const skips = { cap: 0, noEmail: 0, emptyBody: 0, recentlyContacted: 0, unverified: 0, pausedIntro: 0 };
     let hunterEnriched = 0;
     const totalDue = await db
       .select({ count: count() })
@@ -184,6 +203,14 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
         continue;
       }
 
+      // Circuit breaker: when tripped, hold NEW intros (a prospect that has
+      // never been emailed sits in "discovery") but let follow-ups to already-
+      // contacted threads through — those reach real, engaged inboxes.
+      if (introsPaused && (conv.state as ConversationStage) === "discovery") {
+        skips.pausedIntro++;
+        continue;
+      }
+
       let toEmail = selectOutreachEmail(prospect);
       // No real inbox on file — try Hunter for a verified decision-maker before
       // falling back to a guessed role inbox. Bounded to the batch size per run.
@@ -196,6 +223,15 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
       }
       if (!toEmail) {
         skips.noEmail++;
+        continue;
+      }
+
+      // Final send gate: reject guessed inboxes, suppressed (previously bounced)
+      // addresses, and dead domains before we ever hit Resend.
+      const screen = await screenRecipient(db, toEmail);
+      if (!screen.ok) {
+        skips.unverified++;
+        console.log(`[Cal outreach] skip prospect ${prospect.id} (${toEmail}): ${screen.reason}`);
         continue;
       }
       const emailPolicy = outreachEmailPolicySummary(prospect);
@@ -292,6 +328,8 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
             batchSize: readyConvs.length,
             hunterEnriched,
             skips,
+            introsPaused,
+            bounceStats,
             errors: errors.slice(0, 10),
           },
         })
@@ -467,7 +505,11 @@ export async function salesAgentManualSendCore(
     .limit(1);
   if (!prospect) throw new Error("Prospect not found");
   const toEmail = selectOutreachEmail(prospect);
-  if (!toEmail) throw new Error("No contact email");
+  if (!toEmail) throw new Error("No verified contact email (guessed inboxes are no longer sent)");
+  const screen = await screenRecipient(db, toEmail);
+  if (!screen.ok) {
+    throw new Error(`Recipient failed the send gate (${screen.reason}): ${toEmail}`);
+  }
   const emailPolicy = outreachEmailPolicySummary(prospect);
 
   const [conv] = await db

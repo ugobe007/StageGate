@@ -453,6 +453,18 @@ export async function sendUnifiedDraftEntry(
     throw new Error("Prospect not found for draft");
   }
 
+  // Send gate: reject guessed inboxes, suppressed addresses, and dead domains
+  // before hitting Resend (mirrors the automated Cal path).
+  {
+    const { screenRecipient } = await import("./outreachGate.js");
+    const { getDb } = await import("./db.js");
+    const gateDb = await getDb();
+    const screen = await screenRecipient(gateDb, toEmail);
+    if (!screen.ok) {
+      throw new Error(`Recipient failed the send gate (${screen.reason}): ${toEmail}`);
+    }
+  }
+
   let sendResult: { id: string; warning?: string } | undefined;
   let deliveryWarning: string | undefined;
   try {
