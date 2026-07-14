@@ -16,7 +16,7 @@ import crypto from "crypto";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 import { roleBasedOutreachEmails, isDeprecatedRoleInbox } from "./outreachContacts";
-import { salesAgentManualSendCore, salesAgentPreviewCore, generateCalDraftsCore, advanceProspectConversationAfterSend } from "./agents/salesAgent";
+import { salesAgentManualSendCore, salesAgentPreviewCore, generateCalDraftsCore, redraftPendingCalDraftsCore, advanceProspectConversationAfterSend } from "./agents/salesAgent";
 
 // Admin-only middleware
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -1912,6 +1912,14 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           async () => generateCalDraftsCore({ prospectIds: input.prospectIds }),
         );
       }),
+
+    /** Regenerate every pending Cal draft (full body redraft, not greeting-only). */
+    redraftPendingDrafts: adminProcedure.mutation(async ({ ctx }) => {
+      return workflows.withAgentRun(
+        { agentName: "Cal Redraft", triggeredBy: ctx.user?.name ?? "admin", inputSummary: "all pending prospect drafts" },
+        async () => redraftPendingCalDraftsCore(),
+      );
+    }),
 
     // Get all drafts with recipient data (prospects + partners/vendors)
     getDrafts: adminProcedure

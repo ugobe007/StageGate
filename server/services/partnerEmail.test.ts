@@ -50,7 +50,7 @@ describe("partnerEmail", () => {
       company: "Freeman",
       contactEmail: "info@freeman.com",
     } as { company: string; contactEmail: string });
-    expect(body).toContain("Hi team");
+    expect(body).toContain("Hi Freeman team");
     expect(needsName).toBe(true);
   });
 
@@ -87,8 +87,9 @@ describe("partnerEmail", () => {
     expect(fixed).not.toMatch(/Hey there/i);
   });
 
-  it("uses Hi team when no contact name", () => {
-    expect(greetingLine(null)).toBe("Hi team,");
+  it("uses company team greeting when no contact name", () => {
+    expect(greetingLine(null, "Boston Dynamics")).toBe("Hi Boston Dynamics team,");
+    expect(greetingLine(null)).toBe("Hello,");
   });
 
   it("identifies partner prospects", () => {

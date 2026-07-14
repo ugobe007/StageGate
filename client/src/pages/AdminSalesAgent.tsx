@@ -324,6 +324,7 @@ function PendingDraftsTab() {
   const [discardingId, setDiscardingId] = useState<number | null>(null);
   const [bulkResult, setBulkResult] = useState<{ sent: number; failed: number; errors: string[] } | null>(null);
   const [draftAllResult, setDraftAllResult] = useState<{ generated: number; skipped: number; errors: string[]; total: number } | null>(null);
+  const [redraftResult, setRedraftResult] = useState<{ redrafted: number; errors: string[] } | null>(null);
 
   const { data: drafts = [], isLoading, refetch } = trpc.admin.getDrafts.useQuery(
     { statuses: ["pending"] }
@@ -339,6 +340,19 @@ function PendingDraftsTab() {
     },
     onError: (err: { message: string }) => {
       toast.error(`Draft generation failed: ${err.message}`);
+    },
+  });
+
+  const redraftPending = trpc.admin.redraftPendingDrafts.useMutation({
+    onSuccess: (data) => {
+      const r = (data as { result: { redrafted: number; errors: string[] } }).result;
+      setRedraftResult(r);
+      toast.success(`Cal redrafted ${r.redrafted} pending email${r.redrafted !== 1 ? "s" : ""}`);
+      utils.admin.getDraftCount.invalidate();
+      refetch();
+    },
+    onError: (err: { message: string }) => {
+      toast.error(`Redraft failed: ${err.message}`);
     },
   });
 
@@ -435,6 +449,18 @@ function PendingDraftsTab() {
           <Button
             size="sm"
             variant="outline"
+            className="border-sky-700 text-sky-300 hover:bg-sky-950/40 gap-1.5"
+            disabled={redraftPending.isPending || drafts.length === 0}
+            onClick={() => { setRedraftResult(null); redraftPending.mutate(); }}
+          >
+            {redraftPending.isPending
+              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Redrafting…</>
+              : <><RefreshCw className="w-3.5 h-3.5" /> Redraft All Pending</>
+            }
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
             className="border-amber-700 text-amber-300 hover:bg-amber-950/40 gap-1.5"
             disabled={generateDrafts.isPending}
             onClick={() => { setDraftAllResult(null); generateDrafts.mutate({}); }}
@@ -461,6 +487,21 @@ function PendingDraftsTab() {
           </Button>
         </div>
       </div>
+
+      {redraftResult && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sm">
+          <RefreshCw className="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <span className="text-sky-300">
+              Cal redrafted <strong>{redraftResult.redrafted}</strong> pending email{redraftResult.redrafted !== 1 ? "s" : ""} with updated greetings.
+            </span>
+            {redraftResult.errors.length > 0 && (
+              <p className="text-red-400 text-xs mt-1">{redraftResult.errors.length} error{redraftResult.errors.length !== 1 ? "s" : ""}: {redraftResult.errors[0]}</p>
+            )}
+          </div>
+          <button onClick={() => setRedraftResult(null)} className="text-zinc-500 hover:text-zinc-300 text-xs flex-shrink-0">Dismiss</button>
+        </div>
+      )}
 
       {draftAllResult && (
         <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">

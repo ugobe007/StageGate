@@ -817,7 +817,7 @@ function buildDiscoveryEmail(
     contactEmail: prospect.contactEmail,
     company: prospect.company,
   });
-  const salutation = greetingLine(resolved.greetingName);
+  const salutation = greetingLine(resolved.greetingName, prospect.company);
 
   // One field lesson to teach in the intro (deployment-focused, not show-floor).
   const insight = pickCalInsight({
@@ -890,8 +890,8 @@ async function generateFrankEmail(
     contactEmail: prospect.contactEmail,
     company: prospect.company,
   });
-  const salutation = greetingLine(resolved.greetingName);
-  const contactLabel = resolved.greetingName ?? "the team";
+  const salutation = greetingLine(resolved.greetingName, prospect.company);
+  const contactLabel = resolved.greetingName ?? `${prospect.company} team`;
 
   const promptTemplate = STAGE_PROMPTS[stage] ?? STAGE_PROMPTS["followup_1"]!;
 
@@ -1121,7 +1121,7 @@ export async function advanceProspectConversationAfterSend(
     .where(eq(salesAgentConversations.id, conv.id));
 }
 
-/** Fix pending drafts that open with "Hey there," / "Hi there," etc. */
+/** Fix pending drafts that open with "Hey there," / "Hi there," / generic "Hi team," etc. */
 async function repairPendingDraftGreetings(db: NonNullable<Awaited<ReturnType<typeof getDb>>>): Promise<number> {
   const emailHelpers = await import("../email.js");
   const entries = await emailHelpers.getDraftsWithRecipients(["pending", "approved"], "prospect");
@@ -1139,6 +1139,50 @@ async function repairPendingDraftGreetings(db: NonNullable<Awaited<ReturnType<ty
     console.log(`[Cal] Repaired greeting on ${fixed} pending draft(s)`);
   }
   return fixed;
+}
+
+/** Regenerate body + subject for every pending prospect draft (true redraft). */
+export async function redraftPendingCalDraftsCore(): Promise<{
+  redrafted: number;
+  errors: string[];
+}> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const emailHelpers = await import("../email.js");
+  const entries = await emailHelpers.getDraftsWithRecipients(["pending"], "prospect");
+  let redrafted = 0;
+  const errors: string[] = [];
+
+  for (const entry of entries) {
+    if (!entry.prospect) continue;
+    const [conv] = await db
+      .select()
+      .from(salesAgentConversations)
+      .where(eq(salesAgentConversations.prospectId, entry.prospect.id))
+      .limit(1);
+
+    const stage = (conv?.state ?? "discovery") as ConversationStage;
+    try {
+      const preview = await salesAgentPreviewCore(entry.prospect.id, stage);
+      await db
+        .update(draftEmails)
+        .set({
+          subject: preview.subject,
+          body: preview.body,
+          agentReasoning: `Cal redraft — stage ${stage}`,
+        })
+        .where(eq(draftEmails.id, entry.draft.id));
+      redrafted++;
+    } catch (e) {
+      errors.push(`${entry.prospect.company}: ${String(e).slice(0, 100)}`);
+    }
+    await new Promise((r) => setTimeout(r, 300));
+  }
+
+  await repairPendingDraftGreetings(db);
+  console.log(`[Cal] Redrafted ${redrafted} pending draft(s)`);
+  return { redrafted, errors: errors.slice(0, 20) };
 }
 
 /** Draft the next Cal email for each lead (weekly cadence, max 3 emails per lead). */

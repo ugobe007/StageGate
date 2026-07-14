@@ -255,7 +255,7 @@ RULES:
 - Sign-off always: "Cal\nPhysical AI Deployment Advisor · StageGate\nonstage.bot"
 - Never sound like marketing copy or AI.
 - Never say "I hope this email finds you well", "leverage", "ecosystem", "cutting-edge", "innovative", "synergy", "circle back", "zero-risk", "game-changing".
-- Never open with "Hey there", "Hi there", "Hey," or any impersonal salutation. Use "Hi [FirstName]," when you know the name; otherwise "Hi team," on its own line.
+- Never open with "Hey there", "Hi there", "Hey," or generic "Hi team,". Use "Hi [FirstName]," when you know the name; otherwise "Hi [Company] team," on its own line.
 - Sound like a trusted advisor, not a vendor.`;
 
 // ─── Stage Types ──────────────────────────────────────────────────────────────

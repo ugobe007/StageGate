@@ -148,8 +148,18 @@ export function resolveGreetingName(input: {
   return { greetingName: null, needsName: true, source: "missing" };
 }
 
-export function greetingLine(greetingName: string | null): string {
-  return greetingName ? `Hi ${greetingName},` : "Hi team,";
+/** Matches "Hi Acme Corp team," or bare "Hello," — never generic "Hi team,". */
+export const CAL_TEAM_GREETING = /^Hi .+ team,/m;
+
+export function isCalTeamGreeting(body: string): boolean {
+  return CAL_TEAM_GREETING.test(body) || /^Hello,/m.test(body);
+}
+
+export function greetingLine(greetingName: string | null, company?: string): string {
+  if (greetingName) return `Hi ${greetingName},`;
+  const co = company?.trim();
+  if (co && co.toLowerCase() !== "your team") return `Hi ${co} team,`;
+  return "Hello,";
 }
 
 /** Impersonal salutations Cal must never use (LLM drift or legacy templates). */
@@ -174,7 +184,7 @@ export function stripLeadingGreetingLine(body: string): string {
   return lines.join("\n").trimStart();
 }
 
-/** Force Cal's email to open with a real name or "Hi team," — never "Hey there,". */
+/** Force Cal's email to open with a real name or "Hi {Company} team," — never "Hey there,". */
 export function normalizeCalEmailGreeting(body: string, salutation: string): string {
   const rest = stripLeadingGreetingLine(body);
   return rest ? `${salutation}\n\n${rest}` : salutation;
@@ -190,7 +200,7 @@ export function calSalutationForProspect(prospect: {
     contactEmail: prospect.contactEmail,
     company: prospect.company,
   });
-  return greetingLine(resolved.greetingName);
+  return greetingLine(resolved.greetingName, prospect.company);
 }
 
 export function buildCalPartnerEmail(input: {
@@ -220,7 +230,7 @@ export function buildCalPartnerEmail(input: {
   });
 
   const body = [
-    greetingLine(greetingName),
+    greetingLine(greetingName, input.company),
     ``,
     `This is Cal from StageGate. We're the robotics logistics and technical operations team here in Las Vegas.`,
     ``,
@@ -519,7 +529,7 @@ export async function sendPartnerOutreachEmail(input: {
   body: string;
   toEmail?: string;
   contactName?: string;
-  /** Bulk send: allow "Hi team," when no contact name (generic inbox) */
+  /** Bulk send: allow company team greeting when no contact name (generic inbox) */
   allowTeamGreeting?: boolean;
 }): Promise<{ sentTo: string; messageId?: string; warning?: string }> {
   const recipient = await getPartnerRecipient(input.recipientKey);
@@ -538,8 +548,8 @@ export async function sendPartnerOutreachEmail(input: {
   if (resolved.needsName && !input.allowTeamGreeting) {
     throw new Error(`Add a contact name for ${recipient.company} before sending`);
   }
-  if (resolved.needsName && input.allowTeamGreeting && !/^Hi team,/m.test(input.body)) {
-    throw new Error(`${recipient.company}: use "Hi team," greeting or add a contact name`);
+  if (resolved.needsName && input.allowTeamGreeting && !isCalTeamGreeting(input.body)) {
+    throw new Error(`${recipient.company}: use "Hi ${recipient.company} team," greeting or add a contact name`);
   }
 
   if (input.contactName?.trim() && input.contactName !== recipient.contactName) {

@@ -439,8 +439,8 @@ export async function sendUnifiedDraftEntry(
     if (!recipientKey) {
       throw new Error(`${entry.recipient.company}: missing partner recipient key`);
     }
-    const { sendPartnerOutreachEmail } = await import("./services/partnerEmail");
-    const allowTeam = /^Hi team,/m.test(entry.draft.body);
+    const { sendPartnerOutreachEmail, isCalTeamGreeting } = await import("./services/partnerEmail");
+    const allowTeam = isCalTeamGreeting(entry.draft.body);
     return sendPartnerOutreachEmail({
       recipientKey,
       subject: entry.draft.subject,
