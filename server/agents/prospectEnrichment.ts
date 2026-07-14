@@ -9,11 +9,13 @@
  */
 
 import type { Request, Response } from "express";
-import { eq, or, isNull, inArray } from "drizzle-orm";
+import { eq, or, isNull, inArray, sql } from "drizzle-orm";
 import { getDb } from "../db.js";
 import { prospects, prospectActivities } from "../../drizzle/schema.js";
 import { findBestProspectEmail, hunterEnabled } from "../integrations/hunter.js";
 import { isDeprecatedRoleInbox } from "../outreachContacts.js";
+import { isSendableEmailConfidence, selectOutreachEmail } from "../outreachContacts.js";
+import { screenRecipient, ensureSuppressionStore } from "../outreachGate.js";
 
 /** Generic mailbox local-parts that are guesses, not real people. */
 const GENERIC_LOCAL_PARTS = new Set([
@@ -128,6 +130,58 @@ export async function enrichProspectsBatch(db: Db, limit = 25): Promise<EnrichBa
 
   console.log(`[enrich] attempted ${toEnrich.length}, enriched ${enriched}`);
   return { attempted: toEnrich.length, enriched, results };
+}
+
+type PrepareResult =
+  | { ok: true; email: string }
+  | { ok: false; reason: string };
+
+/**
+ * Resolve a send-ready recipient: Hunter enrich if needed, then confidence +
+ * send-gate checks. Shared by the nightly cron and admin draft sends.
+ */
+export async function prepareProspectOutreachRecipient(
+  prospect: ProspectRow,
+  db: Db | null,
+): Promise<PrepareResult> {
+  if ((!selectOutreachEmail(prospect) || prospectNeedsEnrichment(prospect)) && hunterEnabled()) {
+    await enrichProspectContact(prospect, { db: db ?? undefined });
+  }
+
+  const email = selectOutreachEmail(prospect);
+  if (!email) return { ok: false, reason: "no_verified_email" };
+  if (!isSendableEmailConfidence(prospect.emailConfidence)) {
+    return { ok: false, reason: "low_confidence" };
+  }
+
+  const screen = await screenRecipient(db, email);
+  if (!screen.ok) return { ok: false, reason: screen.reason ?? "gate_rejected" };
+
+  return { ok: true, email };
+}
+
+/**
+ * Mark prospects whose on-file email has bounced/complained so enrichment re-runs.
+ */
+export async function quarantineBouncedProspectEmails(db: Db): Promise<{ quarantined: number }> {
+  await ensureSuppressionStore(db);
+  const rows = await db.execute(sql`
+    SELECT p.id, p."contactEmail", p.company
+    FROM prospects p
+    INNER JOIN outreach_suppressions s ON lower(s.email) = lower(p."contactEmail")
+    WHERE p."contactEmail" IS NOT NULL AND p."contactEmail" <> ''
+  `);
+  let quarantined = 0;
+  for (const row of rows.rows ?? []) {
+    const id = Number((row as { id?: number }).id);
+    if (!id) continue;
+    await db
+      .update(prospects)
+      .set({ emailConfidence: "low", updatedAt: new Date() })
+      .where(eq(prospects.id, id));
+    quarantined++;
+  }
+  return { quarantined };
 }
 
 /**

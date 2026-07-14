@@ -43,11 +43,10 @@ import {
   ROBOT_GUILD_PITCH,
   type ConversationStage,
 } from "./frankPlaybook.js";
-import { outreachEmailPolicySummary, selectOutreachEmail } from "../outreachContacts.js";
+import { outreachEmailPolicySummary } from "../outreachContacts.js";
 import { pickCalInsight } from "./calInsights.js";
-import { hunterEnabled } from "../integrations/hunter.js";
-import { enrichProspectContact, prospectNeedsEnrichment } from "./prospectEnrichment.js";
-import { outreachDisabled, screenRecipient, shouldPauseNewIntros } from "../outreachGate.js";
+import { prepareProspectOutreachRecipient } from "./prospectEnrichment.js";
+import { outreachDisabled, shouldPauseNewIntros } from "../outreachGate.js";
 
 // Emails Cal sends per nightly run. Env-tunable so throughput can be ramped for
 // deliverability. Default 20 (the team's documented Resend-safe ceiling) clears
@@ -160,7 +159,7 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
     // Diagnostics: without this, a run that skips every ready conversation looks
     // identical to a run with nothing to do (status "completed", emailsSent 0).
     // Record why each candidate was skipped so runs are explainable after the fact.
-    const skips = { cap: 0, noEmail: 0, emptyBody: 0, recentlyContacted: 0, unverified: 0, pausedIntro: 0 };
+    const skips = { cap: 0, noEmail: 0, emptyBody: 0, recentlyContacted: 0, unverified: 0, lowConfidence: 0, pausedIntro: 0 };
     let hunterEnriched = 0;
     const totalDue = await db
       .select({ count: count() })
@@ -211,29 +210,14 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
         continue;
       }
 
-      let toEmail = selectOutreachEmail(prospect);
-      // No real inbox on file — try Hunter for a verified decision-maker before
-      // falling back to a guessed role inbox. Bounded to the batch size per run.
-      if ((!toEmail || prospectNeedsEnrichment(prospect)) && hunterEnabled()) {
-        const enriched = await enrichProspectContact(prospect, { db });
-        if (enriched) {
-          hunterEnriched++;
-          toEmail = enriched;
-        }
-      }
-      if (!toEmail) {
-        skips.noEmail++;
+      const prepared = await prepareProspectOutreachRecipient(prospect, db);
+      if (!prepared.ok) {
+        if (prepared.reason === "low_confidence") skips.lowConfidence++;
+        else skips.unverified++;
+        console.log(`[Cal outreach] skip prospect ${prospect.id}: ${prepared.reason}`);
         continue;
       }
-
-      // Final send gate: reject guessed inboxes, suppressed (previously bounced)
-      // addresses, and dead domains before we ever hit Resend.
-      const screen = await screenRecipient(db, toEmail);
-      if (!screen.ok) {
-        skips.unverified++;
-        console.log(`[Cal outreach] skip prospect ${prospect.id} (${toEmail}): ${screen.reason}`);
-        continue;
-      }
+      const toEmail = prepared.email;
       const emailPolicy = outreachEmailPolicySummary(prospect);
 
       try {
@@ -504,12 +488,11 @@ export async function salesAgentManualSendCore(
     .where(eq(prospects.id, prospectId))
     .limit(1);
   if (!prospect) throw new Error("Prospect not found");
-  const toEmail = selectOutreachEmail(prospect);
-  if (!toEmail) throw new Error("No verified contact email (guessed inboxes are no longer sent)");
-  const screen = await screenRecipient(db, toEmail);
-  if (!screen.ok) {
-    throw new Error(`Recipient failed the send gate (${screen.reason}): ${toEmail}`);
+  const prepared = await prepareProspectOutreachRecipient(prospect, db);
+  if (!prepared.ok) {
+    throw new Error(`Recipient not send-ready (${prepared.reason})`);
   }
+  const toEmail = prepared.email;
   const emailPolicy = outreachEmailPolicySummary(prospect);
 
   const [conv] = await db

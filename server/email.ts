@@ -453,17 +453,33 @@ export async function sendUnifiedDraftEntry(
     throw new Error("Prospect not found for draft");
   }
 
-  // Send gate: reject guessed inboxes, suppressed addresses, and dead domains
-  // before hitting Resend (mirrors the automated Cal path).
-  {
-    const { screenRecipient } = await import("./outreachGate.js");
-    const { getDb } = await import("./db.js");
-    const gateDb = await getDb();
-    const screen = await screenRecipient(gateDb, toEmail);
-    if (!screen.ok) {
-      throw new Error(`Recipient failed the send gate (${screen.reason}): ${toEmail}`);
+  const pgDb = await (await import("./db.js")).getDb();
+  const { prepareProspectOutreachRecipient } = await import("./agents/prospectEnrichment.js");
+  const { shouldPauseNewIntros } = await import("./outreachGate.js");
+
+  if (pgDb) {
+    const { paused } = await shouldPauseNewIntros(pgDb);
+    if (paused) {
+      const { salesAgentConversations } = await import("../drizzle/schema.js");
+      const { eq } = await import("drizzle-orm");
+      const [conv] = await pgDb
+        .select({ state: salesAgentConversations.state })
+        .from(salesAgentConversations)
+        .where(eq(salesAgentConversations.prospectId, entry.prospect.id))
+        .limit(1);
+      if ((conv?.state ?? "discovery") === "discovery") {
+        throw new Error(
+          "Circuit breaker open — new intros paused until trailing bounce rate recovers. Follow-ups only.",
+        );
+      }
     }
   }
+
+  const prepared = await prepareProspectOutreachRecipient(entry.prospect, pgDb);
+  if (!prepared.ok) {
+    throw new Error(`Recipient not send-ready (${prepared.reason})`);
+  }
+  const sendTo = prepared.email;
 
   let body = entry.draft.body;
   {
@@ -475,7 +491,7 @@ export async function sendUnifiedDraftEntry(
   let deliveryWarning: string | undefined;
   try {
     sendResult = await sendEmail({
-      to: toEmail,
+      to: sendTo,
       subject: entry.draft.subject,
       body,
     });
@@ -502,7 +518,7 @@ export async function sendUnifiedDraftEntry(
   await updateProspectStatus(entry.prospect.id, "contacted");
 
   return {
-    sentTo: toEmail,
+    sentTo: sendTo,
     messageId: sendResult?.id,
     warning: deliveryWarning,
   };

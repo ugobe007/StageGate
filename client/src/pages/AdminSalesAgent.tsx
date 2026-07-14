@@ -23,7 +23,7 @@ import {
   TrendingUp, Calendar, Star, Cpu, Factory,
   CheckCircle, CheckCircle2, XCircle, Edit3, Inbox,
   ShieldCheck, Upload, FileText, Loader2,
-  MousePointerClick
+  MousePointerClick, ShieldAlert
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
@@ -314,6 +314,64 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
   );
 }
 
+// ─── Deliverability banner ────────────────────────────────────────────────────
+function CalDeliverabilityBanner() {
+  const utils = trpc.useUtils();
+  const { data: stats } = trpc.admin.getDeliverabilityStatus.useQuery(undefined, {
+    refetchInterval: 60_000,
+  });
+  const quarantine = trpc.admin.quarantineBouncedProspects.useMutation({
+    onSuccess: (data) => {
+      const r = (data as { result: { quarantined: number } }).result;
+      toast.success(`Quarantined ${r.quarantined} bounced prospect email${r.quarantined !== 1 ? "s" : ""}`);
+      utils.admin.getDeliverabilityStatus.invalidate();
+    },
+    onError: (err: { message: string }) => toast.error(err.message),
+  });
+
+  if (!stats) return null;
+
+  const ratePct = (stats.rate * 100).toFixed(1);
+  const thresholdPct = (stats.threshold * 100).toFixed(0);
+
+  if (!stats.paused && stats.rate < stats.threshold * 0.5) return null;
+
+  return (
+    <div className={`flex items-start gap-3 px-4 py-3 rounded-lg border text-sm mb-4 ${
+      stats.paused
+        ? "bg-red-500/10 border-red-500/30"
+        : "bg-amber-500/10 border-amber-500/30"
+    }`}>
+      <ShieldAlert className={`w-4 h-4 flex-shrink-0 mt-0.5 ${stats.paused ? "text-red-400" : "text-amber-400"}`} />
+      <div className="flex-1 min-w-0 space-y-1">
+        {stats.paused ? (
+          <p className="text-red-300 font-medium">
+            Cal&apos;s deliverability circuit breaker is OPEN — new intro sends are paused.
+          </p>
+        ) : (
+          <p className="text-amber-300 font-medium">Cal deliverability warning — bounce rate elevated.</p>
+        )}
+        <p className="text-zinc-400 text-xs leading-relaxed">
+          Trailing {stats.windowDays}d: {stats.bounced}/{stats.sent} sends bounced ({ratePct}%), threshold {thresholdPct}%.
+          Follow-ups to engaged threads still run. New intros resume automatically once the rate drops below the threshold.
+        </p>
+        <p className="text-zinc-500 text-xs">
+          Bulk intro sends are blocked while the breaker is open. Run quarantine to flag bounced addresses for re-enrichment.
+        </p>
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        className="border-white/10 text-zinc-300 hover:bg-[#2b2f38] flex-shrink-0"
+        disabled={quarantine.isPending}
+        onClick={() => quarantine.mutate()}
+      >
+        {quarantine.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Quarantine bounced"}
+      </Button>
+    </div>
+  );
+}
+
 // ─── Pending Drafts Tab ───────────────────────────────────────────────────────
 function PendingDraftsTab() {
   const utils = trpc.useUtils();
@@ -433,6 +491,7 @@ function PendingDraftsTab() {
 
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <CalDeliverabilityBanner />
       <div className="flex items-center justify-between mb-2">
         <p className="text-sm text-zinc-400">
           <span className="text-white font-medium">{drafts.length}</span> draft{drafts.length !== 1 ? "s" : ""} awaiting review

@@ -16,6 +16,16 @@ import { deriveCompanyDomain } from "../outreachContacts.js";
 const HUNTER_BASE = "https://api.hunter.io/v2";
 const REQUEST_TIMEOUT_MS = 10_000;
 
+/** Minimum Hunter scores for accepting an address as a send target (env-tunable). */
+function clampScore(raw: string | undefined, fallback: number): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(Math.max(n, 0), 100);
+}
+
+export const HUNTER_MIN_FINDER_SCORE = clampScore(process.env.HUNTER_MIN_FINDER_SCORE, 85);
+export const HUNTER_MIN_DOMAIN_CONFIDENCE = clampScore(process.env.HUNTER_MIN_DOMAIN_CONFIDENCE, 80);
+
 export type EmailConfidence = "high" | "medium" | "low";
 
 export interface HunterContact {
@@ -154,17 +164,22 @@ const DEPARTMENT_RANK: Record<string, number> = {
  * prefer personal (named) emails over generic role inboxes, then rank by
  * relevant department, then by Hunter confidence. Drops undeliverable addresses.
  */
-export function pickBestDomainEmail(emails: HunterEmail[]): HunterEmail | null {
+export function pickBestDomainEmail(
+  emails: HunterEmail[],
+  opts: { minConfidence?: number } = {},
+): HunterEmail | null {
+  const minConfidence = opts.minConfidence ?? HUNTER_MIN_DOMAIN_CONFIDENCE;
   const usable = emails.filter(
-    (e) => e.value && !UNSENDABLE.has((e.verification?.status ?? "").toLowerCase())
+    (e) =>
+      e.value &&
+      e.type === "personal" &&
+      (e.confidence ?? 0) >= minConfidence &&
+      !UNSENDABLE.has((e.verification?.status ?? "").toLowerCase()),
   );
   if (usable.length === 0) return null;
 
-  const personal = usable.filter((e) => e.type === "personal");
-  const pool = personal.length > 0 ? personal : usable;
-
   return (
-    [...pool].sort((a, b) => {
+    [...usable].sort((a, b) => {
       const deptA = DEPARTMENT_RANK[(a.department ?? "").toLowerCase()] ?? 0;
       const deptB = DEPARTMENT_RANK[(b.department ?? "").toLowerCase()] ?? 0;
       if (deptA !== deptB) return deptB - deptA;
@@ -203,7 +218,11 @@ export async function findBestProspectEmail(
   const { first, last } = splitName(prospect.contactName);
   if (first && last) {
     const found = await emailFinder(domain, first, last);
-    if (found && !UNSENDABLE.has((found.status ?? "").toLowerCase())) {
+    if (
+      found &&
+      found.score >= HUNTER_MIN_FINDER_SCORE &&
+      !UNSENDABLE.has((found.status ?? "").toLowerCase())
+    ) {
       return {
         email: found.email,
         firstName: first,

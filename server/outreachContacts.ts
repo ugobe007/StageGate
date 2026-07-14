@@ -104,3 +104,9 @@ export function outreachEmailPolicySummary(prospect: ProspectLike) {
     rejectedGuessedInbox: isGuessedRoleInbox(prospect.contactEmail),
   };
 }
+
+/** Confidence levels we will cold-send to after Hunter / ZeroBounce screening. */
+export function isSendableEmailConfidence(conf: string | null | undefined): boolean {
+  const c = (conf ?? "").trim().toLowerCase();
+  return c === "high" || c === "medium" || c === "verified";
+}

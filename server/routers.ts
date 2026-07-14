@@ -17,6 +17,8 @@ import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 import { roleBasedOutreachEmails, isDeprecatedRoleInbox } from "./outreachContacts";
 import { salesAgentManualSendCore, salesAgentPreviewCore, generateCalDraftsCore, redraftPendingCalDraftsCore, advanceProspectConversationAfterSend } from "./agents/salesAgent";
+import { quarantineBouncedProspectEmails } from "./agents/prospectEnrichment";
+import { computeBounceStats } from "./outreachGate";
 
 // Admin-only middleware
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -1918,6 +1920,23 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       return workflows.withAgentRun(
         { agentName: "Cal Redraft", triggeredBy: ctx.user?.name ?? "admin", inputSummary: "all pending prospect drafts" },
         async () => redraftPendingCalDraftsCore(),
+      );
+    }),
+
+    /** Trailing bounce-rate stats + circuit breaker state for Cal deliverability. */
+    getDeliverabilityStatus: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      return computeBounceStats(db);
+    }),
+
+    /** Mark prospects with suppressed/bounced on-file emails as low-confidence. */
+    quarantineBouncedProspects: adminProcedure.mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      return workflows.withAgentRun(
+        { agentName: "Cal Quarantine", triggeredBy: ctx.user?.name ?? "admin", inputSummary: "bounced prospect emails" },
+        async () => quarantineBouncedProspectEmails(db),
       );
     }),
 

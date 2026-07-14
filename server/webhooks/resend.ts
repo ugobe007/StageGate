@@ -50,6 +50,12 @@ export async function resendWebhookHandler(req: Request, res: Response): Promise
         const { recordSuppression } = await import("../outreachGate");
         const reason = eventType === "email.complained" ? "complaint" : "bounce";
         await recordSuppression(db, recipient, reason, { source: "resend_webhook" });
+        // Downgrade matching prospects so Hunter re-enrichment runs on next send attempt.
+        const { prospects: prospectsTable } = await import("../../drizzle/schema");
+        await db
+          .update(prospectsTable)
+          .set({ emailConfidence: "low", updatedAt: new Date() })
+          .where(sql`lower(${prospectsTable.contactEmail}) = ${recipient}`);
         await db.insert(emailTrackingEvents).values({
           messageId,
           eventType,

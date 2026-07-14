@@ -19,17 +19,24 @@ describe("pickBestDomainEmail", () => {
     expect(best?.value).toBe("ceo@acme.com");
   });
 
-  it("falls back to generic when no personal email exists", () => {
-    const best = pickBestDomainEmail([
-      { value: "sales@acme.com", type: "generic", confidence: 70 },
-    ]);
-    expect(best?.value).toBe("sales@acme.com");
+  it("returns null when only generic role inboxes exist", () => {
+    expect(
+      pickBestDomainEmail([{ value: "sales@acme.com", type: "generic", confidence: 90 }]),
+    ).toBeNull();
+  });
+
+  it("rejects personal emails below minimum domain confidence", () => {
+    expect(
+      pickBestDomainEmail([
+        { value: "live@acme.com", type: "personal", confidence: 60, verification: { status: "valid" } },
+      ]),
+    ).toBeNull();
   });
 
   it("drops invalid / disposable addresses", () => {
     const best = pickBestDomainEmail([
       { value: "dead@acme.com", type: "personal", confidence: 99, verification: { status: "invalid" } },
-      { value: "live@acme.com", type: "personal", confidence: 60, verification: { status: "valid" } },
+      { value: "live@acme.com", type: "personal", confidence: 85, verification: { status: "valid" } },
     ]);
     expect(best?.value).toBe("live@acme.com");
   });

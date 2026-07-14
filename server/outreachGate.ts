@@ -73,6 +73,11 @@ async function ensureSuppressionTable(db: Db): Promise<void> {
   return _tableReady ?? Promise.resolve();
 }
 
+/** Ensure the suppression table exists (safe to call before raw SQL joins). */
+export async function ensureSuppressionStore(db: Db): Promise<void> {
+  await ensureSuppressionTable(db);
+}
+
 /** True if we have ever recorded a bounce/complaint/suppression for this address. */
 export async function isSuppressed(db: Db, email: string): Promise<boolean> {
   const normalized = email.trim().toLowerCase();
@@ -159,8 +164,15 @@ async function zeroBounceValid(email: string): Promise<boolean | null> {
     if (!res.ok) return null;
     const data = (await res.json()) as { status?: string };
     const status = (data.status ?? "").toLowerCase();
-    // "valid" and "catch-all" are sendable; invalid/spamtrap/abuse/do_not_mail are not.
     if (["invalid", "spamtrap", "abuse", "do_not_mail"].includes(status)) return false;
+    // Catch-all domains accept at SMTP but often silently drop — reject by default
+    // during deliverability recovery (matches ReadyForRobots).
+    if (status === "catch-all") {
+      const accept = ["1", "true", "yes"].includes(
+        (process.env.ZERO_BOUNCE_ACCEPT_CATCH_ALL ?? "0").trim().toLowerCase(),
+      );
+      return accept ? true : false;
+    }
     return true;
   } catch (err) {
     console.warn("[outreachGate] ZeroBounce check failed (fail-open):", String(err));
