@@ -252,45 +252,50 @@ describe("v44: selectOutreachEmail — contact email policy", () => {
   });
 });
 
-// ─── Suite 6: AdminSalesAgent — Draft All button (static) ────────────────────
+// ─── Suite 6: AdminSalesAgent — Refresh Cal drafts (static) ─────────────────
 
-describe("v44: AdminSalesAgent — Draft All Prospects button (static)", () => {
-  it("PendingDraftsTab defines generateDrafts mutation", () => {
-    expect(adminUiContent).toContain("generateDrafts");
+describe("v44: AdminSalesAgent — Refresh Cal drafts button (static)", () => {
+  it("PendingDraftsTab defines generateDrafts mutation as refreshCalDrafts", () => {
+    expect(adminUiContent).toContain("refreshCalDrafts");
     expect(adminUiContent).toContain("admin.generateDrafts");
   });
 
-  it("Draft All button text is present", () => {
-    expect(adminUiContent).toContain("Draft All Prospects");
+  it("Refresh Cal drafts button text is present", () => {
+    expect(adminUiContent).toContain("Refresh Cal drafts");
   });
 
-  it("Draft All button is disabled while mutation is pending", () => {
-    expect(adminUiContent).toContain("generateDrafts.isPending");
+  it("Refresh button is disabled while mutation is pending", () => {
+    expect(adminUiContent).toContain("refreshCalDrafts.isPending");
   });
 
-  it("shows loading spinner text while drafting", () => {
-    expect(adminUiContent).toContain("Drafting all…");
+  it("shows loading spinner text while refreshing", () => {
+    expect(adminUiContent).toContain("Refreshing…");
   });
 
-  it("draftAllResult state is declared", () => {
-    expect(adminUiContent).toContain("draftAllResult");
-    expect(adminUiContent).toContain("setDraftAllResult");
+  it("refreshResult state is declared", () => {
+    expect(adminUiContent).toContain("refreshResult");
+    expect(adminUiContent).toContain("setRefreshResult");
   });
 
-  it("result banner shows generated count", () => {
-    expect(adminUiContent).toContain("draftAllResult.generated");
+  it("result banner shows redrafted and generated counts", () => {
+    expect(adminUiContent).toContain("refreshResult.redrafted");
+    expect(adminUiContent).toContain("refreshResult.generated");
   });
 
   it("result banner shows skipped count", () => {
-    expect(adminUiContent).toContain("draftAllResult.skipped");
+    expect(adminUiContent).toContain("refreshResult.skipped");
   });
 
   it("result banner has a Dismiss button", () => {
-    expect(adminUiContent).toContain("setDraftAllResult(null)");
+    expect(adminUiContent).toContain("setRefreshResult(null)");
   });
 
-  it("toast fires on draft generation success", () => {
-    expect(adminUiContent).toContain("Cal drafted");
+  it("toast fires on refresh success", () => {
+    expect(adminUiContent).toContain("Cal drafts:");
+  });
+
+  it("getDrafts filters to prospect audience", () => {
+    expect(adminUiContent).toContain('audience: "prospect"');
   });
 });
 
@@ -305,31 +310,32 @@ describe("v44: generateDrafts procedure in routers.ts (static)", () => {
     expect(routersContent).toContain("prospectIds: z.array(z.number()).optional()");
   });
 
-  it("generateDrafts seeds salesAgentConversations for new prospects", () => {
-    expect(routersContent).toContain("salesAgentConversations");
-    expect(routersContent).toContain("state: \"discovery\"");
+  it("generateDrafts calls salesAgentPreviewCore for discovery stage", () => {
+    expect(salesAgentContent).toContain("salesAgentPreviewCore");
+    expect(salesAgentContent).toContain('"discovery"');
   });
 
-  it("generateDrafts calls salesAgentPreviewCore for discovery stage", () => {
-    expect(routersContent).toContain("salesAgentPreviewCore");
-    expect(routersContent).toContain('"discovery"');
+  it("generateDrafts seeds salesAgentConversations for new prospects", () => {
+    expect(salesAgentContent).toContain("salesAgentConversations");
+    expect(salesAgentContent).toContain('state: "discovery"');
   });
 
   it("generateDrafts skips prospects that already have a pending/approved draft", () => {
-    expect(routersContent).toContain('"pending"');
-    expect(routersContent).toContain('"approved"');
-    expect(routersContent).toContain("hasPending");
+    expect(salesAgentContent).toContain('"pending"');
+    expect(salesAgentContent).toContain('"approved"');
+    expect(salesAgentContent).toContain("hasPending");
   });
 
   it("generateDrafts returns generated, skipped, and errors counts", () => {
-    expect(routersContent).toContain("generated");
-    expect(routersContent).toContain("skipped");
-    expect(routersContent).toContain("errors");
+    expect(salesAgentContent).toContain("generated");
+    expect(salesAgentContent).toContain("skipped");
+    expect(salesAgentContent).toContain("errors");
   });
 
   it("generateDrafts is wrapped in withAgentRun for job tracking", () => {
     expect(routersContent).toContain("withAgentRun");
-    expect(routersContent).toContain("Cal Draft Generator");
+    expect(routersContent).toContain("Cal Draft Refresh");
+    expect(routersContent).toContain("refreshCalDraftsCore");
   });
 });
 

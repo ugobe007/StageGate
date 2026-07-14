@@ -1023,6 +1023,16 @@ function pickBreakpoints(robotType: string, robotCategory: string = "light") {
 
 const DRAFTABLE_STAGES: ConversationStage[] = ["discovery", "intro_sent", "followup_1"];
 
+/** Map conversation state → which email template stage to draft (engagement states → follow-up). */
+export function draftStageForConversation(
+  convState: ConversationStage | null | undefined,
+): ConversationStage | null {
+  const s = (convState ?? "discovery") as ConversationStage;
+  if (DRAFTABLE_STAGES.includes(s)) return s;
+  if (s === "email_opened" || s === "link_clicked") return "followup_1";
+  return null;
+}
+
 /** Advance conversation after a draft is sent (manual or automated). Max 3 emails per lead. */
 export async function advanceProspectConversationAfterSend(
   prospectId: number,
@@ -1110,7 +1120,11 @@ export async function redraftPendingCalDraftsCore(): Promise<{
       .where(eq(salesAgentConversations.prospectId, entry.prospect.id))
       .limit(1);
 
-    const stage = (conv?.state ?? "discovery") as ConversationStage;
+    const stage = draftStageForConversation(conv?.state as ConversationStage | undefined);
+    if (!stage) {
+      errors.push(`${entry.prospect.company}: conversation stage not draftable`);
+      continue;
+    }
     try {
       const preview = await salesAgentPreviewCore(entry.prospect.id, stage);
       await db
@@ -1131,6 +1145,32 @@ export async function redraftPendingCalDraftsCore(): Promise<{
   await repairPendingDraftGreetings(db);
   console.log(`[Cal] Redrafted ${redrafted} pending draft(s)`);
   return { redrafted, errors: errors.slice(0, 20) };
+}
+
+/**
+ * Admin workflow: regenerate every pending draft with Cal's current voice, then
+ * create drafts for prospects that don't have one yet. One action — not two buttons.
+ */
+export async function refreshCalDraftsCore(options?: {
+  prospectIds?: number[];
+}): Promise<{
+  redrafted: number;
+  generated: number;
+  skipped: number;
+  conversationsSeeded: number;
+  errors: string[];
+  total: number;
+}> {
+  const redraft = await redraftPendingCalDraftsCore();
+  const gen = await generateCalDraftsCore(options);
+  return {
+    redrafted: redraft.redrafted,
+    generated: gen.generated,
+    skipped: gen.skipped,
+    conversationsSeeded: gen.conversationsSeeded,
+    errors: [...redraft.errors, ...gen.errors].slice(0, 20),
+    total: gen.total,
+  };
 }
 
 /** Draft the next Cal email for each lead (weekly cadence, max 3 emails per lead). */
@@ -1175,8 +1215,8 @@ export async function generateCalDraftsCore(options?: {
       continue;
     }
 
-    const stage = (conv?.state ?? "discovery") as ConversationStage;
-    if (!DRAFTABLE_STAGES.includes(stage)) {
+    const stage = draftStageForConversation(conv?.state as ConversationStage | undefined);
+    if (!stage) {
       skipped++;
       continue;
     }
@@ -1238,6 +1278,136 @@ export async function calWeeklyDraftsHandler(req: Request, res: Response) {
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
+}
+
+const BAD_EMAIL_CONFIDENCE = new Set(["low", "guessed", "medium"]);
+const TERMINAL_WORKFLOW_STATES = new Set([
+  "booked",
+  "not_interested",
+  "converted",
+  "responded",
+  "scheduling",
+  "awaiting_reply",
+]);
+
+export type CalWorkflowStep =
+  | "contacts"
+  | "draft"
+  | "review"
+  | "send"
+  | "followup"
+  | "idle";
+
+export type CalWorkflowSummary = {
+  needsContactFix: number;
+  needsDraft: number;
+  pendingReview: number;
+  readyToSend: number;
+  followUpDue: number;
+  awaitingReply: number;
+  suggestedStep: CalWorkflowStep;
+};
+
+/** Actionable counts for Cal's 5-step operator workflow (one screen, one model). */
+export async function getCalWorkflowSummary(): Promise<CalWorkflowSummary> {
+  const db = await getDb();
+  const empty: CalWorkflowSummary = {
+    needsContactFix: 0,
+    needsDraft: 0,
+    pendingReview: 0,
+    readyToSend: 0,
+    followUpDue: 0,
+    awaitingReply: 0,
+    suggestedStep: "idle",
+  };
+  if (!db) return empty;
+
+  const { listProspects } = await import("../db.js");
+  const emailHelpers = await import("../email.js");
+  const now = new Date();
+
+  const [allProspects, draftCounts, convRows, activeDraftRows] = await Promise.all([
+    listProspects(),
+    emailHelpers.getDraftCountByAudience("prospect"),
+    db.select().from(salesAgentConversations),
+    db
+      .select({ prospectId: draftEmails.prospectId })
+      .from(draftEmails)
+      .where(
+        and(
+          eq(draftEmails.audience, "prospect"),
+          or(eq(draftEmails.status, "pending"), eq(draftEmails.status, "approved")),
+        ),
+      ),
+  ]);
+
+  const activeDraftProspects = new Set(
+    activeDraftRows.map((r) => r.prospectId).filter((id): id is number => id != null),
+  );
+  const convByProspect = new Map(convRows.map((c) => [c.prospectId, c]));
+
+  let needsContactFix = 0;
+  let needsDraft = 0;
+
+  for (const prospect of allProspects as Array<{
+    id: number;
+    contactEmail: string | null;
+    emailConfidence: string | null;
+  }>) {
+    const email = emailHelpers.getProspectOutreachEmail(prospect);
+    const conf = prospect.emailConfidence ?? "";
+    if (!email || BAD_EMAIL_CONFIDENCE.has(conf) || conf === "") {
+      needsContactFix++;
+      continue;
+    }
+    if (activeDraftProspects.has(prospect.id)) continue;
+
+    const conv = convByProspect.get(prospect.id);
+    if ((conv?.followUpCount ?? 0) >= MAX_OUTREACH_EMAILS || conv?.state === "followup_2") {
+      continue;
+    }
+    if (
+      conv &&
+      (conv.followUpCount ?? 0) > 0 &&
+      conv.nextFollowUpAt &&
+      new Date(conv.nextFollowUpAt) > now
+    ) {
+      continue;
+    }
+
+    needsDraft++;
+  }
+
+  let followUpDue = 0;
+  let awaitingReply = 0;
+  for (const c of convRows) {
+    if (c.state === "awaiting_reply") awaitingReply++;
+    const state = c.state ?? "";
+    if (TERMINAL_WORKFLOW_STATES.has(state)) continue;
+    const next = c.nextFollowUpAt ? new Date(c.nextFollowUpAt) : null;
+    if (next && next <= now) followUpDue++;
+  }
+
+  const pendingReview = draftCounts.pending;
+  const readyToSend = draftCounts.approved;
+
+  let suggestedStep: CalWorkflowStep = "idle";
+  if (needsContactFix > 0) suggestedStep = "contacts";
+  else if (needsDraft > 0) suggestedStep = "draft";
+  else if (pendingReview > 0) suggestedStep = "review";
+  else if (readyToSend > 0) suggestedStep = "send";
+  else if (followUpDue > 0) suggestedStep = "followup";
+  else if (awaitingReply > 0) suggestedStep = "followup";
+
+  return {
+    needsContactFix,
+    needsDraft,
+    pendingReview,
+    readyToSend,
+    followUpDue,
+    awaitingReply,
+    suggestedStep,
+  };
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────

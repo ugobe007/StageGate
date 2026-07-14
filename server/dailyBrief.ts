@@ -161,16 +161,16 @@ export async function getDailyBrief(): Promise<DailyBrief> {
   const nextSteps: DailyBriefStep[] = [];
   pushStep(
     nextSteps,
-    "Review OEM drafts",
+    "Review Cal drafts",
     metrics.draftsPending,
-    "/admin/outreach",
+    "/admin/sales-agent?step=review",
     "high",
   );
   pushStep(
     nextSteps,
-    "Send approved OEM emails",
+    "Send approved Cal emails",
     metrics.draftsApproved,
-    "/admin/outreach",
+    "/admin/sales-agent?step=send",
     "high",
   );
   pushStep(
@@ -184,14 +184,14 @@ export async function getDailyBrief(): Promise<DailyBrief> {
     nextSteps,
     "Follow-ups due now",
     metrics.followUpsDue,
-    "/admin/sales-agent",
+    "/admin/sales-agent?step=followup",
     "high",
   );
   pushStep(
     nextSteps,
     "Awaiting your reply",
     metrics.awaitingReply,
-    "/admin/sales-agent",
+    "/admin/sales-agent?step=followup",
     "medium",
   );
   pushStep(

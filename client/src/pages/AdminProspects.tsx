@@ -75,22 +75,7 @@ export default function AdminProspects() {
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
   const [failedIds, setFailedIds] = useState<Set<number>>(new Set());
   const [selectedProspectId, setSelectedProspectId] = useState<number | null>(null);
-  const [generatingDrafts, setGeneratingDrafts] = useState(false);
-
-  const generateDraftsMutation = trpc.admin.generateDrafts.useMutation({
-    onSuccess: (res) => {
-      const r = res.result as { generated?: number; skipped?: number; conversationsSeeded?: number; errors?: string[] } | undefined;
-      const generated = r?.generated ?? 0;
-      const seeded = r?.conversationsSeeded ?? 0;
-      let msg = `Cal drafted ${generated} email${generated !== 1 ? "s" : ""}`;
-      if (seeded > 0) msg += ` · queued ${seeded} new prospect${seeded !== 1 ? "s" : ""} for follow-ups`;
-      toast.success(msg);
-      void utils.prospects.list.invalidate();
-      setGeneratingDrafts(false);
-    },
-    onError: (e) => { toast.error(e.message); setGeneratingDrafts(false); },
-  });
-  const [editNotes, setEditNotes] = useState<Record<number, string>>({});
+  const [selectedProspectId, setSelectedProspectId] = useState<number | null>(null);
   const [editContact, setEditContact] = useState<Record<number, {
     contactName?: string;
     contactTitle?: string;
@@ -686,103 +671,53 @@ export default function AdminProspects() {
           </div>
         </div>
 
-        {/* Outreach workflow — primary focus when you land here */}
+        {/* Cal lives on one page — link out, don't duplicate workflow here */}
         {(() => {
           const pendingDrafts = draftCount?.pending ?? 0;
-          const approvedDrafts = draftCount?.approved ?? 0;
-          const sentDrafts = draftCount?.sent ?? 0;
-          const newCount = statusCounts["new"] ?? 0;
-          const contactedCount = statusCounts["contacted"] ?? 0;
-          const respondedCount = (statusCounts["responded"] ?? 0) + (statusCounts["scheduled"] ?? 0) + (statusCounts["converted"] ?? 0);
-
-          const focusLine = pendingDrafts > 0
-            ? `${pendingDrafts} draft${pendingDrafts !== 1 ? "s" : ""} waiting for your review`
-            : approvedDrafts > 0
-            ? `${approvedDrafts} approved — ready to send from Outreach`
-            : newCount > 0
-            ? `${newCount} new companies — Cal can draft a first note for each`
-            : "Caught up — watch for replies";
-
           return (
             <div style={{
               marginBottom: "1.5rem",
-              border: `1px solid ${pendingDrafts > 0 ? "rgba(251,191,36,0.35)" : emeraldAlpha(0.20)}`,
+              border: "1px solid rgba(251,191,36,0.25)",
               borderRadius: "0.5rem",
-              background: pendingDrafts > 0 ? "rgba(251,191,36,0.04)" : emeraldAlpha(0.03),
+              background: "rgba(251,191,36,0.04)",
               padding: "1rem 1.25rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "1rem",
             }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-                <div style={{ flex: 1, minWidth: "16rem" }}>
-                  <p style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: pendingDrafts > 0 ? "#fbbf24" : `${BRAND.emerald}`, margin: "0 0 0.35rem" }}>
-                    Cal
-                  </p>
-                  <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec", margin: 0, lineHeight: 1.4 }}>
-                    {focusLine}
-                  </p>
-                  <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.40)", margin: "0.4rem 0 0" }}>
-                    Draft with Cal · you review · up to 3 emails per lead, one week apart
-                  </p>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                  <button
-                    onClick={() => {
-                      setGeneratingDrafts(true);
-                      generateDraftsMutation.mutate({});
-                    }}
-                    disabled={generatingDrafts}
-                    title="Have Cal draft intro emails for new prospects"
-                    style={{
-                      display: "flex", alignItems: "center", gap: "0.4rem",
-                      fontSize: "0.8125rem", fontWeight: 600,
-                      padding: "0.5rem 1rem",
-                      border: "1px solid rgba(251,191,36,0.35)",
-                      color: generatingDrafts ? "rgba(251,191,36,0.40)" : "#fbbf24",
-                      background: generatingDrafts ? "rgba(251,191,36,0.04)" : "rgba(251,191,36,0.08)",
-                      cursor: generatingDrafts ? "wait" : "pointer",
-                      borderRadius: "0.375rem",
-                      opacity: generatingDrafts ? 0.7 : 1,
-                    }}
-                  >
-                    {generatingDrafts
-                      ? <><RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> Drafting…</>
-                      : <><Zap size={12} /> Draft with Cal</>
-                    }
-                  </button>
-                  <button
-                    onClick={() => setLocation("/admin/outreach")}
-                    style={{
-                      display: "flex", alignItems: "center", gap: "0.4rem",
-                      fontSize: "0.8125rem", fontWeight: 600,
-                      padding: "0.5rem 1rem",
-                      border: pendingDrafts > 0 ? "none" : "1px solid rgba(255,255,255,0.15)",
-                      color: pendingDrafts > 0 ? "#1C1E22" : "rgba(255,255,255,0.70)",
-                      background: pendingDrafts > 0 ? "#fbbf24" : "transparent",
-                      cursor: "pointer",
-                      borderRadius: "0.375rem",
-                    }}
-                  >
-                    <Mail size={13} />
-                    Review drafts
-                    {pendingDrafts > 0 && (
-                      <span style={{ fontSize: "0.6875rem", fontWeight: 700, background: "rgba(8,8,8,0.20)", padding: "0.1rem 0.4rem", borderRadius: "9999px" }}>
-                        {pendingDrafts}
-                      </span>
-                    )}
-                  </button>
-                </div>
+              <div>
+                <p style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#fbbf24", margin: "0 0 0.35rem" }}>
+                  Cal outreach
+                </p>
+                <p style={{ fontSize: "0.875rem", color: "#ececec", margin: 0 }}>
+                  Draft, review, and send live on the Cal workflow — not here.
+                </p>
+                <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.40)", margin: "0.35rem 0 0" }}>
+                  Fix contacts → Draft → Review → Send → Follow up
+                </p>
               </div>
-              <div style={{
-                display: "flex", flexWrap: "wrap", gap: "1.25rem",
-                marginTop: "0.875rem", paddingTop: "0.875rem",
-                borderTop: "1px solid rgba(255,255,255,0.06)",
-                fontSize: "0.75rem", color: "rgba(255,255,255,0.45)",
-              }}>
-                <span><strong style={{ color: "#3b82f6" }}>{newCount}</strong> new</span>
-                <span><strong style={{ color: "#f59e0b" }}>{contactedCount}</strong> contacted</span>
-                <span><strong style={{ color: `${BRAND.emerald}` }}>{respondedCount}</strong> replied</span>
-                <span><strong style={{ color: "#fbbf24" }}>{pendingDrafts}</strong> drafts pending</span>
-                <span><strong style={{ color: "#60a5fa" }}>{sentDrafts}</strong> sent</span>
-              </div>
+              <button
+                onClick={() => setLocation(pendingDrafts > 0 ? "/admin/sales-agent?step=review" : "/admin/sales-agent?step=contacts")}
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.4rem",
+                  fontSize: "0.8125rem", fontWeight: 600,
+                  padding: "0.5rem 1rem",
+                  border: "none",
+                  color: "#1C1E22",
+                  background: "#fbbf24",
+                  cursor: "pointer",
+                  borderRadius: "0.375rem",
+                }}
+              >
+                <Zap size={13} /> Open Cal workflow
+                {pendingDrafts > 0 && (
+                  <span style={{ fontSize: "0.6875rem", fontWeight: 700, background: "rgba(8,8,8,0.15)", padding: "0.1rem 0.4rem", borderRadius: "9999px" }}>
+                    {pendingDrafts}
+                  </span>
+                )}
+              </button>
             </div>
           );
         })()}

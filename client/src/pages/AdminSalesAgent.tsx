@@ -1,9 +1,10 @@
 /**
  * client/src/pages/AdminSalesAgent.tsx
  *
- * Cal's Mission Control — Pipeline board + Pending Drafts review queue
+ * Cal — single outreach command center (5-step workflow)
  */
 import { useState, useEffect } from "react";
+import { useSearch, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ import {
   TrendingUp, Calendar, Star, Cpu, Factory,
   CheckCircle, CheckCircle2, XCircle, Edit3, Inbox,
   ShieldCheck, Upload, FileText, Loader2,
-  MousePointerClick, ShieldAlert
+  MousePointerClick, ShieldAlert, ChevronRight
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
@@ -81,6 +82,128 @@ function timeAgo(date: Date | string | null | undefined) {
 }
 
 const TERMINAL = ["booked", "not_interested", "converted", "responded", "scheduling"];
+
+type WorkflowStep = "contacts" | "draft" | "review" | "send" | "followup";
+
+type WorkflowSummary = {
+  needsContactFix: number;
+  needsDraft: number;
+  pendingReview: number;
+  readyToSend: number;
+  followUpDue: number;
+  awaitingReply: number;
+  suggestedStep: WorkflowStep | "idle";
+};
+
+const WORKFLOW_STEPS: Array<{
+  id: WorkflowStep;
+  num: number;
+  label: string;
+  hint: string;
+  count: (w: WorkflowSummary) => number;
+}> = [
+  { id: "contacts", num: 1, label: "Fix contacts", hint: "Find & verify emails", count: (w) => w.needsContactFix },
+  { id: "draft", num: 2, label: "Draft", hint: "Cal writes · Refresh = redraft", count: (w) => w.needsDraft },
+  { id: "review", num: 3, label: "Review", hint: "Read field notes", count: (w) => w.pendingReview },
+  { id: "send", num: 4, label: "Send", hint: "Deliver approved emails", count: (w) => w.pendingReview + w.readyToSend },
+  { id: "followup", num: 5, label: "Follow up", hint: "Next touch due", count: (w) => w.followUpDue },
+];
+
+function parseWorkflowStep(raw: string | null): WorkflowStep {
+  if (raw === "contacts" || raw === "draft" || raw === "review" || raw === "send" || raw === "followup") {
+    return raw;
+  }
+  return "contacts";
+}
+
+function prospectNeedsContactFix(prospect: {
+  contactEmail?: string | null;
+  emailConfidence?: string | null;
+}) {
+  const email = prospect.contactEmail;
+  const conf = prospect.emailConfidence ?? "";
+  if (!email) return true;
+  if (!conf || ["low", "guessed", "medium"].includes(conf)) return true;
+  return false;
+}
+
+function CalWorkflowBar({
+  workflow,
+  activeStep,
+  onStepChange,
+  lastRunLabel,
+}: {
+  workflow: WorkflowSummary;
+  activeStep: WorkflowStep;
+  onStepChange: (step: WorkflowStep) => void;
+  lastRunLabel?: string;
+}) {
+  const suggested =
+    workflow.suggestedStep !== "idle" ? workflow.suggestedStep : null;
+
+  return (
+    <div className="px-6 pt-4 pb-3 border-b border-white/10 bg-[#1a1d23]/80">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+          <Bot className="w-5 h-5 text-amber-400" />
+        </div>
+        <div className="min-w-0">
+          <h1 className="text-base font-semibold text-white leading-tight">Cal — Outreach workflow</h1>
+          <p className="text-xs text-zinc-500 truncate">
+            Studious Observer · field notes, not sales blasts
+            {lastRunLabel ? ` · Last run ${lastRunLabel}` : ""}
+            {suggested && suggested !== activeStep
+              ? ` · Start at step ${WORKFLOW_STEPS.find((s) => s.id === suggested)?.num ?? ""}`
+              : ""}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-stretch gap-1">
+        {WORKFLOW_STEPS.map((step, i) => {
+          const count = step.count(workflow);
+          const isActive = activeStep === step.id;
+          const isSuggested = suggested === step.id;
+          return (
+            <div key={step.id} className="flex items-center">
+              <button
+                type="button"
+                onClick={() => onStepChange(step.id)}
+                className={`text-left rounded-lg px-3 py-2.5 min-w-[7.5rem] transition-colors border ${
+                  isActive
+                    ? "bg-amber-500/15 border-amber-500/40 ring-1 ring-amber-500/30"
+                    : isSuggested
+                      ? "bg-[#24272e] border-amber-700/50 hover:border-amber-600/60"
+                      : "bg-[#24272e]/60 border-white/10 hover:border-white/20"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className={`text-[10px] font-bold uppercase tracking-wide ${isActive ? "text-amber-400" : "text-zinc-600"}`}>
+                    {step.num}
+                  </span>
+                  <span className={`text-xs font-semibold ${isActive ? "text-white" : "text-zinc-300"}`}>
+                    {step.label}
+                  </span>
+                  {count > 0 && (
+                    <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      isActive ? "bg-amber-500 text-black" : "bg-zinc-700 text-zinc-200"
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-zinc-500 leading-snug">{step.hint}</p>
+              </button>
+              {i < WORKFLOW_STEPS.length - 1 && (
+                <ChevronRight className="w-4 h-4 text-zinc-700 mx-0.5 flex-shrink-0 hidden sm:block" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function nextActionLabel(state: string, nextAt: Date | string | null | undefined) {
   if (TERMINAL.includes(state)) return null;
@@ -381,36 +504,37 @@ function PendingDraftsTab() {
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [discardingId, setDiscardingId] = useState<number | null>(null);
   const [bulkResult, setBulkResult] = useState<{ sent: number; failed: number; errors: string[] } | null>(null);
-  const [draftAllResult, setDraftAllResult] = useState<{ generated: number; skipped: number; errors: string[]; total: number } | null>(null);
-  const [redraftResult, setRedraftResult] = useState<{ redrafted: number; errors: string[] } | null>(null);
+  const [refreshResult, setRefreshResult] = useState<{
+    redrafted: number;
+    generated: number;
+    skipped: number;
+    errors: string[];
+  } | null>(null);
 
   const { data: drafts = [], isLoading, refetch } = trpc.admin.getDrafts.useQuery(
-    { statuses: ["pending"] }
+    { statuses: ["pending"], audience: "prospect" }
   );
 
-  const generateDrafts = trpc.admin.generateDrafts.useMutation({
+  const refreshCalDrafts = trpc.admin.generateDrafts.useMutation({
     onSuccess: (data) => {
-      const r = (data as { result: { generated: number; skipped: number; errors: string[]; total: number } }).result;
-      setDraftAllResult(r);
-      toast.success(`Cal drafted ${r.generated} new email${r.generated !== 1 ? "s" : ""} (${r.skipped} skipped)`);
+      const r = (data as {
+        result: { redrafted: number; generated: number; skipped: number; errors: string[] };
+      }).result;
+      setRefreshResult(r);
+      const parts: string[] = [];
+      if (r.redrafted > 0) parts.push(`${r.redrafted} updated`);
+      if (r.generated > 0) parts.push(`${r.generated} new`);
+      toast.success(
+        parts.length > 0
+          ? `Cal drafts: ${parts.join(", ")} (${r.skipped} skipped)`
+          : `Nothing to refresh (${r.skipped} skipped — no email or already at cap)`,
+      );
       utils.admin.getDraftCount.invalidate();
       refetch();
+      utils.salesAgent.getWorkflowSummary.invalidate();
     },
     onError: (err: { message: string }) => {
-      toast.error(`Draft generation failed: ${err.message}`);
-    },
-  });
-
-  const redraftPending = trpc.admin.redraftPendingDrafts.useMutation({
-    onSuccess: (data) => {
-      const r = (data as { result: { redrafted: number; errors: string[] } }).result;
-      setRedraftResult(r);
-      toast.success(`Cal redrafted ${r.redrafted} pending email${r.redrafted !== 1 ? "s" : ""}`);
-      utils.admin.getDraftCount.invalidate();
-      refetch();
-    },
-    onError: (err: { message: string }) => {
-      toast.error(`Redraft failed: ${err.message}`);
+      toast.error(`Refresh failed: ${err.message}`);
     },
   });
 
@@ -425,6 +549,7 @@ function PendingDraftsTab() {
       setSendingId(null);
       utils.admin.getDraftCount.invalidate();
       refetch();
+      utils.salesAgent.getWorkflowSummary.invalidate();
     },
     onError: (err: { message: string }) => {
       toast.error(`Send failed: ${err.message}`);
@@ -449,6 +574,7 @@ function PendingDraftsTab() {
       setDiscardingId(null);
       utils.admin.getDraftCount.invalidate();
       refetch();
+      utils.salesAgent.getWorkflowSummary.invalidate();
     },
     onError: (err: { message: string }) => {
       toast.error(`Discard failed: ${err.message}`);
@@ -463,6 +589,7 @@ function PendingDraftsTab() {
       toast.success(`Cal sent ${result.sent} email${result.sent !== 1 ? "s" : ""}${result.failed > 0 ? ` (${result.failed} failed)` : ""}`);
       utils.admin.getDraftCount.invalidate();
       refetch();
+      utils.salesAgent.getWorkflowSummary.invalidate();
     },
     onError: (err: { message: string }) => {
       toast.error(`Bulk send failed: ${err.message}`);
@@ -485,20 +612,18 @@ function PendingDraftsTab() {
           <Inbox className="w-10 h-10" />
           <p className="text-sm font-medium text-zinc-500">No pending drafts</p>
           <p className="text-xs text-center max-w-md text-zinc-500">
-            Use <strong className="text-zinc-400">Draft All Prospects</strong> on the Pipeline tab to create drafts,
-            or <strong className="text-zinc-400">Regenerate drafts</strong> there when you already have pending ones
-            and Cal&apos;s voice has been updated.
+            Click <strong className="text-zinc-400">Refresh Cal drafts</strong> to regenerate existing
+            pending emails with Cal&apos;s latest voice and create drafts for prospects that don&apos;t have one yet.
           </p>
           <Button
             size="sm"
-            variant="outline"
-            className="border-amber-700 text-amber-300 hover:bg-amber-950/40 gap-1.5"
-            disabled={generateDrafts.isPending}
-            onClick={() => generateDrafts.mutate({})}
+            className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+            disabled={refreshCalDrafts.isPending}
+            onClick={() => { setRefreshResult(null); refreshCalDrafts.mutate({}); }}
           >
-            {generateDrafts.isPending
-              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Drafting…</>
-              : <><Bot className="w-3.5 h-3.5" /> Draft All Prospects</>}
+            {refreshCalDrafts.isPending
+              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Refreshing…</>
+              : <><RefreshCw className="w-3.5 h-3.5" /> Refresh Cal drafts</>}
           </Button>
         </div>
       </div>
@@ -515,35 +640,21 @@ function PendingDraftsTab() {
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
             size="sm"
+            className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+            disabled={refreshCalDrafts.isPending}
+            onClick={() => { setRefreshResult(null); refreshCalDrafts.mutate({}); }}
+          >
+            {refreshCalDrafts.isPending
+              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Refreshing…</>
+              : <><RefreshCw className="w-3.5 h-3.5" /> Refresh Cal drafts</>}
+          </Button>
+          <Button
+            size="sm"
             variant="outline"
             className="border-white/10 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
             onClick={() => refetch()}
           >
-            <RefreshCw className="w-3.5 h-3.5" /> Refresh
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-sky-700 text-sky-300 hover:bg-sky-950/40 gap-1.5"
-            disabled={redraftPending.isPending || drafts.length === 0}
-            onClick={() => { setRedraftResult(null); redraftPending.mutate(); }}
-          >
-            {redraftPending.isPending
-              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Redrafting…</>
-              : <><RefreshCw className="w-3.5 h-3.5" /> Regenerate drafts ({drafts.length})</>
-            }
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-amber-700 text-amber-300 hover:bg-amber-950/40 gap-1.5"
-            disabled={generateDrafts.isPending}
-            onClick={() => { setDraftAllResult(null); generateDrafts.mutate({}); }}
-          >
-            {generateDrafts.isPending
-              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Drafting all…</>
-              : <><Bot className="w-3.5 h-3.5" /> Draft All Prospects</>
-            }
+            <RefreshCw className="w-3.5 h-3.5" /> Reload list
           </Button>
           <Button
             size="sm"
@@ -557,40 +668,25 @@ function PendingDraftsTab() {
           >
             {bulkSend.isPending
               ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Sending all…</>
-              : <><Send className="w-3.5 h-3.5" /> Bulk Approve All ({drafts.length})</>
-            }
+              : <><Send className="w-3.5 h-3.5" /> Bulk Approve All ({drafts.length})</>}
           </Button>
         </div>
       </div>
 
-      {redraftResult && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sm">
-          <RefreshCw className="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <span className="text-sky-300">
-              Cal regenerated <strong>{redraftResult.redrafted}</strong> draft{redraftResult.redrafted !== 1 ? "s" : ""} with the latest field-note voice.
-            </span>
-            {redraftResult.errors.length > 0 && (
-              <p className="text-red-400 text-xs mt-1">{redraftResult.errors.length} error{redraftResult.errors.length !== 1 ? "s" : ""}: {redraftResult.errors[0]}</p>
-            )}
-          </div>
-          <button onClick={() => setRedraftResult(null)} className="text-zinc-500 hover:text-zinc-300 text-xs flex-shrink-0">Dismiss</button>
-        </div>
-      )}
-
-      {draftAllResult && (
+      {refreshResult && (
         <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
-          <Bot className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+          <RefreshCw className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <span className="text-amber-300">
-              Cal drafted <strong>{draftAllResult.generated}</strong> new email{draftAllResult.generated !== 1 ? "s" : ""}.{" "}
-              <span className="text-zinc-400">{draftAllResult.skipped} prospects skipped (already have a draft or no email address).</span>
+              {refreshResult.redrafted > 0 && <>Updated <strong>{refreshResult.redrafted}</strong> draft{refreshResult.redrafted !== 1 ? "s" : ""}. </>}
+              {refreshResult.generated > 0 && <>Created <strong>{refreshResult.generated}</strong> new. </>}
+              <span className="text-zinc-400">{refreshResult.skipped} skipped.</span>
             </span>
-            {draftAllResult.errors.length > 0 && (
-              <p className="text-red-400 text-xs mt-1">{draftAllResult.errors.length} error{draftAllResult.errors.length !== 1 ? "s" : ""}: {draftAllResult.errors[0]}</p>
+            {refreshResult.errors.length > 0 && (
+              <p className="text-red-400 text-xs mt-1">{refreshResult.errors[0]}</p>
             )}
           </div>
-          <button onClick={() => setDraftAllResult(null)} className="text-zinc-500 hover:text-zinc-300 text-xs flex-shrink-0">Dismiss</button>
+          <button onClick={() => setRefreshResult(null)} className="text-zinc-500 hover:text-zinc-300 text-xs flex-shrink-0">Dismiss</button>
         </div>
       )}
 
@@ -748,7 +844,12 @@ function PendingDraftsTab() {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminSalesAgent() {
+  const searchString = useSearch();
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<"pipeline" | "drafts">("pipeline");
+  const [workflowStep, setWorkflowStep] = useState<WorkflowStep>(() =>
+    parseWorkflowStep(new URLSearchParams(searchString).get("step")),
+  );
   const [selectedProspectId, setSelectedProspectId] = useState<number | null>(null);
   const [filterStage, setFilterStage] = useState<string>("all");
   const [sendingId, setSendingId] = useState<number | null>(null);
@@ -807,7 +908,21 @@ export default function AdminSalesAgent() {
   } = trpc.salesAgent.getConversations.useQuery();
 
   const { data: runs = [] } = trpc.salesAgent.getRuns.useQuery();
-  const { data: draftCount } = trpc.admin.getDraftCount.useQuery();
+  const { data: draftCount } = trpc.admin.getDraftCount.useQuery({ audience: "prospect" });
+  const { data: workflowRaw, refetch: refetchWorkflow } = trpc.salesAgent.getWorkflowSummary.useQuery(
+    undefined,
+    { refetchInterval: 30_000 },
+  );
+
+  const workflow: WorkflowSummary = workflowRaw ?? {
+    needsContactFix: 0,
+    needsDraft: 0,
+    pendingReview: 0,
+    readyToSend: 0,
+    followUpDue: 0,
+    awaitingReply: 0,
+    suggestedStep: "idle",
+  };
 
   const { data: thread = [], isLoading: threadLoading } =
     trpc.salesAgent.getEmailThread.useQuery(
@@ -925,19 +1040,55 @@ export default function AdminSalesAgent() {
     onError: (err) => toast.error(`Hunter enrichment failed: ${err.message}`),
   });
 
-  const regenerateDrafts = trpc.admin.redraftPendingDrafts.useMutation({
+  const refreshCalDrafts = trpc.admin.generateDrafts.useMutation({
     onSuccess: (data) => {
-      const r = (data as { result: { redrafted: number; errors: string[] } }).result;
-      if (r.redrafted === 0) {
-        toast.info("No pending drafts to regenerate.");
-      } else {
-        toast.success(`Regenerated ${r.redrafted} draft${r.redrafted !== 1 ? "s" : ""} with Cal's current voice`);
-      }
+      const r = (data as {
+        result: { redrafted: number; generated: number; skipped: number; errors: string[] };
+      }).result;
+      const parts: string[] = [];
+      if (r.redrafted > 0) parts.push(`${r.redrafted} updated`);
+      if (r.generated > 0) parts.push(`${r.generated} new`);
+      toast.success(
+        parts.length > 0
+          ? `Cal drafts: ${parts.join(", ")} (${r.skipped} skipped)`
+          : `Nothing to refresh (${r.skipped} skipped)`,
+      );
       utils.admin.getDraftCount.invalidate();
       utils.admin.getDrafts.invalidate();
+      refetchWorkflow();
     },
-    onError: (err) => toast.error(`Regenerate failed: ${err.message}`),
+    onError: (err) => toast.error(`Refresh failed: ${err.message}`),
   });
+
+  useEffect(() => {
+    setWorkflowStep(parseWorkflowStep(new URLSearchParams(searchString).get("step")));
+  }, [searchString]);
+
+  const [workflowInitialized, setWorkflowInitialized] = useState(false);
+  useEffect(() => {
+    if (workflowInitialized || !workflowRaw) return;
+    const urlStep = new URLSearchParams(searchString).get("step");
+    if (!urlStep && workflowRaw.suggestedStep !== "idle") {
+      setLocation(`/admin/sales-agent?step=${workflowRaw.suggestedStep}`);
+    }
+    setWorkflowInitialized(true);
+  }, [workflowRaw, workflowInitialized, searchString, setLocation]);
+
+  const goWorkflowStep = (step: WorkflowStep) => {
+    setWorkflowStep(step);
+    setLocation(`/admin/sales-agent?step=${step}`);
+  };
+
+  useEffect(() => {
+    if (workflowStep === "review" || workflowStep === "send") {
+      setActiveTab("drafts");
+      return;
+    }
+    setActiveTab("pipeline");
+    if (workflowStep === "contacts") setFilterStage("needs_email");
+    else if (workflowStep === "followup") setFilterStage("ready");
+    else setFilterStage("all");
+  }, [workflowStep]);
 
   // v38: update prospect notes
   const updateProspectNotes = trpc.salesAgent.updateProspectNotes.useMutation({
@@ -1012,19 +1163,6 @@ export default function AdminSalesAgent() {
     onError: (e) => { toast.error(e.message); setCancellingCalEvt(null); },
   });
 
-  const stats = {
-    total: conversations.length,
-    readyNow: conversations.filter(c => {
-      const next = c.conv.nextFollowUpAt ? new Date(c.conv.nextFollowUpAt) : null;
-      return next && next <= new Date() && !TERMINAL.includes(c.conv.state ?? "");
-    }).length,
-    responded: conversations.filter(c =>
-      ["responded","scheduling","booked","converted"].includes(c.conv.state ?? "")
-    ).length,
-    booked: conversations.filter(c => c.conv.state === "booked").length,
-    converted: conversations.filter(c => c.conv.state === "converted").length,
-  };
-
   const lastRun = runs[0];
 
   const filtered = filterStage === "all"
@@ -1034,6 +1172,10 @@ export default function AdminSalesAgent() {
         const next = c.conv.nextFollowUpAt ? new Date(c.conv.nextFollowUpAt) : null;
         return next && next <= new Date() && !TERMINAL.includes(c.conv.state ?? "");
       })
+    : filterStage === "needs_email"
+    ? conversations.filter(c => prospectNeedsContactFix(c.prospect))
+    : filterStage === "awaiting"
+    ? conversations.filter(c => c.conv.state === "awaiting_reply")
     : conversations.filter(c => c.conv.state === filterStage);
 
   const selectedConv = selectedProspectId
@@ -1054,27 +1196,34 @@ export default function AdminSalesAgent() {
       <AdminPage fullHeight noPadding maxWidth="none">
       <div className="flex flex-col h-full bg-transparent text-white overflow-hidden">
 
-        {/* ── Top tab bar ── */}
-        <div className="flex items-center gap-1 px-6 pt-4 border-b border-white/10">
+        <CalWorkflowBar
+          workflow={workflow}
+          activeStep={workflowStep}
+          onStepChange={goWorkflowStep}
+          lastRunLabel={lastRun ? timeAgo(lastRun.startedAt) : undefined}
+        />
+
+        {/* ── Secondary tabs (review queue + meetings) ── */}
+        <div className="flex items-center gap-1 px-6 border-b border-white/10">
           <button
-            onClick={() => setActiveTab("pipeline")}
+            onClick={() => goWorkflowStep(workflowStep === "review" || workflowStep === "send" ? workflowStep : "contacts")}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border-b-2 -mb-px ${
               activeTab === "pipeline"
                 ? "border-amber-500 text-white"
                 : "border-transparent text-zinc-500 hover:text-zinc-300"
             }`}
           >
-            <Bot className="w-4 h-4" /> Pipeline
+            <Users className="w-4 h-4" /> Contacts & pipeline
           </button>
           <button
-            onClick={() => setActiveTab("drafts")}
+            onClick={() => goWorkflowStep("review")}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border-b-2 -mb-px ${
               activeTab === "drafts"
                 ? "border-amber-500 text-white"
                 : "border-transparent text-zinc-500 hover:text-zinc-300"
             }`}
           >
-            <Inbox className="w-4 h-4" /> Pending Drafts
+            <Inbox className="w-4 h-4" /> Review & send
             {pendingCount > 0 && (
               <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-black">
                 {pendingCount}
@@ -1103,124 +1252,108 @@ export default function AdminSalesAgent() {
           <div className="flex flex-1 overflow-hidden">
             {/* Left panel */}
             <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Header */}
-              <div className="px-6 pt-5 pb-4 border-b border-white/10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                      <Bot className="w-5 h-5 text-amber-400" />
-                    </div>
-                    <div>
-                      <h1 className="text-lg font-semibold text-white">Cal</h1>
-                      <p className="text-xs text-zinc-500">
-                        Studious Observer · field notes on work and flow, not sales emails.
-                        {lastRun ? ` Last outreach run ${timeAgo(lastRun.startedAt)}.` : ""}
-                      </p>
-                    </div>
-                  </div>
+              {/* Step actions */}
+              <div className="px-6 py-4 border-b border-white/10">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                  <p className="text-sm text-zinc-400">
+                    {workflowStep === "contacts" && (
+                      <><span className="text-white font-medium">{workflow.needsContactFix}</span> need a verified contact before Cal can draft.</>
+                    )}
+                    {workflowStep === "draft" && (
+                      <><span className="text-white font-medium">{workflow.needsDraft}</span> ready for Cal to draft · <span className="text-zinc-500">Refresh rewrites pending + creates missing (redraft).</span></>
+                    )}
+                    {workflowStep === "followup" && (
+                      <><span className="text-white font-medium">{workflow.followUpDue}</span> follow-ups due · <span className="text-zinc-500">{workflow.awaitingReply} awaiting your reply.</span></>
+                    )}
+                    {(workflowStep === "review" || workflowStep === "send") && (
+                      <>Use the <button type="button" className="text-amber-400 underline" onClick={() => goWorkflowStep("review")}>Review & send</button> tab.</>
+                    )}
+                  </p>
                   <div className="flex flex-wrap items-center justify-end gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-amber-700 text-amber-400 hover:bg-amber-950 gap-1.5"
-                      onClick={() => triggerDiscovery.mutate()}
-                      disabled={triggerDiscovery.isPending}
-                    >
-                      {triggerDiscovery.isPending
-                        ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Finding…</>
-                        : <><TrendingUp className="w-3.5 h-3.5" /> Find Prospects</>}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-blue-700 text-blue-400 hover:bg-blue-950 gap-1.5"
-                      onClick={() => verifyAllUnverified.mutate()}
-                      disabled={verifyAllUnverified.isPending || verifyProgressOpen}
-                      title="Run Apollo verification on all low-confidence emails"
-                    >
-                      {verifyAllUnverified.isPending
-                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Starting…</>
-                        : verifyProgressOpen
-                          ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Running…</>
-                          : <><ShieldCheck className="w-3.5 h-3.5" /> Verify All</>}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-emerald-700 text-emerald-400 hover:bg-emerald-950 gap-1.5"
-                      onClick={() => enrichHunter.mutate({ limit: 25 })}
-                      disabled={enrichHunter.isPending}
-                      title="Find real decision-maker emails via Hunter.io for prospects with missing/guessed contacts"
-                    >
-                      {enrichHunter.isPending
-                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding…</>
-                        : <><MousePointerClick className="w-3.5 h-3.5" /> Find Emails</>}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-sky-700 text-sky-300 hover:bg-sky-950 gap-1.5"
-                      onClick={() => regenerateDrafts.mutate()}
-                      disabled={regenerateDrafts.isPending || pendingCount === 0}
-                      title={
-                        pendingCount === 0
-                          ? "No pending drafts — open Pending Drafts tab after drafting prospects"
-                          : "Rewrite all pending drafts using Cal's latest field-note voice"
-                      }
-                    >
-                      {regenerateDrafts.isPending
-                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Regenerating…</>
-                        : <><RefreshCw className="w-3.5 h-3.5" /> Regenerate drafts{pendingCount > 0 ? ` (${pendingCount})` : ""}</>}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-zinc-600 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
-                      onClick={() => setActiveTab("drafts")}
-                      title="Review and send pending email drafts"
-                    >
-                      <Inbox className="w-3.5 h-3.5" /> Pending drafts{pendingCount > 0 ? ` (${pendingCount})` : ""}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-zinc-600 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
-                      onClick={() => { setCsvText(""); setCsvImportResult(null); setCsvModalOpen(true); }}
-                      title="Import prospects from CSV"
-                    >
-                      <Upload className="w-3.5 h-3.5" /> Import CSV
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-white/10 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
-                      onClick={() => refetchConvs()}
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" /> Refresh
-                    </Button>
+                    {(workflowStep === "contacts" || workflowStep === "draft" || workflowStep === "followup") && (
+                      <>
+                        {workflowStep === "contacts" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-blue-700 text-blue-400 hover:bg-blue-950 gap-1.5"
+                              onClick={() => verifyAllUnverified.mutate()}
+                              disabled={verifyAllUnverified.isPending || verifyProgressOpen}
+                            >
+                              {verifyAllUnverified.isPending || verifyProgressOpen
+                                ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying…</>
+                                : <><ShieldCheck className="w-3.5 h-3.5" /> Verify emails</>}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-emerald-700 text-emerald-400 hover:bg-emerald-950 gap-1.5"
+                              onClick={() => enrichHunter.mutate({ limit: 25 })}
+                              disabled={enrichHunter.isPending}
+                            >
+                              {enrichHunter.isPending
+                                ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding…</>
+                                : <><MousePointerClick className="w-3.5 h-3.5" /> Find emails</>}
+                            </Button>
+                          </>
+                        )}
+                        {workflowStep === "draft" && (
+                          <Button
+                            size="sm"
+                            className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+                            onClick={() => refreshCalDrafts.mutate({})}
+                            disabled={refreshCalDrafts.isPending}
+                          >
+                            {refreshCalDrafts.isPending
+                              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Refreshing…</>
+                              : <><RefreshCw className="w-3.5 h-3.5" /> Refresh Cal drafts</>}
+                          </Button>
+                        )}
+                        {workflowStep === "followup" && pendingCount > 0 && (
+                          <Button
+                            size="sm"
+                            className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+                            onClick={() => goWorkflowStep("review")}
+                          >
+                            <Inbox className="w-3.5 h-3.5" /> Review drafts ({pendingCount})
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-amber-700 text-amber-400 hover:bg-amber-950 gap-1.5"
+                          onClick={() => triggerDiscovery.mutate()}
+                          disabled={triggerDiscovery.isPending}
+                        >
+                          {triggerDiscovery.isPending
+                            ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Finding…</>
+                            : <><TrendingUp className="w-3.5 h-3.5" /> Find prospects</>}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-zinc-600 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
+                          onClick={() => { setCsvText(""); setCsvImportResult(null); setCsvModalOpen(true); }}
+                        >
+                          <Upload className="w-3.5 h-3.5" /> Import CSV
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-white/10 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
+                          onClick={() => refetchConvs()}
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" /> Reload
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
-
-                <div className="grid grid-cols-5 gap-3">
-                  {[
-                    { label: "Total",     value: stats.total,     icon: Users,         color: "text-zinc-300" },
-                    { label: "Ready Now", value: stats.readyNow,  icon: Zap,           color: "text-amber-400" },
-                    { label: "Responded", value: stats.responded, icon: MessageSquare, color: "text-emerald-400" },
-                    { label: "Booked",    value: stats.booked,    icon: Calendar,      color: "text-teal-400" },
-                    { label: "Converted", value: stats.converted, icon: Star,          color: "text-yellow-400" },
-                  ].map(({ label, value, icon: Icon, color }) => (
-                    <div key={label} className="bg-[#24272e] rounded-lg px-3 py-2.5 border border-white/10">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <Icon className={`w-3.5 h-3.5 ${color}`} />
-                        <span className="text-xs text-zinc-500">{label}</span>
-                      </div>
-                      <span className={`text-xl font-bold ${color}`}>{value}</span>
-                    </div>
-                  ))}
-                </div>
+                <CalDeliverabilityBanner />
               </div>
 
-              {/* Filter bar */}
+              {/* Filter bar — workflow-focused only */}
               <div className="px-6 py-3 border-b border-white/10 flex items-center gap-2 overflow-x-auto">
                 <button
                   onClick={() => setFilterStage("all")}
@@ -1228,25 +1361,30 @@ export default function AdminSalesAgent() {
                 >
                   All ({conversations.length})
                 </button>
-                <button
-                  onClick={() => setFilterStage("ready")}
-                  className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "ready" ? "bg-amber-500/30 text-amber-300" : "text-zinc-500 hover:text-zinc-300"}`}
-                >
-                  Ready ({stats.readyNow})
-                </button>
-                {STAGES.slice(0, 7).map(s => {
-                  const cnt = conversations.filter(c => c.conv.state === s.id).length;
-                  if (cnt === 0) return null;
-                  return (
+                {workflowStep === "contacts" && (
+                  <button
+                    onClick={() => setFilterStage("needs_email")}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "needs_email" ? "bg-red-500/30 text-red-300" : "text-zinc-500 hover:text-zinc-300"}`}
+                  >
+                    Needs email ({workflow.needsContactFix})
+                  </button>
+                )}
+                {workflowStep === "followup" && (
+                  <>
                     <button
-                      key={s.id}
-                      onClick={() => setFilterStage(s.id)}
-                      className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === s.id ? `${s.color} ring-1 ring-current` : "text-zinc-500 hover:text-zinc-300"}`}
+                      onClick={() => setFilterStage("ready")}
+                      className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "ready" ? "bg-amber-500/30 text-amber-300" : "text-zinc-500 hover:text-zinc-300"}`}
                     >
-                      {s.label} ({cnt})
+                      Due now ({workflow.followUpDue})
                     </button>
-                  );
-                })}
+                    <button
+                      onClick={() => setFilterStage("awaiting")}
+                      className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "awaiting" ? "bg-emerald-500/30 text-emerald-300" : "text-zinc-500 hover:text-zinc-300"}`}
+                    >
+                      Awaiting reply ({workflow.awaitingReply})
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Conversation list */}
@@ -1648,9 +1786,20 @@ export default function AdminSalesAgent() {
           </div>
         )}
 
-        {/* ── Pending Drafts tab ── */}
+        {/* ── Review & send (steps 3–4) ── */}
         {activeTab === "drafts" && (
           <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="px-6 py-3 border-b border-white/10 bg-amber-950/10 flex-shrink-0">
+              <p className="text-sm text-zinc-300">
+                <span className="text-amber-400 font-semibold">
+                  Step {workflowStep === "send" ? "4 · Send" : "3 · Review"}
+                </span>
+                {" "}— {workflow.pendingReview} field note{workflow.pendingReview !== 1 ? "s" : ""} in queue.
+                {workflowStep === "send"
+                  ? " Send individually or bulk approve all below."
+                  : " Read what Cal wrote. Edit if you want. Then send."}
+              </p>
+            </div>
             <PendingDraftsTab />
           </div>
         )}

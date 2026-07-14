@@ -286,40 +286,22 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* ── Outreach card ── */}
+      {/* ── Cal outreach ── */}
       {draftCount !== undefined && (
         <Card style={{ padding: "1.25rem", marginBottom: "1rem", borderColor: `rgba(245,158,11,0.25)` }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
               <Send size={16} style={{ color: D.amber, flexShrink: 0 }} />
               <div>
-                <div style={{ fontSize: "0.875rem", fontWeight: 600, color: D.text }}>
-                  Cal's Outreach
-                  {draftCount.pending > 0 && (
-                    <span style={{ marginLeft: "0.5rem", fontSize: "0.6875rem", fontWeight: 700, color: D.amber }}>{draftCount.pending} pending</span>
-                  )}
-                </div>
+                <div style={{ fontSize: "0.875rem", fontWeight: 600, color: D.text }}>Cal outreach</div>
                 <div style={{ fontSize: "0.75rem", color: D.text2, marginTop: "0.125rem" }}>
-                  {draftCount.pending > 0 ? `${draftCount.pending} draft${draftCount.pending !== 1 ? "s" : ""} pending review`
-                    : draftCount.approved > 0 ? `${draftCount.approved} approved and ready to send`
-                    : `${draftCount.sent} email${draftCount.sent !== 1 ? "s" : ""} sent`}
+                  {draftCount.pending > 0
+                    ? `${draftCount.pending} draft${draftCount.pending !== 1 ? "s" : ""} waiting — step 3 Review`
+                    : "Fix contacts → Draft → Review → Send → Follow up"}
                 </div>
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-              {[
-                { label: "Pending",    value: draftCount.pending,  color: D.amber },
-                { label: "Approved",   value: draftCount.approved, color: D.emerald },
-                { label: "Sent",       value: draftCount.sent,     color: D.blue },
-                ...(siteStats ? [{ label: "In Pipeline", value: siteStats.conversations?.total ?? 0, color: "#a78bfa" }] : []),
-              ].map(d => (
-                <div key={d.label} style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "1.125rem", fontWeight: 700, color: d.color, fontFamily: "var(--font-mono)" }}>{d.value}</div>
-                  <div style={{ fontSize: "0.625rem", color: D.text3 }}>{d.label}</div>
-                </div>
-              ))}
-              <Btn href="/admin/sales-agent" variant="primary">Go to Outreach <ArrowRight size={11} /></Btn>
-            </div>
+            <Btn href="/admin/sales-agent" variant="primary">Open Cal workflow <ArrowRight size={11} /></Btn>
           </div>
         </Card>
       )}

@@ -16,7 +16,7 @@ import crypto from "crypto";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 import { roleBasedOutreachEmails, isDeprecatedRoleInbox } from "./outreachContacts";
-import { salesAgentManualSendCore, salesAgentPreviewCore, generateCalDraftsCore, redraftPendingCalDraftsCore, advanceProspectConversationAfterSend } from "./agents/salesAgent";
+import { salesAgentManualSendCore, salesAgentPreviewCore, generateCalDraftsCore, refreshCalDraftsCore, redraftPendingCalDraftsCore, advanceProspectConversationAfterSend, getCalWorkflowSummary } from "./agents/salesAgent";
 import { quarantineBouncedProspectEmails } from "./agents/prospectEnrichment";
 import { computeBounceStats } from "./outreachGate";
 
@@ -1906,20 +1906,21 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     // Routes exclusively through salesAgentPreviewCore (frankPlaybook / buildDiscoveryEmail).
     // Also seeds salesAgentConversations rows for any prospects that don't have one,
     // so the nightly cron will pick them up for automated follow-ups.
+    // Refresh = regenerate pending drafts + create missing ones (single admin workflow).
     generateDrafts: adminProcedure
       .input(z.object({ prospectIds: z.array(z.number()).optional() }))
       .mutation(async ({ input, ctx }) => {
         return workflows.withAgentRun(
-          { agentName: "Cal Draft Generator", triggeredBy: ctx.user?.name ?? "admin", inputSummary: input.prospectIds ? `${input.prospectIds.length} selected prospects` : "all prospects due this week" },
-          async () => generateCalDraftsCore({ prospectIds: input.prospectIds }),
+          { agentName: "Cal Draft Refresh", triggeredBy: ctx.user?.name ?? "admin", inputSummary: input.prospectIds ? `${input.prospectIds.length} selected prospects` : "all Cal prospect drafts" },
+          async () => refreshCalDraftsCore({ prospectIds: input.prospectIds }),
         );
       }),
 
-    /** Regenerate every pending Cal draft (full body redraft, not greeting-only). */
+    /** @deprecated Use generateDrafts — kept for older clients. */
     redraftPendingDrafts: adminProcedure.mutation(async ({ ctx }) => {
       return workflows.withAgentRun(
         { agentName: "Cal Redraft", triggeredBy: ctx.user?.name ?? "admin", inputSummary: "all pending prospect drafts" },
-        async () => redraftPendingCalDraftsCore(),
+        async () => refreshCalDraftsCore(),
       );
     }),
 
@@ -2816,6 +2817,9 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           .orderBy(drizzleDesc(salesAgentRuns.startedAt))
           .limit(50);
       }),
+
+    /** Actionable counts for Cal's 5-step workflow UI. */
+    getWorkflowSummary: adminProcedure.query(async () => getCalWorkflowSummary()),
 
     // Admin: get conversations
     getConversations: adminProcedure

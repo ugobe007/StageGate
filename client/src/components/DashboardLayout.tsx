@@ -21,7 +21,6 @@ const menuItems = [
   { icon: Star,            label: "Prospects",        path: "/admin/prospects" },
   { icon: Bot,             label: "AI Agents",        path: "/admin/agents" },
   { icon: Kanban,          label: "Pipeline",         path: "/admin/pipeline" },
-  { icon: Send,            label: "Outreach",         path: "/admin/outreach" },
   { icon: ClipboardList,   label: "Bookings",         path: "/admin/bookings" },
   { icon: Inbox,           label: "Service Requests", path: "/admin/service-requests" },
   { icon: Calendar,        label: "Calendar",          path: "/admin/calendar" },
@@ -141,11 +140,14 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const logout = trpc.auth.logout.useMutation({ onSuccess: () => { window.location.href = "/"; } });
 
-  const { data: draftCount } = trpc.admin.getDraftCount.useQuery(undefined, {
-    enabled: user?.role === "admin",
-    refetchInterval: 60_000,
-    staleTime: 30_000,
-  });
+  const { data: draftCount } = trpc.admin.getDraftCount.useQuery(
+    { audience: "prospect" },
+    {
+      enabled: user?.role === "admin",
+      refetchInterval: 60_000,
+      staleTime: 30_000,
+    },
+  );
   const { data: bookingNewCount } = trpc.bookings.getNewCount.useQuery(undefined, {
     enabled: user?.role === "admin",
     refetchInterval: 60_000,
@@ -241,9 +243,11 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
       {/* Nav */}
       <nav style={{ flex: 1, overflowY: "auto", padding: "0.5rem", display: "flex", flexDirection: "column", gap: "1px" }}>
         {menuItems.map(item => {
-          const isActive = location === item.path;
+          const isActive =
+            location === item.path ||
+            (item.path === "/admin/sales-agent" && location.startsWith("/admin/sales-agent"));
           const Icon = item.icon;
-          const pendingDrafts = item.path === "/admin/outreach" ? (draftCount?.pending ?? 0) : 0;
+          const pendingDrafts = item.path === "/admin/sales-agent" ? (draftCount?.pending ?? 0) : 0;
           const pendingBookings = item.path === "/admin/bookings" ? (bookingNewCount?.count ?? 0) : 0;
           const pendingServiceRequests = item.path === "/admin/service-requests" ? (serviceRequestNewCount?.count ?? 0) : 0;
           const upcomingCalendar = item.path === "/admin/calendar" ? (calendarUpcomingCount?.count ?? 0) : 0;
