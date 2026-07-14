@@ -75,7 +75,6 @@ export default function AdminProspects() {
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
   const [failedIds, setFailedIds] = useState<Set<number>>(new Set());
   const [selectedProspectId, setSelectedProspectId] = useState<number | null>(null);
-  const [selectedProspectId, setSelectedProspectId] = useState<number | null>(null);
   const [editContact, setEditContact] = useState<Record<number, {
     contactName?: string;
     contactTitle?: string;
