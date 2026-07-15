@@ -112,7 +112,7 @@ function Router() {
       <Route path="/admin/logistics">{() => <AdminShell><AdminLogistics /></AdminShell>}</Route>
       <Route path="/admin/service-requests">{() => <AdminShell><AdminServiceRequests /></AdminShell>}</Route>
       <Route path="/admin/calendar">{() => <AdminShell><AdminCalendar /></AdminShell>}</Route>
-      <Route path="/admin/orbital">{() => <AdminShell><AdminOrbital /></AdminShell>}</Route>
+      <Route path="/admin/orbital" component={AdminOrbital} />
 
       {/* Public calendar share link */}
       <Route path="/calendar/:token" component={CalendarEventPage} />

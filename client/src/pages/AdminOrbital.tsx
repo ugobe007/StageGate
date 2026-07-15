@@ -673,7 +673,7 @@ export default function AdminOrbital() {
   };
 
   return (
-    <div style={{ padding: "2rem", paddingLeft: "calc(2rem + 56px)", color: MC.ink, background: MC.bg, minHeight: "100vh", fontFamily: SG }}>
+    <div style={{ padding: "1.25rem 1.5rem", paddingLeft: "calc(1.5rem + 56px)", color: MC.ink, background: MC.bg, minHeight: "100vh", height: "100vh", overflowY: "auto", fontFamily: SG }}>
       <NavRail active={activeSec} onSelect={scrollToSec} />
       <Header facilityName={fleet?.facility?.name ?? null} lastSync={lastSync} onRefresh={refresh} onOnboard={() => setWizardOpen(true)} />
 
@@ -686,68 +686,121 @@ export default function AdminOrbital() {
         </div>
       )}
 
-      {/* Live overview — headline metrics + interactive status distribution */}
-      <div ref={reg("overview")} data-sec="overview" style={{ scrollMarginTop: 80, marginTop: 18 }}>
+      {/* Mission control hero — warehouse map + operator rail (above the fold) */}
+      <style>{`.orbital-hero{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;margin-top:16px;align-items:start}@media (max-width:1100px){.orbital-hero{grid-template-columns:1fr}.orbital-hero>.orbital-rail{max-width:560px}}`}</style>
+      {map && (
+        <div className="orbital-hero">
+          <div ref={reg("map")} data-sec="map" style={{ background: cardBg, border, borderRadius: 12, padding: 16, scrollMarginTop: 80 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+              <div style={{ flex: "1 1 280px", minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <Map size={16} color={MC.azure} />
+                  <h3 style={{ margin: 0, fontSize: ".95rem", fontWeight: 600 }}>Warehouse — Global Spatial Map</h3>
+                  <span style={{ fontSize: ".62rem", fontFamily: MONO, letterSpacing: ".08em", padding: "2px 8px", borderRadius: 4, background: MC.input, color: MC.azureLight, border: `1px solid ${MC.line}` }}>MAP-01</span>
+                </div>
+                <p style={{ margin: "6px 0 0", fontSize: ".72rem", color: MC.inkDim, lineHeight: 1.45 }}>
+                  Click a robot to select · Click floor to set a visual waypoint
+                  {mapSel ? " · Shift-click to chain waypoints" : ""}
+                </p>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: ".68rem", color: MC.inkDim, alignItems: "center" }}>
+                <Legend color={MC.green} label="Camera pose" />
+                <Legend color={MC.azure} label="SLAM self-report" ring />
+                <Legend color={MC.amber} label="Waypoint" />
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                {mapSel && (() => {
+                  const r = fleet?.robots.find((x) => x.id === mapSel);
+                  const routing = !!(r?.waypoints?.length);
+                  return (
+                    <>
+                      <span style={{ fontSize: ".72rem", padding: "3px 10px", borderRadius: 999, background: emeraldAlpha(0.14), color: BRAND.emerald, fontFamily: MONO }}>
+                        {mapSel}{routing ? " · en route" : ""}
+                      </span>
+                      {routing && (
+                        <button onClick={() => clearRoute(mapSel)} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>Clear route</button>
+                      )}
+                      <button onClick={() => setMapSel(null)} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>Deselect</button>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+            <SequenceBar seq={seq?.data ?? null} robots={fleet?.robots ?? []}
+              secondsLeft={seq ? Math.max(0, Math.round((seq.data.ends_in_s ?? 0) - (nowSec - seq.rcvd))) : 0}
+              border={border} />
+            <WarehouseMapView map={map} robots={fleet?.robots ?? []} selectedId={mapSel}
+              onSelectRobot={setMapSel} onFloorClick={handleFloorClick} hero />
+          </div>
+
+          <div className="orbital-rail" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {(() => {
+              const r = fleet?.robots.find((x) => x.id === mapSel) ?? null;
+              return (
+                <ControlPanel
+                  key={r?.id ?? "none"} robot={r} grants={r ? vendorControl(r.vendor) : null} busy={r ? busy[r.id] : false}
+                  onSpeed={(mps) => r && setSpeed(r.id, mps)}
+                  onDrive={(h, mps) => r && drive(r.id, h, mps)}
+                  onStopDrive={() => r && stopDrive(r.id)}
+                  onClearRoute={() => r && clearRoute(r.id)}
+                  onEstop={() => r && control(r.id, "estop")}
+                  onResume={() => r && control(r.id, "resume")}
+                  onDetails={() => r && openRobot(r.id)}
+                  onDeselect={() => setMapSel(null)}
+                />
+              );
+            })()}
+
+            <div ref={reg("alerts")} data-sec="alerts" style={{ background: cardBg, border, borderRadius: 12, padding: 14, scrollMarginTop: 80 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <AlertTriangle size={15} color="#f59e0b" />
+                <h3 style={{ margin: 0, fontSize: ".9rem" }}>Safety &amp; Drift Alerts</h3>
+                {(() => {
+                  const unacked = alerts.filter((a) => !a.acknowledged);
+                  return (
+                    <>
+                      <span style={{ fontSize: ".62rem", fontFamily: MONO, padding: "1px 7px", borderRadius: 999, background: MC.input, color: unacked.length ? "#f59e0b" : "rgba(255,255,255,0.4)" }}>{unacked.length}</span>
+                      {unacked.length > 0 && (
+                        <button onClick={() => { void Promise.all(unacked.map((a) => ackAlert(a.id))); }}
+                          style={{ marginLeft: "auto", fontSize: ".68rem", color: BRAND.emerald, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
+                          Ack all
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+              {alerts.length === 0 && <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".78rem" }}>No alerts — fleet nominal.</div>}
+              <div style={{ maxHeight: 200, overflowY: "auto", margin: "0 -6px" }}>
+                {[...alerts].sort((a, b) => Number(a.acknowledged) - Number(b.acknowledged)).slice(0, 40).map((a) => (
+                  <div key={a.id} onClick={() => { if (!a.acknowledged) ackAlert(a.id); }}
+                    title={`${a.type.replace(/_/g, " ")}${a.message ? ` — ${a.message}` : ""}`}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 6px", borderRadius: 6, opacity: a.acknowledged ? 0.4 : 1, cursor: a.acknowledged ? "default" : "pointer" }}>
+                    <span style={{ width: 6, height: 6, borderRadius: 999, background: SEVERITY_COLOR[a.severity], flexShrink: 0 }} />
+                    <span style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.7)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {a.robot_id}{a.message ? ` — ${a.message}` : ` — ${a.type.replace(/_/g, " ")}`}
+                    </span>
+                    <span style={{ fontSize: ".6rem", fontFamily: MONO, color: "rgba(255,255,255,0.35)", flexShrink: 0 }}>{a.acknowledged ? "✓" : "ack"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Live overview — below the map so the warehouse grid stays above the fold */}
+      <div ref={reg("overview")} data-sec="overview" style={{ scrollMarginTop: 80, marginTop: 20 }}>
         <Overview metrics={metrics} stateCounts={stateCounts} statusFilter={statusFilter}
           onToggle={toggleStatusFilter} cardBg={cardBg} border={border} />
       </div>
-
-      {/* Warehouse map */}
-      {map && (
-        <div ref={reg("map")} data-sec="map" style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20, scrollMarginTop: 80 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
-            <div style={{ flex: "1 1 280px", minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <Map size={16} color={MC.azure} />
-                <h3 style={{ margin: 0, fontSize: ".95rem", fontWeight: 600 }}>Warehouse — Global Spatial Map</h3>
-                <span style={{ fontSize: ".62rem", fontFamily: MONO, letterSpacing: ".08em", padding: "2px 8px", borderRadius: 4, background: MC.input, color: MC.azureLight, border: `1px solid ${MC.line}` }}>MAP-01</span>
-              </div>
-              <p style={{ margin: "6px 0 0", fontSize: ".72rem", color: MC.inkDim, lineHeight: 1.45 }}>
-                Click a robot to select · Click floor to set a visual waypoint
-                {mapSel ? " · Shift-click to chain waypoints" : ""}
-              </p>
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: ".68rem", color: MC.inkDim, alignItems: "center" }}>
-              <Legend color={MC.green} label="Camera pose" />
-              <Legend color={MC.azure} label="SLAM self-report" ring />
-              <Legend color={MC.amber} label="Waypoint" />
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              {mapSel && (() => {
-                const r = fleet?.robots.find((x) => x.id === mapSel);
-                const routing = !!(r?.waypoints?.length);
-                return (
-                  <>
-                    <span style={{ fontSize: ".72rem", padding: "3px 10px", borderRadius: 999, background: emeraldAlpha(0.14), color: BRAND.emerald, fontFamily: MONO }}>
-                      {mapSel}{routing ? " · en route" : ""}
-                    </span>
-                    {routing && (
-                      <button onClick={() => clearRoute(mapSel)} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>Clear route</button>
-                    )}
-                    <button onClick={() => setMapSel(null)} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>Deselect</button>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-          <SequenceBar seq={seq?.data ?? null} robots={fleet?.robots ?? []}
-            secondsLeft={seq ? Math.max(0, Math.round((seq.data.ends_in_s ?? 0) - (nowSec - seq.rcvd))) : 0}
-            border={border} />
-          <WarehouseMapView map={map} robots={fleet?.robots ?? []} selectedId={mapSel}
-            onSelectRobot={setMapSel} onFloorClick={handleFloorClick} />
-        </div>
-      )}
 
       {/* Control capabilities catalog — the operator/OEM control contract */}
       <div ref={reg("capabilities")} data-sec="capabilities" style={{ scrollMarginTop: 80 }}>
         <CapabilitiesPanel robots={fleet?.robots ?? []} oems={oems} vendorHasScope={vendorHasScope} cardBg={cardBg} border={border} />
       </div>
 
-      {/* Fleet + control/alerts: two columns on wide screens, stacked (with a capped control
-          rail so it never stretches full-width) once the viewport gets narrow. */}
-      <style>{`.orbital-split{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;margin-top:20px;align-items:start}@media (max-width:1100px){.orbital-split{grid-template-columns:1fr}.orbital-split>.orbital-rail{max-width:560px}}`}</style>
-      <div className="orbital-split">
-        <div ref={reg("fleet")} data-sec="fleet" style={{ scrollMarginTop: 80 }}>
+      <div ref={reg("fleet")} data-sec="fleet" style={{ scrollMarginTop: 80, marginTop: 20 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
@@ -800,97 +853,39 @@ export default function AdminOrbital() {
           </div>
         </div>
 
-        <div className="orbital-rail" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {/* Robot control panel (driven by map selection) */}
-        {(() => {
-          const r = fleet?.robots.find((x) => x.id === mapSel) ?? null;
-          return (
-            <ControlPanel
-              key={r?.id ?? "none"} robot={r} grants={r ? vendorControl(r.vendor) : null} busy={r ? busy[r.id] : false}
-              onSpeed={(mps) => r && setSpeed(r.id, mps)}
-              onDrive={(h, mps) => r && drive(r.id, h, mps)}
-              onStopDrive={() => r && stopDrive(r.id)}
-              onClearRoute={() => r && clearRoute(r.id)}
-              onEstop={() => r && control(r.id, "estop")}
-              onResume={() => r && control(r.id, "resume")}
-              onDetails={() => r && openRobot(r.id)}
-              onDeselect={() => setMapSel(null)}
-            />
-          );
-        })()}
-
-        {/* Autonomy (orchestrator) rail */}
-        <div style={{ background: cardBg, border, borderRadius: 12, padding: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <Bot size={16} color={BRAND.emerald} />
-            <h3 style={{ margin: 0, fontSize: ".95rem" }}>Autonomy</h3>
-            {orchestrator && (
-              <span style={{ marginLeft: "auto", fontSize: ".64rem", textTransform: "uppercase", letterSpacing: ".5px", color: orchestrator.enabled ? BRAND.emerald : "rgba(255,255,255,0.4)" }}>
-                {orchestrator.enabled ? "supervising" : "off"}
-              </span>
-            )}
-          </div>
-          {!orchestrator ? (
-            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".8rem" }}>Orchestrator not reporting.</div>
-          ) : (
-            <>
-              <p style={{ margin: "0 0 10px", fontSize: ".8rem", color: "rgba(255,255,255,0.72)", lineHeight: 1.5 }}>
-                {orchestrator.narrative || "Fleet nominal."}
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {orchestrator.decisions.slice(0, 6).map((d) => (
-                  <div key={d.id} style={{ borderLeft: `3px solid ${SEVERITY_COLOR[d.severity]}`, paddingLeft: 10 }}>
-                    <div style={{ fontSize: ".74rem", fontWeight: 600, color: d.auto_executed ? BRAND.emerald : "rgba(255,255,255,0.75)" }}>
-                      {d.action.replace(/_/g, " ")}{d.auto_executed ? " ✓" : ""}
-                    </div>
-                    <div style={{ fontSize: ".7rem", color: "rgba(255,255,255,0.55)" }}>{d.rationale}</div>
-                  </div>
-                ))}
-                {orchestrator.decisions.length === 0 && (
-                  <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".76rem" }}>No supervisory actions taken.</div>
-                )}
-              </div>
-            </>
+      {/* Autonomy (orchestrator) */}
+      <div style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <Bot size={16} color={BRAND.emerald} />
+          <h3 style={{ margin: 0, fontSize: ".95rem" }}>Autonomy</h3>
+          {orchestrator && (
+            <span style={{ marginLeft: "auto", fontSize: ".64rem", textTransform: "uppercase", letterSpacing: ".5px", color: orchestrator.enabled ? BRAND.emerald : "rgba(255,255,255,0.4)" }}>
+              {orchestrator.enabled ? "supervising" : "off"}
+            </span>
           )}
         </div>
-
-        {/* Alerts rail — compact, unacknowledged first, capped + scrollable so it doesn't
-            stretch the section past the fleet grid */}
-        <div ref={reg("alerts")} data-sec="alerts" style={{ background: cardBg, border, borderRadius: 12, padding: 14, scrollMarginTop: 80 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <AlertTriangle size={15} color="#f59e0b" />
-            <h3 style={{ margin: 0, fontSize: ".9rem" }}>Alerts</h3>
-            {(() => {
-              const unacked = alerts.filter((a) => !a.acknowledged);
-              return (
-                <>
-                  <span style={{ fontSize: ".62rem", fontFamily: MONO, padding: "1px 7px", borderRadius: 999, background: MC.input, color: unacked.length ? "#f59e0b" : "rgba(255,255,255,0.4)" }}>{unacked.length}</span>
-                  {unacked.length > 0 && (
-                    <button onClick={() => { void Promise.all(unacked.map((a) => ackAlert(a.id))); }}
-                      style={{ marginLeft: "auto", fontSize: ".68rem", color: BRAND.emerald, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
-                      Ack all
-                    </button>
-                  )}
-                </>
-              );
-            })()}
-          </div>
-          {alerts.length === 0 && <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".78rem" }}>No alerts — fleet nominal.</div>}
-          <div style={{ maxHeight: 240, overflowY: "auto", margin: "0 -6px" }}>
-            {[...alerts].sort((a, b) => Number(a.acknowledged) - Number(b.acknowledged)).slice(0, 40).map((a) => (
-              <div key={a.id} onClick={() => { if (!a.acknowledged) ackAlert(a.id); }}
-                title={`${a.type.replace(/_/g, " ")}${a.message ? ` — ${a.message}` : ""}`}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 6px", borderRadius: 6, opacity: a.acknowledged ? 0.4 : 1, cursor: a.acknowledged ? "default" : "pointer" }}>
-                <span style={{ width: 6, height: 6, borderRadius: 999, background: SEVERITY_COLOR[a.severity], flexShrink: 0 }} />
-                <span style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.7)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {a.robot_id}{a.message ? ` — ${a.message}` : ` — ${a.type.replace(/_/g, " ")}`}
-                </span>
-                <span style={{ fontSize: ".6rem", fontFamily: MONO, color: "rgba(255,255,255,0.35)", flexShrink: 0 }}>{a.acknowledged ? "✓" : "ack"}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        </div>
+        {!orchestrator ? (
+          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".8rem" }}>Orchestrator not reporting.</div>
+        ) : (
+          <>
+            <p style={{ margin: "0 0 10px", fontSize: ".8rem", color: "rgba(255,255,255,0.72)", lineHeight: 1.5 }}>
+              {orchestrator.narrative || "Fleet nominal."}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {orchestrator.decisions.slice(0, 6).map((d) => (
+                <div key={d.id} style={{ borderLeft: `3px solid ${SEVERITY_COLOR[d.severity]}`, paddingLeft: 10 }}>
+                  <div style={{ fontSize: ".74rem", fontWeight: 600, color: d.auto_executed ? BRAND.emerald : "rgba(255,255,255,0.75)" }}>
+                    {d.action.replace(/_/g, " ")}{d.auto_executed ? " ✓" : ""}
+                  </div>
+                  <div style={{ fontSize: ".7rem", color: "rgba(255,255,255,0.55)" }}>{d.rationale}</div>
+                </div>
+              ))}
+              {orchestrator.decisions.length === 0 && (
+                <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".76rem" }}>No supervisory actions taken.</div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* How the live simulation works */}
@@ -967,9 +962,10 @@ function Legend({ color, label, ring, bar, square }: { color: string; label: str
   return <span style={{ display: "flex", alignItems: "center", gap: 6 }}>{swatch}{label}</span>;
 }
 
-function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick }: {
+function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick, hero }: {
   map: WarehouseMap; robots: RobotSummary[]; selectedId: string | null;
   onSelectRobot: (id: string) => void; onFloorClick: (x: number, y: number, append: boolean) => void;
+  hero?: boolean;
 }) {
   const ref = useRef<SVGSVGElement | null>(null);
   const W = map.width_m, H = map.height_m;
@@ -1025,7 +1021,14 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
 
   return (
     <svg ref={ref} viewBox={`0 0 ${W} ${H}`} onClick={floorClick}
-      style={{ width: "100%", maxHeight: "62vh", aspectRatio: `${W} / ${H}`, background: MAP_BG, borderRadius: 10, border: `1px solid ${MC.lineStrong}`, cursor: selectedId ? "crosshair" : "default", userSelect: "none", display: "block" }}>
+      style={{
+        width: "100%",
+        maxHeight: hero ? "min(520px, calc(100vh - 220px))" : "62vh",
+        minHeight: hero ? 320 : undefined,
+        aspectRatio: `${W} / ${H}`,
+        background: MAP_BG, borderRadius: 10, border: `1px solid ${MC.lineStrong}`,
+        cursor: selectedId ? "crosshair" : "default", userSelect: "none", display: "block",
+      }}>
       <defs>
         <filter id="orbital-glow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="0.12" result="blur" />
