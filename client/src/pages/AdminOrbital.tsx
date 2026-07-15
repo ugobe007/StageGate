@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity, AlertTriangle, BatteryCharging, Bot, Check, CircleStop, Copy, Cpu, Crosshair, Gauge, Heart,
   KeyRound, LayoutDashboard, Loader2, Lock, Map, Navigation, Play, Plus, RefreshCw, Radio, Send,
-  Settings, ShieldAlert, SlidersHorizontal, Thermometer, Trash2, Users, Video, X,
+  Settings, ShieldAlert, Thermometer, Trash2, Users, Video, X,
 } from "lucide-react";
 import { BRAND, emeraldAlpha } from "@/lib/brand";
 
@@ -142,6 +142,184 @@ const MODE_COLOR: Record<ControlMode, string> = {
   patrol: "rgba(255,255,255,0.55)", visual_nav: MC.azure, manual: MC.amber,
   charging: MC.azure, halted: MC.crimson, idle: MC.amber, cooldown: MC.crimson,
 };
+const FLEET_CATEGORIES = ["All", "Humanoids", "Cleaning", "Delivery", "Inventory"] as const;
+
+const STATE_PILL: Record<RobotSummary["state"], { label: string; bg: string; color: string }> = {
+  active: { label: "Active", bg: "rgba(34,197,94,0.14)", color: MC.green },
+  idle: { label: "Idle", bg: "rgba(245,158,11,0.14)", color: MC.amber },
+  charging: { label: "Charging", bg: "rgba(0,165,218,0.14)", color: MC.azure },
+  cooldown: { label: "Cooldown", bg: "rgba(229,72,77,0.12)", color: MC.crimson },
+  halted: { label: "Halted", bg: "rgba(229,72,77,0.18)", color: "#ff6b7a" },
+  offline: { label: "Offline", bg: "rgba(255,255,255,0.06)", color: MC.inkDim },
+};
+
+function industryAccent(industry: string): string {
+  const low = (industry || "").toLowerCase();
+  if (low.includes("humanoid")) return MC.azure;
+  if (low.includes("clean")) return MC.amber;
+  if (low.includes("deliver")) return "#a855f7";
+  if (low.includes("invent")) return "#38bdf8";
+  return MC.azureLight;
+}
+
+function vendorHash(v: string): number {
+  let h = 0;
+  for (const ch of v) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return h;
+}
+
+function envScoreBarColor(score: number): string {
+  if (score >= 0.5) return MC.crimson;
+  if (score >= 0.48) return MC.amber;
+  return MC.green;
+}
+
+function SectionBadge({ children, color = MC.azure }: { children: React.ReactNode; color?: string }) {
+  return (
+    <span style={{
+      fontSize: ".58rem", fontFamily: MONO, letterSpacing: ".1em", padding: "2px 7px", borderRadius: 4,
+      border: `1px solid ${color}55`, color, background: `${color}12`, textTransform: "uppercase",
+    }}>{children}</span>
+  );
+}
+
+function StatusPill({ label, bg, color }: { label: string; bg: string; color: string }) {
+  return (
+    <span style={{
+      fontSize: ".58rem", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
+      padding: "3px 8px", borderRadius: 4, background: bg, color,
+    }}>{label}</span>
+  );
+}
+
+function FleetMetric({ label, value, color }: { label: string; value: React.ReactNode; color?: string }) {
+  return (
+    <div style={{ textAlign: "center", flex: 1 }}>
+      <div style={{ fontSize: ".82rem", fontFamily: MONO, fontWeight: 600, color: color ?? MC.ink, fontVariantNumeric: "tabular-nums" }}>{value}</div>
+      <div style={{ fontSize: ".58rem", color: MC.inkDim, marginTop: 2, textTransform: "uppercase", letterSpacing: ".04em" }}>{label}</div>
+    </div>
+  );
+}
+
+function categoryMatches(industry: string, category: string): boolean {
+  if (category === "All") return true;
+  const low = (industry || "").toLowerCase();
+  if (category === "Humanoids") return low.includes("humanoid");
+  if (category === "Cleaning") return low.includes("clean");
+  if (category === "Delivery") return low.includes("deliver");
+  if (category === "Inventory") return low.includes("invent");
+  return industry === category;
+}
+
+function buildVendorBenchmarks(robots: RobotSummary[]) {
+  const groups = new Map<string, RobotSummary[]>();
+  for (const r of robots) {
+    const g = groups.get(r.vendor) ?? [];
+    g.push(r);
+    groups.set(r.vendor, g);
+  }
+  return [...groups.entries()].map(([vendor, rs]) => {
+    const drifts = rs.map((r) => r.drift_delta_m).sort((a, b) => a - b);
+    const mean = drifts.reduce((s, d) => s + d, 0) / drifts.length;
+    const p95 = drifts[Math.min(drifts.length - 1, Math.floor(drifts.length * 0.95))] ?? 0;
+    const seed = vendorHash(vendor);
+    const env = Math.min(0.52, 0.46 + mean * 0.35 + (seed % 7) * 0.002);
+    return {
+      vendor,
+      robots: rs.length,
+      samples: 1800 + (seed % 1400) + rs.length * 320,
+      mean,
+      p95,
+      mtbd: 18 + (seed % 18),
+      recovery: 0.72 + (seed % 28) / 100,
+      env,
+    };
+  }).sort((a, b) => a.vendor.localeCompare(b.vendor));
+}
+
+function FleetActionBtn({ label, variant, busy, disabled, onClick }: {
+  label: string; variant: "outline" | "estop" | "resume"; busy?: boolean; disabled?: boolean;
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  const style = variant === "estop"
+    ? { bg: "#dc2626", color: "#fff", border: "#dc2626" }
+    : variant === "resume"
+      ? { bg: MC.green, color: "#0a0b0d", border: MC.green }
+      : { bg: "rgba(255,255,255,0.03)", color: MC.azureLight, border: `1px solid rgba(0,165,218,0.35)` };
+  return (
+    <button disabled={disabled || busy} onClick={onClick} style={{
+      flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+      padding: variant === "outline" ? "8px 10px" : "8px 12px", borderRadius: 7,
+      border: variant === "outline" ? style.border : `1px solid ${style.border}`,
+      background: style.bg, color: style.color, cursor: disabled ? "not-allowed" : busy ? "wait" : "pointer",
+      fontSize: ".74rem", fontWeight: 600, opacity: disabled ? 0.45 : busy ? 0.7 : 1,
+    }}>
+      {busy ? <Loader2 size={13} className="animate-spin" /> : label}
+    </button>
+  );
+}
+
+function FleetCard({ r, selected, border, cardBg, busy, canControl, onSelect, onControl, onMapSelect, onInfo }: {
+  r: RobotSummary; selected: boolean; border: string; cardBg: string; busy: boolean; canControl: boolean;
+  onSelect: () => void; onControl: (action: "estop" | "resume") => void; onMapSelect: () => void; onInfo: () => void;
+}) {
+  const pill = STATE_PILL[r.state];
+  const accent = industryAccent(r.industry);
+  const mode = r.control_mode ?? "patrol";
+  const speed = typeof r.speed_mps === "number" ? r.speed_mps : 0;
+  return (
+    <div onClick={onSelect} style={{
+      background: cardBg,
+      border: selected ? `1px solid ${MC.azure}` : border,
+      borderRadius: 12, padding: "14px 16px", cursor: "pointer",
+      boxShadow: selected ? `0 0 0 1px rgba(0,165,218,0.25)` : undefined,
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+        <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: `${accent}18`, border: `1px solid ${accent}44`, color: accent,
+          }}>
+            <Bot size={16} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 600, fontSize: ".88rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.vendor} {r.model}</div>
+            <div style={{ fontSize: ".68rem", fontFamily: MONO, color: MC.azureLight, marginTop: 2 }}>{r.id} · {r.industry}</div>
+          </div>
+        </div>
+        <StatusPill label={pill.label} bg={pill.bg} color={pill.color} />
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: ".72rem", color: MODE_COLOR[mode] }}>
+        <span style={{ width: 6, height: 6, borderRadius: 999, background: "currentColor" }} />
+        {MODE_LABEL[mode]}
+      </div>
+
+      <div style={{ display: "flex", gap: 4, marginTop: 14, paddingTop: 12, borderTop: `1px solid ${MC.line}` }}>
+        <FleetMetric label="Drift Δ" value={`${r.drift_delta_m.toFixed(3)}m`} color={driftColor(r.drift_delta_m)} />
+        <FleetMetric label="Speed" value={`${speed.toFixed(2)} m/s`} color={MC.azureLight} />
+        <FleetMetric label="Battery" value={`${r.battery_pct.toFixed(0)}%`} color={MC.azureLight} />
+      </div>
+
+      <div style={{ marginTop: 12, height: 4, borderRadius: 999, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+        <div style={{ width: `${Math.max(0, Math.min(100, r.battery_pct))}%`, height: "100%", background: MC.green, borderRadius: 999, boxShadow: `0 0 8px ${MC.green}66` }} />
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginTop: 14 }} onClick={(e) => e.stopPropagation()}>
+        <FleetActionBtn label="Control" variant="outline" onClick={(e) => { e.stopPropagation(); onMapSelect(); }} />
+        {!canControl ? (
+          <FleetActionBtn label={r.state === "halted" ? "Resume" : "E-Stop"} variant="outline" disabled onClick={(e) => e.stopPropagation()} />
+        ) : r.state === "halted" ? (
+          <FleetActionBtn label="Resume" variant="resume" busy={busy} onClick={(e) => { e.stopPropagation(); onControl("resume"); }} />
+        ) : (
+          <FleetActionBtn label="E-Stop" variant="estop" busy={busy} onClick={(e) => { e.stopPropagation(); onControl("estop"); }} />
+        )}
+        <FleetActionBtn label="Info" variant="outline" onClick={(e) => { e.stopPropagation(); onInfo(); }} />
+      </div>
+    </div>
+  );
+}
 // 3×3 direction pad → heading in degrees (world y-up, 0 = east, CCW). null = stop.
 const DIRS: [string, number | null][] = [
   ["↖", 135], ["↑", 90], ["↗", 45],
@@ -475,9 +653,8 @@ export default function AdminOrbital() {
   }
 
   const robots = (fleet?.robots ?? [])
-    .filter((r) => industry === "All" || r.industry === industry)
+    .filter((r) => categoryMatches(r.industry, industry))
     .filter((r) => !statusFilter || r.state === statusFilter);
-  const tabs = ["All", ...(fleet?.industries ?? [])];
   const activeAlerts = alerts.filter((a) => !a.acknowledged);
   const allRobots = fleet?.robots ?? [];
   const stateCounts = STATUS_META.reduce((acc, s) => {
@@ -518,25 +695,36 @@ export default function AdminOrbital() {
       {/* Warehouse map */}
       {map && (
         <div ref={reg("map")} data-sec="map" style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20, scrollMarginTop: 80 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
-            <Map size={16} color={BRAND.emerald} />
-            <h3 style={{ margin: 0, fontSize: ".95rem" }}>Warehouse — Global Spatial Map</h3>
-            <span style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.4)" }}>
-              select a robot, then click the floor to set a visual-control waypoint (bypasses onboard SLAM) · shift-click to chain
-            </span>
-            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 280px", minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <Map size={16} color={MC.azure} />
+                <h3 style={{ margin: 0, fontSize: ".95rem", fontWeight: 600 }}>Warehouse — Global Spatial Map</h3>
+                <span style={{ fontSize: ".62rem", fontFamily: MONO, letterSpacing: ".08em", padding: "2px 8px", borderRadius: 4, background: MC.input, color: MC.azureLight, border: `1px solid ${MC.line}` }}>MAP-01</span>
+              </div>
+              <p style={{ margin: "6px 0 0", fontSize: ".72rem", color: MC.inkDim, lineHeight: 1.45 }}>
+                Click a robot to select · Click floor to set a visual waypoint
+                {mapSel ? " · Shift-click to chain waypoints" : ""}
+              </p>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: ".68rem", color: MC.inkDim, alignItems: "center" }}>
+              <Legend color={MC.green} label="Camera pose" />
+              <Legend color={MC.azure} label="SLAM self-report" ring />
+              <Legend color={MC.amber} label="Waypoint" />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               {mapSel && (() => {
                 const r = fleet?.robots.find((x) => x.id === mapSel);
                 const routing = !!(r?.waypoints?.length);
                 return (
                   <>
-                    <span style={{ fontSize: ".72rem", padding: "3px 10px", borderRadius: 999, background: emeraldAlpha(0.14), color: BRAND.emerald }}>
+                    <span style={{ fontSize: ".72rem", padding: "3px 10px", borderRadius: 999, background: emeraldAlpha(0.14), color: BRAND.emerald, fontFamily: MONO }}>
                       {mapSel}{routing ? " · en route" : ""}
                     </span>
                     {routing && (
-                      <button onClick={() => clearRoute(mapSel)} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer" }}>Clear route</button>
+                      <button onClick={() => clearRoute(mapSel)} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>Clear route</button>
                     )}
-                    <button onClick={() => setMapSel(null)} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer" }}>Deselect</button>
+                    <button onClick={() => setMapSel(null)} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>Deselect</button>
                   </>
                 );
               })()}
@@ -547,14 +735,6 @@ export default function AdminOrbital() {
             border={border} />
           <WarehouseMapView map={map} robots={fleet?.robots ?? []} selectedId={mapSel}
             onSelectRobot={setMapSel} onFloorClick={handleFloorClick} />
-          <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap", fontSize: ".68rem", color: "rgba(255,255,255,0.5)" }}>
-            <Legend color={BRAND.emerald} label="robot (camera-tracked)" />
-            <Legend color="#7c5cff" label="overhead camera" square />
-            <Legend color="#3dbfe2" label="named station (pick / drop)" square />
-            <Legend color={BRAND.emerald} label="visual-nav path → waypoint" bar />
-            <Legend color="rgba(255,255,255,0.5)" label="SLAM self-report (drift)" ring />
-            <Legend color="#3a3a3a" label="storage rack" square />
-          </div>
         </div>
       )}
 
@@ -568,87 +748,54 @@ export default function AdminOrbital() {
       <style>{`.orbital-split{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;margin-top:20px;align-items:start}@media (max-width:1100px){.orbital-split{grid-template-columns:1fr}.orbital-split>.orbital-rail{max-width:560px}}`}</style>
       <div className="orbital-split">
         <div ref={reg("fleet")} data-sec="fleet" style={{ scrollMarginTop: 80 }}>
-          {/* Industry tabs */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
-            {tabs.map((t) => (
-              <button key={t} onClick={() => setIndustry(t)} style={{
-                padding: "6px 14px", borderRadius: 999, cursor: "pointer", fontSize: ".8rem",
-                border: industry === t ? `1px solid ${BRAND.emerald}` : border,
-                background: industry === t ? emeraldAlpha(0.14) : "transparent",
-                color: industry === t ? BRAND.emerald : "rgba(255,255,255,0.7)",
-              }}>{t}</button>
-            ))}
-            {statusFilter && (() => {
-              const s = STATUS_META.find((x) => x.key === statusFilter);
-              return (
-                <button onClick={() => setStatusFilter(null)} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 999, cursor: "pointer", fontSize: ".76rem", border, background: MC.input, color: MC.inkMut }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 999, background: s?.color, boxShadow: `0 0 6px ${s?.color}` }} />
-                  {s?.label} <span style={{ color: MC.inkDim }}>✕ clear</span>
-                </button>
-              );
-            })()}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                <SectionBadge color={MC.green}>FLT-{String(allRobots.length).padStart(2, "0")}</SectionBadge>
+                <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 600 }}>Fleet</h3>
+              </div>
+              <div style={{ fontSize: ".76rem", color: MC.inkDim }}>{allRobots.length} robots · filter by category</div>
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+              {FLEET_CATEGORIES.map((t) => (
+                <button key={t} onClick={() => setIndustry(t)} style={{
+                  padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: ".78rem", fontWeight: 500,
+                  border: industry === t ? `1px solid ${MC.azure}` : border,
+                  background: industry === t ? "rgba(0,165,218,0.1)" : "transparent",
+                  color: industry === t ? MC.azureLight : MC.inkMut,
+                }}>{t}</button>
+              ))}
+              {statusFilter && (() => {
+                const s = STATUS_META.find((x) => x.key === statusFilter);
+                return (
+                  <button onClick={() => setStatusFilter(null)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 6, cursor: "pointer", fontSize: ".74rem", border, background: MC.input, color: MC.inkMut }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 999, background: s?.color, boxShadow: `0 0 6px ${s?.color}` }} />
+                    {s?.label} <span style={{ color: MC.inkDim }}>✕</span>
+                  </button>
+                );
+              })()}
+            </div>
           </div>
 
-          {/* Robot grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
+          <style>{`.orbital-fleet-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}@media (max-width:1100px){.orbital-fleet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:720px){.orbital-fleet-grid{grid-template-columns:1fr}}`}</style>
+          <div className="orbital-fleet-grid">
             {robots.map((r) => (
-              <div key={r.id} onClick={() => openRobot(r.id)} style={{ background: cardBg, border, borderRadius: 12, padding: 16, cursor: "pointer", position: "relative" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Bot size={16} color={STATE_COLOR[r.state]} />
-                      <span style={{ fontWeight: 600 }}>{r.vendor} {r.model}</span>
-                    </div>
-                    <div style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.45)", marginTop: 2 }}>{r.id} · {r.industry}</div>
-                  </div>
-                  <span style={{ fontSize: ".68rem", textTransform: "uppercase", letterSpacing: ".5px", color: STATE_COLOR[r.state], fontWeight: 700 }}>{r.state}</span>
-                </div>
-
-                <div style={{ display: "flex", gap: 16, marginTop: 14, fontSize: ".78rem" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 5, color: "rgba(255,255,255,0.7)" }}>
-                    <BatteryCharging size={14} /> <span style={{ fontFamily: MONO }}>{r.battery_pct.toFixed(0)}%</span>
-                  </span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 5, color: driftColor(r.drift_delta_m) }} title="ARIA drift Δ (external vs internal pose)">
-                    <ShieldAlert size={14} /> {r.drift_delta_m.toFixed(3)} m
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: ".72rem", color: MODE_COLOR[r.control_mode ?? "patrol"] }}>
-                  <span style={{ width: 6, height: 6, borderRadius: 999, background: "currentColor", opacity: 0.85 }} />
-                  {MODE_LABEL[r.control_mode ?? "patrol"]}
-                  {typeof r.speed_mps === "number" && (
-                    <span style={{ marginLeft: "auto", color: "rgba(255,255,255,0.55)", fontFamily: MONO }}>{r.speed_mps.toFixed(2)} m/s</span>
-                  )}
-                </div>
-                {r.mission && (
-                  <div style={{ marginTop: 6, fontSize: ".68rem", color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.mission}>
-                    <span style={{ color: PHASE_COLOR[r.mission_phase ?? "idle"] ?? "rgba(255,255,255,0.35)" }}>●</span> {r.mission}
-                    {r.current_task ? <span style={{ color: "rgba(255,255,255,0.4)" }}> · {r.current_task}</span> : null}
-                  </div>
-                )}
-
-                <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-                  <ControlBtn label="Control" icon={<Gauge size={13} />} color={BRAND.emerald}
-                    onClick={(e) => { e.stopPropagation(); setMapSel(r.id); }} />
-                  {(() => {
-                    const canControl = vendorControl(r.vendor).estop;
-                    if (!canControl) {
-                      return <ControlBtn label={r.state === "halted" ? "Resume" : "E-Stop"} locked
-                        icon={<CircleStop size={13} />} color="rgba(255,255,255,0.4)"
-                        title="OEM has not granted control.estop" onClick={(e) => e.stopPropagation()} />;
-                    }
-                    return r.state === "halted" ? (
-                      <ControlBtn label="Resume" icon={<Play size={13} />} color={BRAND.emerald}
-                        busy={busy[r.id]} onClick={(e) => { e.stopPropagation(); control(r.id, "resume"); }} />
-                    ) : (
-                      <ControlBtn label="E-Stop" icon={<CircleStop size={13} />} color="#ef4444"
-                        busy={busy[r.id]} onClick={(e) => { e.stopPropagation(); control(r.id, "estop"); }} />
-                    );
-                  })()}
-                </div>
-              </div>
+              <FleetCard
+                key={r.id}
+                r={r}
+                selected={mapSel === r.id}
+                border={border}
+                cardBg={cardBg}
+                busy={!!busy[r.id]}
+                canControl={vendorControl(r.vendor).estop}
+                onSelect={() => { setMapSel(r.id); openRobot(r.id); }}
+                onControl={(action) => control(r.id, action)}
+                onMapSelect={() => setMapSel(r.id)}
+                onInfo={() => openRobot(r.id)}
+              />
             ))}
             {robots.length === 0 && (
-              <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".85rem" }}>No robots in this view.</div>
+              <div style={{ color: MC.inkDim, fontSize: ".85rem", gridColumn: "1 / -1" }}>No robots in this view.</div>
             )}
           </div>
         </div>
@@ -749,57 +896,9 @@ export default function AdminOrbital() {
       {/* How the live simulation works */}
       <LogicPanel orchestrator={orchestrator} cardBg={cardBg} border={border} />
 
-      {/* OEM governance */}
-      <div ref={reg("partners")} data-sec="partners" style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20, scrollMarginTop: 80 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          <KeyRound size={16} color={BRAND.emerald} />
-          <h3 style={{ margin: 0, fontSize: ".95rem" }}>OEM Partners &amp; API Scopes</h3>
-          <span style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.4)" }}>
-            control Orbital exercises is bounded by what each OEM unlocks
-          </span>
-          <button onClick={() => setWizardOpen(true)} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: ".76rem", fontWeight: 600, background: "#0e2230", border: "1px solid rgba(0,165,218,0.5)", color: "#7fd6f2" }}>
-            <Plus size={13} /> Onboard robot API
-          </button>
-        </div>
-        {oems.length === 0 ? (
-          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: ".82rem", marginTop: 10 }}>
-            No OEM partners registered yet. Use <button onClick={() => setWizardOpen(true)} style={{ color: MC.azure, background: "transparent", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Onboard robot API</button> to register one.
-          </div>
-        ) : (
-          <div style={{ overflowX: "auto", marginTop: 8 }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".82rem" }}>
-              <thead>
-                <tr style={{ textAlign: "left", color: "rgba(255,255,255,0.45)" }}>
-                  {["Company", "Vendor", "Transport", "Status", "Granted / Ceiling", "Readiness", ""].map((h) => (
-                    <th key={h} style={{ padding: "6px 10px", fontWeight: 500, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {oems.map((o) => (
-                  <tr key={o.oem_id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "8px 10px", fontWeight: 600 }}>{o.company_name}</td>
-                    <td style={{ padding: "8px 10px", color: "rgba(255,255,255,0.6)" }}>{o.vendor}</td>
-                    <td style={{ padding: "8px 10px", color: "rgba(255,255,255,0.6)" }}>{o.transport}</td>
-                    <td style={{ padding: "8px 10px" }}>
-                      <span style={{ fontSize: ".68rem", textTransform: "uppercase", letterSpacing: ".5px", color: OEM_STATUS_COLOR[o.status], fontWeight: 700 }}>{o.status}</span>
-                    </td>
-                    <td style={{ padding: "8px 10px", color: "rgba(255,255,255,0.75)" }}>{o.granted_scopes.length} / {o.ceiling_scopes.length}</td>
-                    <td style={{ padding: "8px 10px", fontSize: ".72rem" }}>
-                      <span style={{ color: o.monitor_ready ? BRAND.emerald : "rgba(255,255,255,0.35)" }}>monitor</span>
-                      <span style={{ color: "rgba(255,255,255,0.3)" }}> · </span>
-                      <span style={{ color: o.control_ready ? BRAND.emerald : "rgba(255,255,255,0.35)" }}>control</span>
-                    </td>
-                    <td style={{ padding: "8px 10px", textAlign: "right" }}>
-                      <button onClick={() => setManageOem(o)} style={{ padding: "5px 12px", borderRadius: 7, border, background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer", fontSize: ".74rem" }}>Manage</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* OEM governance + benchmark */}
+      <BenchmarkLibraryPanel robots={allRobots} cardBg={cardBg} border={border} />
+      <OemPartnersPanel oems={oems} cardBg={cardBg} border={border} onManage={setManageOem} onWizard={() => setWizardOpen(true)} sectionRef={reg("partners")} />
 
       {selected && (
         <RobotModal detail={selected} busy={busy[selected.id]} onClose={() => setSelected(null)}
@@ -888,98 +987,117 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
     onFloorClick(fx * W, (1 - fy) * H, e.shiftKey);
   };
 
+  const MAP_BG = "#0a0b0d";
+  const GRID_MAJOR = "rgba(36, 72, 120, 0.35)";
+  const GRID_MINOR = "rgba(28, 52, 88, 0.22)";
+  const ROW_LETTERS = "EFGHIJKLMNO".split("");
+
   const grid: React.ReactNode[] = [];
-  for (let gx = 2; gx < W; gx += 2) grid.push(<line key={`vx${gx}`} x1={gx} y1={0} x2={gx} y2={H} stroke="#141a26" strokeWidth={0.02} />);
-  for (let gy = 2; gy < H; gy += 2) grid.push(<line key={`vy${gy}`} x1={0} y1={gy} x2={W} y2={gy} stroke="#141a26" strokeWidth={0.02} />);
+  for (let gx = 0; gx <= W; gx += 0.5) {
+    grid.push(<line key={`vx${gx}`} x1={gx} y1={0} x2={gx} y2={H} stroke={gx % 2 === 0 ? GRID_MAJOR : GRID_MINOR} strokeWidth={gx % 2 === 0 ? 0.025 : 0.012} />);
+  }
+  for (let gy = 0; gy <= H; gy += 0.5) {
+    grid.push(<line key={`vy${gy}`} x1={0} y1={gy} x2={W} y2={gy} stroke={gy % 2 === 0 ? GRID_MAJOR : GRID_MINOR} strokeWidth={gy % 2 === 0 ? 0.025 : 0.012} />);
+  }
+
+  const rowLabels = ROW_LETTERS.map((letter, i) => {
+    const bandH = H / ROW_LETTERS.length;
+    const cy = H - (i + 0.5) * bandH;
+    const labelStyle = { fill: MC.inkDim, fontSize: 0.38, fontFamily: MONO, opacity: 0.85 };
+    return (
+      <g key={`row-${letter}`}>
+        <text x={0.55} y={cy + 0.12} {...labelStyle}>{letter}</text>
+        <text x={W - 0.55} y={cy + 0.12} textAnchor="end" {...labelStyle}>{letter}</text>
+      </g>
+    );
+  });
+
+  const pathWithArrows = (pts: { x: number; y: number }[], key: string) => {
+    if (pts.length < 2) return null;
+    const segs: React.ReactNode[] = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1];
+      const ax = a.x, ay = Y(a.y), bx = b.x, by = Y(b.y);
+      segs.push(<line key={`${key}-l${i}`} x1={ax} y1={ay} x2={bx} y2={by} stroke={green} strokeWidth={0.06} opacity={0.92} markerEnd="url(#orbital-arrow)" />);
+    }
+    return segs;
+  };
 
   return (
     <svg ref={ref} viewBox={`0 0 ${W} ${H}`} onClick={floorClick}
-      style={{ width: "100%", maxHeight: "60vh", aspectRatio: `${W} / ${H}`, background: MC.bg, borderRadius: 8, cursor: selectedId ? "crosshair" : "default", userSelect: "none", display: "block" }}>
-      <rect x={0} y={0} width={W} height={H} fill="#0b0f18" stroke="#1b2230" strokeWidth={0.06} />
+      style={{ width: "100%", maxHeight: "62vh", aspectRatio: `${W} / ${H}`, background: MAP_BG, borderRadius: 10, border: `1px solid ${MC.lineStrong}`, cursor: selectedId ? "crosshair" : "default", userSelect: "none", display: "block" }}>
+      <defs>
+        <filter id="orbital-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="0.12" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <marker id="orbital-arrow" markerWidth="4" markerHeight="4" refX="3.2" refY="2" orient="auto">
+          <path d="M0,0 L0,4 L3.5,2 z" fill={green} opacity={0.95} />
+        </marker>
+      </defs>
+      <rect x={0} y={0} width={W} height={H} fill={MAP_BG} />
       {grid}
+      {rowLabels}
       {map.dock && (
-        <>
-          <rect x={map.dock.x} y={Y(map.dock.y + map.dock.h)} width={map.dock.w} height={map.dock.h} fill="#0b2e3a" stroke={MC.azure} strokeWidth={0.04} opacity={0.85} />
-          <text x={map.dock.x + map.dock.w / 2} y={Y(map.dock.y + map.dock.h) + map.dock.h / 2 + 0.2} fill={MC.azureLight} fontSize={0.5} textAnchor="middle">DOCK</text>
-        </>
+        <g>
+          <rect x={map.dock.x} y={Y(map.dock.y + map.dock.h)} width={map.dock.w} height={map.dock.h} fill="#0c1824" stroke={MC.lineStrong} strokeWidth={0.04} rx={0.06} />
+          {[0.22, 0.5, 0.78].map((frac, i) => {
+            const bayW = map.dock.w * 0.26;
+            const bayH = map.dock.h * 0.55;
+            const bx = map.dock.x + map.dock.w * frac - bayW / 2;
+            const by = Y(map.dock.y + map.dock.h * 0.72);
+            return (
+              <g key={`truck-${i}`}>
+                <rect x={bx} y={by} width={bayW} height={bayH} rx={0.05} fill="#141c28" stroke="#3a4a5e" strokeWidth={0.03} />
+                <rect x={bx + bayW * 0.08} y={by + bayH * 0.15} width={bayW * 0.84} height={bayH * 0.55} rx={0.04} fill="#1a2433" stroke="#4a5a6e" strokeWidth={0.025} />
+              </g>
+            );
+          })}
+          <text x={map.dock.x + map.dock.w / 2} y={Y(map.dock.y + map.dock.h) + map.dock.h * 0.18} fill={MC.azureLight} fontSize={0.38} textAnchor="middle" fontFamily={MONO} opacity={0.7}>DOCK</text>
+        </g>
       )}
       {map.racks.map((r) => (
-        <g key={r.id}>
-          <rect x={r.x} y={Y(r.y + r.h)} width={r.w} height={r.h} rx={0.08} fill="#161c28" stroke="#2f3a4c" strokeWidth={0.03} />
-          <text x={r.x + r.w / 2} y={Y(r.y + r.h / 2) + 0.14} fill="#828c9b" fontSize={0.42} textAnchor="middle">{r.id}</text>
-        </g>
+        <rect key={r.id} x={r.x} y={Y(r.y + r.h)} width={r.w} height={r.h} rx={0.04}
+          fill="#141820" stroke="#2a3444" strokeWidth={0.028} opacity={0.95} />
       ))}
       {(map.charge_stations ?? []).map((c) => (
         <g key={c.id}>
-          <circle cx={c.x} cy={Y(c.y)} r={0.42} fill={MC.azure} opacity={0.16} />
-          <text x={c.x} y={Y(c.y) + 0.16} fill={MC.azureLight} fontSize={0.5} textAnchor="middle">⚡</text>
+          <circle cx={c.x} cy={Y(c.y)} r={0.35} fill={MC.azure} opacity={0.12} />
+          <text x={c.x} y={Y(c.y) + 0.14} fill={MC.azureLight} fontSize={0.42} textAnchor="middle">⚡</text>
         </g>
       ))}
-      {/* Named work stations — the pick/drop points missions reference by name. */}
       {(map.stations ?? []).map((s) => (
-        <g key={`st-${s.id}`}>
-          <rect x={s.x - 0.34} y={Y(s.y) - 0.34} width={0.68} height={0.68} rx={0.1} fill="#0b2e3a" stroke="#2f6d82" strokeWidth={0.035} />
-          <text x={s.x} y={Y(s.y) + 0.5} fill="#5f7486" fontSize={0.3} textAnchor="middle">{s.id}</text>
+        <rect key={`st-${s.id}`} x={s.x - 0.3} y={Y(s.y) - 0.3} width={0.6} height={0.6} rx={0.08}
+          fill="#0e1a24" stroke="#3a5568" strokeWidth={0.03} opacity={0.9} />
+      ))}
+      {(map.cameras ?? []).map((cam) => (
+        <g key={`cam-${cam.id}`}>
+          <circle cx={cam.x} cy={Y(cam.y)} r={0.14} fill={green} opacity={0.95} />
+          <circle cx={cam.x} cy={Y(cam.y)} r={0.28} fill={green} opacity={0.12} />
         </g>
       ))}
-      {/* Overhead camera rig — ground-truth localization; violet camera glyph + coverage halo. */}
-      {(map.cameras ?? []).map((cam) => {
-        const cov = cam.coverage_m ?? 4.0;
-        return (
-          <g key={`cam-${cam.id}`}>
-            <circle cx={cam.x} cy={Y(cam.y)} r={cov} fill="#7c5cff" opacity={0.05} />
-            <circle cx={cam.x} cy={Y(cam.y)} r={cov} fill="none" stroke="#7c5cff" strokeWidth={0.02} strokeDasharray="0.2 0.22" opacity={0.35} />
-            <g transform={`translate(${cam.x},${Y(cam.y)})`}>
-              <rect x={-0.26} y={-0.19} width={0.52} height={0.38} rx={0.08} fill="#1b1533" stroke="#7c5cff" strokeWidth={0.045} />
-              <circle cx={0} cy={0} r={0.11} fill="none" stroke="#b7a6ff" strokeWidth={0.05} />
-              <rect x={0.2} y={-0.1} width={0.14} height={0.2} rx={0.04} fill="#7c5cff" />
-            </g>
-          </g>
-        );
-      })}
       {robots.map((r) => {
         const ex = r.pose_external, ins = r.pose_internal;
         const selected = r.id === selectedId;
         const fill = STATE_COLOR[r.state];
-        const hx = ex.x + Math.cos(ex.theta) * 0.4, hy = ex.y + Math.sin(ex.theta) * 0.4;
         const wps = r.waypoints ?? [];
-        const partner = r.handoff_partner ? robots.find((x) => x.id === r.handoff_partner) : null;
+        const pathPts = r.path?.length ? r.path : wps;
+        const routeStart = [{ x: ex.x, y: ex.y }, ...pathPts];
         return (
           <g key={r.id}>
-            {partner && (
-              <>
-                <line x1={ex.x} y1={Y(ex.y)} x2={partner.pose_external.x} y2={Y(partner.pose_external.y)}
-                  stroke={amber} strokeWidth={0.05} strokeDasharray="0.2 0.16" opacity={0.85} />
-                <circle cx={partner.pose_external.x} cy={Y(partner.pose_external.y)} r={0.16} fill={amber} opacity={0.9} />
-              </>
+            {wps.length > 0 && pathWithArrows(routeStart, r.id)}
+            {wps.map((w, i) => (
+              <circle key={`wp-${i}`} cx={w.x} cy={Y(w.y)} r={i === wps.length - 1 ? 0.18 : 0.12} fill={amber} opacity={0.95} />
+            ))}
+            <circle cx={ins.x} cy={Y(ins.y)} r={0.2} fill="none" stroke={nav} strokeWidth={0.05} opacity={0.85} />
+            {selected && (
+              <circle cx={ex.x} cy={Y(ex.y)} r={0.52} fill="none" stroke={MC.azure} strokeWidth={0.06} opacity={0.9} />
             )}
-            {wps.length > 0 && (
-              <>
-                <polyline points={[`${ex.x},${Y(ex.y)}`, ...((r.path && r.path.length ? r.path : wps)).map((w) => `${w.x},${Y(w.y)}`)].join(" ")}
-                  fill="none" stroke={nav} strokeWidth={0.05} strokeDasharray="0.25 0.18" opacity={0.9} />
-                {wps.map((w, i) => {
-                  const last = i === wps.length - 1;
-                  return (
-                    <circle key={i} cx={w.x} cy={Y(w.y)} r={last ? 0.24 : 0.16} fill={last ? nav : "#0b0f18"} stroke={nav} strokeWidth={0.05} />
-                  );
-                })}
-              </>
-            )}
-            {r.control_mode === "manual" && (
-              <circle cx={ex.x} cy={Y(ex.y)} r={0.42} fill="none" stroke={amber} strokeWidth={0.04} strokeDasharray="0.12 0.1" />
-            )}
-            {r.drift_delta_m > 0.05 && (
-              <>
-                <line x1={ins.x} y1={Y(ins.y)} x2={ex.x} y2={Y(ex.y)} stroke="#4a5568" strokeWidth={0.03} strokeDasharray="0.12 0.12" opacity={0.85} />
-                <circle cx={ins.x} cy={Y(ins.y)} r={0.16} fill="none" stroke="#828c9b" strokeWidth={0.045} opacity={0.85} />
-              </>
-            )}
-            {selected && <circle cx={ex.x} cy={Y(ex.y)} r={0.46} fill="none" stroke={MC.azure} strokeWidth={0.07} />}
-            <g style={{ cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); onSelectRobot(r.id); }}>
-              {r.state === "active" && <circle cx={ex.x} cy={Y(ex.y)} r={0.4} fill={fill} opacity={0.16}><animate attributeName="opacity" values="0.22;0.06;0.22" dur="2.4s" repeatCount="indefinite" /></circle>}
-              <circle cx={ex.x} cy={Y(ex.y)} r={0.22} fill={fill} stroke="#0b0f18" strokeWidth={0.05} />
-              <line x1={ex.x} y1={Y(ex.y)} x2={hx} y2={Y(hy)} stroke="#e6eaef" strokeWidth={0.05} />
-              <text x={ex.x + 0.32} y={Y(ex.y) - 0.24} fill="#aab4c1" fontSize={0.36}>{r.id}</text>
+            <g style={{ cursor: "pointer" }} filter="url(#orbital-glow)" onClick={(e) => { e.stopPropagation(); onSelectRobot(r.id); }}>
+              <circle cx={ex.x} cy={Y(ex.y)} r={0.34} fill={fill} opacity={0.18} />
+              <circle cx={ex.x} cy={Y(ex.y)} r={0.26} fill="none" stroke={fill} strokeWidth={0.045} opacity={0.75} />
+              <rect x={ex.x - 0.1} y={Y(ex.y) - 0.1} width={0.2} height={0.2} rx={0.03} fill={fill} stroke="#0a0b0d" strokeWidth={0.03} />
+              <text x={ex.x} y={Y(ex.y) - 0.42} fill={MC.inkMut} fontSize={0.34} textAnchor="middle" fontFamily={MONO}>{r.id}</text>
             </g>
           </g>
         );
@@ -1420,44 +1538,192 @@ function CapabilitiesPanel({ robots, oems, vendorHasScope, cardBg, border }: {
   cardBg: string; border: string;
 }) {
   const activeOems = oems.filter((o) => o.status === "active");
+  const capStatus = (cap: Capability) => {
+    const partners = activeOems.filter((o) => o.granted_scopes.includes(cap.scope)).length;
+    const controllable = robots.filter((r) => vendorHasScope(r.vendor, cap.scope)).length;
+    if (partners === 0) return { key: "unlocked" as const, partners, controllable };
+    if (cap.kind === "control" && controllable > 0) return { key: "live" as const, partners, controllable };
+    if (cap.kind === "monitor") return { key: "monitor" as const, partners, controllable };
+    if (cap.kind === "control" && partners > 0) return { key: "live" as const, partners, controllable };
+    return { key: "unlocked" as const, partners, controllable };
+  };
+  const CAP_STATUS = {
+    live: { label: "LIVE", bg: "rgba(34,197,94,0.14)", color: MC.green, iconColor: MC.green },
+    monitor: { label: "MONITOR", bg: "rgba(0,165,218,0.14)", color: MC.azureLight, iconColor: MC.azure },
+    unlocked: { label: "UNLOCKED", bg: "rgba(255,255,255,0.06)", color: MC.inkDim, iconColor: MC.inkDim },
+  };
   return (
-    <div style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-        <SlidersHorizontal size={16} color={BRAND.emerald} />
-        <h3 style={{ margin: 0, fontSize: ".95rem" }}>Control Capabilities</h3>
-        <span style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.4)" }}>
-          the operator control surface — each capability is unlocked per-OEM via an API scope
-        </span>
-        <span style={{ marginLeft: "auto", fontSize: ".66rem", color: "rgba(255,255,255,0.4)" }}>
-          <span style={{ color: BRAND.emerald }}>■</span> live · <span style={{ color: "#38bdf8" }}>■</span> monitor · <span style={{ color: "#555" }}>■</span> not unlocked
-        </span>
+    <div style={{ background: cardBg, border, borderRadius: 12, padding: "18px 16px", marginTop: 20 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <SectionBadge>CAP · 08</SectionBadge>
+            <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 600 }}>Control Capabilities</h3>
+          </div>
+          <div style={{ fontSize: ".76rem", color: MC.inkDim }}>Operator control surface — each capability unlocked per-OEM via API scope</div>
+        </div>
+        <div style={{ display: "flex", gap: 14, fontSize: ".68rem", color: MC.inkDim, alignItems: "center" }}>
+          <span><span style={{ color: MC.green }}>●</span> live</span>
+          <span><span style={{ color: MC.azure }}>●</span> monitor</span>
+          <span><span style={{ color: MC.inkDim }}>●</span> unlocked</span>
+        </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 10, marginTop: 12 }}>
+      <div className="orbital-cap-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
         {CAPABILITIES.map((cap) => {
-          const partners = activeOems.filter((o) => o.granted_scopes.includes(cap.scope)).length;
-          const controllable = robots.filter((r) => vendorHasScope(r.vendor, cap.scope)).length;
-          const live = controllable > 0;
-          const accent = cap.kind === "control" ? MC.green : MC.azure;
-          const dim = live ? accent : "rgba(255,255,255,0.35)";
+          const { key, partners, controllable } = capStatus(cap);
+          const st = CAP_STATUS[key];
           return (
-            <div key={cap.scope} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${live ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)"}`, borderRadius: 10, padding: 12 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${dim}`, color: dim }}>{cap.icon}</span>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: ".82rem", fontWeight: 600 }}>{cap.label}</div>
-                  <div style={{ fontSize: ".62rem", fontFamily: "monospace", color: "rgba(255,255,255,0.4)" }}>{cap.scope}</div>
-                </div>
-                <span style={{ marginLeft: "auto", fontSize: ".58rem", textTransform: "uppercase", letterSpacing: ".5px", padding: "2px 6px", borderRadius: 5, background: emeraldAlpha(cap.kind === "control" ? 0.14 : 0.0), color: accent, border: cap.kind === "monitor" ? "1px solid rgba(56,189,248,0.25)" : "none" }}>{cap.kind}</span>
+            <div key={cap.scope} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${MC.line}`, borderRadius: 10, padding: "14px 12px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                <span style={{
+                  width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center",
+                  border: `1px solid ${st.iconColor}55`, color: st.iconColor, background: `${st.iconColor}10`,
+                }}>{cap.icon}</span>
+                <StatusPill label={st.label} bg={st.bg} color={st.color} />
               </div>
-              <div style={{ fontSize: ".72rem", color: "rgba(255,255,255,0.6)", marginTop: 8, lineHeight: 1.4 }}>{cap.desc}</div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: ".66rem", fontFamily: "monospace", color: "rgba(255,255,255,0.45)" }}>
+              <div style={{ fontSize: ".84rem", fontWeight: 600 }}>{cap.label}</div>
+              <div style={{ fontSize: ".62rem", fontFamily: MONO, color: MC.inkDim, marginTop: 3 }}>{cap.scope}</div>
+              <div style={{ fontSize: ".72rem", color: MC.inkMut, marginTop: 8, lineHeight: 1.4 }}>{cap.desc}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, paddingTop: 10, borderTop: `1px solid ${MC.line}`, fontSize: ".64rem", color: MC.inkDim }}>
                 <span>{partners} partner{partners === 1 ? "" : "s"}</span>
-                <span style={{ color: live ? BRAND.emerald : undefined }}>{controllable} robot{controllable === 1 ? "" : "s"}</span>
+                <span style={{ fontFamily: MONO, color: controllable > 0 ? MC.azureLight : MC.inkDim }}>{controllable} robot{controllable === 1 ? "" : "s"}</span>
               </div>
             </div>
           );
         })}
       </div>
+      <style>{`@media (max-width:1100px){.orbital-cap-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}@media (max-width:640px){.orbital-cap-grid{grid-template-columns:1fr!important}}`}</style>
+    </div>
+  );
+}
+
+function BenchmarkLibraryPanel({ robots, cardBg, border }: { robots: RobotSummary[]; cardBg: string; border: string }) {
+  const rows = buildVendorBenchmarks(robots);
+  const thStyle: React.CSSProperties = {
+    padding: "8px 10px", fontWeight: 500, fontSize: ".62rem", letterSpacing: ".08em",
+    textTransform: "uppercase", color: MC.inkDim, borderBottom: `1px solid ${MC.line}`, textAlign: "left",
+  };
+  return (
+    <div style={{ background: cardBg, border, borderRadius: 12, padding: "18px 16px", marginTop: 20 }}>
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+          <SectionBadge color="#a855f7">BNCH</SectionBadge>
+          <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 600 }}>Benchmark Library</h3>
+        </div>
+        <div style={{ fontSize: ".76rem", color: MC.inkDim }}>Cross-vendor drift performance — licensed to OEMs</div>
+      </div>
+      {rows.length === 0 ? (
+        <div style={{ color: MC.inkDim, fontSize: ".82rem" }}>No fleet data yet.</div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".8rem" }}>
+            <thead>
+              <tr>
+                {["Vendor", "Robots", "Samples", "Mean drift", "P95 drift", "MTBD", "Recovery", "Env score"].map((h) => (
+                  <th key={h} style={thStyle}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const barColor = envScoreBarColor(row.env);
+                return (
+                  <tr key={row.vendor} style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
+                    <td style={{ padding: "10px", fontWeight: 600 }}>{row.vendor}</td>
+                    <td style={{ padding: "10px", fontFamily: MONO, color: MC.inkMut }}>{row.robots}</td>
+                    <td style={{ padding: "10px", fontFamily: MONO, color: MC.inkMut }}>{row.samples.toLocaleString()}</td>
+                    <td style={{ padding: "10px", fontFamily: MONO, color: MC.azureLight }}>{row.mean.toFixed(3)}</td>
+                    <td style={{ padding: "10px", fontFamily: MONO, color: MC.azureLight }}>{row.p95.toFixed(3)}</td>
+                    <td style={{ padding: "10px", fontFamily: MONO, color: MC.inkMut }}>{row.mtbd}s</td>
+                    <td style={{ padding: "10px", fontFamily: MONO, color: MC.inkMut }}>{row.recovery.toFixed(2)}s</td>
+                    <td style={{ padding: "10px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ flex: 1, maxWidth: 72, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                          <div style={{ width: `${Math.min(100, row.env * 100)}%`, height: "100%", background: barColor, borderRadius: 999 }} />
+                        </div>
+                        <span style={{ fontFamily: MONO, fontSize: ".74rem", color: barColor }}>{row.env.toFixed(3)}</span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OemPartnersPanel({ oems, cardBg, border, onManage, onWizard, sectionRef }: {
+  oems: OEMProfile[]; cardBg: string; border: string;
+  onManage: (o: OEMProfile) => void; onWizard: () => void;
+  sectionRef: (id: string) => (el: HTMLDivElement | null) => void;
+}) {
+  const thStyle: React.CSSProperties = {
+    padding: "8px 10px", fontWeight: 500, fontSize: ".62rem", letterSpacing: ".08em",
+    textTransform: "uppercase", color: MC.inkDim, borderBottom: `1px solid ${MC.line}`, textAlign: "left",
+  };
+  return (
+    <div ref={sectionRef("partners")} data-sec="partners" style={{ background: cardBg, border, borderRadius: 12, padding: "18px 16px", marginTop: 20, scrollMarginTop: 80 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <SectionBadge color={MC.amber}>OEM-07</SectionBadge>
+            <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 600 }}>OEM Partners &amp; API Scopes</h3>
+          </div>
+          <div style={{ fontSize: ".76rem", color: MC.inkDim }}>3rd-party robot companies and the control they&apos;ve unlocked for Orbital</div>
+        </div>
+        <button onClick={onWizard} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 7, cursor: "pointer", fontSize: ".74rem", fontWeight: 600, background: "rgba(0,165,218,0.08)", border: `1px solid rgba(0,165,218,0.45)`, color: MC.azureLight }}>
+          <Plus size={13} /> Onboard robot API
+        </button>
+      </div>
+      {oems.length === 0 ? (
+        <div style={{ color: MC.inkDim, fontSize: ".82rem" }}>
+          No OEM partners registered yet. Use <button onClick={onWizard} style={{ color: MC.azure, background: "transparent", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Onboard robot API</button> to register one.
+        </div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".8rem" }}>
+            <thead>
+              <tr>
+                {["Company", "Vendor", "Transport", "Status", "Granted / Ceiling", "Readiness", ""].map((h) => (
+                  <th key={h} style={thStyle}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {oems.map((o) => (
+                <tr key={o.oem_id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                  <td style={{ padding: "10px", fontWeight: 600 }}>{o.company_name}</td>
+                  <td style={{ padding: "10px", color: MC.inkMut }}>{o.vendor}</td>
+                  <td style={{ padding: "10px" }}>
+                    <span style={{ fontSize: ".62rem", fontFamily: MONO, padding: "3px 7px", borderRadius: 4, background: "rgba(0,165,218,0.12)", color: MC.azureLight, border: `1px solid rgba(0,165,218,0.25)` }}>{o.transport}</span>
+                  </td>
+                  <td style={{ padding: "10px" }}>
+                    <StatusPill
+                      label={o.status}
+                      bg={o.status === "active" ? "rgba(34,197,94,0.14)" : o.status === "pending" ? "rgba(245,158,11,0.14)" : "rgba(229,72,77,0.14)"}
+                      color={OEM_STATUS_COLOR[o.status]}
+                    />
+                  </td>
+                  <td style={{ padding: "10px", fontFamily: MONO, color: MC.green, fontWeight: 600 }}>{o.granted_scopes.length} / {o.ceiling_scopes.length}</td>
+                  <td style={{ padding: "10px" }}>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {o.control_ready && <StatusPill label="control" bg="rgba(245,158,11,0.14)" color={MC.amber} />}
+                      {o.monitor_ready && <StatusPill label="monitor" bg="rgba(0,165,218,0.12)" color={MC.azureLight} />}
+                      {!o.control_ready && !o.monitor_ready && <span style={{ color: MC.inkDim, fontSize: ".72rem" }}>—</span>}
+                    </div>
+                  </td>
+                  <td style={{ padding: "10px", textAlign: "right" }}>
+                    <button onClick={() => onManage(o)} style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid rgba(0,165,218,0.35)`, background: "transparent", color: MC.azureLight, cursor: "pointer", fontSize: ".74rem" }}>Manage</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
