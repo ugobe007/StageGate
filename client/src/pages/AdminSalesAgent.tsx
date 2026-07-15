@@ -150,7 +150,7 @@ function CalWorkflowBar({
         <div className="min-w-0">
           <h1 className="text-base font-semibold text-white leading-tight">Cal — Outreach workflow</h1>
           <p className="text-xs text-zinc-500 truncate">
-            Studious Observer · field notes, not sales blasts
+            StageGate · show logistics · onstage.bot — OEMs & event companies
             {lastRunLabel ? ` · Last run ${lastRunLabel}` : ""}
             {suggested && suggested !== activeStep
               ? ` · Start at step ${WORKFLOW_STEPS.find((s) => s.id === suggested)?.num ?? ""}`
@@ -223,6 +223,12 @@ function InlineDraftPanel({ prospectId }: { prospectId: number }) {
     { prospectId },
     { enabled: !!prospectId }
   );
+
+  useEffect(() => {
+    if (draft?.legacyRepaired) {
+      toast.success("Outdated sales draft replaced with Cal's field note");
+    }
+  }, [draft?.legacyRepaired]);
 
   const regenerate = trpc.salesAgent.previewEmail.useMutation({
     onSuccess: () => {

@@ -46,6 +46,7 @@ import {
 import { outreachEmailPolicySummary } from "../outreachContacts.js";
 import { pickCalInsight } from "./calInsights.js";
 import { buildCalChapterEmail } from "./calChapters.js";
+import { isLegacyFrankDraft } from "./calDraftQuality.js";
 import { prepareProspectOutreachRecipient } from "./prospectEnrichment.js";
 import { outreachDisabled, shouldPauseNewIntros } from "../outreachGate.js";
 
@@ -1097,6 +1098,42 @@ async function repairPendingDraftGreetings(db: NonNullable<Awaited<ReturnType<ty
     console.log(`[Cal] Repaired greeting on ${fixed} pending draft(s)`);
   }
   return fixed;
+}
+
+/** Replace a single pending draft if it still uses pre-Cal Frank / XBOT sales voice. */
+export async function repairLegacyCalDraftCore(
+  prospectId: number,
+  draft: { id: number; subject: string | null; body: string | null },
+): Promise<{ subject: string; body: string; repaired: boolean }> {
+  const body = draft.body ?? "";
+  const subject = draft.subject ?? "";
+  if (!isLegacyFrankDraft(body, draft.subject)) {
+    return { subject, body, repaired: false };
+  }
+
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const [conv] = await db
+    .select()
+    .from(salesAgentConversations)
+    .where(eq(salesAgentConversations.prospectId, prospectId))
+    .limit(1);
+
+  const stage = draftStageForConversation(conv?.state as ConversationStage | undefined) ?? "discovery";
+  const preview = await salesAgentPreviewCore(prospectId, stage);
+
+  await db
+    .update(draftEmails)
+    .set({
+      subject: preview.subject,
+      body: preview.body,
+      agentReasoning: "Cal auto-redraft — legacy sales voice removed",
+    })
+    .where(eq(draftEmails.id, draft.id));
+
+  console.log(`[Cal] Auto-redrafted legacy draft for prospect ${prospectId}`);
+  return { subject: preview.subject, body: preview.body, repaired: true };
 }
 
 /** Regenerate body + subject for every pending prospect draft (true redraft). */

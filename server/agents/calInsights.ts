@@ -1,6 +1,10 @@
 /**
  * Rotating deployment lessons for Cal's StageGate outreach.
  *
+ * Audience: robot OEMs at trade shows plus event/tradeshow companies that use
+ * robots (exhibit houses, show producers, entertainment/event firms). Voice is
+ * show logistics and pre-floor readiness — not Ready For Robots buyer matching.
+ *
  * Persona: Cal the Physical AI Deployment Advisor. Each insight is a practical
  * field lesson about deploying, integrating, operating, and scaling robots —
  * the kind of thing that makes a reader feel they learned something useful.

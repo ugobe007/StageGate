@@ -16,7 +16,8 @@ import crypto from "crypto";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 import { roleBasedOutreachEmails, isDeprecatedRoleInbox } from "./outreachContacts";
-import { salesAgentManualSendCore, salesAgentPreviewCore, generateCalDraftsCore, refreshCalDraftsCore, redraftPendingCalDraftsCore, advanceProspectConversationAfterSend, getCalWorkflowSummary } from "./agents/salesAgent";
+import { salesAgentManualSendCore, salesAgentPreviewCore, generateCalDraftsCore, refreshCalDraftsCore, redraftPendingCalDraftsCore, repairLegacyCalDraftCore, advanceProspectConversationAfterSend, getCalWorkflowSummary } from "./agents/salesAgent";
+import { isLegacyFrankDraft } from "./agents/calDraftQuality";
 import { quarantineBouncedProspectEmails } from "./agents/prospectEnrichment";
 import { computeBounceStats } from "./outreachGate";
 
@@ -2915,7 +2916,22 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           .where(eq(draftEmails.prospectId, input.prospectId))
           .orderBy(desc(draftEmails.createdAt))
           .limit(1);
-        return draft ?? null;
+        if (!draft) return null;
+
+        if (draft.status === "pending" && draft.body && isLegacyFrankDraft(draft.body, draft.subject)) {
+          const repaired = await repairLegacyCalDraftCore(input.prospectId, draft);
+          if (repaired.repaired) {
+            return {
+              ...draft,
+              subject: repaired.subject,
+              body: repaired.body,
+              agentReasoning: "Cal auto-redraft — legacy sales voice removed",
+              legacyRepaired: true as const,
+            };
+          }
+        }
+
+        return { ...draft, legacyRepaired: false as const };
       }),
 
     previewEmail: adminProcedure
@@ -2928,7 +2944,9 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         const dbConn = await getDb();
         if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-        // 1. Return existing pending draft immediately unless explicitly regenerating
+        let replacePending = !!input.forceRegenerate;
+
+        // 1. Return existing pending draft unless legacy Frank voice or explicitly regenerating
         if (!input.forceRegenerate) {
           const [existing] = await dbConn
             .select()
@@ -2937,19 +2955,22 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
             .orderBy(desc(draftEmails.createdAt))
             .limit(1);
           if (existing?.body && existing.body.trim().length > 0) {
-            const [conv] = await dbConn
-              .select()
-              .from(salesAgentConversations)
-              .where(eq(salesAgentConversations.prospectId, input.prospectId))
-              .limit(1);
-            const stage = input.stage ?? (conv?.state as "discovery" | "intro_sent" | "followup_1" | "followup_2" | "robot_guild") ?? "discovery";
-            const NEXT: Record<string, string> = { discovery: "intro_sent", intro_sent: "followup_1", followup_1: "followup_2", followup_2: "followup_2" };
-            return { subject: existing.subject ?? "", body: existing.body, stage, nextStage: NEXT[stage] ?? "intro_sent", fromCache: true };
+            const legacy = isLegacyFrankDraft(existing.body, existing.subject);
+            if (!legacy) {
+              const [conv] = await dbConn
+                .select()
+                .from(salesAgentConversations)
+                .where(eq(salesAgentConversations.prospectId, input.prospectId))
+                .limit(1);
+              const stage = input.stage ?? (conv?.state as "discovery" | "intro_sent" | "followup_1" | "followup_2" | "robot_guild") ?? "discovery";
+              const NEXT: Record<string, string> = { discovery: "intro_sent", intro_sent: "followup_1", followup_1: "followup_2", followup_2: "followup_2" };
+              return { subject: existing.subject ?? "", body: existing.body, stage, nextStage: NEXT[stage] ?? "intro_sent", fromCache: true };
+            }
+            replacePending = true;
           }
         }
 
-        // When regenerating, delete all existing pending drafts so the fresh one loads cleanly
-        if (input.forceRegenerate) {
+        if (replacePending) {
           await dbConn
             .delete(draftEmails)
             .where(and(eq(draftEmails.prospectId, input.prospectId), eq(draftEmails.status, "pending")));
