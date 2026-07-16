@@ -1042,7 +1042,31 @@ export default function AdminSalesAgent() {
     onError: (err) => toast.error(`Find emails failed: ${err.message}`),
   });
 
-  const resolveWebsites = trpc.salesAgent.resolveWebsitesApollo.useMutation({
+  const runCalOperator = trpc.salesAgent.runCalOperator.useMutation({
+    onSuccess: (data) => {
+      const d = data as {
+        junkDismissed: number;
+        websitesResolved: number;
+        emailsEnriched: number;
+        draftsGenerated: number;
+        growthBrief?: { socialPosts?: string[] };
+      };
+      toast.success(
+        `Cal operator: ${d.junkDismissed} junk cleared · ${d.websitesResolved} URLs · ${d.emailsEnriched} emails · ${d.draftsGenerated} drafts`,
+      );
+      refetchConvs();
+      refetchWorkflow();
+      utils.salesAgent.getWorkflowSummary.invalidate();
+      utils.salesAgent.getLatestOperatorRun.invalidate();
+    },
+    onError: (err) => toast.error(`Cal operator failed: ${err.message}`),
+  });
+
+  const { data: lastOperatorRun } = trpc.salesAgent.getLatestOperatorRun.useQuery(undefined, {
+    refetchInterval: 120_000,
+  });
+
+  const resolveWebsites = trpc.salesAgent.resolveWebsitesHunter.useMutation({
     onSuccess: (data) => {
       if (data.resolved > 0) toast.success(data.message);
       else if (data.attempted > 0) toast.warning(data.message);
@@ -1218,6 +1242,17 @@ export default function AdminSalesAgent() {
           onStepChange={goWorkflowStep}
           lastRunLabel={lastRun ? timeAgo(lastRun.startedAt) : undefined}
         />
+        {lastOperatorRun?.status === "completed" && lastOperatorRun.details && (
+          <div className="px-6 py-2 border-b border-white/10 bg-violet-950/20 text-xs text-zinc-400">
+            Cal operator last run:{" "}
+            {String((lastOperatorRun.details as { emailsEnriched?: number }).emailsEnriched ?? 0)} emails enriched ·{" "}
+            {String((lastOperatorRun.details as { websitesResolved?: number }).websitesResolved ?? 0)} URLs ·{" "}
+            {String((lastOperatorRun.details as { junkDismissed?: number }).junkDismissed ?? 0)} junk cleared
+            {(lastOperatorRun.details as { growthBrief?: { socialPosts?: string[] } }).growthBrief?.socialPosts?.[0] && (
+              <span className="text-zinc-500"> · Social idea queued in run log</span>
+            )}
+          </div>
+        )}
 
         {/* ── Secondary tabs (review queue + meetings) ── */}
         <div className="flex items-center gap-1 px-6 border-b border-white/10">
@@ -1298,7 +1333,18 @@ export default function AdminSalesAgent() {
                     >
                       {resolveWebsites.isPending
                         ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Resolving…</>
-                        : <><Globe className="w-3.5 h-3.5" /> Resolve websites</>}
+                        : <><Globe className="w-3.5 h-3.5" /> Resolve URLs (Hunter)</>}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-violet-700 text-violet-400 hover:bg-violet-950 gap-1.5"
+                      onClick={() => runCalOperator.mutate()}
+                      disabled={runCalOperator.isPending}
+                    >
+                      {runCalOperator.isPending
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Cal running…</>
+                        : <><Bot className="w-3.5 h-3.5" /> Run Cal operator</>}
                     </Button>
                     <Button
                       size="sm"

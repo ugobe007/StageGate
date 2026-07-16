@@ -3182,25 +3182,51 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         };
       }),
 
-    resolveWebsitesApollo: adminProcedure
+    resolveWebsitesHunter: adminProcedure
       .input(z.object({ limit: z.number().min(1).max(100).optional() }).optional())
       .mutation(async ({ input }) => {
         const dbConn = await getDb();
         if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-        const { apolloEnabled } = await import("./integrations/apolloOrg");
-        if (!apolloEnabled()) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "APOLLO_API_KEY not configured" });
+        const { hunterEnabled } = await import("./integrations/hunter");
+        if (!hunterEnabled()) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "HUNTER_API_KEY not configured" });
         }
         const { resolveProspectWebsitesBatch } = await import("./agents/prospectWebsiteResolution");
         const result = await resolveProspectWebsitesBatch(dbConn, input?.limit ?? 25);
         const msg =
           result.resolved > 0
-            ? `Apollo found websites for ${result.resolved} of ${result.attempted} prospects.`
+            ? `Hunter found websites for ${result.resolved} of ${result.attempted} prospects.`
             : result.attempted === 0
               ? "No prospects missing a website."
-              : `Apollo could not match a website for ${result.attempted} names (likely junk exhibitor labels).`;
+              : result.dismissed > 0
+                ? `No domain for ${result.attempted} names — ${result.dismissed} junk names auto-dismissed.`
+                : `Hunter could not match domains for ${result.attempted} names (verify company names).`;
         return { ...result, message: msg };
       }),
+
+    /** @deprecated Use resolveWebsitesHunter — Apollo removed from URL pipeline. */
+    resolveWebsitesApollo: adminProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).optional() }).optional())
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const { hunterEnabled } = await import("./integrations/hunter");
+        if (!hunterEnabled()) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "HUNTER_API_KEY not configured" });
+        }
+        const { resolveProspectWebsitesBatch } = await import("./agents/prospectWebsiteResolution");
+        return resolveProspectWebsitesBatch(dbConn, input?.limit ?? 25);
+      }),
+
+    runCalOperator: adminProcedure.mutation(async () => {
+      const { runCalOperatorCycle } = await import("./agents/calOperator");
+      return runCalOperatorCycle();
+    }),
+
+    getLatestOperatorRun: adminProcedure.query(async () => {
+      const { getLatestCalOperatorRun } = await import("./agents/calOperator");
+      return getLatestCalOperatorRun();
+    }),
 
     verifyAllUnverified: adminProcedure
       .mutation(async () => {

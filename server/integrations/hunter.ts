@@ -105,17 +105,76 @@ async function hunterGet<T>(
 }
 
 export async function domainSearch(
-  domain: string
+  domain: string,
+  opts: { company?: string } = {},
 ): Promise<{ pattern?: string; organization?: string; emails: HunterEmail[] } | null> {
+  const params: Record<string, string> = { limit: "20" };
+  if (domain) params.domain = domain;
+  if (opts.company) params.company = opts.company;
   const json = await hunterGet<{
     data?: { pattern?: string; organization?: string; emails?: HunterEmail[] };
-  }>("/domain-search", { domain, limit: "20" });
+  }>("/domain-search", params);
   if (!json?.data) return null;
   return {
     pattern: json.data.pattern ?? undefined,
     organization: json.data.organization ?? undefined,
     emails: json.data.emails ?? [],
   };
+}
+
+export interface DomainFinderHit {
+  domain: string;
+  companyName?: string;
+  emailCount?: number;
+}
+
+/** Resolve a company name → domain via Hunter Domain Finder (free, no search credits). */
+export async function domainFinder(
+  company: string,
+  opts: { limit?: number; perfectMatch?: boolean } = {},
+): Promise<DomainFinderHit | null> {
+  const trimmed = company?.trim();
+  if (!trimmed || trimmed.length < 3) return null;
+
+  const json = await hunterGet<{
+    data?: Array<{ domain?: string; company_name?: string; email_count?: number }>;
+  }>("/domain-finder", {
+    company: trimmed,
+    limit: String(Math.min(Math.max(opts.limit ?? 3, 1), 10)),
+    ...(opts.perfectMatch ? { perfect_match: "true" } : {}),
+  });
+
+  const hit = json?.data?.[0];
+  if (!hit?.domain) return null;
+  return {
+    domain: hit.domain,
+    companyName: hit.company_name ?? undefined,
+    emailCount: hit.email_count ?? undefined,
+  };
+}
+
+/** Normalize Hunter / manual website strings to https://domain form. */
+export function normalizeWebsiteUrl(raw: string | null | undefined): string | null {
+  const trimmed = raw?.trim();
+  if (!trimmed) return null;
+  try {
+    const url = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
+    if (!url.hostname.includes(".")) return null;
+    return `https://${url.hostname.replace(/^www\./, "")}`;
+  } catch {
+    const cleaned = trimmed
+      .replace(/^https?:\/\//, "")
+      .replace(/^www\./, "")
+      .split("/")[0]
+      ?.toLowerCase();
+    return cleaned?.includes(".") ? `https://${cleaned}` : null;
+  }
+}
+
+/** Company name → website URL using Hunter Domain Finder. */
+export async function websiteFromCompanyName(company: string): Promise<string | null> {
+  const hit = await domainFinder(company, { limit: 1, perfectMatch: false });
+  return normalizeWebsiteUrl(hit?.domain ?? null);
 }
 
 export async function emailFinder(

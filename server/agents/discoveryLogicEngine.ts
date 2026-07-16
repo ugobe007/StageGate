@@ -196,6 +196,23 @@ export function passesJunkFilter(company: string, website?: string): boolean {
   return true;
 }
 
+/** Headline / scraper junk — not a company name. Used before Hunter URL lookup. */
+export function isLikelyJunkCompanyName(company: string): boolean {
+  if (!passesJunkFilter(company)) return true;
+  const trimmed = company.trim();
+  if (trimmed.length > 85) return true;
+  if (trimmed.split(/\s+/).length > 8) return true;
+  if (/[…]|\.{3,}|\|\s*/.test(trimmed)) return true;
+  if (
+    /\b(coolest things|I saw|pour coffee|fold laundry|Captivate Crowds|pushes Pentagon|Live drone|NDAA|All-Solid|Unmanned CES|Humanoid Robots|Humanoid robots|NVIDIA-Sponsored|drone demos|Actuators)\b/i.test(
+      trimmed,
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
 // ─── Tier 2: Robot Signal Check (synchronous keyword ontology) ───────────────
 
 // Ontological keyword map: robot signals → robot type classification
@@ -572,11 +589,11 @@ export async function filterAndClassify(
 
   for (const prospect of raw) {
     // Tier 1: Junk filter
-    if (!passesJunkFilter(prospect.company, prospect.website)) {
+    if (!passesJunkFilter(prospect.company, prospect.website) || isLikelyJunkCompanyName(prospect.company)) {
       stats.junkFiltered++;
       rejected.push({
         company: prospect.company,
-        reason: `Junk filter: invalid company name "${prospect.company}"`,
+        reason: `Junk filter: invalid or headline company name "${prospect.company}"`,
         tier: "junk_filter",
       });
       continue;
