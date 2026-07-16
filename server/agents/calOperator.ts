@@ -102,6 +102,8 @@ JSON shape: { "socialPosts": [], "newsletterHooks": [], "whitepaperTopics": [], 
 
 export async function runCalOperatorCycle(opts?: {
   skipGrowthBrief?: boolean;
+  /** Manual UI runs skip LLM redraft/generate — use Redraft emails button instead. */
+  skipDraftRefresh?: boolean;
 }): Promise<CalOperatorResult> {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
@@ -132,13 +134,17 @@ export async function runCalOperatorCycle(opts?: {
 
   let draftsRedrafted = 0;
   let draftsGenerated = 0;
-  try {
-    const drafts = await refreshCalDraftsCore();
-    draftsRedrafted = drafts.redrafted;
-    draftsGenerated = drafts.generated;
-    if (drafts.errors.length) errors.push(...drafts.errors.slice(0, 3));
-  } catch (err) {
-    errors.push(`drafts: ${String(err)}`);
+  if (opts?.skipDraftRefresh) {
+    // Manual UI runs — user triggers Redraft emails separately.
+  } else {
+    try {
+      const drafts = await refreshCalDraftsCore();
+      draftsRedrafted = drafts.redrafted;
+      draftsGenerated = drafts.generated;
+      if (drafts.errors.length) errors.push(...drafts.errors.slice(0, 3));
+    } catch (err) {
+      errors.push(`drafts: ${String(err)}`);
+    }
   }
 
   let quarantined = 0;
@@ -177,6 +183,7 @@ export async function runCalOperatorCycle(opts?: {
 /** Persisted operator run — shared by cron handler and admin tRPC button. */
 export async function executeCalOperatorRun(opts?: {
   skipGrowthBrief?: boolean;
+  skipDraftRefresh?: boolean;
   notify?: boolean;
 }): Promise<CalOperatorResult & { runId: number; startedAt: Date; completedAt: Date }> {
   const db = await getDb();
@@ -189,7 +196,10 @@ export async function executeCalOperatorRun(opts?: {
     .returning();
 
   try {
-    const result = await runCalOperatorCycle({ skipGrowthBrief: opts?.skipGrowthBrief ?? false });
+    const result = await runCalOperatorCycle({
+      skipGrowthBrief: opts?.skipGrowthBrief ?? false,
+      skipDraftRefresh: opts?.skipDraftRefresh ?? false,
+    });
 
     const completedAt = new Date();
     await db

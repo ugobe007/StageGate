@@ -515,11 +515,27 @@ function CalOperatorReport({
   report,
   onDismiss,
   failedMessage,
+  isRunning,
 }: {
   report: CalOperatorReportData | null;
   onDismiss: () => void;
   failedMessage?: string | null;
+  isRunning?: boolean;
 }) {
+  if (isRunning) {
+    return (
+      <div className="mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border border-violet-500/40 bg-violet-950/40 text-sm animate-pulse">
+        <p className="text-violet-200 font-medium flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
+          Cal operator running…
+        </p>
+        <p className="text-zinc-400 text-xs mt-1 leading-relaxed">
+          Junk cleanup → Hunter URLs → Hunter emails → quarantine bounces. Draft redraft runs separately via Redraft emails.
+        </p>
+      </div>
+    );
+  }
+
   if (!report && !failedMessage) return null;
 
   if (failedMessage) {
@@ -577,6 +593,9 @@ function CalOperatorReport({
           {report.errors && report.errors.length > 0 && (
             <p className="text-amber-400/90 text-xs mt-2">{report.errors[0]}</p>
           )}
+          <p className="text-zinc-600 text-xs mt-2">
+            Manual runs skip draft redraft — use Redraft emails once contacts are enriched.
+          </p>
         </div>
         <button type="button" onClick={onDismiss} className="text-zinc-500 hover:text-zinc-300 text-xs flex-shrink-0">
           Dismiss
@@ -959,6 +978,7 @@ export default function AdminSalesAgent() {
   const [csvText, setCsvText] = useState("");
   const [csvImportResult, setCsvImportResult] = useState<{ imported: number; skipped: number; errors: string[]; total: number; message: string } | null>(null);
   const [operatorReport, setOperatorReport] = useState<CalOperatorReportData | null>(null);
+  const [dismissedOperatorRunId, setDismissedOperatorRunId] = useState<number | null>(null);
   // v38: notes editing state
   const [notesValue, setNotesValue] = useState<string>("");
   const [notesSaving, setNotesSaving] = useState(false);
@@ -1169,6 +1189,7 @@ export default function AdminSalesAgent() {
   useEffect(() => {
     if (operatorReport || !lastOperatorRun?.details) return;
     if (lastOperatorRun.status !== "completed") return;
+    if (dismissedOperatorRunId === lastOperatorRun.id) return;
     const d = lastOperatorRun.details as CalOperatorReportData;
     setOperatorReport({
       runId: lastOperatorRun.id,
@@ -1183,7 +1204,7 @@ export default function AdminSalesAgent() {
       errors: d.errors,
       completedAt: lastOperatorRun.completedAt ?? undefined,
     });
-  }, [lastOperatorRun, operatorReport]);
+  }, [lastOperatorRun, operatorReport, dismissedOperatorRunId]);
 
   const resolveWebsites = trpc.salesAgent.resolveWebsitesHunter.useMutation({
     onSuccess: (data) => {
@@ -1363,8 +1384,16 @@ export default function AdminSalesAgent() {
         />
         <CalOperatorReport
           report={operatorReport}
-          onDismiss={() => setOperatorReport(null)}
-          failedMessage={lastOperatorRun?.status === "failed" ? lastOperatorRun.errorMessage : null}
+          isRunning={runCalOperator.isPending}
+          onDismiss={() => {
+            if (operatorReport?.runId != null) setDismissedOperatorRunId(operatorReport.runId);
+            setOperatorReport(null);
+          }}
+          failedMessage={
+            !runCalOperator.isPending && lastOperatorRun?.status === "failed"
+              ? lastOperatorRun.errorMessage
+              : null
+          }
         />
 
         {/* ── Secondary tabs (review queue + meetings) ── */}
