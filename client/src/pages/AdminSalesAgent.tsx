@@ -1040,10 +1040,11 @@ export default function AdminSalesAgent() {
   // only have guessed or missing contacts.
   const enrichHunter = trpc.salesAgent.enrichContactsHunter.useMutation({
     onSuccess: (data) => {
-      toast.success(data.message);
+      if (data.enriched > 0) toast.success(data.message);
+      else toast.warning(data.message);
       refetchConvs();
     },
-    onError: (err) => toast.error(`Hunter enrichment failed: ${err.message}`),
+    onError: (err) => toast.error(`Find emails failed: ${err.message}`),
   });
 
   const refreshCalDrafts = trpc.admin.generateDrafts.useMutation({

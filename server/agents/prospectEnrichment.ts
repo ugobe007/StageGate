@@ -9,13 +9,19 @@
  */
 
 import type { Request, Response } from "express";
-import { eq, or, isNull, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, notInArray, or, sql } from "drizzle-orm";
 import { getDb } from "../db.js";
 import { prospects, prospectActivities } from "../../drizzle/schema.js";
-import { findBestProspectEmail, hunterEnabled } from "../integrations/hunter.js";
-import { isDeprecatedRoleInbox } from "../outreachContacts.js";
+import {
+  domainSearch,
+  findBestProspectEmail,
+  hunterEnabled,
+  pickBestDomainEmail,
+  scoreToConfidence,
+} from "../integrations/hunter.js";
+import { deriveCompanyDomain, isDeprecatedRoleInbox } from "../outreachContacts.js";
 import { isSendableEmailConfidence, selectOutreachEmail } from "../outreachContacts.js";
-import { screenRecipient, ensureSuppressionStore } from "../outreachGate.js";
+import { isSuppressed, screenRecipient, ensureSuppressionStore } from "../outreachGate.js";
 
 /** Generic mailbox local-parts that are guesses, not real people. */
 const GENERIC_LOCAL_PARTS = new Set([
@@ -39,6 +45,59 @@ export function prospectNeedsEnrichment(
   return conf === "" || conf === "low";
 }
 
+/** Pick prospects for a Hunter batch — must match prospectNeedsEnrichment (incl. generic inboxes). */
+export function selectProspectsForEnrichment(
+  rows: ProspectRow[],
+  limit: number,
+): ProspectRow[] {
+  const cap = Math.min(Math.max(limit, 1), 100);
+  return rows
+    .filter((p) => !["converted", "not_interested"].includes(p.status ?? ""))
+    .filter((p) => Boolean(deriveCompanyDomain(p)))
+    .filter(prospectNeedsEnrichment)
+    .sort((a, b) => {
+      const pri = (p: ProspectRow) => {
+        if (!p.contactEmail?.trim()) return 0;
+        if ((p.emailConfidence ?? "").toLowerCase() === "low") return 1;
+        return 2;
+      };
+      return pri(a) - pri(b);
+    })
+    .slice(0, cap);
+}
+
+async function findReplacementContact(
+  prospect: ProspectRow,
+  db: Db | null,
+  exclude: Set<string>,
+): Promise<Awaited<ReturnType<typeof findBestProspectEmail>>> {
+  const domain = deriveCompanyDomain(prospect);
+  if (!domain) return null;
+
+  const search = await domainSearch(domain);
+  if (!search?.emails?.length) return null;
+
+  const filtered = search.emails.filter((e) => {
+    const addr = (e.value ?? "").trim().toLowerCase();
+    return addr && !exclude.has(addr);
+  });
+  const best = pickBestDomainEmail(filtered);
+  if (!best) return null;
+
+  if (db && (await isSuppressed(db, best.value))) return null;
+
+  return {
+    email: best.value,
+    firstName: best.first_name ?? undefined,
+    lastName: best.last_name ?? undefined,
+    position: best.position ?? undefined,
+    confidence: scoreToConfidence(best.confidence ?? 0),
+    score: best.confidence ?? 0,
+    verificationStatus: best.verification?.status ?? undefined,
+    source: "domain_search",
+  };
+}
+
 /**
  * Enrich a single prospect's contact email via Hunter and persist it.
  * Returns the found email, or null if nothing usable was found. Mutates the
@@ -50,10 +109,31 @@ export async function enrichProspectContact(
 ): Promise<string | null> {
   if (!hunterEnabled()) return null;
 
-  const contact = await findBestProspectEmail(prospect);
-  if (!contact) return null;
-
   const db = opts.db ?? (await getDb());
+  const exclude = new Set<string>();
+  const current = prospect.contactEmail?.trim().toLowerCase();
+  if (current) exclude.add(current);
+
+  let contact = await findBestProspectEmail(prospect);
+
+  if (contact && db && (await isSuppressed(db, contact.email))) {
+    exclude.add(contact.email.trim().toLowerCase());
+    contact = null;
+  }
+
+  if (!contact && db) {
+    contact = await findReplacementContact(prospect, db, exclude);
+  } else if (!contact) {
+    contact = await findReplacementContact(prospect, null, exclude);
+  }
+
+  if (contact && contact.email.trim().toLowerCase() === current) {
+    exclude.add(contact.email.trim().toLowerCase());
+    const alt = await findReplacementContact(prospect, db, exclude);
+    contact = alt;
+  }
+
+  if (!contact) return null;
   if (!db) return contact.email;
 
   const fullName = [contact.firstName, contact.lastName].filter(Boolean).join(" ").trim();
@@ -105,13 +185,17 @@ export async function enrichProspectsBatch(db: Db, limit = 25): Promise<EnrichBa
   const candidates = await db
     .select()
     .from(prospects)
-    .where(or(isNull(prospects.contactEmail), inArray(prospects.emailConfidence, ["low", ""])))
-    .limit(cap * 4);
+    .where(
+      and(
+        notInArray(prospects.status, ["converted", "not_interested"]),
+        isNotNull(prospects.website),
+        sql`trim(${prospects.website}) <> ''`,
+      ),
+    )
+    .orderBy(desc(prospects.updatedAt))
+    .limit(cap * 12);
 
-  const toEnrich = candidates
-    .filter((p) => !["converted", "not_interested"].includes(p.status ?? ""))
-    .filter(prospectNeedsEnrichment)
-    .slice(0, cap);
+  const toEnrich = selectProspectsForEnrichment(candidates, cap);
 
   let enriched = 0;
   const results: EnrichBatchResult["results"] = [];

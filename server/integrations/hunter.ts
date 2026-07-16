@@ -60,7 +60,7 @@ export function hunterEnabled(): boolean {
   return Boolean(hunterApiKey());
 }
 
-function scoreToConfidence(score: number): EmailConfidence {
+export function scoreToConfidence(score: number): EmailConfidence {
   if (score >= 90) return "high";
   if (score >= 70) return "medium";
   return "low";

@@ -3170,9 +3170,15 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         }
         const { enrichProspectsBatch } = await import("./agents/prospectEnrichment");
         const result = await enrichProspectsBatch(dbConn, input?.limit ?? 25);
+        const msg =
+          result.enriched > 0
+            ? `Hunter found real emails for ${result.enriched} of ${result.attempted} prospects.`
+            : result.attempted === 0
+              ? "No enrichable prospects — need a website on file and a missing, low-confidence, or generic role inbox."
+              : `Hunter could not find better emails for ${result.attempted} prospects (check Hunter credits or domain coverage).`;
         return {
           ...result,
-          message: `Hunter found real emails for ${result.enriched} of ${result.attempted} prospects.`,
+          message: msg,
         };
       }),
 

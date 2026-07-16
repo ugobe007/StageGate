@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { pickBestDomainEmail } from "./hunter.js";
-import { prospectNeedsEnrichment } from "../agents/prospectEnrichment.js";
+import { prospectNeedsEnrichment, selectProspectsForEnrichment } from "../agents/prospectEnrichment.js";
 
 describe("pickBestDomainEmail", () => {
   it("prefers personal emails over generic role inboxes", () => {
@@ -70,5 +70,37 @@ describe("prospectNeedsEnrichment", () => {
   it("keeps real, confident, person-level emails", () => {
     expect(prospectNeedsEnrichment({ contactEmail: "dana.lee@acme.com", emailConfidence: "high" })).toBe(false);
     expect(prospectNeedsEnrichment({ contactEmail: "dana@acme.com", emailConfidence: "medium" })).toBe(false);
+  });
+});
+
+describe("selectProspectsForEnrichment", () => {
+  const row = (partial: Record<string, unknown>) =>
+    ({
+      id: 1,
+      company: "Acme",
+      website: "https://acme.com",
+      contactEmail: "marketing@acme.com",
+      emailConfidence: "high",
+      status: "new",
+      ...partial,
+    }) as Parameters<typeof selectProspectsForEnrichment>[0][number];
+
+  it("includes generic role inboxes even at high confidence", () => {
+    const picked = selectProspectsForEnrichment(
+      [
+        row({ id: 1, contactEmail: "marketing@acme.com", emailConfidence: "high" }),
+        row({ id: 2, contactEmail: "dana@acme.com", emailConfidence: "high" }),
+      ],
+      10,
+    );
+    expect(picked.map((p) => p.id)).toEqual([1]);
+  });
+
+  it("skips prospects without a website (Hunter needs a domain)", () => {
+    const picked = selectProspectsForEnrichment(
+      [row({ id: 3, website: null, contactEmail: null, emailConfidence: "low" })],
+      10,
+    );
+    expect(picked).toHaveLength(0);
   });
 });
