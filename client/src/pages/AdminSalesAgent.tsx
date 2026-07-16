@@ -18,14 +18,14 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { AdminPage } from "@/lib/adminTheme";
-import { prospectNeedsContactFix } from "@/lib/prospectContact";
+import { prospectNeedsEmailFix, prospectNeedsWebsite } from "@/lib/prospectContact";
 import {
   Bot, Mail, Clock, MessageSquare,
   Zap, Send, RefreshCw, Eye, Users,
   TrendingUp, Calendar, Star, Cpu, Factory,
   CheckCircle, CheckCircle2, XCircle, Edit3, Inbox,
   ShieldCheck, Upload, FileText, Loader2,
-  MousePointerClick, ShieldAlert, ChevronRight
+  MousePointerClick, ShieldAlert, ChevronRight, Globe
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
@@ -87,6 +87,7 @@ const TERMINAL = ["booked", "not_interested", "converted", "responded", "schedul
 type WorkflowStep = "contacts" | "draft" | "review" | "send" | "followup";
 
 type WorkflowSummary = {
+  needsWebsite: number;
   needsContactFix: number;
   needsDraft: number;
   pendingReview: number;
@@ -103,7 +104,7 @@ const WORKFLOW_STEPS: Array<{
   hint: string;
   count: (w: WorkflowSummary) => number;
 }> = [
-  { id: "contacts", num: 1, label: "Fix contacts", hint: "Find & verify emails", count: (w) => w.needsContactFix },
+  { id: "contacts", num: 1, label: "Fix contacts", hint: "URL first · then email", count: (w) => w.needsContactFix + w.needsWebsite },
   { id: "draft", num: 2, label: "Draft", hint: "Cal writes · Redraft = rewrite", count: (w) => w.needsDraft },
   { id: "review", num: 3, label: "Review", hint: "Read field notes", count: (w) => w.pendingReview },
   { id: "send", num: 4, label: "Send", hint: "Deliver approved emails", count: (w) => w.pendingReview + w.readyToSend },
@@ -911,6 +912,7 @@ export default function AdminSalesAgent() {
   );
 
   const workflow: WorkflowSummary = workflowRaw ?? {
+    needsWebsite: 0,
     needsContactFix: 0,
     needsDraft: 0,
     pendingReview: 0,
@@ -1038,6 +1040,18 @@ export default function AdminSalesAgent() {
       utils.salesAgent.getWorkflowSummary.invalidate();
     },
     onError: (err) => toast.error(`Find emails failed: ${err.message}`),
+  });
+
+  const resolveWebsites = trpc.salesAgent.resolveWebsitesApollo.useMutation({
+    onSuccess: (data) => {
+      if (data.resolved > 0) toast.success(data.message);
+      else if (data.attempted > 0) toast.warning(data.message);
+      else toast.info(data.message);
+      refetchConvs();
+      refetchWorkflow();
+      utils.salesAgent.getWorkflowSummary.invalidate();
+    },
+    onError: (err) => toast.error(`Resolve websites failed: ${err.message}`),
   });
 
   const refreshCalDrafts = trpc.admin.generateDrafts.useMutation({
@@ -1173,7 +1187,9 @@ export default function AdminSalesAgent() {
         return next && next <= new Date() && !TERMINAL.includes(c.conv.state ?? "");
       })
     : filterStage === "needs_email"
-    ? conversations.filter(c => prospectNeedsContactFix(c.prospect))
+    ? conversations.filter(c => prospectNeedsEmailFix(c.prospect))
+    : filterStage === "needs_website"
+    ? conversations.filter(c => prospectNeedsWebsite(c.prospect))
     : filterStage === "awaiting"
     ? conversations.filter(c => c.conv.state === "awaiting_reply")
     : conversations.filter(c => c.conv.state === filterStage);
@@ -1257,7 +1273,10 @@ export default function AdminSalesAgent() {
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                   <p className="text-sm text-zinc-400">
                     {workflowStep === "contacts" && (
-                      <><span className="text-white font-medium">{workflow.needsContactFix}</span> need a verified contact before Cal can draft.</>
+                      <>
+                        <span className="text-white font-medium">{workflow.needsWebsite}</span> need a website (junk names) ·{" "}
+                        <span className="text-white font-medium">{workflow.needsContactFix}</span> have a URL and need email (Hunter).
+                      </>
                     )}
                     {workflowStep === "draft" && (
                       <><span className="text-white font-medium">{workflow.needsDraft}</span> ready for Cal to draft · <span className="text-zinc-500">Redraft rewrites pending + creates missing.</span></>
@@ -1273,9 +1292,21 @@ export default function AdminSalesAgent() {
                     <Button
                       size="sm"
                       variant="outline"
+                      className="border-sky-700 text-sky-400 hover:bg-sky-950 gap-1.5"
+                      onClick={() => resolveWebsites.mutate({ limit: 25 })}
+                      disabled={resolveWebsites.isPending}
+                    >
+                      {resolveWebsites.isPending
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Resolving…</>
+                        : <><Globe className="w-3.5 h-3.5" /> Resolve websites</>}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       className="border-emerald-700 text-emerald-400 hover:bg-emerald-950 gap-1.5"
                       onClick={() => enrichHunter.mutate({ limit: 25 })}
-                      disabled={enrichHunter.isPending}
+                      disabled={enrichHunter.isPending || workflow.needsContactFix === 0}
+                      title={workflow.needsContactFix === 0 ? "Resolve websites first — Hunter needs a domain on file" : undefined}
                     >
                       {enrichHunter.isPending
                         ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding…</>
@@ -1358,12 +1389,20 @@ export default function AdminSalesAgent() {
                   All ({conversations.length})
                 </button>
                 {workflowStep === "contacts" && (
+                  <>
+                  <button
+                    onClick={() => setFilterStage("needs_website")}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "needs_website" ? "bg-zinc-500/30 text-zinc-200" : "text-zinc-500 hover:text-zinc-300"}`}
+                  >
+                    No website ({workflow.needsWebsite})
+                  </button>
                   <button
                     onClick={() => setFilterStage("needs_email")}
                     className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "needs_email" ? "bg-red-500/30 text-red-300" : "text-zinc-500 hover:text-zinc-300"}`}
                   >
                     Needs email ({workflow.needsContactFix})
                   </button>
+                  </>
                 )}
                 {workflowStep === "followup" && (
                   <>

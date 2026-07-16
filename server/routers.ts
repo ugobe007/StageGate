@@ -3182,6 +3182,26 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         };
       }),
 
+    resolveWebsitesApollo: adminProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).optional() }).optional())
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const { apolloEnabled } = await import("./integrations/apolloOrg");
+        if (!apolloEnabled()) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "APOLLO_API_KEY not configured" });
+        }
+        const { resolveProspectWebsitesBatch } = await import("./agents/prospectWebsiteResolution");
+        const result = await resolveProspectWebsitesBatch(dbConn, input?.limit ?? 25);
+        const msg =
+          result.resolved > 0
+            ? `Apollo found websites for ${result.resolved} of ${result.attempted} prospects.`
+            : result.attempted === 0
+              ? "No prospects missing a website."
+              : `Apollo could not match a website for ${result.attempted} names (likely junk exhibitor labels).`;
+        return { ...result, message: msg };
+      }),
+
     verifyAllUnverified: adminProcedure
       .mutation(async () => {
         const dbConn = await getDb();

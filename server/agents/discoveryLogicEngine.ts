@@ -21,6 +21,7 @@
  */
 
 import { invokeLLM } from "../_core/llm.js";
+import { prospectHasUsableWebsite } from "../outreachContacts.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -512,15 +513,37 @@ export interface FilterResult {
 export interface RejectedProspect {
   company: string;
   reason: string;
-  tier: "junk_filter" | "robot_signal" | "logic_engine";
+  tier: "junk_filter" | "robot_signal" | "logic_engine" | "no_website";
 }
 
 export interface FilterStats {
   total: number;
   junkFiltered: number;
   noRobotSignal: number;
+  noWebsite: number;
   logicEngineRejected: number;
   accepted: number;
+}
+
+// ─── Website gate (shared by filter + ingest) ────────────────────────────────
+
+export function passesWebsiteGate(prospect: Pick<RawProspect, "website">): boolean {
+  return prospectHasUsableWebsite(prospect);
+}
+
+function rejectNoWebsite(
+  prospect: RawProspect,
+  rejected: RejectedProspect[],
+  stats: FilterStats,
+): boolean {
+  if (passesWebsiteGate(prospect)) return false;
+  stats.noWebsite++;
+  rejected.push({
+    company: prospect.company,
+    reason: "No company website — cannot verify or enrich email",
+    tier: "no_website",
+  });
+  return true;
 }
 
 export async function filterAndClassify(
@@ -539,6 +562,7 @@ export async function filterAndClassify(
     total: raw.length,
     junkFiltered: 0,
     noRobotSignal: 0,
+    noWebsite: 0,
     logicEngineRejected: 0,
     accepted: 0,
   };
@@ -601,6 +625,7 @@ export async function filterAndClassify(
   if (skipLLM) {
     // Test mode: accept all tier-2 passers with inferred values
     for (const prospect of tier2Passed) {
+      if (rejectNoWebsite(prospect, rejected, stats)) continue;
       const robotType = inferRobotType(prospect.company, prospect.robotName, prospect.notes);
       accepted.push({
         ...prospect,
@@ -640,6 +665,7 @@ export async function filterAndClassify(
       const result = results[j];
 
       if (result.status === "rejected") {
+        if (rejectNoWebsite(prospect, rejected, stats)) continue;
         // LLM error — accept with fallback values
         const robotType = inferRobotType(prospect.company, prospect.robotName, prospect.notes);
         accepted.push({
@@ -689,6 +715,12 @@ export async function filterAndClassify(
       }
 
       const robotType = VALID_ROBOT_TYPES.has(llm.robotType) ? llm.robotType : inferRobotType(prospect.company, prospect.robotName, prospect.notes);
+
+      const enriched: RawProspect = {
+        ...prospect,
+        website: prospect.website || undefined,
+      };
+      if (rejectNoWebsite(enriched, rejected, stats)) continue;
 
       accepted.push({
         ...prospect,
@@ -765,6 +797,46 @@ export function extractCompanyNamesFromHtml(html: string): string[] {
   }
 
   return Array.from(companies);
+}
+
+export interface ExhibitorEntry {
+  company: string;
+  website: string;
+}
+
+const SKIP_WEBSITE_HOSTS = /(?:facebook|twitter|linkedin|instagram|youtube|mailto:|javascript:|#)/i;
+
+/**
+ * Extract company + external website pairs from exhibitor list anchor tags.
+ * Used to attach real URLs before LLM / ingest (names alone are junk without a domain).
+ */
+export function extractExhibitorEntriesFromHtml(html: string): ExhibitorEntry[] {
+  const entries = new Map<string, ExhibitorEntry>();
+  const linkPattern = /<a[^>]*href="([^"]+)"[^>]*>([^<]{3,100})<\/a>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = linkPattern.exec(html)) !== null) {
+    const href = match[1]?.trim();
+    const company = match[2]?.trim();
+    if (!href || !company || SKIP_WEBSITE_HOSTS.test(href)) continue;
+    if (!looksLikeCompanyName(company)) continue;
+    if (!/^https?:\/\//i.test(href) && !href.includes(".")) continue;
+
+    let website: string;
+    try {
+      const url = new URL(href.startsWith("http") ? href : `https://${href}`);
+      if (!url.hostname.includes(".")) continue;
+      if (/\.(pdf|jpg|png|gif|svg)$/i.test(url.pathname)) continue;
+      website = `https://${url.hostname.replace(/^www\./, "")}`;
+    } catch {
+      continue;
+    }
+
+    const key = company.toLowerCase();
+    if (!entries.has(key)) entries.set(key, { company, website });
+  }
+
+  return Array.from(entries.values());
 }
 
 /**

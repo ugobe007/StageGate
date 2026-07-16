@@ -28,6 +28,7 @@ import { sdk } from "../_core/sdk.js";
 import {
   filterAndClassify,
   extractCompanyNamesFromHtml,
+  extractExhibitorEntriesFromHtml,
   detectPaginationUrl,
   KNOWN_ECOSYSTEM_VENDORS,
   type RawProspect,
@@ -43,6 +44,7 @@ const MAX_PAGES = 3;             // Follow up to 3 pagination links per show
 interface FetchedPage {
   rawText: string;
   structuredNames: string[];
+  structuredEntries: Array<{ company: string; website: string }>;
   pagesFetched: number;
   success: boolean;
 }
@@ -50,6 +52,7 @@ interface FetchedPage {
 async function fetchExhibitorPage(url: string): Promise<FetchedPage> {
   const allRawText: string[] = [];
   const allStructuredNames: string[] = [];
+  const allStructuredEntries: Array<{ company: string; website: string }> = [];
   let pagesFetched = 0;
   let currentUrl: string | null = url;
 
@@ -75,6 +78,7 @@ async function fetchExhibitorPage(url: string): Promise<FetchedPage> {
       // Structured extraction first (higher precision)
       const structuredNames = extractCompanyNamesFromHtml(html);
       allStructuredNames.push(...structuredNames);
+      allStructuredEntries.push(...extractExhibitorEntriesFromHtml(html));
 
       // Raw text extraction (higher recall)
       const rawText = html
@@ -106,9 +110,21 @@ async function fetchExhibitorPage(url: string): Promise<FetchedPage> {
   return {
     rawText: combinedText,
     structuredNames: Array.from(new Set(allStructuredNames)),
+    structuredEntries: dedupeExhibitorEntries(allStructuredEntries),
     pagesFetched,
     success: pagesFetched > 0 && combinedText.length > 200,
   };
+}
+
+function dedupeExhibitorEntries(
+  entries: Array<{ company: string; website: string }>,
+): Array<{ company: string; website: string }> {
+  const map = new Map<string, { company: string; website: string }>();
+  for (const entry of entries) {
+    const key = entry.company.toLowerCase().trim();
+    if (!map.has(key)) map.set(key, entry);
+  }
+  return Array.from(map.values());
 }
 
 // ─── LLM extraction from page content ────────────────────────────────────────
@@ -177,14 +193,19 @@ async function extractProspectsWithLLM(
     const structuredSection = page.structuredNames.length > 0
       ? `\n\nStructured company names extracted from HTML:\n${page.structuredNames.slice(0, 50).join(", ")}`
       : "";
+    const urlSection = page.structuredEntries.length > 0
+      ? `\n\nExhibitor names WITH website URLs extracted from page links (prefer these — required for outreach):\n${page.structuredEntries.slice(0, 40).map((e) => `${e.company} → ${e.website}`).join("\n")}`
+      : "";
 
     prompt = `You are analyzing the exhibitor list for ${showContext} (${page.pagesFetched} page(s) fetched).
-${structuredSection}
+${structuredSection}${urlSection}
 
 Raw page text (truncated):
 ${page.rawText}
 
 From this content, identify up to 15 robot companies — companies that make robots, robotic systems, autonomous vehicles, drones, or robotic automation equipment.
+
+IMPORTANT: Every prospect MUST include a real company website URL (https://…). If you cannot identify a website, omit that company entirely — names without domains are not usable leads.
 
 For each company found, return:
 - company: exact company name
@@ -517,7 +538,7 @@ async function runDiscoveryCore(
   // ── Fallback: LLM knowledge for shows without URL ────────────────────────
   if (allRawProspects.length < 10) {
     console.log(`[Discovery] Fallback triggered (only ${allRawProspects.length} prospects so far)`);
-    const fallbackPage: FetchedPage = { rawText: "", structuredNames: [], pagesFetched: 0, success: false };
+    const fallbackPage: FetchedPage = { rawText: "", structuredNames: [], structuredEntries: [], pagesFetched: 0, success: false };
     const fallbackContext = `upcoming Las Vegas trade shows: ${fallbackShowNames || "CES, NAB Show, MODEX, Automate, ICRA, ROSCon"}`;
     const fallbackProspects = await extractProspectsWithLLM(fallbackContext, fallbackPage, "Las Vegas shows", lvShows.slice(0, 20).join(", "), otherShows.slice(0, 15).join("; "));
     allRawProspects = allRawProspects.concat(fallbackProspects);
@@ -562,7 +583,7 @@ async function runDiscoveryCore(
 
   console.log(
     `[Discovery] Logic Engine: ${stats.total} in → ` +
-    `${stats.junkFiltered} junk, ${stats.noRobotSignal} no-signal, ` +
+    `${stats.junkFiltered} junk, ${stats.noRobotSignal} no-signal, ${stats.noWebsite} no-website, ` +
     `${stats.logicEngineRejected} LLM-rejected → ${stats.accepted} accepted`
   );
 

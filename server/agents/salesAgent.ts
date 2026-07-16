@@ -43,7 +43,7 @@ import {
   ROBOT_GUILD_PITCH,
   type ConversationStage,
 } from "./frankPlaybook.js";
-import { outreachEmailPolicySummary } from "../outreachContacts.js";
+import { outreachEmailPolicySummary, prospectHasUsableWebsite } from "../outreachContacts.js";
 import { pickCalInsight } from "./calInsights.js";
 import { buildCalChapterEmail } from "./calChapters.js";
 import { isLegacyFrankDraft } from "./calDraftQuality.js";
@@ -393,9 +393,10 @@ export async function salesAgentIngestHandler(req: Request, res: Response) {
     showsCreated++;
   }
 
-  // Upsert prospects
+  // Upsert prospects — require a real website (no domain = junk, skip ingest)
   for (const p of newProspects) {
     if (!p.company) continue;
+    if (!prospectHasUsableWebsite({ website: p.website ?? null })) continue;
 
     // Deduplicate by company name or email
     const existing = await db
@@ -1335,6 +1336,7 @@ export type CalWorkflowStep =
   | "idle";
 
 export type CalWorkflowSummary = {
+  needsWebsite: number;
   needsContactFix: number;
   needsDraft: number;
   pendingReview: number;
@@ -1348,6 +1350,7 @@ export type CalWorkflowSummary = {
 export async function getCalWorkflowSummary(): Promise<CalWorkflowSummary> {
   const db = await getDb();
   const empty: CalWorkflowSummary = {
+    needsWebsite: 0,
     needsContactFix: 0,
     needsDraft: 0,
     pendingReview: 0,
@@ -1382,17 +1385,23 @@ export async function getCalWorkflowSummary(): Promise<CalWorkflowSummary> {
   );
   const convByProspect = new Map(convRows.map((c) => [c.prospectId, c]));
 
+  let needsWebsite = 0;
   let needsContactFix = 0;
   let needsDraft = 0;
 
-  const { prospectNeedsContactFix } = await import("../outreachContacts.js");
+  const { prospectNeedsEmailFix, prospectNeedsWebsite } = await import("../outreachContacts.js");
 
   for (const prospect of allProspects as Array<{
     id: number;
     contactEmail: string | null;
     emailConfidence: string | null;
+    website: string | null;
   }>) {
-    if (prospectNeedsContactFix(prospect)) {
+    if (prospectNeedsWebsite(prospect)) {
+      needsWebsite++;
+      continue;
+    }
+    if (prospectNeedsEmailFix(prospect)) {
       needsContactFix++;
       continue;
     }
@@ -1429,6 +1438,7 @@ export async function getCalWorkflowSummary(): Promise<CalWorkflowSummary> {
 
   let suggestedStep: CalWorkflowStep = "idle";
   if (needsContactFix > 0) suggestedStep = "contacts";
+  else if (needsWebsite > 0) suggestedStep = "contacts";
   else if (needsDraft > 0) suggestedStep = "draft";
   else if (pendingReview > 0) suggestedStep = "review";
   else if (readyToSend > 0) suggestedStep = "send";
@@ -1436,6 +1446,7 @@ export async function getCalWorkflowSummary(): Promise<CalWorkflowSummary> {
   else if (awaitingReply > 0) suggestedStep = "followup";
 
   return {
+    needsWebsite,
     needsContactFix,
     needsDraft,
     pendingReview,

@@ -52,24 +52,31 @@ describe("pickBestDomainEmail", () => {
 });
 
 describe("prospectNeedsEnrichment", () => {
-  it("flags prospects with no email", () => {
-    expect(prospectNeedsEnrichment({ contactEmail: null, emailConfidence: null })).toBe(true);
-    expect(prospectNeedsEnrichment({ contactEmail: "", emailConfidence: "high" })).toBe(true);
+  const site = { website: "https://acme.com" };
+
+  it("ignores prospects with no website (junk names)", () => {
+    expect(prospectNeedsEnrichment({ contactEmail: null, emailConfidence: null, website: null })).toBe(false);
+    expect(prospectNeedsEnrichment({ contactEmail: "dana@acme.com", emailConfidence: "low", website: "" })).toBe(false);
+  });
+
+  it("flags prospects with no email when website exists", () => {
+    expect(prospectNeedsEnrichment({ ...site, contactEmail: null, emailConfidence: null })).toBe(true);
+    expect(prospectNeedsEnrichment({ ...site, contactEmail: "", emailConfidence: "high" })).toBe(true);
   });
 
   it("flags guessed role inboxes even at high confidence", () => {
-    expect(prospectNeedsEnrichment({ contactEmail: "marketing@acme.com", emailConfidence: "high" })).toBe(true);
-    expect(prospectNeedsEnrichment({ contactEmail: "info@acme.com", emailConfidence: "medium" })).toBe(true);
+    expect(prospectNeedsEnrichment({ ...site, contactEmail: "marketing@acme.com", emailConfidence: "high" })).toBe(true);
+    expect(prospectNeedsEnrichment({ ...site, contactEmail: "info@acme.com", emailConfidence: "medium" })).toBe(true);
   });
 
   it("flags low / unknown confidence emails", () => {
-    expect(prospectNeedsEnrichment({ contactEmail: "dana@acme.com", emailConfidence: "low" })).toBe(true);
-    expect(prospectNeedsEnrichment({ contactEmail: "dana@acme.com", emailConfidence: "" })).toBe(true);
+    expect(prospectNeedsEnrichment({ ...site, contactEmail: "dana@acme.com", emailConfidence: "low" })).toBe(true);
+    expect(prospectNeedsEnrichment({ ...site, contactEmail: "dana@acme.com", emailConfidence: "" })).toBe(true);
   });
 
   it("keeps real, confident, person-level emails", () => {
-    expect(prospectNeedsEnrichment({ contactEmail: "dana.lee@acme.com", emailConfidence: "high" })).toBe(false);
-    expect(prospectNeedsEnrichment({ contactEmail: "dana@acme.com", emailConfidence: "medium" })).toBe(false);
+    expect(prospectNeedsEnrichment({ ...site, contactEmail: "dana.lee@acme.com", emailConfidence: "high" })).toBe(false);
+    expect(prospectNeedsEnrichment({ ...site, contactEmail: "dana@acme.com", emailConfidence: "medium" })).toBe(false);
   });
 });
 

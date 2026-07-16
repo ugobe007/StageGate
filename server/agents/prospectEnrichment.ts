@@ -22,7 +22,8 @@ import {
 import {
   deriveCompanyDomain,
   isSendableEmailConfidence,
-  prospectNeedsContactFix,
+  prospectHasUsableWebsite,
+  prospectNeedsEmailFix,
   selectOutreachEmail,
 } from "../outreachContacts.js";
 import { isSuppressed, screenRecipient, ensureSuppressionStore } from "../outreachGate.js";
@@ -32,9 +33,9 @@ type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
 
 /** True when a prospect lacks a real, person-level email worth sending to. */
 export function prospectNeedsEnrichment(
-  p: Pick<ProspectRow, "contactEmail" | "emailConfidence">,
+  p: Pick<ProspectRow, "contactEmail" | "emailConfidence" | "website">,
 ): boolean {
-  return prospectNeedsContactFix(p);
+  return prospectNeedsEmailFix(p);
 }
 
 /** Pick prospects for a Hunter batch — must match prospectNeedsEnrichment (incl. generic inboxes). */

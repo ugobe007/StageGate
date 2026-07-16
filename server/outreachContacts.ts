@@ -111,14 +111,36 @@ export function isSendableEmailConfidence(conf: string | null | undefined): bool
   return c === "high" || c === "medium" || c === "verified";
 }
 
-/** True when a prospect still needs Hunter / verify before Cal can draft. */
-export function prospectNeedsContactFix(
-  prospect: Pick<ProspectLike, "contactEmail" | "emailConfidence">,
+/** True when the prospect has a real website URL on file (required before email enrichment). */
+export function prospectHasUsableWebsite(
+  prospect: Pick<ProspectLike, "website">,
 ): boolean {
+  return Boolean(deriveCompanyDomain(prospect));
+}
+
+/** True when email/contact still needs Hunter or verify — only when a website exists. */
+export function prospectNeedsEmailFix(
+  prospect: Pick<ProspectLike, "contactEmail" | "emailConfidence" | "website">,
+): boolean {
+  if (!prospectHasUsableWebsite(prospect)) return false;
   const email = prospect.contactEmail?.trim();
   if (!email || !email.includes("@")) return true;
   if (isGuessedRoleInbox(email) || isDeprecatedRoleInbox(email)) return true;
   const conf = (prospect.emailConfidence ?? "").trim().toLowerCase();
   if (!isSendableEmailConfidence(conf)) return true;
   return !selectOutreachEmail(prospect);
+}
+
+/** Junk / unresolved names — no website means Hunter cannot run. */
+export function prospectNeedsWebsite(
+  prospect: Pick<ProspectLike, "website">,
+): boolean {
+  return !prospectHasUsableWebsite(prospect);
+}
+
+/** @deprecated Use prospectNeedsEmailFix — kept for existing imports. */
+export function prospectNeedsContactFix(
+  prospect: Pick<ProspectLike, "contactEmail" | "emailConfidence" | "website">,
+): boolean {
+  return prospectNeedsEmailFix(prospect);
 }
