@@ -3219,8 +3219,9 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       }),
 
     runCalOperator: adminProcedure.mutation(async () => {
-      const { runCalOperatorCycle } = await import("./agents/calOperator");
-      return runCalOperatorCycle();
+      const { executeCalOperatorRun } = await import("./agents/calOperator");
+      // Skip LLM growth brief on manual runs — faster feedback in the UI.
+      return executeCalOperatorRun({ skipGrowthBrief: true, notify: false });
     }),
 
     getLatestOperatorRun: adminProcedure.query(async () => {

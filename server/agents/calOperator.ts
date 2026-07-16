@@ -100,7 +100,9 @@ JSON shape: { "socialPosts": [], "newsletterHooks": [], "whitepaperTopics": [], 
   }
 }
 
-export async function runCalOperatorCycle(): Promise<CalOperatorResult> {
+export async function runCalOperatorCycle(opts?: {
+  skipGrowthBrief?: boolean;
+}): Promise<CalOperatorResult> {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
 
@@ -149,7 +151,9 @@ export async function runCalOperatorCycle(): Promise<CalOperatorResult> {
 
   const workflowAfter = await getCalWorkflowSummary();
   const bounce = await computeBounceStats(db);
-  const growthBrief = await generateCalGrowthBrief(workflowAfter, bounce.rate);
+  const growthBrief = opts?.skipGrowthBrief
+    ? undefined
+    : await generateCalGrowthBrief(workflowAfter, bounce.rate);
 
   console.log(
     `[Cal operator] junk=${junk.dismissed} urls=${websitesResolved} dismissed=${websitesDismissed} ` +
@@ -170,38 +174,35 @@ export async function runCalOperatorCycle(): Promise<CalOperatorResult> {
   };
 }
 
-export async function calOperatorHandler(req: Request, res: Response) {
-  try {
-    const user = await sdk.authenticateRequest(req);
-    if (!user.isCron && user.role !== "admin") {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-  } catch {
-    return res.status(403).json({ error: "Invalid session" });
-  }
-
+/** Persisted operator run — shared by cron handler and admin tRPC button. */
+export async function executeCalOperatorRun(opts?: {
+  skipGrowthBrief?: boolean;
+  notify?: boolean;
+}): Promise<CalOperatorResult & { runId: number; startedAt: Date; completedAt: Date }> {
   const db = await getDb();
-  if (!db) return res.status(503).json({ error: "db unavailable" });
+  if (!db) throw new Error("DB unavailable");
 
+  const startedAt = new Date();
   const [run] = await db
     .insert(salesAgentRuns)
-    .values({ runType: "operator", status: "running" })
+    .values({ runType: "operator", status: "running", startedAt })
     .returning();
 
   try {
-    const result = await runCalOperatorCycle();
+    const result = await runCalOperatorCycle({ skipGrowthBrief: opts?.skipGrowthBrief ?? false });
 
+    const completedAt = new Date();
     await db
       .update(salesAgentRuns)
       .set({
         status: "completed",
-        completedAt: new Date(),
+        completedAt,
         details: result as unknown as Record<string, unknown>,
       })
       .where(eq(salesAgentRuns.id, run.id));
 
     const brief = result.growthBrief;
-    if (brief?.socialPosts?.length) {
+    if (opts?.notify !== false && brief?.socialPosts?.length) {
       await notifyOwner({
         title: "Cal operator run — pipeline + growth ideas",
         content: [
@@ -219,13 +220,35 @@ export async function calOperatorHandler(req: Request, res: Response) {
       }).catch(() => {});
     }
 
-    return res.json({ ok: true, runId: run.id, ...result });
+    return { ...result, runId: run.id, startedAt, completedAt };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     await db
       .update(salesAgentRuns)
       .set({ status: "failed", errorMessage: msg, completedAt: new Date() })
       .where(eq(salesAgentRuns.id, run.id));
+    throw err;
+  }
+}
+
+export async function calOperatorHandler(req: Request, res: Response) {
+  try {
+    const user = await sdk.authenticateRequest(req);
+    if (!user.isCron && user.role !== "admin") {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+  } catch {
+    return res.status(403).json({ error: "Invalid session" });
+  }
+
+  const db = await getDb();
+  if (!db) return res.status(503).json({ error: "db unavailable" });
+
+  try {
+    const result = await executeCalOperatorRun({ notify: true });
+    return res.json({ ok: true, ...result });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
     return res.status(500).json({ ok: false, error: msg });
   }
 }

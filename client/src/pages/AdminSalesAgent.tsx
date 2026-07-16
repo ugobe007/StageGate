@@ -476,7 +476,7 @@ function CalDeliverabilityBanner() {
           Follow-ups to engaged threads still run. New intros resume automatically once the rate drops below the threshold.
         </p>
         <p className="text-zinc-500 text-xs">
-          Bulk intro sends are blocked while the breaker is open. Run quarantine to flag bounced addresses for re-enrichment.
+          Bulk intro sends are blocked while the breaker is open. Cal Operator, Hunter URL/email lookup, redrafting, and manual review still work — only automated new intros are paused. Run quarantine, then enrich contacts with Hunter.
         </p>
       </div>
       <Button
@@ -488,6 +488,100 @@ function CalDeliverabilityBanner() {
       >
         {quarantine.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Quarantine bounced"}
       </Button>
+    </div>
+  );
+}
+
+type CalOperatorReportData = {
+  runId?: number;
+  junkDismissed: number;
+  websitesResolved: number;
+  websitesDismissed: number;
+  emailsEnriched: number;
+  draftsRedrafted: number;
+  draftsGenerated: number;
+  quarantined: number;
+  workflowAfter?: {
+    needsWebsite: number;
+    needsContactFix: number;
+    needsDraft: number;
+    pendingReview: number;
+  };
+  errors?: string[];
+  completedAt?: string | Date;
+};
+
+function CalOperatorReport({
+  report,
+  onDismiss,
+  failedMessage,
+}: {
+  report: CalOperatorReportData | null;
+  onDismiss: () => void;
+  failedMessage?: string | null;
+}) {
+  if (!report && !failedMessage) return null;
+
+  if (failedMessage) {
+    return (
+      <div className="mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/10 text-sm">
+        <p className="text-red-300 font-medium">Cal operator failed</p>
+        <p className="text-red-200/80 text-xs mt-1">{failedMessage}</p>
+      </div>
+    );
+  }
+  if (!report) return null;
+
+  const w = report.workflowAfter;
+  const totalActions =
+    report.junkDismissed +
+    report.websitesResolved +
+    report.websitesDismissed +
+    report.emailsEnriched +
+    report.draftsRedrafted +
+    report.draftsGenerated +
+    report.quarantined;
+
+  return (
+    <div className="mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border border-violet-500/30 bg-violet-950/30 text-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-violet-200 font-medium flex items-center gap-2">
+            <Bot className="w-4 h-4 text-violet-400" />
+            Cal operator report
+            {report.runId != null && (
+              <span className="text-violet-400/60 text-xs font-normal">run #{report.runId}</span>
+            )}
+          </p>
+          {totalActions === 0 ? (
+            <p className="text-zinc-400 text-xs mt-2 leading-relaxed">
+              Cal ran successfully but had nothing new to do in this batch — you may have already resolved URLs manually.
+              Queue: {w?.needsWebsite ?? "—"} need website · {w?.needsContactFix ?? "—"} need email · {w?.needsDraft ?? "—"} need draft · {w?.pendingReview ?? "—"} in review.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 mt-2 text-xs">
+              <span className="text-zinc-300"><strong className="text-white">{report.junkDismissed}</strong> junk dismissed</span>
+              <span className="text-zinc-300"><strong className="text-white">{report.websitesResolved}</strong> URLs resolved</span>
+              <span className="text-zinc-300"><strong className="text-white">{report.websitesDismissed}</strong> no-domain dismissed</span>
+              <span className="text-zinc-300"><strong className="text-white">{report.emailsEnriched}</strong> emails enriched</span>
+              <span className="text-zinc-300"><strong className="text-white">{report.draftsRedrafted}</strong> drafts redrafted</span>
+              <span className="text-zinc-300"><strong className="text-white">{report.draftsGenerated}</strong> drafts created</span>
+              <span className="text-zinc-300"><strong className="text-white">{report.quarantined}</strong> bounced quarantined</span>
+            </div>
+          )}
+          {w && totalActions > 0 && (
+            <p className="text-zinc-500 text-xs mt-2">
+              Queue now: {w.needsWebsite} need website · {w.needsContactFix} need email · {w.needsDraft} need draft · {w.pendingReview} awaiting review
+            </p>
+          )}
+          {report.errors && report.errors.length > 0 && (
+            <p className="text-amber-400/90 text-xs mt-2">{report.errors[0]}</p>
+          )}
+        </div>
+        <button type="button" onClick={onDismiss} className="text-zinc-500 hover:text-zinc-300 text-xs flex-shrink-0">
+          Dismiss
+        </button>
+      </div>
     </div>
   );
 }
@@ -864,6 +958,7 @@ export default function AdminSalesAgent() {
   const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
   const [csvImportResult, setCsvImportResult] = useState<{ imported: number; skipped: number; errors: string[]; total: number; message: string } | null>(null);
+  const [operatorReport, setOperatorReport] = useState<CalOperatorReportData | null>(null);
   // v38: notes editing state
   const [notesValue, setNotesValue] = useState<string>("");
   const [notesSaving, setNotesSaving] = useState(false);
@@ -1044,16 +1139,21 @@ export default function AdminSalesAgent() {
 
   const runCalOperator = trpc.salesAgent.runCalOperator.useMutation({
     onSuccess: (data) => {
-      const d = data as {
-        junkDismissed: number;
-        websitesResolved: number;
-        emailsEnriched: number;
-        draftsGenerated: number;
-        growthBrief?: { socialPosts?: string[] };
-      };
-      toast.success(
-        `Cal operator: ${d.junkDismissed} junk cleared · ${d.websitesResolved} URLs · ${d.emailsEnriched} emails · ${d.draftsGenerated} drafts`,
-      );
+      const d = data as CalOperatorReportData & { completedAt?: Date };
+      setOperatorReport({
+        runId: d.runId,
+        junkDismissed: d.junkDismissed,
+        websitesResolved: d.websitesResolved,
+        websitesDismissed: d.websitesDismissed,
+        emailsEnriched: d.emailsEnriched,
+        draftsRedrafted: d.draftsRedrafted,
+        draftsGenerated: d.draftsGenerated,
+        quarantined: d.quarantined,
+        workflowAfter: d.workflowAfter,
+        errors: d.errors,
+        completedAt: d.completedAt,
+      });
+      toast.success("Cal operator finished — see report below");
       refetchConvs();
       refetchWorkflow();
       utils.salesAgent.getWorkflowSummary.invalidate();
@@ -1065,6 +1165,25 @@ export default function AdminSalesAgent() {
   const { data: lastOperatorRun } = trpc.salesAgent.getLatestOperatorRun.useQuery(undefined, {
     refetchInterval: 120_000,
   });
+
+  useEffect(() => {
+    if (operatorReport || !lastOperatorRun?.details) return;
+    if (lastOperatorRun.status !== "completed") return;
+    const d = lastOperatorRun.details as CalOperatorReportData;
+    setOperatorReport({
+      runId: lastOperatorRun.id,
+      junkDismissed: d.junkDismissed ?? 0,
+      websitesResolved: d.websitesResolved ?? 0,
+      websitesDismissed: d.websitesDismissed ?? 0,
+      emailsEnriched: d.emailsEnriched ?? 0,
+      draftsRedrafted: d.draftsRedrafted ?? 0,
+      draftsGenerated: d.draftsGenerated ?? 0,
+      quarantined: d.quarantined ?? 0,
+      workflowAfter: d.workflowAfter,
+      errors: d.errors,
+      completedAt: lastOperatorRun.completedAt ?? undefined,
+    });
+  }, [lastOperatorRun, operatorReport]);
 
   const resolveWebsites = trpc.salesAgent.resolveWebsitesHunter.useMutation({
     onSuccess: (data) => {
@@ -1242,17 +1361,11 @@ export default function AdminSalesAgent() {
           onStepChange={goWorkflowStep}
           lastRunLabel={lastRun ? timeAgo(lastRun.startedAt) : undefined}
         />
-        {lastOperatorRun?.status === "completed" && lastOperatorRun.details && (
-          <div className="px-6 py-2 border-b border-white/10 bg-violet-950/20 text-xs text-zinc-400">
-            Cal operator last run:{" "}
-            {String((lastOperatorRun.details as { emailsEnriched?: number }).emailsEnriched ?? 0)} emails enriched ·{" "}
-            {String((lastOperatorRun.details as { websitesResolved?: number }).websitesResolved ?? 0)} URLs ·{" "}
-            {String((lastOperatorRun.details as { junkDismissed?: number }).junkDismissed ?? 0)} junk cleared
-            {(lastOperatorRun.details as { growthBrief?: { socialPosts?: string[] } }).growthBrief?.socialPosts?.[0] && (
-              <span className="text-zinc-500"> · Social idea queued in run log</span>
-            )}
-          </div>
-        )}
+        <CalOperatorReport
+          report={operatorReport}
+          onDismiss={() => setOperatorReport(null)}
+          failedMessage={lastOperatorRun?.status === "failed" ? lastOperatorRun.errorMessage : null}
+        />
 
         {/* ── Secondary tabs (review queue + meetings) ── */}
         <div className="flex items-center gap-1 px-6 border-b border-white/10">
