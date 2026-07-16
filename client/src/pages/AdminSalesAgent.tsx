@@ -103,7 +103,7 @@ const WORKFLOW_STEPS: Array<{
   count: (w: WorkflowSummary) => number;
 }> = [
   { id: "contacts", num: 1, label: "Fix contacts", hint: "Find & verify emails", count: (w) => w.needsContactFix },
-  { id: "draft", num: 2, label: "Draft", hint: "Cal writes · Refresh = redraft", count: (w) => w.needsDraft },
+  { id: "draft", num: 2, label: "Draft", hint: "Cal writes · Redraft = rewrite", count: (w) => w.needsDraft },
   { id: "review", num: 3, label: "Review", hint: "Read field notes", count: (w) => w.pendingReview },
   { id: "send", num: 4, label: "Send", hint: "Deliver approved emails", count: (w) => w.pendingReview + w.readyToSend },
   { id: "followup", num: 5, label: "Follow up", hint: "Next touch due", count: (w) => w.followUpDue },
@@ -116,18 +116,7 @@ function parseWorkflowStep(raw: string | null): WorkflowStep {
   return "contacts";
 }
 
-function prospectNeedsContactFix(prospect: {
-  contactEmail?: string | null;
-  emailConfidence?: string | null;
-}) {
-  const email = prospect.contactEmail;
-  const conf = prospect.emailConfidence ?? "";
-  if (!email) return true;
-  if (!conf || ["low", "guessed", "medium"].includes(conf)) return true;
-  return false;
-}
-
-function CalWorkflowBar({
+import { prospectNeedsContactFix } from "@/lib/prospectContact";
   workflow,
   activeStep,
   onStepChange,
@@ -618,7 +607,7 @@ function PendingDraftsTab() {
           <Inbox className="w-10 h-10" />
           <p className="text-sm font-medium text-zinc-500">No pending drafts</p>
           <p className="text-xs text-center max-w-md text-zinc-500">
-            Click <strong className="text-zinc-400">Refresh Cal drafts</strong> to regenerate existing
+            Click <strong className="text-zinc-400">Redraft emails</strong> to regenerate existing
             pending emails with Cal&apos;s latest voice and create drafts for prospects that don&apos;t have one yet.
           </p>
           <Button
@@ -629,7 +618,7 @@ function PendingDraftsTab() {
           >
             {refreshCalDrafts.isPending
               ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Refreshing…</>
-              : <><RefreshCw className="w-3.5 h-3.5" /> Refresh Cal drafts</>}
+              : <><RefreshCw className="w-3.5 h-3.5" /> Redraft emails</>}
           </Button>
         </div>
       </div>
@@ -652,7 +641,7 @@ function PendingDraftsTab() {
           >
             {refreshCalDrafts.isPending
               ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Refreshing…</>
-              : <><RefreshCw className="w-3.5 h-3.5" /> Refresh Cal drafts</>}
+              : <><RefreshCw className="w-3.5 h-3.5" /> Redraft emails</>}
           </Button>
           <Button
             size="sm"
@@ -1041,8 +1030,11 @@ export default function AdminSalesAgent() {
   const enrichHunter = trpc.salesAgent.enrichContactsHunter.useMutation({
     onSuccess: (data) => {
       if (data.enriched > 0) toast.success(data.message);
-      else toast.warning(data.message);
+      else if (data.attempted > 0) toast.warning(data.message);
+      else toast.info(data.message);
       refetchConvs();
+      refetchWorkflow();
+      utils.salesAgent.getWorkflowSummary.invalidate();
     },
     onError: (err) => toast.error(`Find emails failed: ${err.message}`),
   });
@@ -1267,7 +1259,7 @@ export default function AdminSalesAgent() {
                       <><span className="text-white font-medium">{workflow.needsContactFix}</span> need a verified contact before Cal can draft.</>
                     )}
                     {workflowStep === "draft" && (
-                      <><span className="text-white font-medium">{workflow.needsDraft}</span> ready for Cal to draft · <span className="text-zinc-500">Refresh rewrites pending + creates missing (redraft).</span></>
+                      <><span className="text-white font-medium">{workflow.needsDraft}</span> ready for Cal to draft · <span className="text-zinc-500">Redraft rewrites pending + creates missing.</span></>
                     )}
                     {workflowStep === "followup" && (
                       <><span className="text-white font-medium">{workflow.followUpDue}</span> follow-ups due · <span className="text-zinc-500">{workflow.awaitingReply} awaiting your reply.</span></>
@@ -1277,44 +1269,40 @@ export default function AdminSalesAgent() {
                     )}
                   </p>
                   <div className="flex flex-wrap items-center justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-emerald-700 text-emerald-400 hover:bg-emerald-950 gap-1.5"
+                      onClick={() => enrichHunter.mutate({ limit: 25 })}
+                      disabled={enrichHunter.isPending}
+                    >
+                      {enrichHunter.isPending
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding…</>
+                        : <><MousePointerClick className="w-3.5 h-3.5" /> Find emails</>}
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+                      onClick={() => refreshCalDrafts.mutate({})}
+                      disabled={refreshCalDrafts.isPending}
+                    >
+                      {refreshCalDrafts.isPending
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Redrafting…</>
+                        : <><RefreshCw className="w-3.5 h-3.5" /> Redraft emails</>}
+                    </Button>
                     {(workflowStep === "contacts" || workflowStep === "draft" || workflowStep === "followup") && (
                       <>
                         {workflowStep === "contacts" && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-blue-700 text-blue-400 hover:bg-blue-950 gap-1.5"
-                              onClick={() => verifyAllUnverified.mutate()}
-                              disabled={verifyAllUnverified.isPending || verifyProgressOpen}
-                            >
-                              {verifyAllUnverified.isPending || verifyProgressOpen
-                                ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying…</>
-                                : <><ShieldCheck className="w-3.5 h-3.5" /> Verify emails</>}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-emerald-700 text-emerald-400 hover:bg-emerald-950 gap-1.5"
-                              onClick={() => enrichHunter.mutate({ limit: 25 })}
-                              disabled={enrichHunter.isPending}
-                            >
-                              {enrichHunter.isPending
-                                ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding…</>
-                                : <><MousePointerClick className="w-3.5 h-3.5" /> Find emails</>}
-                            </Button>
-                          </>
-                        )}
-                        {workflowStep === "draft" && (
                           <Button
                             size="sm"
-                            className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
-                            onClick={() => refreshCalDrafts.mutate({})}
-                            disabled={refreshCalDrafts.isPending}
+                            variant="outline"
+                            className="border-blue-700 text-blue-400 hover:bg-blue-950 gap-1.5"
+                            onClick={() => verifyAllUnverified.mutate()}
+                            disabled={verifyAllUnverified.isPending || verifyProgressOpen}
                           >
-                            {refreshCalDrafts.isPending
-                              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Refreshing…</>
-                              : <><RefreshCw className="w-3.5 h-3.5" /> Refresh Cal drafts</>}
+                            {verifyAllUnverified.isPending || verifyProgressOpen
+                              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying…</>
+                              : <><ShieldCheck className="w-3.5 h-3.5" /> Verify emails</>}
                           </Button>
                         )}
                         {workflowStep === "followup" && pendingCount > 0 && (

@@ -110,3 +110,15 @@ export function isSendableEmailConfidence(conf: string | null | undefined): bool
   const c = (conf ?? "").trim().toLowerCase();
   return c === "high" || c === "medium" || c === "verified";
 }
+
+/** True when a prospect still needs Hunter / verify before Cal can draft. */
+export function prospectNeedsContactFix(
+  prospect: Pick<ProspectLike, "contactEmail" | "emailConfidence">,
+): boolean {
+  const email = prospect.contactEmail?.trim();
+  if (!email || !email.includes("@")) return true;
+  if (isGuessedRoleInbox(email) || isDeprecatedRoleInbox(email)) return true;
+  const conf = (prospect.emailConfidence ?? "").trim().toLowerCase();
+  if (!isSendableEmailConfidence(conf)) return true;
+  return !selectOutreachEmail(prospect);
+}

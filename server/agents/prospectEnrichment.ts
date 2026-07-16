@@ -19,30 +19,22 @@ import {
   pickBestDomainEmail,
   scoreToConfidence,
 } from "../integrations/hunter.js";
-import { deriveCompanyDomain, isDeprecatedRoleInbox } from "../outreachContacts.js";
-import { isSendableEmailConfidence, selectOutreachEmail } from "../outreachContacts.js";
+import {
+  deriveCompanyDomain,
+  isSendableEmailConfidence,
+  prospectNeedsContactFix,
+  selectOutreachEmail,
+} from "../outreachContacts.js";
 import { isSuppressed, screenRecipient, ensureSuppressionStore } from "../outreachGate.js";
-
-/** Generic mailbox local-parts that are guesses, not real people. */
-const GENERIC_LOCAL_PARTS = new Set([
-  "marketing", "sales", "info", "support", "hello", "contact",
-  "partnerships", "events", "team", "admin", "office",
-]);
 
 type ProspectRow = typeof prospects.$inferSelect;
 type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
 
 /** True when a prospect lacks a real, person-level email worth sending to. */
 export function prospectNeedsEnrichment(
-  p: Pick<ProspectRow, "contactEmail" | "emailConfidence">
+  p: Pick<ProspectRow, "contactEmail" | "emailConfidence">,
 ): boolean {
-  const email = p.contactEmail?.trim();
-  if (!email || !email.includes("@")) return true;
-  if (isDeprecatedRoleInbox(email)) return true;
-  const local = email.split("@")[0]?.toLowerCase() ?? "";
-  if (GENERIC_LOCAL_PARTS.has(local)) return true;
-  const conf = (p.emailConfidence ?? "").toLowerCase();
-  return conf === "" || conf === "low";
+  return prospectNeedsContactFix(p);
 }
 
 /** Pick prospects for a Hunter batch — must match prospectNeedsEnrichment (incl. generic inboxes). */

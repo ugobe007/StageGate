@@ -1317,7 +1317,6 @@ export async function calWeeklyDraftsHandler(req: Request, res: Response) {
   }
 }
 
-const BAD_EMAIL_CONFIDENCE = new Set(["low", "guessed", "medium"]);
 const TERMINAL_WORKFLOW_STATES = new Set([
   "booked",
   "not_interested",
@@ -1386,14 +1385,14 @@ export async function getCalWorkflowSummary(): Promise<CalWorkflowSummary> {
   let needsContactFix = 0;
   let needsDraft = 0;
 
+  const { prospectNeedsContactFix } = await import("../outreachContacts.js");
+
   for (const prospect of allProspects as Array<{
     id: number;
     contactEmail: string | null;
     emailConfidence: string | null;
   }>) {
-    const email = emailHelpers.getProspectOutreachEmail(prospect);
-    const conf = prospect.emailConfidence ?? "";
-    if (!email || BAD_EMAIL_CONFIDENCE.has(conf) || conf === "") {
+    if (prospectNeedsContactFix(prospect)) {
       needsContactFix++;
       continue;
     }
