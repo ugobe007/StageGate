@@ -183,12 +183,26 @@ function SectionBadge({ children, color = MC.azure }: { children: React.ReactNod
   );
 }
 
-function StatusPill({ label, bg, color }: { label: string; bg: string; color: string }) {
+
+function InlineStatus({ label, color }: { label: string; color: string }) {
   return (
-    <span style={{
-      fontSize: ".58rem", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
-      padding: "3px 8px", borderRadius: 4, background: bg, color,
-    }}>{label}</span>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: "0.8125rem", fontWeight: 500, color, whiteSpace: "nowrap" }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
+      {label}
+    </span>
+  );
+}
+
+function SbSection({ kicker, title, desc, kickerColor = MC.azure, extra }: {
+  kicker: string; title: string; desc?: string; kickerColor?: string; extra?: React.ReactNode;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "6px 10px", padding: "0.5rem 0.75rem", borderBottom: `1px solid ${MC.line}` }}>
+      <span style={{ fontFamily: MONO, fontSize: ".625rem", letterSpacing: ".1em", textTransform: "uppercase", color: kickerColor }}>{kicker}</span>
+      <h3 style={{ margin: 0, fontSize: ".875rem", fontWeight: 600 }}>{title}</h3>
+      {desc && <span style={{ fontSize: ".75rem", color: MC.inkDim }}>{desc}</span>}
+      {extra && <span style={{ marginLeft: "auto" }}>{extra}</span>}
+    </div>
   );
 }
 
@@ -271,7 +285,7 @@ function FleetCard({ r, selected, border, cardBg, busy, canControl, onSelect, on
     <div onClick={onSelect} style={{
       background: cardBg,
       border: selected ? `1px solid ${MC.azure}` : border,
-      borderRadius: 12, padding: "14px 16px", cursor: "pointer",
+      borderRadius: 8, padding: "0.75rem", cursor: "pointer",
       boxShadow: selected ? `0 0 0 1px rgba(0,165,218,0.25)` : undefined,
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -288,7 +302,7 @@ function FleetCard({ r, selected, border, cardBg, busy, canControl, onSelect, on
             <div style={{ fontSize: ".68rem", fontFamily: MONO, color: MC.azureLight, marginTop: 2 }}>{r.id} · {r.industry}</div>
           </div>
         </div>
-        <StatusPill label={pill.label} bg={pill.bg} color={pill.color} />
+        <InlineStatus label={pill.label} color={pill.color} />
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: ".72rem", color: MODE_COLOR[mode] }}>
@@ -673,7 +687,7 @@ export default function AdminOrbital() {
   };
 
   return (
-    <div style={{ padding: "1.25rem 1.5rem", paddingLeft: "calc(1.5rem + 56px)", color: MC.ink, background: MC.bg, minHeight: "100vh", height: "100vh", overflowY: "auto", fontFamily: SG }}>
+    <div className="sb-admin" style={{ padding: "1rem 1.25rem", paddingLeft: "calc(1.25rem + 56px)", color: MC.ink, background: MC.bg, minHeight: "100vh", height: "100vh", overflowY: "auto", fontFamily: SG }}>
       <NavRail active={activeSec} onSelect={scrollToSec} />
       <Header facilityName={fleet?.facility?.name ?? null} lastSync={lastSync} onRefresh={refresh} onOnboard={() => setWizardOpen(true)} />
 
@@ -690,47 +704,40 @@ export default function AdminOrbital() {
       <style>{`.orbital-hero{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;margin-top:16px;align-items:start}@media (max-width:1100px){.orbital-hero{grid-template-columns:1fr}.orbital-hero>.orbital-rail{max-width:560px}}`}</style>
       {map && (
         <div className="orbital-hero">
-          <div ref={reg("map")} data-sec="map" style={{ background: cardBg, border, borderRadius: 12, padding: 16, scrollMarginTop: 80 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
-              <div style={{ flex: "1 1 280px", minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <Map size={16} color={MC.azure} />
-                  <h3 style={{ margin: 0, fontSize: ".95rem", fontWeight: 600 }}>Warehouse — Global Spatial Map</h3>
-                  <span style={{ fontSize: ".62rem", fontFamily: MONO, letterSpacing: ".08em", padding: "2px 8px", borderRadius: 4, background: MC.input, color: MC.azureLight, border: `1px solid ${MC.line}` }}>MAP-01</span>
+          <div ref={reg("map")} data-sec="map" style={{ background: cardBg, border, borderRadius: 8, overflow: "hidden", scrollMarginTop: 80 }}>
+            <SbSection kicker="MAP-01" title="Warehouse — Global Spatial Map"
+              desc={`Click a robot to select · Click floor to set a visual waypoint${mapSel ? " · Shift-click to chain waypoints" : ""}`}
+              extra={
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: ".68rem", color: MC.inkDim, alignItems: "center" }}>
+                  <Legend color={MC.green} label="Camera pose" />
+                  <Legend color={MC.azure} label="SLAM self-report" ring />
+                  <Legend color={MC.amber} label="Waypoint" />
                 </div>
-                <p style={{ margin: "6px 0 0", fontSize: ".72rem", color: MC.inkDim, lineHeight: 1.45 }}>
-                  Click a robot to select · Click floor to set a visual waypoint
-                  {mapSel ? " · Shift-click to chain waypoints" : ""}
-                </p>
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: ".68rem", color: MC.inkDim, alignItems: "center" }}>
-                <Legend color={MC.green} label="Camera pose" />
-                <Legend color={MC.azure} label="SLAM self-report" ring />
-                <Legend color={MC.amber} label="Waypoint" />
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              } />
+            <div style={{ padding: "0 0.75rem 0.75rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
                 {mapSel && (() => {
                   const r = fleet?.robots.find((x) => x.id === mapSel);
                   const routing = !!(r?.waypoints?.length);
                   return (
                     <>
-                      <span style={{ fontSize: ".72rem", padding: "3px 10px", borderRadius: 999, background: emeraldAlpha(0.14), color: BRAND.emerald, fontFamily: MONO }}>
+                      <span style={{ fontSize: ".72rem", fontFamily: MONO, color: BRAND.emerald }}>
                         {mapSel}{routing ? " · en route" : ""}
                       </span>
                       {routing && (
-                        <button onClick={() => clearRoute(mapSel)} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>Clear route</button>
+                        <button onClick={() => clearRoute(mapSel)} style={{ fontSize: ".72rem", padding: "2px 6px", borderRadius: 6, border: `1px solid ${MC.line}`, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>Clear route</button>
                       )}
-                      <button onClick={() => setMapSel(null)} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>Deselect</button>
+                      <button onClick={() => setMapSel(null)} style={{ fontSize: ".72rem", padding: "2px 6px", borderRadius: 6, border: `1px solid ${MC.line}`, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>Deselect</button>
                     </>
                   );
                 })()}
               </div>
+              <SequenceBar seq={seq?.data ?? null} robots={fleet?.robots ?? []}
+                secondsLeft={seq ? Math.max(0, Math.round((seq.data.ends_in_s ?? 0) - (nowSec - seq.rcvd))) : 0}
+                border={border} />
+              <WarehouseMapView map={map} robots={fleet?.robots ?? []} selectedId={mapSel}
+                onSelectRobot={setMapSel} onFloorClick={handleFloorClick} hero />
             </div>
-            <SequenceBar seq={seq?.data ?? null} robots={fleet?.robots ?? []}
-              secondsLeft={seq ? Math.max(0, Math.round((seq.data.ends_in_s ?? 0) - (nowSec - seq.rcvd))) : 0}
-              border={border} />
-            <WarehouseMapView map={map} robots={fleet?.robots ?? []} selectedId={mapSel}
-              onSelectRobot={setMapSel} onFloorClick={handleFloorClick} hero />
           </div>
 
           <div className="orbital-rail" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -800,37 +807,31 @@ export default function AdminOrbital() {
         <CapabilitiesPanel robots={fleet?.robots ?? []} oems={oems} vendorHasScope={vendorHasScope} cardBg={cardBg} border={border} />
       </div>
 
-      <div ref={reg("fleet")} data-sec="fleet" style={{ scrollMarginTop: 80, marginTop: 20 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                <SectionBadge color={MC.green}>FLT-{String(allRobots.length).padStart(2, "0")}</SectionBadge>
-                <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 600 }}>Fleet</h3>
+      <div ref={reg("fleet")} data-sec="fleet" style={{ scrollMarginTop: 80, marginTop: 20, background: cardBg, border, borderRadius: 8, overflow: "hidden" }}>
+          <SbSection kicker={`FLT-${String(allRobots.length).padStart(2, "0")}`} title="Fleet" desc={`${allRobots.length} robots · filter by category`} kickerColor={MC.green}
+            extra={
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                {FLEET_CATEGORIES.map((t) => (
+                  <button key={t} onClick={() => setIndustry(t)} style={{
+                    padding: "4px 10px", borderRadius: 6, cursor: "pointer", fontSize: ".78rem", fontWeight: 500,
+                    border: industry === t ? `1px solid ${MC.azure}` : `1px solid ${MC.line}`,
+                    background: industry === t ? "rgba(0,165,218,0.1)" : "transparent",
+                    color: industry === t ? MC.azureLight : MC.inkMut,
+                  }}>{t}</button>
+                ))}
+                {statusFilter && (() => {
+                  const s = STATUS_META.find((x) => x.key === statusFilter);
+                  return (
+                    <button onClick={() => setStatusFilter(null)} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 8px", borderRadius: 6, cursor: "pointer", fontSize: ".74rem", border: `1px solid ${MC.line}`, background: "transparent", color: MC.inkMut }}>
+                      <span style={{ width: 6, height: 6, borderRadius: 999, background: s?.color }} />
+                      {s?.label} <span style={{ color: MC.inkDim }}>✕</span>
+                    </button>
+                  );
+                })()}
               </div>
-              <div style={{ fontSize: ".76rem", color: MC.inkDim }}>{allRobots.length} robots · filter by category</div>
-            </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-              {FLEET_CATEGORIES.map((t) => (
-                <button key={t} onClick={() => setIndustry(t)} style={{
-                  padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: ".78rem", fontWeight: 500,
-                  border: industry === t ? `1px solid ${MC.azure}` : border,
-                  background: industry === t ? "rgba(0,165,218,0.1)" : "transparent",
-                  color: industry === t ? MC.azureLight : MC.inkMut,
-                }}>{t}</button>
-              ))}
-              {statusFilter && (() => {
-                const s = STATUS_META.find((x) => x.key === statusFilter);
-                return (
-                  <button onClick={() => setStatusFilter(null)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 6, cursor: "pointer", fontSize: ".74rem", border, background: MC.input, color: MC.inkMut }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 999, background: s?.color, boxShadow: `0 0 6px ${s?.color}` }} />
-                    {s?.label} <span style={{ color: MC.inkDim }}>✕</span>
-                  </button>
-                );
-              })()}
-            </div>
-          </div>
+            } />
 
-          <style>{`.orbital-fleet-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}@media (max-width:1100px){.orbital-fleet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:720px){.orbital-fleet-grid{grid-template-columns:1fr}}`}</style>
+          <style>{`.orbital-fleet-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0.75rem}@media (max-width:1100px){.orbital-fleet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:720px){.orbital-fleet-grid{grid-template-columns:1fr}}`}</style>
           <div className="orbital-fleet-grid">
             {robots.map((r) => (
               <FleetCard
@@ -1556,33 +1557,21 @@ function CapabilitiesPanel({ robots, oems, vendorHasScope, cardBg, border }: {
     unlocked: { label: "UNLOCKED", bg: "rgba(255,255,255,0.06)", color: MC.inkDim, iconColor: MC.inkDim },
   };
   return (
-    <div style={{ background: cardBg, border, borderRadius: 12, padding: "18px 16px", marginTop: 20 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <SectionBadge>CAP · 08</SectionBadge>
-            <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 600 }}>Control Capabilities</h3>
-          </div>
-          <div style={{ fontSize: ".76rem", color: MC.inkDim }}>Operator control surface — each capability unlocked per-OEM via API scope</div>
-        </div>
-        <div style={{ display: "flex", gap: 14, fontSize: ".68rem", color: MC.inkDim, alignItems: "center" }}>
-          <span><span style={{ color: MC.green }}>●</span> live</span>
-          <span><span style={{ color: MC.azure }}>●</span> monitor</span>
-          <span><span style={{ color: MC.inkDim }}>●</span> unlocked</span>
-        </div>
-      </div>
-      <div className="orbital-cap-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
+    <div style={{ background: cardBg, border, borderRadius: 8, marginTop: 20, overflow: "hidden" }}>
+      <SbSection kicker="CAP · 08" title="Control Capabilities" desc="Operator control surface — each capability unlocked per-OEM via API scope"
+        extra={<span style={{ fontSize: ".68rem", color: MC.inkDim }}><span style={{ color: MC.green }}>●</span> live · <span style={{ color: MC.azure }}>●</span> monitor · <span style={{ color: MC.inkDim }}>●</span> unlocked</span>} />
+      <div className="orbital-cap-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8, padding: "0.75rem" }}>
         {CAPABILITIES.map((cap) => {
           const { key, partners, controllable } = capStatus(cap);
           const st = CAP_STATUS[key];
           return (
-            <div key={cap.scope} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${MC.line}`, borderRadius: 10, padding: "14px 12px" }}>
+            <div key={cap.scope} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${MC.line}`, borderRadius: 8, padding: "0.75rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                 <span style={{
                   width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center",
                   border: `1px solid ${st.iconColor}55`, color: st.iconColor, background: `${st.iconColor}10`,
                 }}>{cap.icon}</span>
-                <StatusPill label={st.label} bg={st.bg} color={st.color} />
+                <InlineStatus label={st.label} color={st.color} />
               </div>
               <div style={{ fontSize: ".84rem", fontWeight: 600 }}>{cap.label}</div>
               <div style={{ fontSize: ".62rem", fontFamily: MONO, color: MC.inkDim, marginTop: 3 }}>{cap.scope}</div>
@@ -1602,28 +1591,18 @@ function CapabilitiesPanel({ robots, oems, vendorHasScope, cardBg, border }: {
 
 function BenchmarkLibraryPanel({ robots, cardBg, border }: { robots: RobotSummary[]; cardBg: string; border: string }) {
   const rows = buildVendorBenchmarks(robots);
-  const thStyle: React.CSSProperties = {
-    padding: "8px 10px", fontWeight: 500, fontSize: ".62rem", letterSpacing: ".08em",
-    textTransform: "uppercase", color: MC.inkDim, borderBottom: `1px solid ${MC.line}`, textAlign: "left",
-  };
   return (
-    <div style={{ background: cardBg, border, borderRadius: 12, padding: "18px 16px", marginTop: 20 }}>
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <SectionBadge color="#a855f7">BNCH</SectionBadge>
-          <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 600 }}>Benchmark Library</h3>
-        </div>
-        <div style={{ fontSize: ".76rem", color: MC.inkDim }}>Cross-vendor drift performance — licensed to OEMs</div>
-      </div>
+    <div style={{ background: cardBg, border, borderRadius: 8, marginTop: 20, overflow: "hidden" }}>
+      <SbSection kicker="BNCH" title="Benchmark Library" desc="Cross-vendor drift performance — licensed to OEMs" kickerColor="#a855f7" />
       {rows.length === 0 ? (
-        <div style={{ color: MC.inkDim, fontSize: ".82rem" }}>No fleet data yet.</div>
+        <div style={{ color: MC.inkDim, fontSize: ".82rem", padding: "0.75rem" }}>No fleet data yet.</div>
       ) : (
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".8rem" }}>
+          <table className="sb-table">
             <thead>
               <tr>
                 {["Vendor", "Robots", "Samples", "Mean drift", "P95 drift", "MTBD", "Recovery", "Env score"].map((h) => (
-                  <th key={h} style={thStyle}>{h}</th>
+                  <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1631,15 +1610,15 @@ function BenchmarkLibraryPanel({ robots, cardBg, border }: { robots: RobotSummar
               {rows.map((row) => {
                 const barColor = envScoreBarColor(row.env);
                 return (
-                  <tr key={row.vendor} style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
-                    <td style={{ padding: "10px", fontWeight: 600 }}>{row.vendor}</td>
-                    <td style={{ padding: "10px", fontFamily: MONO, color: MC.inkMut }}>{row.robots}</td>
-                    <td style={{ padding: "10px", fontFamily: MONO, color: MC.inkMut }}>{row.samples.toLocaleString()}</td>
-                    <td style={{ padding: "10px", fontFamily: MONO, color: MC.azureLight }}>{row.mean.toFixed(3)}</td>
-                    <td style={{ padding: "10px", fontFamily: MONO, color: MC.azureLight }}>{row.p95.toFixed(3)}</td>
-                    <td style={{ padding: "10px", fontFamily: MONO, color: MC.inkMut }}>{row.mtbd}s</td>
-                    <td style={{ padding: "10px", fontFamily: MONO, color: MC.inkMut }}>{row.recovery.toFixed(2)}s</td>
-                    <td style={{ padding: "10px" }}>
+                  <tr key={row.vendor}>
+                    <td style={{ fontWeight: 600 }}>{row.vendor}</td>
+                    <td style={{ fontFamily: MONO, color: MC.inkMut }}>{row.robots}</td>
+                    <td style={{ fontFamily: MONO, color: MC.inkMut }}>{row.samples.toLocaleString()}</td>
+                    <td style={{ fontFamily: MONO, color: MC.azureLight }}>{row.mean.toFixed(3)}</td>
+                    <td style={{ fontFamily: MONO, color: MC.azureLight }}>{row.p95.toFixed(3)}</td>
+                    <td style={{ fontFamily: MONO, color: MC.inkMut }}>{row.mtbd}s</td>
+                    <td style={{ fontFamily: MONO, color: MC.inkMut }}>{row.recovery.toFixed(2)}s</td>
+                    <td>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <div style={{ flex: 1, maxWidth: 72, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
                           <div style={{ width: `${Math.min(100, row.env * 100)}%`, height: "100%", background: barColor, borderRadius: 999 }} />
@@ -1663,63 +1642,44 @@ function OemPartnersPanel({ oems, cardBg, border, onManage, onWizard, sectionRef
   onManage: (o: OEMProfile) => void; onWizard: () => void;
   sectionRef: (id: string) => (el: HTMLDivElement | null) => void;
 }) {
-  const thStyle: React.CSSProperties = {
-    padding: "8px 10px", fontWeight: 500, fontSize: ".62rem", letterSpacing: ".08em",
-    textTransform: "uppercase", color: MC.inkDim, borderBottom: `1px solid ${MC.line}`, textAlign: "left",
-  };
+  const statusLabel = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   return (
-    <div ref={sectionRef("partners")} data-sec="partners" style={{ background: cardBg, border, borderRadius: 12, padding: "18px 16px", marginTop: 20, scrollMarginTop: 80 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <SectionBadge color={MC.amber}>OEM-07</SectionBadge>
-            <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 600 }}>OEM Partners &amp; API Scopes</h3>
-          </div>
-          <div style={{ fontSize: ".76rem", color: MC.inkDim }}>3rd-party robot companies and the control they&apos;ve unlocked for Orbital</div>
-        </div>
-        <button onClick={onWizard} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 7, cursor: "pointer", fontSize: ".74rem", fontWeight: 600, background: "rgba(0,165,218,0.08)", border: `1px solid rgba(0,165,218,0.45)`, color: MC.azureLight }}>
-          <Plus size={13} /> Onboard robot API
-        </button>
-      </div>
+    <div ref={sectionRef("partners")} data-sec="partners" style={{ background: cardBg, border, borderRadius: 8, marginTop: 20, scrollMarginTop: 80, overflow: "hidden" }}>
+      <SbSection kicker="OEM-07" title="OEM Partners & API Scopes" desc="3rd-party robot companies and the control they've unlocked for Orbital" kickerColor={MC.amber}
+        extra={
+          <button onClick={onWizard} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 6, cursor: "pointer", fontSize: ".74rem", fontWeight: 500, background: "transparent", border: `1px solid ${MC.line}`, color: MC.azureLight }}>
+            <Plus size={13} /> Onboard robot API
+          </button>
+        } />
       {oems.length === 0 ? (
-        <div style={{ color: MC.inkDim, fontSize: ".82rem" }}>
+        <div style={{ color: MC.inkDim, fontSize: ".82rem", padding: "0.75rem" }}>
           No OEM partners registered yet. Use <button onClick={onWizard} style={{ color: MC.azure, background: "transparent", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Onboard robot API</button> to register one.
         </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".8rem" }}>
+          <table className="sb-table">
             <thead>
               <tr>
                 {["Company", "Vendor", "Transport", "Status", "Granted / Ceiling", "Readiness", ""].map((h) => (
-                  <th key={h} style={thStyle}>{h}</th>
+                  <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {oems.map((o) => (
-                <tr key={o.oem_id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                  <td style={{ padding: "10px", fontWeight: 600 }}>{o.company_name}</td>
-                  <td style={{ padding: "10px", color: MC.inkMut }}>{o.vendor}</td>
-                  <td style={{ padding: "10px" }}>
-                    <span style={{ fontSize: ".62rem", fontFamily: MONO, padding: "3px 7px", borderRadius: 4, background: "rgba(0,165,218,0.12)", color: MC.azureLight, border: `1px solid rgba(0,165,218,0.25)` }}>{o.transport}</span>
+                <tr key={o.oem_id}>
+                  <td style={{ fontWeight: 600 }}>{o.company_name}</td>
+                  <td style={{ color: MC.inkMut }}>{o.vendor}</td>
+                  <td><span style={{ fontFamily: MONO, fontSize: ".75rem", color: MC.azureLight }}>{o.transport}</span></td>
+                  <td><InlineStatus label={statusLabel(o.status)} color={OEM_STATUS_COLOR[o.status]} /></td>
+                  <td style={{ fontFamily: MONO, color: MC.green, fontWeight: 600 }}>{o.granted_scopes.length} / {o.ceiling_scopes.length}</td>
+                  <td style={{ fontSize: ".8125rem" }}>
+                    <span style={{ color: o.control_ready ? MC.amber : MC.inkDim }}>control</span>
+                    {" · "}
+                    <span style={{ color: o.monitor_ready ? MC.azureLight : MC.inkDim }}>monitor</span>
                   </td>
-                  <td style={{ padding: "10px" }}>
-                    <StatusPill
-                      label={o.status}
-                      bg={o.status === "active" ? "rgba(34,197,94,0.14)" : o.status === "pending" ? "rgba(245,158,11,0.14)" : "rgba(229,72,77,0.14)"}
-                      color={OEM_STATUS_COLOR[o.status]}
-                    />
-                  </td>
-                  <td style={{ padding: "10px", fontFamily: MONO, color: MC.green, fontWeight: 600 }}>{o.granted_scopes.length} / {o.ceiling_scopes.length}</td>
-                  <td style={{ padding: "10px" }}>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {o.control_ready && <StatusPill label="control" bg="rgba(245,158,11,0.14)" color={MC.amber} />}
-                      {o.monitor_ready && <StatusPill label="monitor" bg="rgba(0,165,218,0.12)" color={MC.azureLight} />}
-                      {!o.control_ready && !o.monitor_ready && <span style={{ color: MC.inkDim, fontSize: ".72rem" }}>—</span>}
-                    </div>
-                  </td>
-                  <td style={{ padding: "10px", textAlign: "right" }}>
-                    <button onClick={() => onManage(o)} style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid rgba(0,165,218,0.35)`, background: "transparent", color: MC.azureLight, cursor: "pointer", fontSize: ".74rem" }}>Manage</button>
+                  <td style={{ textAlign: "right" }}>
+                    <button onClick={() => onManage(o)} style={{ padding: "2px 8px", borderRadius: 6, border: `1px solid ${MC.line}`, background: "transparent", color: MC.azureLight, cursor: "pointer", fontSize: ".74rem" }}>Manage</button>
                   </td>
                 </tr>
               ))}
@@ -1820,16 +1780,16 @@ function Overview({ metrics, stateCounts, statusFilter, onToggle, cardBg, border
   ];
   const present = STATUS_META.filter((s) => (stateCounts[s.key] ?? 0) > 0);
   return (
-    <div style={{ background: cardBg, border, borderRadius: 12, padding: 14, display: "grid", gridTemplateColumns: "minmax(0, 360px) minmax(0, 1fr)", gap: 14, alignItems: "stretch" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+    <div style={{ background: cardBg, border, borderRadius: 8, overflow: "hidden", display: "grid", gridTemplateColumns: "minmax(0, 360px) minmax(0, 1fr)", gap: 0, alignItems: "stretch" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, borderRight: border }}>
         {tiles.map((t) => (
-          <div key={t.label} style={{ background: MC.panel, border, borderRadius: 9, padding: "10px 12px" }}>
+          <div key={t.label} style={{ padding: "0.625rem 0.75rem", borderBottom: border, borderRight: border }}>
             <div style={{ fontSize: ".64rem", textTransform: "uppercase", letterSpacing: ".06em", color: MC.inkDim }}>{t.label}</div>
-            <div style={{ fontSize: "1.25rem", fontWeight: 700, marginTop: 3, color: t.color, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{t.value}</div>
+            <div style={{ fontSize: "1.1rem", fontWeight: 700, marginTop: 2, color: t.color, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{t.value}</div>
           </div>
         ))}
       </div>
-      <div style={{ background: MC.panel, border, borderRadius: 9, padding: "10px 12px", display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "0.625rem 0.75rem", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
           <Activity size={14} color={MC.azure} />
           <span style={{ fontSize: ".64rem", textTransform: "uppercase", letterSpacing: ".06em", color: MC.inkDim }}>Fleet status</span>
@@ -1847,11 +1807,11 @@ function Overview({ metrics, stateCounts, statusFilter, onToggle, cardBg, border
             const on = statusFilter === s.key;
             return (
               <button key={s.key} onClick={() => onToggle(s.key)} disabled={n === 0}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 9px", borderRadius: 999, cursor: n ? "pointer" : "default",
-                  border: `1px solid ${on ? s.color : MC.line}`, background: on ? `${s.color}22` : "transparent",
-                  color: n ? MC.inkMut : MC.inkDim, fontSize: ".72rem", opacity: n ? 1 : 0.45 }}>
-                <span style={{ width: 7, height: 7, borderRadius: 999, background: s.color }} />
-                {s.label} <span style={{ fontFamily: MONO, color: MC.ink }}>{n}</span>
+                style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 6px", borderRadius: 4, cursor: n ? "pointer" : "default",
+                  border: "none", background: "transparent",
+                  color: n ? (on ? s.color : MC.inkMut) : MC.inkDim, fontSize: ".8125rem", fontWeight: on ? 600 : 500, opacity: n ? 1 : 0.45 }}>
+                <span style={{ width: 6, height: 6, borderRadius: 999, background: s.color }} />
+                {s.label} <span style={{ fontFamily: MONO }}>{n}</span>
               </button>
             );
           })}
