@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { AdminPage } from "@/lib/adminTheme";
+import { prospectNeedsContactFix } from "@/lib/prospectContact";
 import {
   Bot, Mail, Clock, MessageSquare,
   Zap, Send, RefreshCw, Eye, Users,
@@ -116,7 +117,7 @@ function parseWorkflowStep(raw: string | null): WorkflowStep {
   return "contacts";
 }
 
-import { prospectNeedsContactFix } from "@/lib/prospectContact";
+function CalWorkflowBar({
   workflow,
   activeStep,
   onStepChange,
