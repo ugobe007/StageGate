@@ -84,23 +84,25 @@ function timeAgo(date: Date | string | null | undefined) {
 
 const TERMINAL = ["booked", "not_interested", "converted", "responded", "scheduling"];
 
-/** Cal command-center — medium grey base, raised slate panels, high-contrast text. */
+/** Cal command-center — darker slate base, readable type, page scrolls naturally. */
 const CAL = {
-  page: "bg-gradient-to-b from-slate-300 via-slate-300 to-slate-400 text-slate-950",
-  header: "bg-slate-100 border-slate-400/70 shadow-md",
-  card: "bg-slate-100 border-slate-400/60 shadow-sm",
-  cardMuted: "bg-slate-200/90 border-slate-400/50",
-  panel: "bg-slate-100 border-slate-400/60",
-  text: "text-slate-950",
-  textMuted: "text-slate-700",
-  textDim: "text-slate-600",
-  border: "border-slate-400/60",
-  stepActive: "bg-amber-100 border-amber-500/70 ring-1 ring-amber-400/50 shadow-sm",
-  stepIdle: "bg-slate-100 border-slate-400/70 hover:border-slate-500/80 hover:shadow-sm",
-  listHover: "hover:bg-slate-200",
-  listSelected: "bg-amber-100 border-l-amber-600",
-  listRow: "bg-slate-100/95",
-  tabBar: "bg-slate-200/90",
+  page: "bg-gradient-to-b from-slate-700 via-slate-700 to-slate-800 text-slate-100",
+  header: "bg-slate-800/95 border-slate-600 shadow-lg",
+  card: "bg-slate-800/95 border-slate-600 shadow-md",
+  cardMuted: "bg-slate-800/80 border-slate-600/80",
+  panel: "bg-slate-800 border-slate-600",
+  text: "text-slate-50",
+  textMuted: "text-slate-300",
+  textDim: "text-slate-400",
+  border: "border-slate-600",
+  stepActive: "bg-amber-950/50 border-amber-500/70 ring-1 ring-amber-500/40 shadow-sm",
+  stepIdle: "bg-slate-800 border-slate-600 hover:border-slate-500 hover:bg-slate-750",
+  listHover: "hover:bg-slate-700/90",
+  listSelected: "bg-slate-700/95 border-l-amber-400",
+  listRow: "bg-slate-800/60",
+  tabBar: "bg-slate-800/95",
+  body: "text-[15px] leading-relaxed antialiased",
+  chip: "text-sm font-medium px-2.5 py-1 rounded-md",
 } as const;
 
 type WorkflowStep = "contacts" | "draft" | "review" | "send" | "followup";
@@ -154,12 +156,12 @@ function CalWorkflowBar({
   return (
     <div className={`px-6 pt-4 pb-3 border-b ${CAL.border} ${CAL.header}`}>
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-          <Bot className="w-5 h-5 text-amber-700" />
+        <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+          <Bot className="w-5 h-5 text-amber-400" />
         </div>
         <div className="min-w-0">
-          <h1 className={`text-base font-semibold ${CAL.text} leading-tight`}>Cal — Outreach workflow</h1>
-          <p className={`text-xs ${CAL.textDim} truncate`}>
+          <h1 className={`text-xl font-semibold ${CAL.text} leading-snug`}>Cal — Outreach workflow</h1>
+          <p className={`text-sm ${CAL.textDim} truncate leading-relaxed`}>
             StageGate · show logistics · onstage.bot — OEMs & event companies
             {lastRunLabel ? ` · Last run ${lastRunLabel}` : ""}
             {suggested && suggested !== activeStep
@@ -183,26 +185,26 @@ function CalWorkflowBar({
                   isActive
                     ? CAL.stepActive
                     : isSuggested
-                      ? "bg-amber-100/80 border-amber-400/60 hover:border-amber-500/70"
+                      ? "bg-amber-950/30 border-amber-600/50 hover:border-amber-500/60"
                       : CAL.stepIdle
                 }`}
               >
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className={`text-[10px] font-bold uppercase tracking-wide ${isActive ? "text-amber-800" : "text-slate-500"}`}>
+                  <span className={`text-xs font-bold uppercase tracking-wide ${isActive ? "text-amber-400" : "text-slate-500"}`}>
                     {step.num}
                   </span>
-                  <span className={`text-xs font-semibold ${isActive ? CAL.text : "text-slate-700"}`}>
+                  <span className={`text-sm font-semibold ${isActive ? CAL.text : "text-slate-200"}`}>
                     {step.label}
                   </span>
                   {count > 0 && (
-                    <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                      isActive ? "bg-amber-600 text-white" : "bg-slate-300 text-slate-800"
+                    <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${
+                      isActive ? "bg-amber-500 text-slate-950" : "bg-slate-600 text-slate-100"
                     }`}>
                       {count}
                     </span>
                   )}
                 </div>
-                <p className={`text-[10px] ${CAL.textDim} leading-snug`}>{step.hint}</p>
+                <p className={`text-xs ${CAL.textDim} leading-relaxed`}>{step.hint}</p>
               </button>
               {i < WORKFLOW_STEPS.length - 1 && (
                 <ChevronRight className="w-4 h-4 text-slate-300 mx-0.5 flex-shrink-0 hidden sm:block" />
@@ -254,29 +256,29 @@ function CalPipelineStatusStrip({
     <div className={`mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border ${CAL.border} ${CAL.card}`}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className={`text-xs font-semibold uppercase tracking-wide ${CAL.textDim} mb-2`}>Pipeline status</p>
-          <div className="flex flex-wrap gap-2 mb-2">
+          <p className={`text-sm font-semibold uppercase tracking-wide ${CAL.textMuted} mb-2`}>Pipeline status</p>
+          <div className="flex flex-wrap gap-2 mb-3">
             {[
-              { label: "No website", n: workflow.needsWebsite, color: "bg-slate-200 text-slate-800 border border-slate-400/40" },
-              { label: "Need email", n: workflow.needsContactFix, color: "bg-sky-200/80 text-sky-950 border border-sky-400/40" },
-              { label: "Need draft", n: workflow.needsDraft, color: "bg-amber-200/80 text-amber-950 border border-amber-400/40" },
-              { label: "In review", n: workflow.pendingReview, color: "bg-violet-200/80 text-violet-950 border border-violet-400/40" },
-              { label: "Follow-up due", n: workflow.followUpDue, color: "bg-emerald-200/80 text-emerald-950 border border-emerald-400/40" },
-              { label: "Awaiting reply", n: workflow.awaitingReply, color: "bg-teal-200/80 text-teal-950 border border-teal-400/40" },
+              { label: "No website", n: workflow.needsWebsite, color: "bg-slate-600 text-slate-100 border border-slate-500" },
+              { label: "Need email", n: workflow.needsContactFix, color: "bg-sky-900/60 text-sky-100 border border-sky-600/50" },
+              { label: "Need draft", n: workflow.needsDraft, color: "bg-amber-900/50 text-amber-100 border border-amber-600/50" },
+              { label: "In review", n: workflow.pendingReview, color: "bg-violet-900/50 text-violet-100 border border-violet-600/50" },
+              { label: "Follow-up due", n: workflow.followUpDue, color: "bg-emerald-900/50 text-emerald-100 border border-emerald-600/50" },
+              { label: "Awaiting reply", n: workflow.awaitingReply, color: "bg-teal-900/50 text-teal-100 border border-teal-600/50" },
             ].map((m) => (
-              <span key={m.label} className={`text-[11px] font-medium px-2 py-1 rounded-md ${m.color}`}>
+              <span key={m.label} className={`${CAL.chip} ${m.color}`}>
                 {m.label}: <strong>{m.n}</strong>
               </span>
             ))}
           </div>
-          <p className={`text-sm ${CAL.text}`}>
-            <span className="font-medium">You are on step {stepMeta?.num ?? "—"} — {stepMeta?.label ?? activeStep}.</span>
+          <p className={`text-base ${CAL.text} leading-relaxed`}>
+            <span className="font-semibold">You are on step {stepMeta?.num ?? "—"} — {stepMeta?.label ?? activeStep}.</span>
             {nextActions.length > 0 && (
               <span className={CAL.textMuted}> Queue: {nextActions.join(" · ")}.</span>
             )}
           </p>
-          <p className={`text-xs ${CAL.textDim} mt-1 flex items-center gap-1.5`}>
-            {(calRunning || relayRunning) && <Loader2 className="w-3 h-3 animate-spin text-amber-600" />}
+          <p className={`text-sm ${CAL.textDim} mt-1.5 flex items-center gap-1.5 leading-relaxed`}>
+            {(calRunning || relayRunning) && <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />}
             {workingOn}
             {lastRelayAt ? ` · Relay ${lastRelayAt}` : ""}
             {lastCalAt ? ` · Cal ${lastCalAt}` : ""}
@@ -284,11 +286,11 @@ function CalPipelineStatusStrip({
         </div>
         <div className="flex flex-col gap-1.5 text-right flex-shrink-0">
           {deliverability?.paused ? (
-            <span className="text-xs font-medium text-amber-800 bg-amber-100 px-2 py-1 rounded-md">
+            <span className="text-sm font-medium text-amber-200 bg-amber-950/60 border border-amber-700/50 px-2.5 py-1 rounded-md">
               Intros paused · {(deliverability.rate * 100).toFixed(1)}% bounce · follow-ups OK
             </span>
           ) : (
-            <span className="text-xs font-medium text-emerald-800 bg-emerald-50 px-2 py-1 rounded-md">
+            <span className="text-sm font-medium text-emerald-200 bg-emerald-950/50 border border-emerald-700/40 px-2.5 py-1 rounded-md">
               Deliverability OK · intros allowed
             </span>
           )}
@@ -561,27 +563,27 @@ function CalDeliverabilityBanner({
   return (
     <div className={`flex items-start gap-3 px-4 py-3 rounded-lg border text-sm mb-4 ${
       stats.paused
-        ? "bg-amber-100 border-amber-500/50"
-        : "bg-yellow-100 border-yellow-500/40"
+        ? "bg-amber-950/50 border-amber-600/50"
+        : "bg-yellow-950/40 border-yellow-600/40"
     }`}>
-      <ShieldAlert className={`w-4 h-4 flex-shrink-0 mt-0.5 ${stats.paused ? "text-amber-800" : "text-yellow-800"}`} />
+      <ShieldAlert className={`w-4 h-4 flex-shrink-0 mt-0.5 ${stats.paused ? "text-amber-400" : "text-yellow-400"}`} />
       <div className="flex-1 min-w-0 space-y-1">
         {stats.paused ? (
-          <p className="text-amber-900 font-medium">
+          <p className="text-amber-100 font-medium leading-relaxed">
             New intro sends paused — follow-ups and scheduling replies still go out automatically.
           </p>
         ) : (
-          <p className="text-yellow-900 font-medium">Deliverability warning — bounce rate elevated.</p>
+          <p className="text-yellow-100 font-medium leading-relaxed">Deliverability warning — bounce rate elevated.</p>
         )}
-        <p className="text-slate-600 text-xs leading-relaxed">
+        <p className="text-slate-300 text-sm leading-relaxed">
           Trailing {stats.windowDays}d: {stats.bounced}/{stats.sent} bounced ({ratePct}%), threshold {thresholdPct}%.
           Intros resume automatically when the trailing rate drops. Relay + Cal quarantine bad addresses and Hunter-recover replacements on every cycle.
         </p>
-        <p className="text-slate-500 text-xs flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+        <p className="text-slate-400 text-sm flex items-center gap-1.5 leading-relaxed">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
           Quarantine + Hunter recovery runs automatically in Cal Operator and Relay — no manual step needed.
           {(quarantineRecovered ?? 0) > 0 && (
-            <span className="text-emerald-700">Last run recovered {quarantineRecovered} contact(s).</span>
+            <span className="text-emerald-300">Last run recovered {quarantineRecovered} contact(s).</span>
           )}
         </p>
       </div>
@@ -1569,8 +1571,8 @@ export default function AdminSalesAgent() {
 
   return (
     <>
-      <AdminPage fullHeight noPadding maxWidth="none" surface="light">
-      <div className={`flex flex-col h-full ${CAL.page} overflow-hidden`}>
+      <AdminPage noPadding maxWidth="none" surface="light">
+      <div className={`flex flex-col w-full pb-10 ${CAL.page} ${CAL.body}`}>
 
         <CalWorkflowBar
           workflow={workflow}
@@ -1624,8 +1626,8 @@ export default function AdminSalesAgent() {
             onClick={() => goWorkflowStep(workflowStep === "review" || workflowStep === "send" ? workflowStep : "contacts")}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border-b-2 -mb-px ${
               activeTab === "pipeline"
-                ? "border-amber-500 text-amber-900"
-                : `border-transparent ${CAL.textDim} hover:text-slate-700`
+                ? "border-amber-400 text-amber-300"
+                : `border-transparent ${CAL.textDim} hover:text-slate-200`
             }`}
           >
             <Users className="w-4 h-4" /> Contacts & pipeline
@@ -1634,8 +1636,8 @@ export default function AdminSalesAgent() {
             onClick={() => goWorkflowStep("review")}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border-b-2 -mb-px ${
               activeTab === "drafts"
-                ? "border-amber-500 text-amber-900"
-                : `border-transparent ${CAL.textDim} hover:text-slate-700`
+                ? "border-amber-400 text-amber-300"
+                : `border-transparent ${CAL.textDim} hover:text-slate-200`
             }`}
           >
             <Inbox className="w-4 h-4" /> Review & send
@@ -1649,13 +1651,13 @@ export default function AdminSalesAgent() {
             onClick={() => setActiveTab("calendar" as "pipeline" | "drafts")}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border-b-2 -mb-px ${
               activeTab === ("calendar" as string)
-                ? "border-emerald-500 text-emerald-900"
-                : `border-transparent ${CAL.textDim} hover:text-slate-700`
+                ? "border-emerald-400 text-emerald-300"
+                : `border-transparent ${CAL.textDim} hover:text-slate-200`
             }`}
           >
             <Calendar className="w-4 h-4" /> Meetings
             {upcomingEvents.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold text-emerald-700 bg-emerald-100">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold text-emerald-950 bg-emerald-400">
                 {upcomingEvents.length}
               </span>
             )}
@@ -1664,9 +1666,9 @@ export default function AdminSalesAgent() {
 
         {/* ── Pipeline tab ── */}
         {activeTab === "pipeline" && (
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-col xl:flex-row xl:items-start">
             {/* Left panel */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col min-w-0">
               {/* Step actions */}
               <div className={`px-6 py-4 border-b ${CAL.border} ${CAL.cardMuted}`}>
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -1674,25 +1676,25 @@ export default function AdminSalesAgent() {
                     {workflowStep === "contacts" && (
                       <>
                         Cal auto-resolves contacts via Hunter:{" "}
-                        <span className="font-medium text-slate-800">{workflow.needsWebsite}</span> URL lookups ·{" "}
-                        <span className="font-medium text-slate-800">{workflow.needsContactFix}</span> email enrichments queued.
-                        <span className={`block text-xs ${CAL.textDim} mt-1`}>
+                        <span className="font-semibold text-slate-100">{workflow.needsWebsite}</span> URL lookups ·{" "}
+                        <span className="font-semibold text-slate-100">{workflow.needsContactFix}</span> email enrichments queued.
+                        <span className={`block text-sm ${CAL.textDim} mt-1.5 leading-relaxed`}>
                           Relay + Cal Operator run this on schedule — manual buttons below are overrides only.
                         </span>
                       </>
                     )}
                     {workflowStep === "draft" && (
-                      <><span className="font-medium text-slate-800">{workflow.needsDraft}</span> ready for Cal to draft · <span className={CAL.textDim}>Redraft rewrites pending + creates missing.</span></>
+                      <><span className="font-semibold text-slate-100">{workflow.needsDraft}</span> ready for Cal to draft · <span className={CAL.textDim}>Redraft rewrites pending + creates missing.</span></>
                     )}
                     {workflowStep === "followup" && (
-                      <><span className="font-medium text-slate-800">{workflow.followUpDue}</span> follow-ups due · <span className={CAL.textDim}>{workflow.awaitingReply} awaiting reply (scheduling auto-sends).</span></>
+                      <><span className="font-semibold text-slate-100">{workflow.followUpDue}</span> follow-ups due · <span className={CAL.textDim}>{workflow.awaitingReply} awaiting reply (scheduling auto-sends).</span></>
                     )}
                     {(workflowStep === "review" || workflowStep === "send") && (
                       <>Use the <button type="button" className="text-amber-400 underline" onClick={() => goWorkflowStep("review")}>Review & send</button> tab.</>
                     )}
                   </p>
                   <div className="flex flex-wrap items-center justify-end gap-2">
-                    <span className={`text-[10px] uppercase tracking-wide ${CAL.textDim} w-full sm:w-auto text-right`}>Manual override</span>
+                    <span className={`text-xs uppercase tracking-wide ${CAL.textDim} w-full sm:w-auto text-right`}>Manual override</span>
                     <Button
                       size="sm"
                       variant="outline"
@@ -1798,14 +1800,14 @@ export default function AdminSalesAgent() {
               {/* Filter bar — workflow-focused only */}
               <div className={`px-6 py-3 border-b ${CAL.border} ${CAL.cardMuted} flex flex-col gap-2`}>
                 {workflowStep === "contacts" && filterStage === "needs_email" && workflow.needsContactFix > 0 && (
-                  <p className="text-xs text-sky-950 bg-sky-200/70 border border-sky-500/40 rounded-md px-3 py-2">
+                  <p className="text-xs text-sky-100 bg-sky-950/40 border border-sky-700/50 rounded-md px-3 py-2.5 leading-relaxed">
                     Cal resolves these automatically: Hunter domain lookup first, then person-level email. Queue shrinks after each Relay / Cal Operator run.
                   </p>
                 )}
                 <div className="flex items-center gap-2 overflow-x-auto">
                 <button
                   onClick={() => setFilterStage("all")}
-                  className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "all" ? "bg-slate-600 text-white" : `${CAL.textDim} hover:text-slate-900`}`}
+                  className={`px-3 py-1.5 rounded text-sm font-medium transition-colors whitespace-nowrap ${filterStage === "all" ? "bg-slate-500 text-white" : `${CAL.textDim} hover:text-slate-100 hover:bg-slate-700/60`}`}
                 >
                   All ({conversations.length})
                 </button>
@@ -1813,13 +1815,13 @@ export default function AdminSalesAgent() {
                   <>
                   <button
                     onClick={() => setFilterStage("needs_website")}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "needs_website" ? "bg-slate-400 text-slate-950" : `${CAL.textDim} hover:text-slate-900`}`}
+                    className={`px-3 py-1.5 rounded text-sm font-medium transition-colors whitespace-nowrap ${filterStage === "needs_website" ? "bg-slate-500 text-white" : `${CAL.textDim} hover:text-slate-100 hover:bg-slate-700/60`}`}
                   >
                     No website ({workflow.needsWebsite})
                   </button>
                   <button
                     onClick={() => setFilterStage("needs_email")}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "needs_email" ? "bg-sky-400 text-sky-950" : `${CAL.textDim} hover:text-slate-900`}`}
+                    className={`px-3 py-1.5 rounded text-sm font-medium transition-colors whitespace-nowrap ${filterStage === "needs_email" ? "bg-sky-600 text-white" : `${CAL.textDim} hover:text-slate-100 hover:bg-slate-700/60`}`}
                   >
                     Cal resolving email ({workflow.needsContactFix})
                   </button>
@@ -1829,13 +1831,13 @@ export default function AdminSalesAgent() {
                   <>
                     <button
                       onClick={() => setFilterStage("ready")}
-                      className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "ready" ? "bg-amber-300/80 text-amber-950" : `${CAL.textDim} hover:text-slate-800`}`}
+                      className={`px-3 py-1.5 rounded text-sm font-medium transition-colors whitespace-nowrap ${filterStage === "ready" ? "bg-amber-600 text-white" : `${CAL.textDim} hover:text-slate-100 hover:bg-slate-700/60`}`}
                     >
                       Due now ({workflow.followUpDue})
                     </button>
                     <button
                       onClick={() => setFilterStage("awaiting")}
-                      className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "awaiting" ? "bg-emerald-300/80 text-emerald-950" : `${CAL.textDim} hover:text-slate-800`}`}
+                      className={`px-3 py-1.5 rounded text-sm font-medium transition-colors whitespace-nowrap ${filterStage === "awaiting" ? "bg-emerald-600 text-white" : `${CAL.textDim} hover:text-slate-100 hover:bg-slate-700/60`}`}
                     >
                       Awaiting reply ({workflow.awaitingReply})
                     </button>
@@ -1845,7 +1847,8 @@ export default function AdminSalesAgent() {
               </div>
 
               {/* Conversation list */}
-              <div className={`flex-1 overflow-y-auto ${CAL.page}`}>
+              {/* Conversation list — grows with page; main layout scrolls */}
+              <div>
                 {convsLoading ? (
                   <div className={`flex items-center justify-center h-32 ${CAL.textDim}`}>
                     <RefreshCw className="w-4 h-4 animate-spin mr-2" /> Loading…
@@ -1876,7 +1879,7 @@ export default function AdminSalesAgent() {
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
-                                <span className={`font-medium text-sm ${CAL.text} truncate`}>{prospect.company}</span>
+                                <span className={`font-medium text-base ${CAL.text} truncate`}>{prospect.company}</span>
                                 {isReady && <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
                                 {prospect.robotCategory === "heavy_industrial" && (
                                   <Factory className="w-3 h-3 text-orange-400 flex-shrink-0" />
@@ -1894,14 +1897,14 @@ export default function AdminSalesAgent() {
                                   </span>
                                 )}
                               </div>
-                              <div className={`flex items-center gap-2 text-xs ${CAL.textDim}`}>
+                              <div className={`flex items-center gap-2 text-sm ${CAL.textDim} leading-relaxed`}>
                                 {prospect.contactName && <span className="truncate">{prospect.contactName}</span>}
                                 {prospect.robotType && <span className={`truncate ${CAL.textMuted}`}>{prospect.robotType}</span>}
                               </div>
                             </div>
                             <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
                               {stageBadge(conv.state ?? "discovery")}
-                              <span className={`text-xs ${isReady ? "text-amber-700 font-semibold" : CAL.textMuted}`}>
+                              <span className={`text-sm ${isReady ? "text-amber-400 font-semibold" : CAL.textMuted}`}>
                                 {readyLabel ?? timeAgo(conv.lastActivityAt)}
                               </span>
                             </div>
@@ -1915,13 +1918,13 @@ export default function AdminSalesAgent() {
             </div>
 
             {/* Right panel — detail */}
-            <div className={`w-96 border-l ${CAL.border} ${CAL.panel} flex flex-col overflow-hidden shadow-inner`}>
+            <div className={`w-full xl:w-96 xl:sticky xl:top-4 xl:self-start xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto border-t xl:border-t-0 xl:border-l ${CAL.border} ${CAL.panel} flex flex-col shadow-lg`}>
               {selectedConv ? (
                 <>
                   <div className={`px-5 pt-5 pb-4 border-b ${CAL.border}`}>
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h2 className={`font-semibold ${CAL.text}`}>{selectedConv.prospect.company}</h2>
+                        <h2 className={`text-lg font-semibold ${CAL.text}`}>{selectedConv.prospect.company}</h2>
                         {selectedConv.prospect.contactName && (
                           <p className={`text-sm ${CAL.textMuted}`}>{selectedConv.prospect.contactName}</p>
                         )}
@@ -1934,7 +1937,7 @@ export default function AdminSalesAgent() {
                         <span className={`text-xs ${CAL.textDim}`}>{selectedConv.conv.followUpCount ?? 0} emails sent</span>
                       </div>
                     </div>
-                    <div className={`space-y-1 text-xs ${CAL.textDim}`}>
+                    <div className={`space-y-1.5 text-sm ${CAL.textDim} leading-relaxed`}>
                       {selectedConv.prospect.contactEmail && (
                         <div className="flex items-center gap-1.5">
                           <Mail className="w-3 h-3" />
@@ -2103,12 +2106,12 @@ export default function AdminSalesAgent() {
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                  <div className="px-5 py-4 space-y-4">
                     {/* v38: Notes section */}
                     <div>
-                      <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">Notes</h3>
+                      <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-2">Notes</h3>
                       <Textarea
-                        className="w-full text-xs bg-[#24272e] border-white/10 text-zinc-300 placeholder:text-zinc-600 resize-none min-h-[72px]"
+                        className="w-full text-sm bg-[#24272e] border-white/10 text-zinc-200 placeholder:text-zinc-500 resize-none min-h-[80px] leading-relaxed"
                         placeholder="Add notes about this prospect… (auto-saves on blur)"
                         value={notesValue}
                         onChange={(e) => setNotesValue(e.target.value)}
@@ -2129,7 +2132,7 @@ export default function AdminSalesAgent() {
                     {/* Inline Cal draft — auto-loads, no click needed */}
                     <InlineDraftPanel prospectId={selectedConv.prospect.id} />
 
-                    <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Email Thread</h3>
+                    <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide">Email Thread</h3>
                     {threadLoading ? (
                       <div className="text-xs text-zinc-600 flex items-center gap-1.5">
                         <RefreshCw className="w-3 h-3 animate-spin" /> Loading…
@@ -2144,7 +2147,7 @@ export default function AdminSalesAgent() {
                       thread.map((email) => (
                         <div
                           key={email.id}
-                          className={`rounded-lg p-3 text-xs space-y-1.5 ${
+                          className={`rounded-lg p-3.5 text-sm space-y-2 leading-relaxed ${
                             email.direction === "outbound"
                               ? "bg-[#24272e] border border-white/10"
                               : "bg-emerald-950/40 border border-emerald-900/40"
@@ -2163,7 +2166,7 @@ export default function AdminSalesAgent() {
                     )}
 
                     {/* v38: Activity timeline */}
-                    <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wide pt-2">Activity</h3>
+                    <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide pt-2">Activity</h3>
                     {activitiesLoading ? (
                       <div className="space-y-2">
                         {[1,2,3].map(i => <div key={i} className="h-10 bg-[#2b2f38]/60 rounded animate-pulse" />)}
@@ -2249,9 +2252,9 @@ export default function AdminSalesAgent() {
 
         {/* ── Review & send (steps 3–4) ── */}
         {activeTab === "drafts" && (
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="px-6 py-3 border-b border-white/10 bg-amber-950/10 flex-shrink-0">
-              <p className="text-sm text-zinc-300">
+          <div className="flex flex-col pb-8">
+            <div className={`px-6 py-4 border-b ${CAL.border} ${CAL.cardMuted}`}>
+              <p className={`text-base ${CAL.textMuted} leading-relaxed`}>
                 <span className="text-amber-400 font-semibold">
                   Step {workflowStep === "send" ? "4 · Send" : "3 · Review"}
                 </span>
