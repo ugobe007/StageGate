@@ -27,7 +27,6 @@ import {
 import { enrichProspectsBatch, recoverQuarantinedProspectContacts } from "./prospectEnrichment.js";
 import { refreshCalDraftsCore, getCalWorkflowSummary } from "./salesAgent.js";
 import {
-  enrichPartnerProspectsBatch,
   getPartnerOutreachSummary,
   refreshPartnerOutreachDraftsCore,
 } from "../services/partnerOutreach.js";
@@ -43,7 +42,6 @@ export type CalOperatorResult = {
   draftsRedrafted: number;
   draftsGenerated: number;
   partnerDraftsGenerated: number;
-  partnerEnrichmentStarted: number;
   partnerOutreachAfter: Awaited<ReturnType<typeof getPartnerOutreachSummary>>;
   quarantined: number;
   quarantineRecovered: number;
@@ -145,7 +143,6 @@ export async function runCalOperatorCycle(opts?: {
   let draftsRedrafted = 0;
   let draftsGenerated = 0;
   let partnerDraftsGenerated = 0;
-  let partnerEnrichmentStarted = 0;
   if (opts?.skipDraftRefresh) {
     // Manual UI runs — user triggers Redraft emails separately.
   } else {
@@ -156,13 +153,6 @@ export async function runCalOperatorCycle(opts?: {
       if (drafts.errors.length) errors.push(...drafts.errors.slice(0, 3));
     } catch (err) {
       errors.push(`drafts: ${String(err)}`);
-    }
-
-    try {
-      const enrich = await enrichPartnerProspectsBatch(Math.min(BATCH, 10));
-      partnerEnrichmentStarted = enrich.started;
-    } catch (err) {
-      errors.push(`partner enrich: ${String(err)}`);
     }
 
     try {
@@ -196,7 +186,7 @@ export async function runCalOperatorCycle(opts?: {
   console.log(
     `[Cal operator] junk=${junk.dismissed} urls=${websitesResolved} dismissed=${websitesDismissed} ` +
       `emails=${emailsEnriched} redraft=${draftsRedrafted} newDrafts=${draftsGenerated} ` +
-      `partnerDrafts=${partnerDraftsGenerated} partnerEnrich=${partnerEnrichmentStarted} ` +
+      `partnerDrafts=${partnerDraftsGenerated} ` +
       `quarantine=${quarantined} recovered=${quarantineRecovered} unresolved=${quarantineUnresolved}`,
   );
 
@@ -208,7 +198,6 @@ export async function runCalOperatorCycle(opts?: {
     draftsRedrafted,
     draftsGenerated,
     partnerDraftsGenerated,
-    partnerEnrichmentStarted,
     partnerOutreachAfter,
     quarantined,
     quarantineRecovered,

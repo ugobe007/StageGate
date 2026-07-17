@@ -145,26 +145,3 @@ export async function refreshPartnerOutreachDraftsCore(options?: {
     return { drafted: 0, skipped: keys.length, errors };
   }
 }
-
-/** Fire-and-forget Apollo research for partner prospects missing email. */
-export async function enrichPartnerProspectsBatch(limit = 10): Promise<{ started: number }> {
-  const { listProspects } = await import("../db.js");
-  const { researchProspect } = await import("../research-agent.js");
-
-  const all = await listProspects();
-  const targets = (all as Array<{ id: number; company: string; contactEmail?: string | null; vendorType?: string | null; outreachAngle?: string | null }>)
-    .filter((p) => isPartnerProspect(p) && !p.contactEmail?.trim())
-    .slice(0, limit);
-
-  for (const p of targets) {
-    researchProspect(p.id).catch((err) =>
-      console.error(`[PartnerOutreach] Enrich failed for ${p.company}:`, err instanceof Error ? err.message : err),
-    );
-  }
-
-  if (targets.length > 0) {
-    console.log(`[PartnerOutreach] Started enrichment for ${targets.length} partner prospect(s)`);
-  }
-
-  return { started: targets.length };
-}

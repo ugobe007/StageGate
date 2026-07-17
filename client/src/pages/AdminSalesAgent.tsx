@@ -1426,9 +1426,6 @@ export default function AdminSalesAgent() {
       const failed = (data.results ?? []).filter((r) => !r.email).map((r) => r.company);
       if (data.enriched > 0) {
         toast.success(data.message);
-        if (data.apolloEnriched > 0) {
-          toast.info(`Apollo fallback found ${data.apolloEnriched} email(s) Hunter missed.`);
-        }
       } else if (data.attempted > 0) {
         toast.warning(data.message, {
           description: failed.length > 0 ? `Missed: ${failed.slice(0, 5).join(", ")}${failed.length > 5 ? "…" : ""}` : undefined,
@@ -1824,11 +1821,11 @@ export default function AdminSalesAgent() {
                   <p className={`text-sm ${CAL.textMuted}`}>
                     {workflowStep === "contacts" && (
                       <>
-                        Cal auto-resolves contacts via Hunter (+ Apollo fallback):{" "}
+                        Cal auto-resolves contacts via Hunter:{" "}
                         <span className="font-semibold text-slate-100">{workflow.needsWebsite}</span> URL lookups ·{" "}
                         <span className="font-semibold text-slate-100">{workflow.needsContactFix}</span> need personal email.
                         <span className={`block text-sm ${CAL.textDim} mt-1.5 leading-relaxed`}>
-                          Hunter skips generic inboxes (info@, sales@). If Hunter misses, Cal tries Apollo. Still stuck? Verify website domain on the prospect row.
+                          Hunter skips generic inboxes (info@, sales@). Still stuck? Verify the website domain on the prospect row or add a contact manually.
                         </span>
                       </>
                     )}
@@ -2007,7 +2004,7 @@ export default function AdminSalesAgent() {
                     <Bot className="w-8 h-8 mb-2" />
                     <p className="text-sm text-center px-6">
                       {filterStage === "needs_email"
-                        ? "Hunter and Apollo found no personal email for these leads — verify the website domain or add a contact manually."
+                        ? "Hunter found no personal email for these leads — verify the website domain or add a contact manually."
                         : filterStage === "needs_website"
                         ? "No prospects missing a website in this view."
                         : "No conversations in this filter"}

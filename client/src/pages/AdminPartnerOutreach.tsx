@@ -312,7 +312,7 @@ export default function AdminPartnerOutreach() {
           <span>{partnerWorkflow.pendingReview} in review</span>
           <span>{partnerWorkflow.approvedToSend} approved</span>
           {partnerWorkflow.needsEmail > 0 && (
-            <span>{partnerWorkflow.needsEmail} need email (Apollo enrich on operator run)</span>
+            <span>{partnerWorkflow.needsEmail} need email (use Find emails on Cal sales-agent, or Cal operator)</span>
           )}
         </div>
       )}

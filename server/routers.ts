@@ -886,12 +886,10 @@ Subject line and body only.`,
     runCalDrafts: adminProcedure
       .input(z.object({ limit: z.number().min(1).max(100).optional() }).optional())
       .mutation(async ({ input, ctx }) => {
-        const { refreshPartnerOutreachDraftsCore, enrichPartnerProspectsBatch } = await import("./services/partnerOutreach");
-        const enrich = await enrichPartnerProspectsBatch(15);
+        const { refreshPartnerOutreachDraftsCore } = await import("./services/partnerOutreach");
         const drafts = await refreshPartnerOutreachDraftsCore({ limit: input?.limit ?? 40 });
         return {
           ...drafts,
-          enrichmentStarted: enrich.started,
           message: drafts.drafted > 0
             ? `Cal drafted ${drafts.drafted} partner email(s) — review below`
             : "No new partner drafts needed (queue caught up or missing emails)",
