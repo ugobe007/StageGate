@@ -46,7 +46,7 @@ import {
 import { outreachEmailPolicySummary, prospectHasUsableWebsite } from "../outreachContacts.js";
 import { pickCalInsight } from "./calInsights.js";
 import { buildCalChapterEmail } from "./calChapters.js";
-import { isLegacyFrankDraft } from "./calDraftQuality.js";
+import { needsCalDraftRefresh } from "./calDraftQuality.js";
 import { prepareProspectOutreachRecipient } from "./prospectEnrichment.js";
 import { outreachDisabled, shouldPauseNewIntros } from "../outreachGate.js";
 
@@ -1101,14 +1101,14 @@ async function repairPendingDraftGreetings(db: NonNullable<Awaited<ReturnType<ty
   return fixed;
 }
 
-/** Replace a single pending draft if it still uses pre-Cal Frank / XBOT sales voice. */
+/** Replace a single pending draft if it uses outdated Cal templates or legacy Frank voice. */
 export async function repairLegacyCalDraftCore(
   prospectId: number,
   draft: { id: number; subject: string | null; body: string | null },
 ): Promise<{ subject: string; body: string; repaired: boolean }> {
   const body = draft.body ?? "";
   const subject = draft.subject ?? "";
-  if (!isLegacyFrankDraft(body, draft.subject)) {
+  if (!needsCalDraftRefresh(body, draft.subject)) {
     return { subject, body, repaired: false };
   }
 
@@ -1129,12 +1129,28 @@ export async function repairLegacyCalDraftCore(
     .set({
       subject: preview.subject,
       body: preview.body,
-      agentReasoning: "Cal auto-redraft — legacy sales voice removed",
+      agentReasoning: "Cal auto-redraft — outdated template refreshed",
     })
     .where(eq(draftEmails.id, draft.id));
 
-  console.log(`[Cal] Auto-redrafted legacy draft for prospect ${prospectId}`);
+  console.log(`[Cal] Auto-redrafted stale draft for prospect ${prospectId}`);
   return { subject: preview.subject, body: preview.body, repaired: true };
+}
+
+/** Repair all pending prospect drafts that need Cal template refresh (e.g. old Field Note # headers). */
+export async function repairStalePendingCalDraftsCore(): Promise<number> {
+  const emailHelpers = await import("../email.js");
+  const entries = await emailHelpers.getDraftsWithRecipients(["pending"], "prospect");
+  let repaired = 0;
+  for (const entry of entries) {
+    if (!entry.prospect?.id || !entry.draft.body) continue;
+    const result = await repairLegacyCalDraftCore(entry.prospect.id, entry.draft);
+    if (result.repaired) repaired++;
+  }
+  if (repaired > 0) {
+    console.log(`[Cal] Auto-repaired ${repaired} stale pending draft(s)`);
+  }
+  return repaired;
 }
 
 /** Regenerate body + subject for every pending prospect draft (true redraft). */
@@ -1455,6 +1471,68 @@ export async function getCalWorkflowSummary(): Promise<CalWorkflowSummary> {
     awaitingReply,
     suggestedStep,
   };
+}
+
+export type CalContactQueueFilter = "needs_website" | "needs_email";
+
+export type CalContactQueueRow = {
+  prospect: typeof prospects.$inferSelect;
+  conv: typeof salesAgentConversations.$inferSelect;
+  engagement: {
+    opens: number;
+    clicks: number;
+    lastOpenedAt: Date | null;
+    lastClickedAt: Date | null;
+  };
+  queueReason: CalContactQueueFilter;
+};
+
+/** Prospects in the contact-fix queue — includes rows without a conversation yet. */
+export async function getCalContactQueue(filter: CalContactQueueFilter): Promise<CalContactQueueRow[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { listProspects } = await import("../db.js");
+  const { prospectNeedsWebsite, prospectNeedsEmailFix } = await import("../outreachContacts.js");
+
+  const [allProspects, convRows] = await Promise.all([
+    listProspects(),
+    db.select().from(salesAgentConversations),
+  ]);
+  const convByProspect = new Map(convRows.map((c) => [c.prospectId, c]));
+  const now = new Date();
+
+  const placeholderConv = (prospectId: number): typeof salesAgentConversations.$inferSelect => ({
+    id: -prospectId,
+    prospectId,
+    state: "discovery",
+    strategy: null,
+    outreachAngle: null,
+    lastActivityAt: now,
+    nextFollowUpAt: null,
+    followUpCount: 0,
+    notes: null,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  type ProspectRow = {
+    id: number;
+    website: string | null;
+    contactEmail: string | null;
+    emailConfidence: string | null;
+  };
+
+  const filtered = (allProspects as ProspectRow[])
+    .filter((p) => (filter === "needs_website" ? prospectNeedsWebsite(p) : prospectNeedsEmailFix(p)))
+    .slice(0, 100);
+
+  return filtered.map((prospect) => ({
+    prospect: prospect as typeof prospects.$inferSelect,
+    conv: convByProspect.get(prospect.id) ?? placeholderConv(prospect.id),
+    engagement: { opens: 0, clicks: 0, lastOpenedAt: null, lastClickedAt: null },
+    queueReason: filter,
+  }));
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────

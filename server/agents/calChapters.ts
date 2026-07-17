@@ -1,11 +1,15 @@
 /**
  * Cal's Field Notes — short observations from the Studious Observer.
  *
- * Cal is not a salesperson. He is an anthropologist of work: obsessed with flow,
- * not robotics. Robots are one tool; people, materials, and time are the story.
+ * Cal is not a salesperson. He shares what he notices in the field — no pitch,
+ * no meeting ask. One plain question at the end invites a reply.
  *
- * Every email is a field note or deployment diary entry — no pitch, no CTA,
- * one curious question at the end. Same seed + stage → same note (deterministic).
+ * Two audiences:
+ * - **Operators** — warehouses, lines, shifts (flow, handoffs, walking, waiting)
+ * - **Robot OEMs** — manufacturers like Fanuc (customer deployments, demos, activation)
+ *
+ * Same seed + stage → same note (deterministic). No "Field Note #N" headers in the
+ * body — the subject line is the hook; numbered headers confused recipients.
  */
 
 import { FRANK_PERSONA } from "./frankPlaybook.js";
@@ -17,11 +21,15 @@ import {
 
 export type CalChapterStage = "discovery" | "intro_sent" | "followup_1";
 
+export type CalChapterAudience = "operator" | "robot_oem";
+
 export type CalChapterContext = {
   companyName: string;
   contactName?: string | null;
   contactEmail?: string | null;
   robotType?: string | null;
+  robotCategory?: string | null;
+  vendorType?: string | null;
   seed?: string | number | null;
 };
 
@@ -40,10 +48,7 @@ type CalFieldNote = {
   settingPattern?: RegExp;
 };
 
-/** Sparse, memorable note numbers — feels like a long-running series. */
-const NOTE_NUMBERS = [7, 14, 22, 31, 38, 44, 52, 61, 73, 89];
-
-const FIELD_NOTES: CalFieldNote[] = [
+const OPERATOR_FIELD_NOTES: CalFieldNote[] = [
   {
     id: "watch_people_first",
     format: "field_note",
@@ -82,7 +87,8 @@ const FIELD_NOTES: CalFieldNote[] = [
       "Speed on a spec sheet tells you almost nothing about whether work actually gets easier.",
     ],
     closer: "I notice this more than I notice vendor logos.",
-    question: "Is there a task on your floor that everyone avoids but nobody has time to fix?",
+    question:
+      "I'm curious — what's the one repetitive job on your floor that everyone works around instead of fixing?",
   },
   {
     id: "longest_line",
@@ -175,6 +181,127 @@ const FIELD_NOTES: CalFieldNote[] = [
   },
 ];
 
+/** Notes for robot manufacturers / OEMs — customer deployments, not warehouse floors. */
+const OEM_FIELD_NOTES: CalFieldNote[] = [
+  {
+    id: "booth_vs_plant",
+    format: "field_note",
+    noteNumber: 15,
+    subject: "The booth demo isn't the hard part",
+    body: [
+      "I've watched the same robot run flawlessly on a show floor and struggle in a customer's plant a few weeks later.",
+      "The gap is rarely the hardware. It's activation — power, network, safety sign-off, and someone who owns day-one troubleshooting.",
+      "Most OEM teams feel this in support tickets long before anyone names it out loud.",
+    ],
+    closer: "That's the part of deployment I watch most closely.",
+    question:
+      "When a customer deployment stalls, is it usually before power-on or in the first week on their floor?",
+  },
+  {
+    id: "heavy_cell_show",
+    format: "field_note",
+    noteNumber: 28,
+    subject: "Heavy cells show up underpowered more often than you'd think",
+    body: [
+      "At trade shows, the most expensive delay I see isn't freight — it's discovering the venue power plan doesn't match what the cell actually needs.",
+      "Rigging, 480V drops, and safety clearances get treated as logistics details until demo day.",
+      "By then the sales team is standing in an aisle waiting for an electrician.",
+    ],
+    closer: "I've seen this on cells that ran fine in the factory.",
+    question: "How often does power or rigging — not software — kill your show-floor timeline?",
+  },
+  {
+    id: "integrator_blame",
+    format: "field_note",
+    noteNumber: 36,
+    subject: "Integrators get blamed for problems that started in shipping",
+    body: [
+      "A robot that arrives uncommissioned, under-charged, or with a firmware mismatch looks like an integration failure on site.",
+      "The integrator gets the call. The root cause was three handoffs earlier.",
+      "OEMs that control staging and activation before handoff see fewer 'robot doesn't work' escalations.",
+    ],
+    question: "Where do your escalations actually start — transit, commissioning, or first production shift?",
+  },
+  {
+    id: "pilot_to_repeat",
+    format: "field_note",
+    noteNumber: 47,
+    subject: "The pilot that never becomes a second site",
+    body: [
+      "The pattern I see at OEMs: first deployment gets white-glove support. Site two gets whatever's left in the calendar.",
+      "Customers don't churn on specs. They churn when the second install feels harder than the first.",
+      "Repeatable activation — same checklist, same power story, same training — is what turns a logo into a fleet.",
+    ],
+    closer: "That's less about the robot and more about the playbook around it.",
+    question: "Do your repeat deployments run as smoothly as your flagship installs?",
+  },
+  {
+    id: "demo_program_gap",
+    format: "diary",
+    noteNumber: 58,
+    subject: "Two demos, two completely different activation stories",
+    body: [
+      "This month I compared two OEM demo programs side by side. Same robot category. One had cells arriving tested and powered; one had integrators rebuilding on the show floor.",
+      "Buyers couldn't tell the difference in the booth. They felt it six months later in uptime.",
+    ],
+    question: "Is your demo program designed for the booth — or for what happens after the customer signs?",
+  },
+  {
+    id: "customer_workflow_first",
+    format: "field_note",
+    noteNumber: 71,
+    subject: "Customers buy robots to fix workflows they haven't mapped",
+    body: [
+      "OEM sales teams know their spec sheets cold. The stall happens when the customer's workflow wasn't ready for automation — wrong shift, wrong handoff, wrong success metric.",
+      "The deals that stick are the ones where someone asked about the task before the payload.",
+    ],
+    closer: "I hear this from integrators more than from end users.",
+    question: "How do you tell early whether a prospect has a workflow problem or a hardware gap?",
+  },
+];
+
+const OEM_COMPANY_PATTERNS =
+  /\b(fanuc|yaskawa|kuka|abb robotics|universal robots|omron|epson robot|denso robot|staubli|kawasaki robot|mitsubishi robot|apptronik|agility robotics|boston dynamics|unitree|figure ai|1x technologies|sanctuary ai|ghost robotics)\b/i;
+
+const OEM_ROBOT_TYPES = new Set([
+  "industrial_arm",
+  "cobot",
+  "humanoid",
+  "quadruped",
+  "mobile_manipulator",
+  "wheeled_amr",
+  "service_robot",
+  "surgical_robot",
+  "exoskeleton",
+  "drone",
+  "other",
+]);
+
+/** Robot OEM / manufacturer — not exhibit houses, freight, or end-user operators. */
+export function isRobotOemProspect(prospect: {
+  company: string;
+  robotType?: string | null;
+  vendorType?: string | null;
+}): boolean {
+  if (prospect.vendorType === "robot_oem") return true;
+  if (prospect.vendorType && prospect.vendorType !== "robot_oem") return false;
+  if (OEM_COMPANY_PATTERNS.test(prospect.company)) return true;
+  const rt = (prospect.robotType ?? "").toLowerCase();
+  return OEM_ROBOT_TYPES.has(rt);
+}
+
+export function calChapterAudience(prospect: {
+  company: string;
+  robotType?: string | null;
+  vendorType?: string | null;
+}): CalChapterAudience {
+  return isRobotOemProspect(prospect) ? "robot_oem" : "operator";
+}
+
+function fieldNotesForAudience(audience: CalChapterAudience): CalFieldNote[] {
+  return audience === "robot_oem" ? OEM_FIELD_NOTES : OPERATOR_FIELD_NOTES;
+}
+
 function hashSeed(input: string): number {
   let h = 2166136261;
   for (let i = 0; i < input.length; i++) {
@@ -190,23 +317,24 @@ const STAGE_OFFSET: Record<CalChapterStage, number> = {
   followup_1: 2,
 };
 
-function formatHeader(note: CalFieldNote, seedKey: string, stage: CalChapterStage): string {
+/** Optional opener — diary entries only; no numbered "Field Note #N" labels. */
+function formatOpener(note: CalFieldNote): string | null {
   if (note.format === "diary") return "Deployment Diary";
-  const offset = STAGE_OFFSET[stage];
-  const num = NOTE_NUMBERS[(hashSeed(seedKey) + note.noteNumber + offset) % NOTE_NUMBERS.length]!;
-  return `Field Note #${num}`;
+  return null;
 }
 
 /** Pick the field note for this prospect and outreach stage. */
 export function pickCalChapter(ctx: CalChapterContext, stage: CalChapterStage): CalFieldNote {
   const seedKey = String(ctx.seed ?? ctx.companyName ?? "stagegate");
   const offset = STAGE_OFFSET[stage];
-  const idx = (hashSeed(seedKey) + offset) % FIELD_NOTES.length;
-  return FIELD_NOTES[idx]!;
+  const audience = calChapterAudience(ctx);
+  const library = fieldNotesForAudience(audience);
+  const idx = (hashSeed(seedKey) + offset) % library.length;
+  return library[idx]!;
 }
 
 export function listCalChapterIds(): string[] {
-  return FIELD_NOTES.map((n) => n.id);
+  return [...OPERATOR_FIELD_NOTES, ...OEM_FIELD_NOTES].map((n) => n.id);
 }
 
 type ProspectLike = {
@@ -214,24 +342,27 @@ type ProspectLike = {
   contactName?: string | null;
   contactEmail?: string | null;
   robotType?: string | null;
+  robotCategory?: string | null;
+  vendorType?: string | null;
 };
 
-/** Build a Field Note email — anthropologist of work, not a sales touch. */
+/** Build a field-note email — observation + one question, not a sales touch. */
 export function buildCalChapterEmail(
   prospect: ProspectLike,
   stage: CalChapterStage,
-): { subject: string; body: string; chapterId: string } {
+): { subject: string; body: string; chapterId: string; audience: CalChapterAudience } {
   const seedKey = prospect.company;
-  const note = pickCalChapter(
-    {
-      companyName: prospect.company,
-      contactName: prospect.contactName,
-      contactEmail: prospect.contactEmail,
-      robotType: prospect.robotType,
-      seed: seedKey,
-    },
-    stage,
-  );
+  const ctx: CalChapterContext = {
+    companyName: prospect.company,
+    contactName: prospect.contactName,
+    contactEmail: prospect.contactEmail,
+    robotType: prospect.robotType,
+    robotCategory: prospect.robotCategory,
+    vendorType: prospect.vendorType,
+    seed: seedKey,
+  };
+  const note = pickCalChapter(ctx, stage);
+  const audience = calChapterAudience(ctx);
 
   const resolved = resolveGreetingName({
     contactName: prospect.contactName,
@@ -239,9 +370,11 @@ export function buildCalChapterEmail(
     company: prospect.company,
   });
   const salutation = greetingLine(resolved.greetingName, prospect.company);
-  const header = formatHeader(note, seedKey, stage);
+  const opener = formatOpener(note);
 
-  const parts: string[] = [header, ...note.body];
+  const parts: string[] = [];
+  if (opener) parts.push(opener);
+  parts.push(...note.body);
   if (note.closer) parts.push(note.closer);
   parts.push(note.question);
   parts.push(FRANK_PERSONA.signature);
@@ -252,5 +385,6 @@ export function buildCalChapterEmail(
     subject: note.subject,
     body,
     chapterId: note.id,
+    audience,
   };
 }

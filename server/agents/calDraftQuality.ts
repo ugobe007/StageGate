@@ -29,9 +29,11 @@ const LEGACY_SUBJECT_PATTERNS: RegExp[] = [
 
 function hasCalFieldNoteVoice(body: string): boolean {
   const trimmed = body.trim();
+  const hasSignature = /—\s*Cal\s*$/.test(trimmed) || trimmed.endsWith("— Cal");
+  if (!hasSignature) return false;
   return (
-    /Field Note #\d+|Deployment Diary/.test(body) &&
-    (/—\s*Cal\s*$/.test(trimmed) || trimmed.endsWith("— Cal"))
+    /Deployment Diary/.test(body) ||
+    /I'm curious|Does that|Have you|What's the|If you|How often|Where do|When a customer|How do you/.test(body)
   );
 }
 
@@ -52,5 +54,13 @@ export function isLegacyFrankDraft(body: string, subject?: string | null): boole
     return true;
   }
 
+  return false;
+}
+
+/** Pending drafts that should be regenerated (legacy Frank copy or old Cal numbered headers). */
+export function needsCalDraftRefresh(body: string, subject?: string | null): boolean {
+  if (!body?.trim()) return false;
+  if (isLegacyFrankDraft(body, subject)) return true;
+  if (/Field Note #\d+/.test(body)) return true;
   return false;
 }

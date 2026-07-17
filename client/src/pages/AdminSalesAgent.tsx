@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import { useSearch, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -621,6 +622,73 @@ type RelayRunDetails = {
   escalations?: string[];
 };
 
+function CalLandingGreeting({
+  userName,
+  workflow,
+  lastCal,
+  relayMissions,
+  lastDiscovery,
+  onDismiss,
+}: {
+  userName?: string | null;
+  workflow: WorkflowSummary;
+  lastCal?: CalOperatorReportData | null;
+  relayMissions?: Array<{ title: string; priority: string }>;
+  lastDiscovery?: { prospectsCreated?: number | null; status?: string } | null;
+  onDismiss: () => void;
+}) {
+  const firstName = userName?.split(/\s+/)[0] ?? "there";
+  const calWhen = lastCal?.completedAt ? timeAgo(lastCal.completedAt) : null;
+
+  const pipelineParts: string[] = [];
+  if (workflow.awaitingReply > 0) pipelineParts.push(`${workflow.awaitingReply} awaiting reply`);
+  if (workflow.followUpDue > 0) pipelineParts.push(`${workflow.followUpDue} follow-ups due`);
+  if (workflow.pendingReview > 0) pipelineParts.push(`${workflow.pendingReview} drafts to review`);
+  if (workflow.needsDraft > 0) pipelineParts.push(`${workflow.needsDraft} need drafting`);
+
+  const contactParts: string[] = [];
+  if (workflow.needsWebsite > 0) contactParts.push(`${workflow.needsWebsite} need a URL`);
+  if (workflow.needsContactFix > 0) contactParts.push(`${workflow.needsContactFix} need Hunter email`);
+
+  return (
+    <div className={`mx-6 mt-3 mb-1 px-5 py-4 rounded-lg border border-amber-600/40 ${CAL.card}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+            <Bot className="w-5 h-5 text-amber-400" />
+          </div>
+          <div className="min-w-0 space-y-2">
+            <p className={`text-base font-semibold ${CAL.text}`}>Hey {firstName} — Cal here.</p>
+            <p className={`text-sm ${CAL.textMuted} leading-relaxed`}>
+              <strong className={CAL.text}>Pipeline:</strong>{" "}
+              {pipelineParts.length > 0 ? pipelineParts.join(" · ") : "outreach queue is caught up."}
+            </p>
+            <p className={`text-sm ${CAL.textMuted} leading-relaxed`}>
+              <strong className={CAL.text}>Contact prep:</strong>{" "}
+              {contactParts.length > 0 ? `${contactParts.join(" · ")}. ` : ""}
+              {lastCal
+                ? `Last operator run${calWhen ? ` (${calWhen})` : ""}: ${lastCal.websitesResolved ?? 0} URLs resolved, ${lastCal.emailsEnriched ?? 0} emails enriched${(lastCal.quarantineRecovered ?? 0) > 0 ? `, ${lastCal.quarantineRecovered} bounce recoveries` : ""}.`
+                : contactParts.length === 0
+                  ? "Contacts look ready."
+                  : "Operator runs on schedule — Relay will queue Hunter next."}
+            </p>
+            <p className={`text-sm ${CAL.textMuted} leading-relaxed`}>
+              <strong className={CAL.text}>Relay</strong> (loop orchestrator):{" "}
+              {relayMissions?.[0]?.title ?? "orchestrates Hunter, quarantine recovery, and safe auto-send 2× daily."}
+              {lastDiscovery?.status === "completed" && (lastDiscovery.prospectsCreated ?? 0) > 0 && (
+                <> Lead Discovery recently added {lastDiscovery.prospectsCreated} prospects.</>
+              )}
+            </p>
+          </div>
+        </div>
+        <button type="button" onClick={onDismiss} className={`text-xs ${CAL.textDim} hover:text-slate-200 flex-shrink-0`}>
+          Dismiss
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function RelayOperatorReport({
   run,
   isRunning,
@@ -1184,7 +1252,11 @@ export default function AdminSalesAgent() {
   // v69: cancel state
   const [cancellingCalEvt, setCancellingCalEvt] = useState<typeof upcomingEvents[0] | null>(null);
   const [cancelCalReason, setCancelCalReason] = useState("");
+  const [greetingDismissed, setGreetingDismissed] = useState(
+    () => typeof sessionStorage !== "undefined" && sessionStorage.getItem("cal-greeting-dismissed") === "1",
+  );
 
+  const { user } = useAuth();
   const utils = trpc.useUtils();
 
   const {
@@ -1198,6 +1270,16 @@ export default function AdminSalesAgent() {
   const { data: workflowRaw, refetch: refetchWorkflow } = trpc.salesAgent.getWorkflowSummary.useQuery(
     undefined,
     { refetchInterval: 30_000 },
+  );
+
+  const contactQueueFilter =
+    filterStage === "needs_website" ? "needs_website" as const
+    : filterStage === "needs_email" ? "needs_email" as const
+    : null;
+
+  const { data: contactQueue = [], isLoading: contactQueueLoading } = trpc.salesAgent.getContactQueue.useQuery(
+    { filter: contactQueueFilter! },
+    { enabled: contactQueueFilter !== null, refetchInterval: 30_000 },
   );
 
   const workflow: WorkflowSummary = workflowRaw ?? {
@@ -1327,6 +1409,7 @@ export default function AdminSalesAgent() {
       refetchConvs();
       refetchWorkflow();
       utils.salesAgent.getWorkflowSummary.invalidate();
+      void utils.salesAgent.getContactQueue.invalidate();
     },
     onError: (err) => toast.error(`Find emails failed: ${err.message}`),
   });
@@ -1412,6 +1495,7 @@ export default function AdminSalesAgent() {
       refetchConvs();
       refetchWorkflow();
       utils.salesAgent.getWorkflowSummary.invalidate();
+      void utils.salesAgent.getContactQueue.invalidate();
     },
     onError: (err) => toast.error(`Resolve websites failed: ${err.message}`),
   });
@@ -1555,25 +1639,30 @@ export default function AdminSalesAgent() {
   });
 
   const lastRun = runs[0];
+  const lastDiscoveryRun = runs.find((r) => r.runType === "discovery");
 
-  const filtered = filterStage === "all"
+  const filtered = contactQueueFilter
+    ? contactQueue
+    : filterStage === "all"
     ? conversations
     : filterStage === "ready"
     ? conversations.filter(c => {
         const next = c.conv.nextFollowUpAt ? new Date(c.conv.nextFollowUpAt) : null;
         return next && next <= new Date() && !TERMINAL.includes(c.conv.state ?? "");
       })
-    : filterStage === "needs_email"
-    ? conversations.filter(c => prospectNeedsEmailFix(c.prospect))
-    : filterStage === "needs_website"
-    ? conversations.filter(c => prospectNeedsWebsite(c.prospect))
     : filterStage === "awaiting"
     ? conversations.filter(c => c.conv.state === "awaiting_reply")
     : conversations.filter(c => c.conv.state === filterStage);
 
+  const listLoading = contactQueueFilter ? contactQueueLoading : convsLoading;
+
   const selectedConv = selectedProspectId
     ? conversations.find(c => c.prospect.id === selectedProspectId)
+      ?? contactQueue.find(c => c.prospect.id === selectedProspectId)
+      ?? null
     : null;
+
+  const selectedHasRealConv = selectedConv ? selectedConv.conv.id > 0 : false;
 
   // v38: sync notes textarea when selection changes
   const selectedProspectNotes = (selectedConv?.prospect as { notes?: string | null } | undefined)?.notes ?? "";
@@ -1595,6 +1684,19 @@ export default function AdminSalesAgent() {
           onStepChange={goWorkflowStep}
           lastRunLabel={lastRun ? timeAgo(lastRun.startedAt) : undefined}
         />
+        {!greetingDismissed && (
+          <CalLandingGreeting
+            userName={user?.name}
+            workflow={workflow}
+            lastCal={calDetails ?? null}
+            relayMissions={relayDetails?.missions}
+            lastDiscovery={lastDiscoveryRun ?? null}
+            onDismiss={() => {
+              setGreetingDismissed(true);
+              sessionStorage.setItem("cal-greeting-dismissed", "1");
+            }}
+          />
+        )}
         <CalOperatorReport
           report={operatorReport}
           isRunning={runCalOperator.isPending}
@@ -1864,16 +1966,18 @@ export default function AdminSalesAgent() {
               {/* Conversation list */}
               {/* Conversation list — grows with page; main layout scrolls */}
               <div>
-                {convsLoading ? (
+                {listLoading ? (
                   <div className={`flex items-center justify-center h-32 ${CAL.textDim}`}>
                     <RefreshCw className="w-4 h-4 animate-spin mr-2" /> Loading…
                   </div>
                 ) : filtered.length === 0 ? (
                   <div className={`flex flex-col items-center justify-center h-32 ${CAL.textDim}`}>
                     <Bot className="w-8 h-8 mb-2" />
-                    <p className="text-sm">
+                    <p className="text-sm text-center px-6">
                       {filterStage === "needs_email"
                         ? "Cal is working through the Hunter queue — check back after the next Relay run."
+                        : filterStage === "needs_website"
+                        ? "No prospects missing a website in this view."
                         : "No conversations in this filter"}
                     </p>
                   </div>
@@ -1881,13 +1985,14 @@ export default function AdminSalesAgent() {
                   <div className={`divide-y ${CAL.border}`}>
                     {filtered.map((item) => {
                       const { conv, prospect } = item;
+                      const queueReason = (item as { queueReason?: string }).queueReason;
                       const eng = (item as { engagement?: { opens: number; clicks: number } }).engagement ?? { opens: 0, clicks: 0 };
                       const isSelected = selectedProspectId === prospect.id;
-                      const readyLabel = nextActionLabel(conv.state ?? "", conv.nextFollowUpAt);
+                      const readyLabel = conv.id > 0 ? nextActionLabel(conv.state ?? "", conv.nextFollowUpAt) : null;
                       const isReady = readyLabel === "Ready now";
                       return (
                         <div
-                          key={conv.id}
+                          key={conv.id > 0 ? conv.id : `prospect-${prospect.id}`}
                           onClick={() => setSelectedProspectId(prospect.id)}
                           className={`px-6 py-3.5 cursor-pointer transition-colors ${CAL.listHover} ${isSelected ? `${CAL.listSelected} border-l-2` : `border-l-2 border-transparent ${CAL.listRow}`}`}
                         >
@@ -1895,7 +2000,15 @@ export default function AdminSalesAgent() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
                                 <span className={`font-medium text-base ${CAL.text} truncate`}>{prospect.company}</span>
-                                {isReady && <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
+                                {queueReason === "needs_website" && (
+                                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-600 text-slate-100">No URL</span>
+                                )}
+                                {queueReason === "needs_email" && (
+                                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-sky-800 text-sky-100">Need email</span>
+                                )}
+                                {!queueReason && isReady && (
+                                  <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                )}
                                 {prospect.robotCategory === "heavy_industrial" && (
                                   <Factory className="w-3 h-3 text-orange-400 flex-shrink-0" />
                                 )}
@@ -1918,9 +2031,11 @@ export default function AdminSalesAgent() {
                               </div>
                             </div>
                             <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
-                              {stageBadge(conv.state ?? "discovery")}
+                              {queueReason
+                                ? <span className="text-xs text-slate-400 font-medium">{queueReason === "needs_website" ? "Awaiting URL" : "Awaiting email"}</span>
+                                : stageBadge(conv.state ?? "discovery")}
                               <span className={`text-sm ${isReady ? "text-amber-400 font-semibold" : CAL.textMuted}`}>
-                                {readyLabel ?? timeAgo(conv.lastActivityAt)}
+                                {readyLabel ?? (conv.id > 0 ? timeAgo(conv.lastActivityAt) : "Not in pipeline yet")}
                               </span>
                             </div>
                           </div>
@@ -1971,6 +2086,11 @@ export default function AdminSalesAgent() {
                             ? <><Loader2 className="w-3 h-3 animate-spin" /> Parsing reply…</>
                             : <><Mail className="w-3 h-3" /> Apply email from reply</>}
                         </Button>
+                      )}
+                      {!selectedHasRealConv && (
+                        <p className="text-xs text-amber-300/90 bg-amber-950/30 border border-amber-800/40 rounded-md px-3 py-2 leading-relaxed">
+                          Not in the outreach pipeline yet — fix URL or email first, then Cal can draft.
+                        </p>
                       )}
                       {selectedConv.prospect.robotType && (
                         <div className="flex items-center gap-2">
@@ -2031,7 +2151,7 @@ export default function AdminSalesAgent() {
                   </div>
 
                   <div className="px-5 py-3 border-b border-white/10 space-y-2">
-                    {!["booked","not_interested","converted"].includes(selectedConv.conv.state ?? "") && (
+                    {selectedHasRealConv && !["booked","not_interested","converted"].includes(selectedConv.conv.state ?? "") && (
                       <Button
                         size="sm"
                         className="w-full bg-amber-500 hover:bg-amber-600 text-black font-medium gap-1.5"
@@ -2048,7 +2168,7 @@ export default function AdminSalesAgent() {
                       </Button>
                     )}
                     {/* v38: Resume follow-ups button — only shown for awaiting_reply */}
-                    {selectedConv.conv.state === "awaiting_reply" && (
+                    {selectedHasRealConv && selectedConv.conv.state === "awaiting_reply" && (
                       <Button
                         size="sm"
                         className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-1.5"
@@ -2061,77 +2181,81 @@ export default function AdminSalesAgent() {
                         }
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full border-white/10 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
-                      onClick={() => setPreviewOpen(true)}
-                    >
-                      <Eye className="w-3.5 h-3.5" /> Preview Cal's Email
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full border-teal-700 text-teal-400 hover:bg-teal-950/30 hover:border-teal-600 gap-1.5"
-                      onClick={() => {
-                        const p = selectedConv.prospect;
-                        setSchedulingProspect({
-                          id: p.id,
-                          company: p.company,
-                          email: p.contactEmail ?? null,
-                          name: p.contactName ?? null,
-                        });
-                        setScheduleTitle(`Intro Call — ${p.company}`);
-                        setScheduleDate("");
-                        setScheduleTime("10:00");
-                        setScheduleDuration(30);
-                        setScheduleNotes("");
-                        setScheduleType("call");
-                        setScheduleModalOpen(true);
-                      }}
-                    >
-                      <Calendar className="w-3.5 h-3.5" /> Schedule a Call
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full border-white/10 text-emerald-400 hover:bg-emerald-950/30 hover:border-emerald-700 gap-1.5"
-                      disabled={verifyingId === selectedConv.prospect.id}
-                      onClick={() => {
-                        setVerifyingId(selectedConv.prospect.id);
-                        verifyEmail.mutate({ prospectId: selectedConv.prospect.id });
-                      }}
-                    >
-                      {verifyingId === selectedConv.prospect.id
-                        ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Verifying via Apollo…</>
-                        : <><CheckCircle className="w-3.5 h-3.5" /> Verify Email via Apollo</>
-                      }
-                    </Button>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-zinc-500 whitespace-nowrap">Move to:</span>
-                      <Select
-                        value={selectedConv.conv.state ?? "discovery"}
-                        onValueChange={(val) => {
-                          setUpdatingId(selectedConv.conv.id);
-                          updateStage.mutate({
-                            conversationId: selectedConv.conv.id,
-                            state: val as Stage
-                          });
-                        }}
-                        disabled={updatingId === selectedConv.conv.id}
-                      >
-                        <SelectTrigger className="h-7 text-xs bg-[#24272e] border-white/10 flex-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#24272e] border-white/10">
-                          {STAGES.map(s => (
-                            <SelectItem key={s.id} value={s.id} className="text-xs text-zinc-300">
-                              {s.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {selectedHasRealConv && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full border-white/10 text-zinc-300 hover:bg-[#2b2f38] gap-1.5"
+                          onClick={() => setPreviewOpen(true)}
+                        >
+                          <Eye className="w-3.5 h-3.5" /> Preview Cal's Email
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full border-teal-700 text-teal-400 hover:bg-teal-950/30 hover:border-teal-600 gap-1.5"
+                          onClick={() => {
+                            const p = selectedConv.prospect;
+                            setSchedulingProspect({
+                              id: p.id,
+                              company: p.company,
+                              email: p.contactEmail ?? null,
+                              name: p.contactName ?? null,
+                            });
+                            setScheduleTitle(`Intro Call — ${p.company}`);
+                            setScheduleDate("");
+                            setScheduleTime("10:00");
+                            setScheduleDuration(30);
+                            setScheduleNotes("");
+                            setScheduleType("call");
+                            setScheduleModalOpen(true);
+                          }}
+                        >
+                          <Calendar className="w-3.5 h-3.5" /> Schedule a Call
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full border-white/10 text-emerald-400 hover:bg-emerald-950/30 hover:border-emerald-700 gap-1.5"
+                          disabled={verifyingId === selectedConv.prospect.id}
+                          onClick={() => {
+                            setVerifyingId(selectedConv.prospect.id);
+                            verifyEmail.mutate({ prospectId: selectedConv.prospect.id });
+                          }}
+                        >
+                          {verifyingId === selectedConv.prospect.id
+                            ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Verifying via Apollo…</>
+                            : <><CheckCircle className="w-3.5 h-3.5" /> Verify Email via Apollo</>
+                          }
+                        </Button>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-zinc-500 whitespace-nowrap">Move to:</span>
+                          <Select
+                            value={selectedConv.conv.state ?? "discovery"}
+                            onValueChange={(val) => {
+                              setUpdatingId(selectedConv.conv.id);
+                              updateStage.mutate({
+                                conversationId: selectedConv.conv.id,
+                                state: val as Stage
+                              });
+                            }}
+                            disabled={updatingId === selectedConv.conv.id}
+                          >
+                            <SelectTrigger className="h-7 text-xs bg-[#24272e] border-white/10 flex-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#24272e] border-white/10">
+                              {STAGES.map(s => (
+                                <SelectItem key={s.id} value={s.id} className="text-xs text-zinc-300">
+                                  {s.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <div className="px-5 py-4 space-y-4">

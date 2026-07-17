@@ -23,11 +23,13 @@ import {
   refreshCalDraftsCore,
   redraftPendingCalDraftsCore,
   repairLegacyCalDraftCore,
+  repairStalePendingCalDraftsCore,
   advanceProspectConversationAfterSend,
   getCalWorkflowSummary,
+  getCalContactQueue,
 } from "./agents/salesAgent";
 import { applyInboundContactUpdates } from "./inboundContactUpdates.js";
-import { isLegacyFrankDraft } from "./agents/calDraftQuality";
+import { needsCalDraftRefresh } from "./agents/calDraftQuality";
 import { recoverQuarantinedProspectContacts } from "./agents/prospectEnrichment";
 import { computeBounceStats } from "./outreachGate";
 
@@ -1959,10 +1961,12 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         audience: z.enum(["prospect", "partner", "all"]).optional(),
       }))
       .query(async ({ input }) => {
-        return emailHelpers.getDraftsWithRecipients(
-          input.statuses ?? ["pending", "approved"],
-          input.audience ?? "all",
-        );
+        const statuses = input.statuses ?? ["pending", "approved"];
+        const audience = input.audience ?? "all";
+        if (statuses.includes("pending") && audience !== "partner") {
+          await repairStalePendingCalDraftsCore();
+        }
+        return emailHelpers.getDraftsWithRecipients(statuses, audience);
       }),
 
     // Get drafts for a single prospect (for per-row review in AdminProspects)
@@ -2832,6 +2836,11 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     /** Actionable counts for Cal's 5-step workflow UI. */
     getWorkflowSummary: adminProcedure.query(async () => getCalWorkflowSummary()),
 
+    /** Prospects missing website or email — includes rows not yet in conversations. */
+    getContactQueue: adminProcedure
+      .input(z.object({ filter: z.enum(["needs_website", "needs_email"]) }))
+      .query(async ({ input }) => getCalContactQueue(input.filter)),
+
     // Admin: get conversations
     getConversations: adminProcedure
       .query(async () => {
@@ -2928,14 +2937,14 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           .limit(1);
         if (!draft) return null;
 
-        if (draft.status === "pending" && draft.body && isLegacyFrankDraft(draft.body, draft.subject)) {
+        if (draft.status === "pending" && draft.body && needsCalDraftRefresh(draft.body, draft.subject)) {
           const repaired = await repairLegacyCalDraftCore(input.prospectId, draft);
           if (repaired.repaired) {
             return {
               ...draft,
               subject: repaired.subject,
               body: repaired.body,
-              agentReasoning: "Cal auto-redraft — legacy sales voice removed",
+              agentReasoning: "Cal auto-redraft — outdated template refreshed",
               legacyRepaired: true as const,
             };
           }
@@ -2965,8 +2974,8 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
             .orderBy(desc(draftEmails.createdAt))
             .limit(1);
           if (existing?.body && existing.body.trim().length > 0) {
-            const legacy = isLegacyFrankDraft(existing.body, existing.subject);
-            if (!legacy) {
+            const stale = needsCalDraftRefresh(existing.body, existing.subject);
+            if (!stale) {
               const [conv] = await dbConn
                 .select()
                 .from(salesAgentConversations)

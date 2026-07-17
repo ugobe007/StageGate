@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildCalChapterEmail } from "./calChapters.js";
-import { isLegacyFrankDraft } from "./calDraftQuality.js";
+import { isLegacyFrankDraft, needsCalDraftRefresh } from "./calDraftQuality.js";
 
 const VEO_LEGACY = {
   subject: "MODEX 2026: Veo Robotics FreeMove",
@@ -26,8 +26,19 @@ describe("isLegacyFrankDraft", () => {
       "discovery",
     );
     expect(isLegacyFrankDraft(body, subject)).toBe(false);
-    expect(body).toMatch(/Field Note #|Deployment Diary/);
+    expect(body).not.toMatch(/Field Note #\d+/);
     expect(body).toContain("— Cal");
     expect(subject).not.toMatch(/^MODEX 2026:/);
+  });
+
+  it("flags old numbered Field Note headers for refresh", () => {
+    const oldCal = `Hi Fanuc team,
+
+Field Note #52
+
+The fastest robot in the building wasn't creating the most value.
+
+— Cal`;
+    expect(needsCalDraftRefresh(oldCal)).toBe(true);
   });
 });
