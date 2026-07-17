@@ -16,7 +16,17 @@ import crypto from "crypto";
 import { getDb } from "./db";
 import { researchProspect } from "./research-agent";
 import { roleBasedOutreachEmails, isDeprecatedRoleInbox } from "./outreachContacts";
-import { salesAgentManualSendCore, salesAgentPreviewCore, generateCalDraftsCore, refreshCalDraftsCore, redraftPendingCalDraftsCore, repairLegacyCalDraftCore, advanceProspectConversationAfterSend, getCalWorkflowSummary } from "./agents/salesAgent";
+import {
+  salesAgentManualSendCore,
+  salesAgentPreviewCore,
+  generateCalDraftsCore,
+  refreshCalDraftsCore,
+  redraftPendingCalDraftsCore,
+  repairLegacyCalDraftCore,
+  advanceProspectConversationAfterSend,
+  getCalWorkflowSummary,
+} from "./agents/salesAgent";
+import { applyInboundContactUpdates } from "./inboundContactUpdates.js";
 import { isLegacyFrankDraft } from "./agents/calDraftQuality";
 import { recoverQuarantinedProspectContacts } from "./agents/prospectEnrichment";
 import { computeBounceStats } from "./outreachGate";
@@ -3511,6 +3521,81 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
           metadata: { nextFollowUpAt: oneDayFromNow.toISOString(), resumedAt: new Date().toISOString() },
         });
         return { success: true, nextFollowUpAt: oneDayFromNow };
+      }),
+
+    // Parse contact email/website from the latest stored reply (backfill for pre-automation replies)
+    applyContactFromLatestReply: adminProcedure
+      .input(z.object({ prospectId: z.number() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        const [prospect] = await dbConn
+          .select()
+          .from(prospectsTable)
+          .where(eq(prospectsTable.id, input.prospectId))
+          .limit(1);
+        if (!prospect) throw new TRPCError({ code: "NOT_FOUND", message: "Prospect not found" });
+
+        const replyActivities = await dbConn
+          .select()
+          .from(prospectActivities)
+          .where(and(
+            eq(prospectActivities.prospectId, input.prospectId),
+            eq(prospectActivities.type, "email_replied"),
+          ))
+          .orderBy(desc(prospectActivities.createdAt))
+          .limit(10);
+
+        let bodyText = "";
+        let fromAddress = "";
+        let subject = "";
+
+        for (const act of replyActivities) {
+          const meta = (act.metadata ?? {}) as Record<string, unknown>;
+          const replyBody = typeof meta.replyBody === "string" ? meta.replyBody : "";
+          if (replyBody.trim()) {
+            bodyText = replyBody;
+            fromAddress = typeof meta.fromAddress === "string" ? meta.fromAddress : "";
+            subject = typeof meta.subject === "string" ? meta.subject : act.title ?? "";
+            break;
+          }
+          if (!bodyText && act.description?.trim()) {
+            bodyText = act.description;
+            fromAddress = typeof meta.fromAddress === "string" ? meta.fromAddress : "";
+            subject = typeof meta.subject === "string" ? meta.subject : act.title ?? "";
+          }
+        }
+
+        if (!bodyText.trim()) {
+          const [thread] = await dbConn
+            .select()
+            .from(emailThreads)
+            .where(and(
+              eq(emailThreads.prospectId, input.prospectId),
+              eq(emailThreads.direction, "inbound"),
+            ))
+            .orderBy(desc(emailThreads.receivedAt))
+            .limit(1);
+          if (thread?.body?.trim()) {
+            bodyText = thread.body;
+            fromAddress = thread.fromAddress ?? "";
+            subject = thread.subject ?? "";
+          }
+        }
+
+        if (!bodyText.trim()) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No reply text found for this prospect — nothing to parse",
+          });
+        }
+
+        return applyInboundContactUpdates(dbConn, prospect, {
+          fromAddress: fromAddress || prospect.contactEmail || "",
+          bodyText,
+          subject,
+        });
       }),
 
     // v38: get prospect activities for the detail panel timeline

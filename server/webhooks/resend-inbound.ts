@@ -45,11 +45,13 @@ import {
   draftEmails,
   calendarEvents,
 } from "../../drizzle/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm.js";
 import { FRANK_PERSONA, FRANK_SYSTEM_PROMPT } from "../agents/frankPlaybook.js";
 import { classifyEmailIntent } from "../agents/intentClassifier.js";
 import type { IntentCategory } from "../agents/intentClassifier.js";
+import { applyInboundContactUpdates } from "../inboundContactUpdates.js";
+import { extractEmailAddress } from "../outreachContacts.js";
 import { verifyResendSignature } from "./resendVerify.js";
 
 const FRANK_FROM_NAME = FRANK_PERSONA.fromName;
@@ -88,7 +90,7 @@ export async function resendInboundHandler(req: Request, res: Response) {
       return res.status(200).json({ ok: true, ignored: true, reason: "not a StageGate recipient" });
     }
 
-    const fromAddress = extractEmail(meta.from ?? "");
+    const fromAddress = extractEmailAddress(meta.from ?? "");
     const toAddress = recipients[0] ?? FRANK_FROM_EMAIL;
     const subject = meta.subject ?? "(no subject)";
     const emailId = meta.email_id ?? null;
@@ -118,7 +120,9 @@ export async function resendInboundHandler(req: Request, res: Response) {
     if (!db) return res.status(503).json({ error: "db unavailable" });
 
     // ── 1. Match prospect ─────────────────────────────────────────────────────
-    let prospect = (await db.select().from(prospects).where(eq(prospects.contactEmail, fromAddress)).limit(1))[0] ?? null;
+    let prospect = (
+      await db.select().from(prospects).where(sql`lower(${prospects.contactEmail}) = ${fromAddress}`).limit(1)
+    )[0] ?? null;
 
     if (!prospect && inReplyTo) {
       const thread = await db
@@ -153,6 +157,14 @@ export async function resendInboundHandler(req: Request, res: Response) {
       return res.json({ ok: true, matched: false });
     }
 
+    // ── 2b. Update contact email / website from auto-replies ─────────────────
+    const contactUpdate = await applyInboundContactUpdates(db, prospect, {
+      fromAddress,
+      bodyText,
+      bodyHtml,
+      subject,
+    });
+
     // ── 3. Classify intent + mood ─────────────────────────────────────────────
     const intent = await classifyEmailIntent(bodyText, prospect.company, true);
     console.log(`[Inbound] ${prospect.company} → intent=${intent.intent} mood=${intent.mood} confidence=${intent.confidence}`);
@@ -175,6 +187,9 @@ export async function resendInboundHandler(req: Request, res: Response) {
         mood: intent.mood,
         confidence: intent.confidence,
         extractedDates: intent.extractedDates,
+        contactUpdate: contactUpdate.applied
+          ? { previousEmail: contactUpdate.previousEmail, newEmail: contactUpdate.newEmail, newWebsite: contactUpdate.newWebsite }
+          : null,
       },
     });
 
@@ -248,7 +263,16 @@ export async function resendInboundHandler(req: Request, res: Response) {
       });
     }
 
-    res.json({ ok: true, matched: true, intent: intent.intent, mood: intent.mood, newState, calendarEventId, inboundAutoSent });
+    res.json({
+      ok: true,
+      matched: true,
+      intent: intent.intent,
+      mood: intent.mood,
+      newState,
+      calendarEventId,
+      inboundAutoSent,
+      contactUpdate,
+    });
   } catch (err) {
     console.error("[Inbound webhook error]", err);
     res.status(500).json({ error: String(err) });
@@ -412,12 +436,16 @@ async function generateCalDraft({
   // Instruction tuned to the detected intent
   const intentInstruction = buildIntentInstruction(intent, calendarEventBooked, extractedDates, prospect);
 
+  const contactNote = prospect.contactEmail
+    ? `Use ${prospect.contactEmail} as their current email for any follow-up references.`
+    : "";
+
   const userPrompt = `You are Cal from StageGate replying to ${prospect.contactName ?? "someone"} at ${prospect.company}.
 
 Their robot: ${[prospect.robotName, prospect.robotType].filter(Boolean).join(" / ") || "unknown"}
 Shows they're attending: ${Array.isArray(prospect.shows) ? (prospect.shows as string[]).join(", ") : "unknown"}
 Conversation state: ${convState}
-
+${contactNote ? `${contactNote}\n` : ""}
 ${intentInstruction}
 
 Previous thread:

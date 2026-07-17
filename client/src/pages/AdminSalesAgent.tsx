@@ -1488,6 +1488,21 @@ export default function AdminSalesAgent() {
     onError: (err) => toast.error(`Resume failed: ${err.message}`),
   });
 
+  const applyContactFromReply = trpc.salesAgent.applyContactFromLatestReply.useMutation({
+    onSuccess: (result) => {
+      if (result.applied && result.newEmail) {
+        toast.success(`Contact updated → ${result.newEmail}`);
+      } else if (result.reason === "unchanged") {
+        toast.info("Email already matches the reply");
+      } else {
+        toast.info(`No contact change applied (${result.reason ?? "unknown"})`);
+      }
+      refetchConvs();
+      void utils.salesAgent.getProspectActivities.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const updateStage = trpc.salesAgent.updateConversationStage.useMutation({
     onSuccess: () => {
       toast.success("Stage updated");
@@ -1944,6 +1959,19 @@ export default function AdminSalesAgent() {
                           <span className={CAL.textMuted}>{selectedConv.prospect.contactEmail}</span>
                         </div>
                       )}
+                      {(prospectActivities as Array<{ type: string }>).some((a) => a.type === "email_replied") && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-2 h-8 text-xs border-teal-700 text-teal-300 hover:bg-teal-950/40 gap-1.5"
+                          disabled={applyContactFromReply.isPending}
+                          onClick={() => applyContactFromReply.mutate({ prospectId: selectedConv.prospect.id })}
+                        >
+                          {applyContactFromReply.isPending
+                            ? <><Loader2 className="w-3 h-3 animate-spin" /> Parsing reply…</>
+                            : <><Mail className="w-3 h-3" /> Apply email from reply</>}
+                        </Button>
+                      )}
                       {selectedConv.prospect.robotType && (
                         <div className="flex items-center gap-2">
                           <Bot className="w-3 h-3" />
@@ -2183,6 +2211,8 @@ export default function AdminSalesAgent() {
                             email_replied:        <MessageSquare className="w-2.5 h-2.5 text-emerald-400" />,
                             followup_accelerated: <Zap className="w-2.5 h-2.5 text-amber-400" />,
                             followup_resumed:     <RefreshCw className="w-2.5 h-2.5 text-emerald-400" />,
+                            contact_enriched:     <Mail className="w-2.5 h-2.5 text-violet-400" />,
+                            contact_email_updated:<Mail className="w-2.5 h-2.5 text-teal-400" />,
                           };
                           const dotColorMap: Record<string, string> = {
                             email_sent:           "bg-blue-500",
@@ -2191,6 +2221,8 @@ export default function AdminSalesAgent() {
                             email_replied:        "bg-emerald-500",
                             followup_accelerated: "bg-amber-500",
                             followup_resumed:     "bg-emerald-500",
+                            contact_enriched:     "bg-violet-500",
+                            contact_email_updated:"bg-teal-500",
                           };
                           // v39: full reply body from metadata
                           const fullReplyBody = act.type === "email_replied"
