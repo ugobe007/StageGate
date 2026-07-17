@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { pickBestDomainEmail } from "./hunter.js";
+import { extractEmailAddress } from "../outreachContacts.js";
 import { prospectNeedsEnrichment, selectProspectsForEnrichment } from "../agents/prospectEnrichment.js";
+
+describe("extractEmailAddress", () => {
+  it("pulls bare address from Resend-style display names", () => {
+    expect(extractEmailAddress("jacob mortensen <jm@uvd-robots.com>")).toBe("jm@uvd-robots.com");
+    expect(extractEmailAddress("dana@acme.com")).toBe("dana@acme.com");
+  });
+
+  it("returns null for invalid strings", () => {
+    expect(extractEmailAddress("not-an-email")).toBeNull();
+    expect(extractEmailAddress("")).toBeNull();
+  });
+});
 
 describe("pickBestDomainEmail", () => {
   it("prefers personal emails over generic role inboxes", () => {

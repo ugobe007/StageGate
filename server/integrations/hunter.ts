@@ -25,6 +25,55 @@ function clampScore(raw: string | undefined, fallback: number): number {
 
 export const HUNTER_MIN_FINDER_SCORE = clampScore(process.env.HUNTER_MIN_FINDER_SCORE, 85);
 export const HUNTER_MIN_DOMAIN_CONFIDENCE = clampScore(process.env.HUNTER_MIN_DOMAIN_CONFIDENCE, 80);
+/** Lower bar when replacing a bounced/quarantined address (still personal-only). */
+export const HUNTER_MIN_RECOVERY_CONFIDENCE = clampScore(process.env.HUNTER_MIN_RECOVERY_CONFIDENCE, 70);
+
+export type HunterErrorKind = "disabled" | "rate_limit" | "auth" | "credits" | "api" | "timeout";
+
+export interface HunterError {
+  kind: HunterErrorKind;
+  message: string;
+  status?: number;
+}
+
+let _lastHunterError: HunterError | null = null;
+
+export function consumeLastHunterError(): HunterError | null {
+  const err = _lastHunterError;
+  _lastHunterError = null;
+  return err;
+}
+
+function classifyHunterFailure(status: number, body: string): HunterError {
+  let parsed: { errors?: Array<{ id?: string; code?: number; details?: string }> } | null = null;
+  try {
+    parsed = JSON.parse(body) as { errors?: Array<{ id?: string; code?: number; details?: string }> };
+  } catch {
+    parsed = null;
+  }
+  const first = parsed?.errors?.[0];
+  const details = (first?.details ?? body).toLowerCase();
+  const id = (first?.id ?? "").toLowerCase();
+
+  if (status === 429) return { kind: "rate_limit", message: "Hunter rate limit (429)", status };
+  if (status === 401 || id.includes("authentication")) {
+    return { kind: "auth", message: first?.details ?? "Hunter authentication failed", status };
+  }
+  if (
+    status === 402 ||
+    id.includes("credit") ||
+    id.includes("payment") ||
+    details.includes("credit") ||
+    details.includes("quota")
+  ) {
+    return { kind: "credits", message: first?.details ?? "Hunter credits exhausted", status };
+  }
+  return {
+    kind: "api",
+    message: first?.details ?? (body.slice(0, 200) || `HTTP ${status}`),
+    status,
+  };
+}
 
 export type EmailConfidence = "high" | "medium" | "low";
 
@@ -74,7 +123,10 @@ async function hunterGet<T>(
   params: Record<string, string>
 ): Promise<T | null> {
   const key = hunterApiKey();
-  if (!key) return null;
+  if (!key) {
+    _lastHunterError = { kind: "disabled", message: "HUNTER_API_KEY not set" };
+    return null;
+  }
 
   const url = new URL(`${HUNTER_BASE}${path}`);
   for (const [k, v] of Object.entries(params)) {
@@ -86,18 +138,21 @@ async function hunterGet<T>(
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     const res = await fetch(url, { signal: controller.signal });
-    if (res.status === 429) {
-      console.warn("[hunter] rate limited (429)");
-      return null;
-    }
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      console.warn(`[hunter] ${path} failed ${res.status}: ${body.slice(0, 200)}`);
+      const err = classifyHunterFailure(res.status, body);
+      _lastHunterError = err;
+      console.warn(`[hunter] ${path} failed ${res.status}: ${err.message}`);
       return null;
     }
+    _lastHunterError = null;
     return (await res.json()) as T;
   } catch (err) {
-    console.warn(`[hunter] ${path} error: ${String(err)}`);
+    const message = String(err);
+    _lastHunterError = message.includes("abort")
+      ? { kind: "timeout", message: "Hunter request timed out" }
+      : { kind: "api", message };
+    console.warn(`[hunter] ${path} error: ${message}`);
     return null;
   } finally {
     clearTimeout(timeout);

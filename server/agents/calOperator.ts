@@ -24,7 +24,7 @@ import {
   dismissJunkProspectsBatch,
   resolveProspectWebsitesBatch,
 } from "./prospectWebsiteResolution.js";
-import { enrichProspectsBatch, quarantineBouncedProspectEmails } from "./prospectEnrichment.js";
+import { enrichProspectsBatch, recoverQuarantinedProspectContacts } from "./prospectEnrichment.js";
 import { refreshCalDraftsCore, getCalWorkflowSummary } from "./salesAgent.js";
 import { computeBounceStats } from "../outreachGate.js";
 
@@ -38,6 +38,8 @@ export type CalOperatorResult = {
   draftsRedrafted: number;
   draftsGenerated: number;
   quarantined: number;
+  quarantineRecovered: number;
+  quarantineUnresolved: number;
   growthBrief?: {
     socialPosts: string[];
     newsletterHooks: string[];
@@ -148,9 +150,13 @@ export async function runCalOperatorCycle(opts?: {
   }
 
   let quarantined = 0;
+  let quarantineRecovered = 0;
+  let quarantineUnresolved = 0;
   try {
-    const q = await quarantineBouncedProspectEmails(db);
+    const q = await recoverQuarantinedProspectContacts(db, { limit: BATCH });
     quarantined = q.quarantined;
+    quarantineRecovered = q.recovered;
+    quarantineUnresolved = q.unresolved;
   } catch (err) {
     errors.push(`quarantine: ${String(err)}`);
   }
@@ -163,7 +169,8 @@ export async function runCalOperatorCycle(opts?: {
 
   console.log(
     `[Cal operator] junk=${junk.dismissed} urls=${websitesResolved} dismissed=${websitesDismissed} ` +
-      `emails=${emailsEnriched} redraft=${draftsRedrafted} newDrafts=${draftsGenerated} quarantine=${quarantined}`,
+      `emails=${emailsEnriched} redraft=${draftsRedrafted} newDrafts=${draftsGenerated} ` +
+      `quarantine=${quarantined} recovered=${quarantineRecovered} unresolved=${quarantineUnresolved}`,
   );
 
   return {
@@ -174,6 +181,8 @@ export async function runCalOperatorCycle(opts?: {
     draftsRedrafted,
     draftsGenerated,
     quarantined,
+    quarantineRecovered,
+    quarantineUnresolved,
     growthBrief,
     workflowAfter,
     errors,

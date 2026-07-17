@@ -17,7 +17,7 @@
 import { promises as dns } from "node:dns";
 import { sql } from "drizzle-orm";
 import type { getDb } from "./db.js";
-import { isGuessedRoleInbox, isPlausibleEmail } from "./outreachContacts.js";
+import { extractEmailAddress, isGuessedRoleInbox, isPlausibleEmail } from "./outreachContacts.js";
 
 type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
 
@@ -80,7 +80,7 @@ export async function ensureSuppressionStore(db: Db): Promise<void> {
 
 /** True if we have ever recorded a bounce/complaint/suppression for this address. */
 export async function isSuppressed(db: Db, email: string): Promise<boolean> {
-  const normalized = email.trim().toLowerCase();
+  const normalized = extractEmailAddress(email) ?? email.trim().toLowerCase();
   if (!normalized) return false;
   try {
     await ensureSuppressionTable(db);
@@ -101,7 +101,7 @@ export async function recordSuppression(
   reason: string,
   opts: { source?: string; prospectId?: number | null } = {},
 ): Promise<void> {
-  const normalized = email.trim().toLowerCase();
+  const normalized = extractEmailAddress(email) ?? email.trim().toLowerCase();
   if (!normalized) return;
   try {
     await ensureSuppressionTable(db);
@@ -112,6 +112,31 @@ export async function recordSuppression(
     `);
   } catch (err) {
     console.warn("[outreachGate] recordSuppression failed:", String(err));
+  }
+}
+
+/** Fix legacy rows stored as `Name <email@domain.com>` so joins and isSuppressed work. */
+export async function normalizeSuppressionEmails(db: Db): Promise<number> {
+  try {
+    await ensureSuppressionTable(db);
+    const rows = await db.execute(sql`
+      SELECT id, email FROM outreach_suppressions WHERE email LIKE '%<%'
+    `);
+    let fixed = 0;
+    for (const row of rows.rows ?? []) {
+      const id = Number((row as { id?: number }).id);
+      const raw = String((row as { email?: string }).email ?? "");
+      const normalized = extractEmailAddress(raw);
+      if (!id || !normalized || normalized === raw.trim().toLowerCase()) continue;
+      await db.execute(sql`
+        UPDATE outreach_suppressions SET email = ${normalized} WHERE id = ${id}
+      `);
+      fixed++;
+    }
+    return fixed;
+  } catch (err) {
+    console.warn("[outreachGate] normalizeSuppressionEmails failed:", String(err));
+    return 0;
   }
 }
 

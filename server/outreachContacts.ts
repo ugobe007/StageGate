@@ -72,6 +72,19 @@ export function isPlausibleEmail(email: string | null | undefined): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
+/** Extract bare address from Resend/Hunter shapes like `Name <user@domain.com>`. */
+export function extractEmailAddress(raw: string | null | undefined): string | null {
+  const trimmed = raw?.trim();
+  if (!trimmed) return null;
+  const bracket = trimmed.match(/<([^>]+@[^>]+)>/);
+  if (bracket?.[1]) {
+    const inner = bracket[1].trim().toLowerCase();
+    return isPlausibleEmail(inner) ? inner : null;
+  }
+  const lowered = trimmed.toLowerCase();
+  return isPlausibleEmail(lowered) ? lowered : null;
+}
+
 /**
  * @deprecated Role-inbox fabrication is disabled. Sending to guessed inboxes was
  * a dominant bounce source. Retained only so existing call sites compile; it now

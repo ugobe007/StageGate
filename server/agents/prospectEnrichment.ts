@@ -9,24 +9,27 @@
  */
 
 import type { Request, Response } from "express";
-import { and, desc, eq, isNotNull, notInArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, notInArray, or, sql } from "drizzle-orm";
 import { getDb } from "../db.js";
-import { prospects, prospectActivities } from "../../drizzle/schema.js";
+import { prospects, prospectActivities, draftEmails } from "../../drizzle/schema.js";
 import {
+  consumeLastHunterError,
   domainSearch,
   findBestProspectEmail,
   hunterEnabled,
+  HUNTER_MIN_RECOVERY_CONFIDENCE,
   pickBestDomainEmail,
   scoreToConfidence,
 } from "../integrations/hunter.js";
 import {
   deriveCompanyDomain,
+  extractEmailAddress,
   isSendableEmailConfidence,
   prospectHasUsableWebsite,
   prospectNeedsEmailFix,
   selectOutreachEmail,
 } from "../outreachContacts.js";
-import { isSuppressed, screenRecipient, ensureSuppressionStore } from "../outreachGate.js";
+import { isSuppressed, normalizeSuppressionEmails, screenRecipient, ensureSuppressionStore } from "../outreachGate.js";
 
 type ProspectRow = typeof prospects.$inferSelect;
 type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
@@ -63,6 +66,7 @@ async function findReplacementContact(
   prospect: ProspectRow,
   db: Db | null,
   exclude: Set<string>,
+  opts: { minDomainConfidence?: number } = {},
 ): Promise<Awaited<ReturnType<typeof findBestProspectEmail>>> {
   const domain = deriveCompanyDomain(prospect);
   if (!domain) return null;
@@ -74,7 +78,9 @@ async function findReplacementContact(
     const addr = (e.value ?? "").trim().toLowerCase();
     return addr && !exclude.has(addr);
   });
-  const best = pickBestDomainEmail(filtered);
+  const best = pickBestDomainEmail(filtered, {
+    minConfidence: opts.minDomainConfidence,
+  });
   if (!best) return null;
 
   if (db && (await isSuppressed(db, best.value))) return null;
@@ -98,13 +104,14 @@ async function findReplacementContact(
  */
 export async function enrichProspectContact(
   prospect: ProspectRow,
-  opts: { db?: Db } = {}
+  opts: { db?: Db; recovery?: boolean } = {}
 ): Promise<string | null> {
   if (!hunterEnabled()) return null;
 
   const db = opts.db ?? (await getDb());
+  const recoveryMin = opts.recovery ? HUNTER_MIN_RECOVERY_CONFIDENCE : undefined;
   const exclude = new Set<string>();
-  const current = prospect.contactEmail?.trim().toLowerCase();
+  const current = extractEmailAddress(prospect.contactEmail) ?? prospect.contactEmail?.trim().toLowerCase();
   if (current) exclude.add(current);
 
   let contact = await findBestProspectEmail(prospect);
@@ -115,14 +122,20 @@ export async function enrichProspectContact(
   }
 
   if (!contact && db) {
-    contact = await findReplacementContact(prospect, db, exclude);
+    contact = await findReplacementContact(prospect, db, exclude, { minDomainConfidence: recoveryMin });
   } else if (!contact) {
-    contact = await findReplacementContact(prospect, null, exclude);
+    contact = await findReplacementContact(prospect, null, exclude, { minDomainConfidence: recoveryMin });
+  }
+
+  if (!contact && opts.recovery) {
+    contact = await findReplacementContact(prospect, db, exclude, {
+      minDomainConfidence: HUNTER_MIN_RECOVERY_CONFIDENCE,
+    });
   }
 
   if (contact && contact.email.trim().toLowerCase() === current) {
     exclude.add(contact.email.trim().toLowerCase());
-    const alt = await findReplacementContact(prospect, db, exclude);
+    const alt = await findReplacementContact(prospect, db, exclude, { minDomainConfidence: recoveryMin });
     contact = alt;
   }
 
@@ -165,7 +178,37 @@ export async function enrichProspectContact(
 export interface EnrichBatchResult {
   attempted: number;
   enriched: number;
+  noResults: number;
+  hunterBlocked: boolean;
+  hunterBlockReason?: string;
+  message?: string;
   results: Array<{ id: number; company: string; email: string | null }>;
+}
+
+export interface QuarantineRecoveryResult {
+  normalizedSuppressions: number;
+  quarantined: number;
+  recovered: number;
+  unresolved: number;
+}
+
+function enrichBatchMessage(result: EnrichBatchResult): string {
+  if (result.hunterBlocked) {
+    if (result.hunterBlockReason?.toLowerCase().includes("credit")) {
+      return `Hunter API blocked the run — ${result.hunterBlockReason}`;
+    }
+    return `Hunter API error — ${result.hunterBlockReason ?? "try again shortly"}`;
+  }
+  if (result.enriched > 0) {
+    return `Hunter found real emails for ${result.enriched} of ${result.attempted} prospects.`;
+  }
+  if (result.attempted === 0) {
+    return "No enrichable prospects — need a website on file and a missing, low-confidence, or generic role inbox.";
+  }
+  return (
+    `Hunter found no person-level emails for ${result.noResults} prospects ` +
+    `(domain not in Hunter's index or below confidence threshold — not a credits issue).`
+  );
 }
 
 /**
@@ -191,22 +234,49 @@ export async function enrichProspectsBatch(db: Db, limit = 25): Promise<EnrichBa
   const toEnrich = selectProspectsForEnrichment(candidates, cap);
 
   let enriched = 0;
+  let noResults = 0;
+  let hunterBlocked = false;
+  let hunterBlockReason: string | undefined;
   const results: EnrichBatchResult["results"] = [];
   for (const p of toEnrich) {
     try {
+      consumeLastHunterError();
       const email = await enrichProspectContact(p, { db });
+      const hunterErr = consumeLastHunterError();
+      if (hunterErr && (hunterErr.kind === "credits" || hunterErr.kind === "auth" || hunterErr.kind === "rate_limit")) {
+        hunterBlocked = true;
+        hunterBlockReason = hunterErr.message;
+        results.push({ id: p.id, company: p.company, email: null });
+        break;
+      }
       if (email) enriched++;
+      else noResults++;
       results.push({ id: p.id, company: p.company, email });
     } catch (err) {
       console.error(`[enrich] prospect ${p.id} failed: ${String(err)}`);
+      noResults++;
       results.push({ id: p.id, company: p.company, email: null });
     }
-    // Gentle pacing, well under Hunter's 15 req/s limit.
     await new Promise((r) => setTimeout(r, 120));
   }
 
-  console.log(`[enrich] attempted ${toEnrich.length}, enriched ${enriched}`);
-  return { attempted: toEnrich.length, enriched, results };
+  console.log(`[enrich] attempted ${toEnrich.length}, enriched ${enriched}, noResults ${noResults}`);
+  return {
+    attempted: toEnrich.length,
+    enriched,
+    noResults,
+    hunterBlocked,
+    hunterBlockReason,
+    results,
+    message: enrichBatchMessage({
+      attempted: toEnrich.length,
+      enriched,
+      noResults,
+      hunterBlocked,
+      hunterBlockReason,
+      results,
+    }),
+  };
 }
 
 type PrepareResult =
@@ -238,27 +308,100 @@ export async function prepareProspectOutreachRecipient(
 }
 
 /**
- * Mark prospects whose on-file email has bounced/complained so enrichment re-runs.
+ * Quarantine bounced addresses, then auto-replace via Hunter (no manual step).
+ * Unresolved prospects get pending drafts discarded so Cal stops retrying them.
  */
-export async function quarantineBouncedProspectEmails(db: Db): Promise<{ quarantined: number }> {
+export async function recoverQuarantinedProspectContacts(
+  db: Db,
+  opts: { limit?: number } = {},
+): Promise<QuarantineRecoveryResult> {
   await ensureSuppressionStore(db);
-  const rows = await db.execute(sql`
-    SELECT p.id, p."contactEmail", p.company
-    FROM prospects p
-    INNER JOIN outreach_suppressions s ON lower(s.email) = lower(p."contactEmail")
-    WHERE p."contactEmail" IS NOT NULL AND p."contactEmail" <> ''
-  `);
+  const normalizedSuppressions = await normalizeSuppressionEmails(db);
+  const cap = Math.min(Math.max(opts.limit ?? 50, 1), 100);
+
+  const rows = await db
+    .select()
+    .from(prospects)
+    .where(
+      and(
+        notInArray(prospects.status, ["converted", "not_interested"]),
+        isNotNull(prospects.contactEmail),
+        sql`trim(${prospects.contactEmail}) <> ''`,
+      ),
+    )
+    .orderBy(desc(prospects.updatedAt))
+    .limit(cap * 4);
+
+  const suppressedRows = await db.execute(sql`SELECT email FROM outreach_suppressions`);
+  const suppressed = new Set(
+    (suppressedRows.rows ?? [])
+      .map((r) => extractEmailAddress(String((r as { email?: string }).email ?? "")))
+      .filter((e): e is string => Boolean(e)),
+  );
+
+  const targets = rows.filter((p) => {
+    const addr = extractEmailAddress(p.contactEmail);
+    return addr && suppressed.has(addr);
+  }).slice(0, cap);
+
   let quarantined = 0;
-  for (const row of rows.rows ?? []) {
-    const id = Number((row as { id?: number }).id);
-    if (!id) continue;
+  let recovered = 0;
+  let unresolved = 0;
+
+  for (const prospect of targets) {
+    const bounced = extractEmailAddress(prospect.contactEmail);
+    if (!bounced) continue;
+
+    quarantined++;
     await db
       .update(prospects)
-      .set({ emailConfidence: "low", updatedAt: new Date() })
-      .where(eq(prospects.id, id));
-    quarantined++;
+      .set({
+        contactEmail: null,
+        emailConfidence: "low",
+        updatedAt: new Date(),
+      })
+      .where(eq(prospects.id, prospect.id));
+    prospect.contactEmail = null;
+    prospect.emailConfidence = "low";
+
+    const replacement = await enrichProspectContact(prospect, { db, recovery: true });
+    if (replacement && isSendableEmailConfidence(prospect.emailConfidence)) {
+      recovered++;
+      continue;
+    }
+
+    unresolved++;
+    const noteLine = "\n[Cal] Bounced address removed; Hunter found no replacement — auto-skipped.";
+    await db
+      .update(prospects)
+      .set({
+        notes: ((prospect.notes ?? "") + noteLine).trim(),
+        updatedAt: new Date(),
+      })
+      .where(eq(prospects.id, prospect.id));
+    await db
+      .update(draftEmails)
+      .set({ status: "discarded", updatedAt: new Date() })
+      .where(
+        and(
+          eq(draftEmails.prospectId, prospect.id),
+          inArray(draftEmails.status, ["pending", "approved"]),
+        ),
+      );
+    await new Promise((r) => setTimeout(r, 120));
   }
-  return { quarantined };
+
+  console.log(
+    `[quarantine-recover] normalized=${normalizedSuppressions} quarantined=${quarantined} ` +
+      `recovered=${recovered} unresolved=${unresolved}`,
+  );
+  return { normalizedSuppressions, quarantined, recovered, unresolved };
+}
+
+/** @deprecated Use recoverQuarantinedProspectContacts — kept for admin API compat. */
+export async function quarantineBouncedProspectEmails(db: Db): Promise<{ quarantined: number }> {
+  const result = await recoverQuarantinedProspectContacts(db);
+  return { quarantined: result.quarantined };
 }
 
 /**

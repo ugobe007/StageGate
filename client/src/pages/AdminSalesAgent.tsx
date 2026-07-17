@@ -442,8 +442,12 @@ function CalDeliverabilityBanner() {
   });
   const quarantine = trpc.admin.quarantineBouncedProspects.useMutation({
     onSuccess: (data) => {
-      const r = (data as { result: { quarantined: number } }).result;
-      toast.success(`Quarantined ${r.quarantined} bounced prospect email${r.quarantined !== 1 ? "s" : ""}`);
+      const r = (data as {
+        result: { quarantined: number; recovered: number; unresolved: number };
+      }).result;
+      toast.success(
+        `Quarantine: ${r.quarantined} cleared, ${r.recovered} Hunter-replaced, ${r.unresolved} auto-skipped`,
+      );
       utils.admin.getDeliverabilityStatus.invalidate();
     },
     onError: (err: { message: string }) => toast.error(err.message),
@@ -476,7 +480,7 @@ function CalDeliverabilityBanner() {
           Follow-ups to engaged threads still run. New intros resume automatically once the rate drops below the threshold.
         </p>
         <p className="text-zinc-500 text-xs">
-          Bulk intro sends are blocked while the breaker is open. Cal Operator, Hunter URL/email lookup, redrafting, and manual review still work — only automated new intros are paused. Run quarantine, then enrich contacts with Hunter.
+          Bulk intro sends are blocked while the breaker is open. Cal Operator, Hunter URL/email lookup, redrafting, and manual review still work — only automated new intros are paused. Quarantine + Hunter recovery runs automatically in Cal Operator.
         </p>
       </div>
       <Button
@@ -501,6 +505,8 @@ type CalOperatorReportData = {
   draftsRedrafted: number;
   draftsGenerated: number;
   quarantined: number;
+  quarantineRecovered?: number;
+  quarantineUnresolved?: number;
   workflowAfter?: {
     needsWebsite: number;
     needsContactFix: number;
@@ -530,7 +536,7 @@ function CalOperatorReport({
           Cal operator running…
         </p>
         <p className="text-zinc-400 text-xs mt-1 leading-relaxed">
-          Junk cleanup → Hunter URLs → Hunter emails → quarantine bounces. Draft redraft runs separately via Redraft emails.
+          Junk cleanup → Hunter URLs → Hunter emails → quarantine + auto-recover bounces. Draft redraft runs separately via Redraft emails.
         </p>
       </div>
     );
@@ -582,7 +588,12 @@ function CalOperatorReport({
               <span className="text-zinc-300"><strong className="text-white">{report.emailsEnriched}</strong> emails enriched</span>
               <span className="text-zinc-300"><strong className="text-white">{report.draftsRedrafted}</strong> drafts redrafted</span>
               <span className="text-zinc-300"><strong className="text-white">{report.draftsGenerated}</strong> drafts created</span>
-              <span className="text-zinc-300"><strong className="text-white">{report.quarantined}</strong> bounced quarantined</span>
+              <span className="text-zinc-300">
+                <strong className="text-white">{report.quarantined}</strong> bounced cleared
+                {(report.quarantineRecovered ?? 0) > 0 || (report.quarantineUnresolved ?? 0) > 0
+                  ? ` (${report.quarantineRecovered ?? 0} replaced, ${report.quarantineUnresolved ?? 0} skipped)`
+                  : ""}
+              </span>
             </div>
           )}
           {w && totalActions > 0 && (
@@ -1169,6 +1180,8 @@ export default function AdminSalesAgent() {
         draftsRedrafted: d.draftsRedrafted,
         draftsGenerated: d.draftsGenerated,
         quarantined: d.quarantined,
+        quarantineRecovered: d.quarantineRecovered,
+        quarantineUnresolved: d.quarantineUnresolved,
         workflowAfter: d.workflowAfter,
         errors: d.errors,
         completedAt: d.completedAt,

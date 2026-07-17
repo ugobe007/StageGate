@@ -8,6 +8,7 @@ import { getDb } from "../db";
 import { emailTrackingEvents, prospectActivities, draftEmails, salesAgentConversations, emailThreads } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { verifyResendSignature } from "./resendVerify";
+import { extractEmailAddress } from "../outreachContacts.js";
 
 export async function resendWebhookHandler(req: Request, res: Response): Promise<void> {
   // Validate signature
@@ -35,7 +36,7 @@ export async function resendWebhookHandler(req: Request, res: Response): Promise
 
   const recipientOf = (): string | null => {
     const raw = Array.isArray(data.to) ? data.to[0] : typeof data.to === "string" ? data.to : null;
-    return raw?.trim().toLowerCase() ?? null;
+    return extractEmailAddress(raw) ?? raw?.trim().toLowerCase() ?? null;
   };
 
   // Deliverability: a bounce or complaint is a hard signal never to send to this

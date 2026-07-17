@@ -18,7 +18,7 @@ import { researchProspect } from "./research-agent";
 import { roleBasedOutreachEmails, isDeprecatedRoleInbox } from "./outreachContacts";
 import { salesAgentManualSendCore, salesAgentPreviewCore, generateCalDraftsCore, refreshCalDraftsCore, redraftPendingCalDraftsCore, repairLegacyCalDraftCore, advanceProspectConversationAfterSend, getCalWorkflowSummary } from "./agents/salesAgent";
 import { isLegacyFrankDraft } from "./agents/calDraftQuality";
-import { quarantineBouncedProspectEmails } from "./agents/prospectEnrichment";
+import { recoverQuarantinedProspectContacts } from "./agents/prospectEnrichment";
 import { computeBounceStats } from "./outreachGate";
 
 // Admin-only middleware
@@ -1932,13 +1932,13 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       return computeBounceStats(db);
     }),
 
-    /** Mark prospects with suppressed/bounced on-file emails as low-confidence. */
+    /** Auto-quarantine bounced emails, Hunter-replace, discard unrecoverable drafts. */
     quarantineBouncedProspects: adminProcedure.mutation(async ({ ctx }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
       return workflows.withAgentRun(
-        { agentName: "Cal Quarantine", triggeredBy: ctx.user?.name ?? "admin", inputSummary: "bounced prospect emails" },
-        async () => quarantineBouncedProspectEmails(db),
+        { agentName: "Cal Quarantine", triggeredBy: ctx.user?.name ?? "admin", inputSummary: "bounced prospect recovery" },
+        async () => recoverQuarantinedProspectContacts(db),
       );
     }),
 
@@ -3170,16 +3170,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         }
         const { enrichProspectsBatch } = await import("./agents/prospectEnrichment");
         const result = await enrichProspectsBatch(dbConn, input?.limit ?? 25);
-        const msg =
-          result.enriched > 0
-            ? `Hunter found real emails for ${result.enriched} of ${result.attempted} prospects.`
-            : result.attempted === 0
-              ? "No enrichable prospects — need a website on file and a missing, low-confidence, or generic role inbox."
-              : `Hunter could not find better emails for ${result.attempted} prospects (check Hunter credits or domain coverage).`;
-        return {
-          ...result,
-          message: msg,
-        };
+        return result;
       }),
 
     resolveWebsitesHunter: adminProcedure
