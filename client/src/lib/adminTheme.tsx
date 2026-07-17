@@ -87,8 +87,8 @@ export function AdminPage({
     surface === "light"
       ? {
           minHeight: "100%",
-          background: "linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%)",
-          color: "#0f172a",
+          background: "linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%)",
+          color: "#020617",
           fontFamily: ADMIN.font,
         }
       : adminPageOuterStyle;

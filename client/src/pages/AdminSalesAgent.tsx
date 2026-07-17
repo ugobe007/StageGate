@@ -84,20 +84,23 @@ function timeAgo(date: Date | string | null | undefined) {
 
 const TERMINAL = ["booked", "not_interested", "converted", "responded", "scheduling"];
 
-/** Lighter Cal command-center palette — raised surfaces on a soft gray base. */
+/** Cal command-center — medium grey base, raised slate panels, high-contrast text. */
 const CAL = {
-  page: "bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 text-slate-900",
-  header: "bg-white border-slate-200 shadow-sm",
-  card: "bg-white border-slate-200 shadow-sm",
-  cardMuted: "bg-slate-50 border-slate-200",
-  text: "text-slate-900",
-  textMuted: "text-slate-600",
-  textDim: "text-slate-500",
-  border: "border-slate-200",
-  stepActive: "bg-amber-50 border-amber-300 ring-1 ring-amber-200",
-  stepIdle: "bg-white border-slate-200 hover:border-slate-300",
-  listHover: "hover:bg-slate-50",
-  listSelected: "bg-amber-50/80 border-l-amber-500",
+  page: "bg-gradient-to-b from-slate-300 via-slate-300 to-slate-400 text-slate-950",
+  header: "bg-slate-100 border-slate-400/70 shadow-md",
+  card: "bg-slate-100 border-slate-400/60 shadow-sm",
+  cardMuted: "bg-slate-200/90 border-slate-400/50",
+  panel: "bg-slate-100 border-slate-400/60",
+  text: "text-slate-950",
+  textMuted: "text-slate-700",
+  textDim: "text-slate-600",
+  border: "border-slate-400/60",
+  stepActive: "bg-amber-100 border-amber-500/70 ring-1 ring-amber-400/50 shadow-sm",
+  stepIdle: "bg-slate-100 border-slate-400/70 hover:border-slate-500/80 hover:shadow-sm",
+  listHover: "hover:bg-slate-200",
+  listSelected: "bg-amber-100 border-l-amber-600",
+  listRow: "bg-slate-100/95",
+  tabBar: "bg-slate-200/90",
 } as const;
 
 type WorkflowStep = "contacts" | "draft" | "review" | "send" | "followup";
@@ -180,12 +183,12 @@ function CalWorkflowBar({
                   isActive
                     ? CAL.stepActive
                     : isSuggested
-                      ? "bg-amber-50/60 border-amber-200 hover:border-amber-300"
+                      ? "bg-amber-100/80 border-amber-400/60 hover:border-amber-500/70"
                       : CAL.stepIdle
                 }`}
               >
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className={`text-[10px] font-bold uppercase tracking-wide ${isActive ? "text-amber-700" : "text-slate-400"}`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wide ${isActive ? "text-amber-800" : "text-slate-500"}`}>
                     {step.num}
                   </span>
                   <span className={`text-xs font-semibold ${isActive ? CAL.text : "text-slate-700"}`}>
@@ -193,7 +196,7 @@ function CalWorkflowBar({
                   </span>
                   {count > 0 && (
                     <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                      isActive ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-700"
+                      isActive ? "bg-amber-600 text-white" : "bg-slate-300 text-slate-800"
                     }`}>
                       {count}
                     </span>
@@ -254,12 +257,12 @@ function CalPipelineStatusStrip({
           <p className={`text-xs font-semibold uppercase tracking-wide ${CAL.textDim} mb-2`}>Pipeline status</p>
           <div className="flex flex-wrap gap-2 mb-2">
             {[
-              { label: "No website", n: workflow.needsWebsite, color: "bg-slate-100 text-slate-700" },
-              { label: "Need email", n: workflow.needsContactFix, color: "bg-sky-50 text-sky-800" },
-              { label: "Need draft", n: workflow.needsDraft, color: "bg-amber-50 text-amber-900" },
-              { label: "In review", n: workflow.pendingReview, color: "bg-violet-50 text-violet-900" },
-              { label: "Follow-up due", n: workflow.followUpDue, color: "bg-emerald-50 text-emerald-900" },
-              { label: "Awaiting reply", n: workflow.awaitingReply, color: "bg-teal-50 text-teal-900" },
+              { label: "No website", n: workflow.needsWebsite, color: "bg-slate-200 text-slate-800 border border-slate-400/40" },
+              { label: "Need email", n: workflow.needsContactFix, color: "bg-sky-200/80 text-sky-950 border border-sky-400/40" },
+              { label: "Need draft", n: workflow.needsDraft, color: "bg-amber-200/80 text-amber-950 border border-amber-400/40" },
+              { label: "In review", n: workflow.pendingReview, color: "bg-violet-200/80 text-violet-950 border border-violet-400/40" },
+              { label: "Follow-up due", n: workflow.followUpDue, color: "bg-emerald-200/80 text-emerald-950 border border-emerald-400/40" },
+              { label: "Awaiting reply", n: workflow.awaitingReply, color: "bg-teal-200/80 text-teal-950 border border-teal-400/40" },
             ].map((m) => (
               <span key={m.label} className={`text-[11px] font-medium px-2 py-1 rounded-md ${m.color}`}>
                 {m.label}: <strong>{m.n}</strong>
@@ -558,10 +561,10 @@ function CalDeliverabilityBanner({
   return (
     <div className={`flex items-start gap-3 px-4 py-3 rounded-lg border text-sm mb-4 ${
       stats.paused
-        ? "bg-amber-50 border-amber-200"
-        : "bg-yellow-50 border-yellow-200"
+        ? "bg-amber-100 border-amber-500/50"
+        : "bg-yellow-100 border-yellow-500/40"
     }`}>
-      <ShieldAlert className={`w-4 h-4 flex-shrink-0 mt-0.5 ${stats.paused ? "text-amber-600" : "text-yellow-600"}`} />
+      <ShieldAlert className={`w-4 h-4 flex-shrink-0 mt-0.5 ${stats.paused ? "text-amber-800" : "text-yellow-800"}`} />
       <div className="flex-1 min-w-0 space-y-1">
         {stats.paused ? (
           <p className="text-amber-900 font-medium">
@@ -628,11 +631,11 @@ function RelayOperatorReport({
   const d = run?.details;
 
   return (
-    <div className={`mx-6 mt-2 mb-1 px-4 py-3 rounded-lg border border-cyan-200 bg-cyan-50/80 text-sm`}>
+    <div className={`mx-6 mt-2 mb-1 px-4 py-3 rounded-lg border border-cyan-600/30 ${CAL.card} text-sm`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-cyan-900 font-medium flex items-center gap-2">
-            <Activity className="w-4 h-4 text-cyan-600" />
+            <Activity className="w-4 h-4 text-cyan-700" />
             Relay — autonomous loop
             {run?.id != null && (
               <span className="text-cyan-700/70 text-xs font-normal">run #{run.id}</span>
@@ -688,9 +691,9 @@ function CalOperatorReport({
 }) {
   if (isRunning) {
     return (
-      <div className="mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border border-violet-200 bg-violet-50 text-sm">
-        <p className="text-violet-900 font-medium flex items-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
+      <div className="mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border border-violet-500/40 bg-slate-100 text-sm">
+        <p className="text-violet-950 font-medium flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-violet-700" />
           Cal operator running…
         </p>
         <p className="text-slate-600 text-xs mt-1 leading-relaxed">
@@ -723,11 +726,11 @@ function CalOperatorReport({
     report.quarantined;
 
   return (
-    <div className="mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border border-violet-200 bg-violet-50/80 text-sm">
+    <div className="mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border border-violet-500/40 bg-slate-100 text-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-violet-900 font-medium flex items-center gap-2">
-            <Bot className="w-4 h-4 text-violet-600" />
+          <p className="text-violet-950 font-medium flex items-center gap-2">
+            <Bot className="w-4 h-4 text-violet-700" />
             Cal operator report
             {report.runId != null && (
               <span className="text-violet-400/60 text-xs font-normal">run #{report.runId}</span>
@@ -1616,7 +1619,7 @@ export default function AdminSalesAgent() {
         />
 
         {/* ── Secondary tabs (review queue + meetings) ── */}
-        <div className={`flex items-center gap-1 px-6 border-b ${CAL.border} bg-white/80`}>
+        <div className={`flex items-center gap-1 px-6 border-b ${CAL.border} ${CAL.tabBar}`}>
           <button
             onClick={() => goWorkflowStep(workflowStep === "review" || workflowStep === "send" ? workflowStep : "contacts")}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border-b-2 -mb-px ${
@@ -1665,7 +1668,7 @@ export default function AdminSalesAgent() {
             {/* Left panel */}
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Step actions */}
-              <div className={`px-6 py-4 border-b ${CAL.border} bg-white/60`}>
+              <div className={`px-6 py-4 border-b ${CAL.border} ${CAL.cardMuted}`}>
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                   <p className={`text-sm ${CAL.textMuted}`}>
                     {workflowStep === "contacts" && (
@@ -1793,16 +1796,16 @@ export default function AdminSalesAgent() {
               </div>
 
               {/* Filter bar — workflow-focused only */}
-              <div className={`px-6 py-3 border-b ${CAL.border} bg-slate-50/80 flex flex-col gap-2`}>
+              <div className={`px-6 py-3 border-b ${CAL.border} ${CAL.cardMuted} flex flex-col gap-2`}>
                 {workflowStep === "contacts" && filterStage === "needs_email" && workflow.needsContactFix > 0 && (
-                  <p className="text-xs text-sky-800 bg-sky-50 border border-sky-200 rounded-md px-3 py-2">
+                  <p className="text-xs text-sky-950 bg-sky-200/70 border border-sky-500/40 rounded-md px-3 py-2">
                     Cal resolves these automatically: Hunter domain lookup first, then person-level email. Queue shrinks after each Relay / Cal Operator run.
                   </p>
                 )}
                 <div className="flex items-center gap-2 overflow-x-auto">
                 <button
                   onClick={() => setFilterStage("all")}
-                  className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "all" ? "bg-slate-700 text-white" : `${CAL.textDim} hover:text-slate-700`}`}
+                  className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "all" ? "bg-slate-600 text-white" : `${CAL.textDim} hover:text-slate-900`}`}
                 >
                   All ({conversations.length})
                 </button>
@@ -1810,13 +1813,13 @@ export default function AdminSalesAgent() {
                   <>
                   <button
                     onClick={() => setFilterStage("needs_website")}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "needs_website" ? "bg-slate-200 text-slate-800" : `${CAL.textDim} hover:text-slate-700`}`}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "needs_website" ? "bg-slate-400 text-slate-950" : `${CAL.textDim} hover:text-slate-900`}`}
                   >
                     No website ({workflow.needsWebsite})
                   </button>
                   <button
                     onClick={() => setFilterStage("needs_email")}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "needs_email" ? "bg-sky-200 text-sky-900" : `${CAL.textDim} hover:text-slate-700`}`}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "needs_email" ? "bg-sky-400 text-sky-950" : `${CAL.textDim} hover:text-slate-900`}`}
                   >
                     Cal resolving email ({workflow.needsContactFix})
                   </button>
@@ -1826,13 +1829,13 @@ export default function AdminSalesAgent() {
                   <>
                     <button
                       onClick={() => setFilterStage("ready")}
-                      className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "ready" ? "bg-amber-500/30 text-amber-300" : "text-zinc-500 hover:text-zinc-300"}`}
+                      className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "ready" ? "bg-amber-300/80 text-amber-950" : `${CAL.textDim} hover:text-slate-800`}`}
                     >
                       Due now ({workflow.followUpDue})
                     </button>
                     <button
                       onClick={() => setFilterStage("awaiting")}
-                      className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "awaiting" ? "bg-emerald-500/30 text-emerald-300" : "text-zinc-500 hover:text-zinc-300"}`}
+                      className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "awaiting" ? "bg-emerald-300/80 text-emerald-950" : `${CAL.textDim} hover:text-slate-800`}`}
                     >
                       Awaiting reply ({workflow.awaitingReply})
                     </button>
@@ -1842,7 +1845,7 @@ export default function AdminSalesAgent() {
               </div>
 
               {/* Conversation list */}
-              <div className="flex-1 overflow-y-auto bg-white/40">
+              <div className={`flex-1 overflow-y-auto ${CAL.page}`}>
                 {convsLoading ? (
                   <div className={`flex items-center justify-center h-32 ${CAL.textDim}`}>
                     <RefreshCw className="w-4 h-4 animate-spin mr-2" /> Loading…
@@ -1868,7 +1871,7 @@ export default function AdminSalesAgent() {
                         <div
                           key={conv.id}
                           onClick={() => setSelectedProspectId(prospect.id)}
-                          className={`px-6 py-3.5 cursor-pointer transition-colors ${CAL.listHover} ${isSelected ? `${CAL.listSelected} border-l-2` : "border-l-2 border-transparent bg-white/70"}`}
+                          className={`px-6 py-3.5 cursor-pointer transition-colors ${CAL.listHover} ${isSelected ? `${CAL.listSelected} border-l-2` : `border-l-2 border-transparent ${CAL.listRow}`}`}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
@@ -1891,14 +1894,14 @@ export default function AdminSalesAgent() {
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 text-xs text-zinc-500">
+                              <div className={`flex items-center gap-2 text-xs ${CAL.textDim}`}>
                                 {prospect.contactName && <span className="truncate">{prospect.contactName}</span>}
-                                {prospect.robotType && <span className="truncate text-zinc-600">{prospect.robotType}</span>}
+                                {prospect.robotType && <span className={`truncate ${CAL.textMuted}`}>{prospect.robotType}</span>}
                               </div>
                             </div>
                             <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
                               {stageBadge(conv.state ?? "discovery")}
-                              <span className={`text-xs ${isReady ? "text-amber-400 font-medium" : "text-zinc-600"}`}>
+                              <span className={`text-xs ${isReady ? "text-amber-700 font-semibold" : CAL.textMuted}`}>
                                 {readyLabel ?? timeAgo(conv.lastActivityAt)}
                               </span>
                             </div>
@@ -1912,30 +1915,30 @@ export default function AdminSalesAgent() {
             </div>
 
             {/* Right panel — detail */}
-            <div className="w-96 border-l border-white/10 flex flex-col overflow-hidden">
+            <div className={`w-96 border-l ${CAL.border} ${CAL.panel} flex flex-col overflow-hidden shadow-inner`}>
               {selectedConv ? (
                 <>
-                  <div className="px-5 pt-5 pb-4 border-b border-white/10">
+                  <div className={`px-5 pt-5 pb-4 border-b ${CAL.border}`}>
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h2 className="font-semibold text-white">{selectedConv.prospect.company}</h2>
+                        <h2 className={`font-semibold ${CAL.text}`}>{selectedConv.prospect.company}</h2>
                         {selectedConv.prospect.contactName && (
-                          <p className="text-sm text-zinc-400">{selectedConv.prospect.contactName}</p>
+                          <p className={`text-sm ${CAL.textMuted}`}>{selectedConv.prospect.contactName}</p>
                         )}
                         {selectedConv.prospect.contactTitle && (
-                          <p className="text-xs text-zinc-600">{selectedConv.prospect.contactTitle}</p>
+                          <p className={`text-xs ${CAL.textDim}`}>{selectedConv.prospect.contactTitle}</p>
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         {stageBadge(selectedConv.conv.state ?? "discovery")}
-                        <span className="text-xs text-zinc-600">{selectedConv.conv.followUpCount ?? 0} emails sent</span>
+                        <span className={`text-xs ${CAL.textDim}`}>{selectedConv.conv.followUpCount ?? 0} emails sent</span>
                       </div>
                     </div>
-                    <div className="space-y-1 text-xs text-zinc-500">
+                    <div className={`space-y-1 text-xs ${CAL.textDim}`}>
                       {selectedConv.prospect.contactEmail && (
                         <div className="flex items-center gap-1.5">
                           <Mail className="w-3 h-3" />
-                          <span className="text-zinc-400">{selectedConv.prospect.contactEmail}</span>
+                          <span className={CAL.textMuted}>{selectedConv.prospect.contactEmail}</span>
                         </div>
                       )}
                       {selectedConv.prospect.robotType && (
