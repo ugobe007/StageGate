@@ -84,23 +84,23 @@ function timeAgo(date: Date | string | null | undefined) {
 
 const TERMINAL = ["booked", "not_interested", "converted", "responded", "scheduling"];
 
-/** Cal command-center — darker slate base, readable type, page scrolls naturally. */
+/** Cal command-center — matches admin shell, internal scroll, readable type. */
 const CAL = {
-  page: "bg-gradient-to-b from-slate-700 via-slate-700 to-slate-800 text-slate-100",
-  header: "bg-slate-800/95 border-slate-600 shadow-lg",
-  card: "bg-slate-800/95 border-slate-600 shadow-md",
-  cardMuted: "bg-slate-800/80 border-slate-600/80",
-  panel: "bg-slate-800 border-slate-600",
+  page: "bg-[#1C1E22] text-slate-100",
+  header: "bg-[#24272e] border-white/10 shadow-lg",
+  card: "bg-[#24272e] border-white/10 shadow-md",
+  cardMuted: "bg-[#24272e]/90 border-white/10",
+  panel: "bg-[#24272e] border-white/10",
   text: "text-slate-50",
   textMuted: "text-slate-300",
   textDim: "text-slate-400",
-  border: "border-slate-600",
-  stepActive: "bg-amber-950/50 border-amber-500/70 ring-1 ring-amber-500/40 shadow-sm",
-  stepIdle: "bg-slate-800 border-slate-600 hover:border-slate-500 hover:bg-slate-750",
-  listHover: "hover:bg-slate-700/90",
-  listSelected: "bg-slate-700/95 border-l-amber-400",
-  listRow: "bg-slate-800/60",
-  tabBar: "bg-slate-800/95",
+  border: "border-white/10",
+  stepActive: "bg-amber-950/40 border-amber-500/70 ring-1 ring-amber-500/40 shadow-sm",
+  stepIdle: "bg-[#24272e] border-white/10 hover:border-white/20 hover:bg-[#2b2f38]",
+  listHover: "hover:bg-[#2b2f38]",
+  listSelected: "bg-[#2b2f38] border-l-amber-400",
+  listRow: "bg-[#24272e]/80",
+  tabBar: "bg-[#24272e]",
   body: "text-[15px] leading-relaxed antialiased",
   chip: "text-sm font-medium px-2.5 py-1 rounded-md",
 } as const;
@@ -1571,8 +1571,8 @@ export default function AdminSalesAgent() {
 
   return (
     <>
-      <AdminPage noPadding maxWidth="none" surface="light">
-      <div className={`flex flex-col w-full pb-10 ${CAL.page} ${CAL.body}`}>
+      <AdminPage fullHeight noPadding maxWidth="none" surface="dark">
+      <div className={`flex flex-col flex-1 min-h-0 overflow-y-auto overscroll-y-contain pb-10 ${CAL.page} ${CAL.body}`}>
 
         <CalWorkflowBar
           workflow={workflow}
