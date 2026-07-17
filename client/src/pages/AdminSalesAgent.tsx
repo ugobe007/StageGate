@@ -84,6 +84,22 @@ function timeAgo(date: Date | string | null | undefined) {
 
 const TERMINAL = ["booked", "not_interested", "converted", "responded", "scheduling"];
 
+/** Lighter Cal command-center palette — raised surfaces on a soft gray base. */
+const CAL = {
+  page: "bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 text-slate-900",
+  header: "bg-white border-slate-200 shadow-sm",
+  card: "bg-white border-slate-200 shadow-sm",
+  cardMuted: "bg-slate-50 border-slate-200",
+  text: "text-slate-900",
+  textMuted: "text-slate-600",
+  textDim: "text-slate-500",
+  border: "border-slate-200",
+  stepActive: "bg-amber-50 border-amber-300 ring-1 ring-amber-200",
+  stepIdle: "bg-white border-slate-200 hover:border-slate-300",
+  listHover: "hover:bg-slate-50",
+  listSelected: "bg-amber-50/80 border-l-amber-500",
+} as const;
+
 type WorkflowStep = "contacts" | "draft" | "review" | "send" | "followup";
 
 type WorkflowSummary = {
@@ -133,14 +149,14 @@ function CalWorkflowBar({
     workflow.suggestedStep !== "idle" ? workflow.suggestedStep : null;
 
   return (
-    <div className="px-6 pt-4 pb-3 border-b border-white/10 bg-[#1a1d23]/80">
+    <div className={`px-6 pt-4 pb-3 border-b ${CAL.border} ${CAL.header}`}>
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-          <Bot className="w-5 h-5 text-amber-400" />
+        <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+          <Bot className="w-5 h-5 text-amber-700" />
         </div>
         <div className="min-w-0">
-          <h1 className="text-base font-semibold text-white leading-tight">Cal — Outreach workflow</h1>
-          <p className="text-xs text-zinc-500 truncate">
+          <h1 className={`text-base font-semibold ${CAL.text} leading-tight`}>Cal — Outreach workflow</h1>
+          <p className={`text-xs ${CAL.textDim} truncate`}>
             StageGate · show logistics · onstage.bot — OEMs & event companies
             {lastRunLabel ? ` · Last run ${lastRunLabel}` : ""}
             {suggested && suggested !== activeStep
@@ -162,35 +178,123 @@ function CalWorkflowBar({
                 onClick={() => onStepChange(step.id)}
                 className={`text-left rounded-lg px-3 py-2.5 min-w-[7.5rem] transition-colors border ${
                   isActive
-                    ? "bg-amber-500/15 border-amber-500/40 ring-1 ring-amber-500/30"
+                    ? CAL.stepActive
                     : isSuggested
-                      ? "bg-[#24272e] border-amber-700/50 hover:border-amber-600/60"
-                      : "bg-[#24272e]/60 border-white/10 hover:border-white/20"
+                      ? "bg-amber-50/60 border-amber-200 hover:border-amber-300"
+                      : CAL.stepIdle
                 }`}
               >
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className={`text-[10px] font-bold uppercase tracking-wide ${isActive ? "text-amber-400" : "text-zinc-600"}`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wide ${isActive ? "text-amber-700" : "text-slate-400"}`}>
                     {step.num}
                   </span>
-                  <span className={`text-xs font-semibold ${isActive ? "text-white" : "text-zinc-300"}`}>
+                  <span className={`text-xs font-semibold ${isActive ? CAL.text : "text-slate-700"}`}>
                     {step.label}
                   </span>
                   {count > 0 && (
                     <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                      isActive ? "bg-amber-500 text-black" : "bg-zinc-700 text-zinc-200"
+                      isActive ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-700"
                     }`}>
                       {count}
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-zinc-500 leading-snug">{step.hint}</p>
+                <p className={`text-[10px] ${CAL.textDim} leading-snug`}>{step.hint}</p>
               </button>
               {i < WORKFLOW_STEPS.length - 1 && (
-                <ChevronRight className="w-4 h-4 text-zinc-700 mx-0.5 flex-shrink-0 hidden sm:block" />
+                <ChevronRight className="w-4 h-4 text-slate-300 mx-0.5 flex-shrink-0 hidden sm:block" />
               )}
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function CalPipelineStatusStrip({
+  workflow,
+  activeStep,
+  deliverability,
+  lastRelayAt,
+  lastCalAt,
+  calRunning,
+  relayRunning,
+  quarantineRecovered,
+}: {
+  workflow: WorkflowSummary;
+  activeStep: WorkflowStep;
+  deliverability?: { paused: boolean; rate: number; threshold: number; sent: number; bounced: number } | null;
+  lastRelayAt?: string;
+  lastCalAt?: string;
+  calRunning: boolean;
+  relayRunning: boolean;
+  quarantineRecovered?: number;
+}) {
+  const stepMeta = WORKFLOW_STEPS.find((s) => s.id === activeStep);
+  const workingOn =
+    calRunning || relayRunning
+      ? calRunning && relayRunning
+        ? "Cal + Relay running…"
+        : relayRunning
+          ? "Relay loop running…"
+          : "Cal operator running…"
+      : "Cal + Relay auto-run 2× daily (10:30 & 22:30 UTC)";
+
+  const nextActions: string[] = [];
+  if (workflow.needsWebsite > 0) nextActions.push(`${workflow.needsWebsite} URL lookups`);
+  if (workflow.needsContactFix > 0) nextActions.push(`${workflow.needsContactFix} Hunter emails`);
+  if (workflow.needsDraft > 0) nextActions.push(`${workflow.needsDraft} drafts`);
+  if (workflow.pendingReview > 0) nextActions.push(`${workflow.pendingReview} to review`);
+
+  return (
+    <div className={`mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border ${CAL.border} ${CAL.card}`}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className={`text-xs font-semibold uppercase tracking-wide ${CAL.textDim} mb-2`}>Pipeline status</p>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {[
+              { label: "No website", n: workflow.needsWebsite, color: "bg-slate-100 text-slate-700" },
+              { label: "Need email", n: workflow.needsContactFix, color: "bg-sky-50 text-sky-800" },
+              { label: "Need draft", n: workflow.needsDraft, color: "bg-amber-50 text-amber-900" },
+              { label: "In review", n: workflow.pendingReview, color: "bg-violet-50 text-violet-900" },
+              { label: "Follow-up due", n: workflow.followUpDue, color: "bg-emerald-50 text-emerald-900" },
+              { label: "Awaiting reply", n: workflow.awaitingReply, color: "bg-teal-50 text-teal-900" },
+            ].map((m) => (
+              <span key={m.label} className={`text-[11px] font-medium px-2 py-1 rounded-md ${m.color}`}>
+                {m.label}: <strong>{m.n}</strong>
+              </span>
+            ))}
+          </div>
+          <p className={`text-sm ${CAL.text}`}>
+            <span className="font-medium">You are on step {stepMeta?.num ?? "—"} — {stepMeta?.label ?? activeStep}.</span>
+            {nextActions.length > 0 && (
+              <span className={CAL.textMuted}> Queue: {nextActions.join(" · ")}.</span>
+            )}
+          </p>
+          <p className={`text-xs ${CAL.textDim} mt-1 flex items-center gap-1.5`}>
+            {(calRunning || relayRunning) && <Loader2 className="w-3 h-3 animate-spin text-amber-600" />}
+            {workingOn}
+            {lastRelayAt ? ` · Relay ${lastRelayAt}` : ""}
+            {lastCalAt ? ` · Cal ${lastCalAt}` : ""}
+          </p>
+        </div>
+        <div className="flex flex-col gap-1.5 text-right flex-shrink-0">
+          {deliverability?.paused ? (
+            <span className="text-xs font-medium text-amber-800 bg-amber-100 px-2 py-1 rounded-md">
+              Breaker open · {(deliverability.rate * 100).toFixed(1)}% bounce
+            </span>
+          ) : (
+            <span className="text-xs font-medium text-emerald-800 bg-emerald-50 px-2 py-1 rounded-md">
+              Deliverability OK
+            </span>
+          )}
+          {(quarantineRecovered ?? 0) > 0 && (
+            <span className={`text-[11px] ${CAL.textDim}`}>
+              Last cycle: {quarantineRecovered} bounce(s) Hunter-recovered
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -435,22 +539,13 @@ function PreviewEmailModal({ open, onClose, prospectId, companyName, currentStag
 }
 
 // ─── Deliverability banner ────────────────────────────────────────────────────
-function CalDeliverabilityBanner() {
-  const utils = trpc.useUtils();
+function CalDeliverabilityBanner({
+  quarantineRecovered,
+}: {
+  quarantineRecovered?: number;
+}) {
   const { data: stats } = trpc.admin.getDeliverabilityStatus.useQuery(undefined, {
     refetchInterval: 60_000,
-  });
-  const quarantine = trpc.admin.quarantineBouncedProspects.useMutation({
-    onSuccess: (data) => {
-      const r = (data as {
-        result: { quarantined: number; recovered: number; unresolved: number };
-      }).result;
-      toast.success(
-        `Quarantine: ${r.quarantined} cleared, ${r.recovered} Hunter-replaced, ${r.unresolved} auto-skipped`,
-      );
-      utils.admin.getDeliverabilityStatus.invalidate();
-    },
-    onError: (err: { message: string }) => toast.error(err.message),
   });
 
   if (!stats) return null;
@@ -463,35 +558,30 @@ function CalDeliverabilityBanner() {
   return (
     <div className={`flex items-start gap-3 px-4 py-3 rounded-lg border text-sm mb-4 ${
       stats.paused
-        ? "bg-red-500/10 border-red-500/30"
-        : "bg-amber-500/10 border-amber-500/30"
+        ? "bg-amber-50 border-amber-200"
+        : "bg-yellow-50 border-yellow-200"
     }`}>
-      <ShieldAlert className={`w-4 h-4 flex-shrink-0 mt-0.5 ${stats.paused ? "text-red-400" : "text-amber-400"}`} />
+      <ShieldAlert className={`w-4 h-4 flex-shrink-0 mt-0.5 ${stats.paused ? "text-amber-600" : "text-yellow-600"}`} />
       <div className="flex-1 min-w-0 space-y-1">
         {stats.paused ? (
-          <p className="text-red-300 font-medium">
-            Cal&apos;s deliverability circuit breaker is OPEN — new intro sends are paused.
+          <p className="text-amber-900 font-medium">
+            Circuit breaker open — new intro sends paused until bounce rate recovers.
           </p>
         ) : (
-          <p className="text-amber-300 font-medium">Cal deliverability warning — bounce rate elevated.</p>
+          <p className="text-yellow-900 font-medium">Deliverability warning — bounce rate elevated.</p>
         )}
-        <p className="text-zinc-400 text-xs leading-relaxed">
-          Trailing {stats.windowDays}d: {stats.bounced}/{stats.sent} sends bounced ({ratePct}%), threshold {thresholdPct}%.
-          Follow-ups to engaged threads still run. New intros resume automatically once the rate drops below the threshold.
+        <p className="text-slate-600 text-xs leading-relaxed">
+          Trailing {stats.windowDays}d: {stats.bounced}/{stats.sent} bounced ({ratePct}%), threshold {thresholdPct}%.
+          Follow-ups to engaged threads still run.
         </p>
-        <p className="text-zinc-500 text-xs">
-          Bulk intro sends are blocked while the breaker is open. Cal Operator, Hunter URL/email lookup, redrafting, and manual review still work — only automated new intros are paused. Quarantine + Hunter recovery runs automatically in Cal Operator.
+        <p className="text-slate-500 text-xs flex items-center gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+          Quarantine + Hunter recovery runs automatically in Cal Operator and Relay — no manual step needed.
+          {(quarantineRecovered ?? 0) > 0 && (
+            <span className="text-emerald-700">Last run recovered {quarantineRecovered} contact(s).</span>
+          )}
         </p>
       </div>
-      <Button
-        size="sm"
-        variant="outline"
-        className="border-white/10 text-zinc-300 hover:bg-[#2b2f38] flex-shrink-0"
-        disabled={quarantine.isPending}
-        onClick={() => quarantine.mutate()}
-      >
-        {quarantine.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Quarantine bounced"}
-      </Button>
     </div>
   );
 }
@@ -519,7 +609,7 @@ type CalOperatorReportData = {
 
 type RelayRunDetails = {
   autoSend?: { sent: number; skipped: number; failed: number };
-  calOperator?: { emailsEnriched: number; draftsGenerated: number };
+  calOperator?: { emailsEnriched: number; draftsGenerated: number; quarantineRecovered?: number };
   health?: { introsPaused: boolean; bounceRate: number; cronsMissing: string[] };
   missions?: Array<{ title: string; priority: string }>;
   learnings?: string;
@@ -536,56 +626,45 @@ function RelayOperatorReport({
   onRun: () => void;
 }) {
   const d = run?.details;
-  const statusColor =
-    run?.status === "failed" ? "red" : d?.health?.introsPaused ? "amber" : "emerald";
 
   return (
-    <div className={`mx-6 mt-2 mb-1 px-4 py-3 rounded-lg border text-sm ${
-      statusColor === "red"
-        ? "border-red-500/30 bg-red-950/20"
-        : statusColor === "amber"
-          ? "border-amber-500/30 bg-amber-950/20"
-          : "border-cyan-500/30 bg-cyan-950/20"
-    }`}>
+    <div className={`mx-6 mt-2 mb-1 px-4 py-3 rounded-lg border border-cyan-200 bg-cyan-50/80 text-sm`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-cyan-200 font-medium flex items-center gap-2">
-            <Activity className="w-4 h-4 text-cyan-400" />
-            Relay loop
+          <p className="text-cyan-900 font-medium flex items-center gap-2">
+            <Activity className="w-4 h-4 text-cyan-600" />
+            Relay — autonomous loop
             {run?.id != null && (
-              <span className="text-cyan-400/60 text-xs font-normal">run #{run.id}</span>
+              <span className="text-cyan-700/70 text-xs font-normal">run #{run.id}</span>
             )}
-            {isRunning && <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />}
+            {isRunning && <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-600" />}
           </p>
           {isRunning ? (
-            <p className="text-zinc-400 text-xs mt-1">Observe → Cal operator → auto-send → report…</p>
+            <p className="text-slate-600 text-xs mt-1">Observe → Cal operator → auto-send → report…</p>
           ) : run?.status === "failed" ? (
-            <p className="text-red-300/90 text-xs mt-1">{run.errorMessage ?? "Relay run failed"}</p>
+            <p className="text-red-700 text-xs mt-1">{run.errorMessage ?? "Relay run failed"}</p>
           ) : d ? (
             <>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-zinc-300">
-                <span><strong className="text-white">{d.autoSend?.sent ?? 0}</strong> auto-sent</span>
-                <span><strong className="text-white">{d.calOperator?.emailsEnriched ?? 0}</strong> enriched</span>
-                <span><strong className="text-white">{d.calOperator?.draftsGenerated ?? 0}</strong> drafts</span>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-700">
+                <span><strong className="text-slate-900">{d.autoSend?.sent ?? 0}</strong> auto-sent</span>
+                <span><strong className="text-slate-900">{d.calOperator?.emailsEnriched ?? 0}</strong> enriched</span>
+                <span><strong className="text-slate-900">{d.calOperator?.draftsGenerated ?? 0}</strong> drafts</span>
                 {d.health?.introsPaused && (
-                  <span className="text-amber-400">breaker open ({((d.health.bounceRate ?? 0) * 100).toFixed(1)}%)</span>
+                  <span className="text-amber-800">breaker open ({((d.health.bounceRate ?? 0) * 100).toFixed(1)}%)</span>
                 )}
               </div>
               {d.missions?.[0] && (
-                <p className="text-zinc-500 text-xs mt-2">Top mission: {d.missions[0].title}</p>
-              )}
-              {d.learnings && (
-                <p className="text-zinc-500 text-xs mt-1 line-clamp-2">{d.learnings}</p>
+                <p className="text-slate-500 text-xs mt-2">Top mission: {d.missions[0].title}</p>
               )}
             </>
           ) : (
-            <p className="text-zinc-500 text-xs mt-1">Runs 2× daily via cron — orchestrates Cal, auto-send, and daily report.</p>
+            <p className="text-slate-500 text-xs mt-1">Runs 2× daily — orchestrates Cal, Hunter, quarantine, and auto-send.</p>
           )}
         </div>
         <Button
           size="sm"
           variant="outline"
-          className="border-cyan-700 text-cyan-400 hover:bg-cyan-950 gap-1.5 flex-shrink-0"
+          className="border-cyan-300 text-cyan-800 hover:bg-cyan-100 gap-1.5 flex-shrink-0"
           onClick={onRun}
           disabled={isRunning}
         >
@@ -609,13 +688,13 @@ function CalOperatorReport({
 }) {
   if (isRunning) {
     return (
-      <div className="mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border border-violet-500/40 bg-violet-950/40 text-sm animate-pulse">
-        <p className="text-violet-200 font-medium flex items-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
+      <div className="mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border border-violet-200 bg-violet-50 text-sm">
+        <p className="text-violet-900 font-medium flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
           Cal operator running…
         </p>
-        <p className="text-zinc-400 text-xs mt-1 leading-relaxed">
-          Junk cleanup → Hunter URLs → Hunter emails → quarantine + auto-recover bounces. Draft redraft runs separately via Redraft emails.
+        <p className="text-slate-600 text-xs mt-1 leading-relaxed">
+          Junk cleanup → Hunter URLs → Hunter emails → quarantine + auto-recover bounces.
         </p>
       </div>
     );
@@ -625,9 +704,9 @@ function CalOperatorReport({
 
   if (failedMessage) {
     return (
-      <div className="mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/10 text-sm">
-        <p className="text-red-300 font-medium">Cal operator failed</p>
-        <p className="text-red-200/80 text-xs mt-1">{failedMessage}</p>
+      <div className="mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border border-red-200 bg-red-50 text-sm">
+        <p className="text-red-800 font-medium">Cal operator failed</p>
+        <p className="text-red-700/80 text-xs mt-1">{failedMessage}</p>
       </div>
     );
   }
@@ -644,11 +723,11 @@ function CalOperatorReport({
     report.quarantined;
 
   return (
-    <div className="mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border border-violet-500/30 bg-violet-950/30 text-sm">
+    <div className="mx-6 mt-3 mb-1 px-4 py-3 rounded-lg border border-violet-200 bg-violet-50/80 text-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-violet-200 font-medium flex items-center gap-2">
-            <Bot className="w-4 h-4 text-violet-400" />
+          <p className="text-violet-900 font-medium flex items-center gap-2">
+            <Bot className="w-4 h-4 text-violet-600" />
             Cal operator report
             {report.runId != null && (
               <span className="text-violet-400/60 text-xs font-normal">run #{report.runId}</span>
@@ -1291,6 +1370,15 @@ export default function AdminSalesAgent() {
     refetchInterval: 120_000,
   });
 
+  const { data: deliverabilityStats } = trpc.admin.getDeliverabilityStatus.useQuery(undefined, {
+    refetchInterval: 60_000,
+  });
+
+  const relayDetails = (lastRelayRun?.details ?? undefined) as RelayRunDetails | undefined;
+  const calDetails = (lastOperatorRun?.details ?? undefined) as CalOperatorReportData | undefined;
+  const recentQuarantineRecovered =
+    relayDetails?.calOperator?.quarantineRecovered ?? calDetails?.quarantineRecovered;
+
   useEffect(() => {
     if (operatorReport || !lastOperatorRun?.details) return;
     if (lastOperatorRun.status !== "completed") return;
@@ -1479,7 +1567,7 @@ export default function AdminSalesAgent() {
   return (
     <>
       <AdminPage fullHeight noPadding maxWidth="none">
-      <div className="flex flex-col h-full bg-transparent text-white overflow-hidden">
+      <div className={`flex flex-col h-full ${CAL.page} overflow-hidden`}>
 
         <CalWorkflowBar
           workflow={workflow}
@@ -1516,14 +1604,25 @@ export default function AdminSalesAgent() {
           onRun={() => runRelayLoop.mutate()}
         />
 
+        <CalPipelineStatusStrip
+          workflow={workflow}
+          activeStep={workflowStep}
+          deliverability={deliverabilityStats ?? null}
+          lastRelayAt={lastRelayRun?.completedAt ? timeAgo(lastRelayRun.completedAt) : undefined}
+          lastCalAt={lastOperatorRun?.completedAt ? timeAgo(lastOperatorRun.completedAt) : undefined}
+          calRunning={runCalOperator.isPending}
+          relayRunning={runRelayLoop.isPending}
+          quarantineRecovered={recentQuarantineRecovered}
+        />
+
         {/* ── Secondary tabs (review queue + meetings) ── */}
-        <div className="flex items-center gap-1 px-6 border-b border-white/10">
+        <div className={`flex items-center gap-1 px-6 border-b ${CAL.border} bg-white/80`}>
           <button
             onClick={() => goWorkflowStep(workflowStep === "review" || workflowStep === "send" ? workflowStep : "contacts")}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border-b-2 -mb-px ${
               activeTab === "pipeline"
-                ? "border-amber-500 text-white"
-                : "border-transparent text-zinc-500 hover:text-zinc-300"
+                ? "border-amber-500 text-amber-900"
+                : `border-transparent ${CAL.textDim} hover:text-slate-700`
             }`}
           >
             <Users className="w-4 h-4" /> Contacts & pipeline
@@ -1532,13 +1631,13 @@ export default function AdminSalesAgent() {
             onClick={() => goWorkflowStep("review")}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border-b-2 -mb-px ${
               activeTab === "drafts"
-                ? "border-amber-500 text-white"
-                : "border-transparent text-zinc-500 hover:text-zinc-300"
+                ? "border-amber-500 text-amber-900"
+                : `border-transparent ${CAL.textDim} hover:text-slate-700`
             }`}
           >
             <Inbox className="w-4 h-4" /> Review & send
             {pendingCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-black">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white">
                 {pendingCount}
               </span>
             )}
@@ -1547,13 +1646,13 @@ export default function AdminSalesAgent() {
             onClick={() => setActiveTab("calendar" as "pipeline" | "drafts")}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border-b-2 -mb-px ${
               activeTab === ("calendar" as string)
-                ? "border-emerald-500 text-white"
-                : "border-transparent text-zinc-500 hover:text-zinc-300"
+                ? "border-emerald-500 text-emerald-900"
+                : `border-transparent ${CAL.textDim} hover:text-slate-700`
             }`}
           >
             <Calendar className="w-4 h-4" /> Meetings
             {upcomingEvents.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold text-emerald-400 border border-emerald-700">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold text-emerald-700 bg-emerald-100">
                 {upcomingEvents.length}
               </span>
             )}
@@ -1566,26 +1665,31 @@ export default function AdminSalesAgent() {
             {/* Left panel */}
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Step actions */}
-              <div className="px-6 py-4 border-b border-white/10">
+              <div className={`px-6 py-4 border-b ${CAL.border} bg-white/60`}>
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                  <p className="text-sm text-zinc-400">
+                  <p className={`text-sm ${CAL.textMuted}`}>
                     {workflowStep === "contacts" && (
                       <>
-                        <span className="text-white font-medium">{workflow.needsWebsite}</span> need a website (junk names) ·{" "}
-                        <span className="text-white font-medium">{workflow.needsContactFix}</span> have a URL and need email (Hunter).
+                        Cal auto-resolves contacts via Hunter:{" "}
+                        <span className="font-medium text-slate-800">{workflow.needsWebsite}</span> URL lookups ·{" "}
+                        <span className="font-medium text-slate-800">{workflow.needsContactFix}</span> email enrichments queued.
+                        <span className={`block text-xs ${CAL.textDim} mt-1`}>
+                          Relay + Cal Operator run this on schedule — manual buttons below are overrides only.
+                        </span>
                       </>
                     )}
                     {workflowStep === "draft" && (
-                      <><span className="text-white font-medium">{workflow.needsDraft}</span> ready for Cal to draft · <span className="text-zinc-500">Redraft rewrites pending + creates missing.</span></>
+                      <><span className="font-medium text-slate-800">{workflow.needsDraft}</span> ready for Cal to draft · <span className={CAL.textDim}>Redraft rewrites pending + creates missing.</span></>
                     )}
                     {workflowStep === "followup" && (
-                      <><span className="text-white font-medium">{workflow.followUpDue}</span> follow-ups due · <span className="text-zinc-500">{workflow.awaitingReply} awaiting your reply.</span></>
+                      <><span className="font-medium text-slate-800">{workflow.followUpDue}</span> follow-ups due · <span className={CAL.textDim}>{workflow.awaitingReply} awaiting reply (scheduling auto-sends).</span></>
                     )}
                     {(workflowStep === "review" || workflowStep === "send") && (
                       <>Use the <button type="button" className="text-amber-400 underline" onClick={() => goWorkflowStep("review")}>Review & send</button> tab.</>
                     )}
                   </p>
                   <div className="flex flex-wrap items-center justify-end gap-2">
+                    <span className={`text-[10px] uppercase tracking-wide ${CAL.textDim} w-full sm:w-auto text-right`}>Manual override</span>
                     <Button
                       size="sm"
                       variant="outline"
@@ -1685,14 +1789,20 @@ export default function AdminSalesAgent() {
                     )}
                   </div>
                 </div>
-                <CalDeliverabilityBanner />
+                <CalDeliverabilityBanner quarantineRecovered={recentQuarantineRecovered} />
               </div>
 
               {/* Filter bar — workflow-focused only */}
-              <div className="px-6 py-3 border-b border-white/10 flex items-center gap-2 overflow-x-auto">
+              <div className={`px-6 py-3 border-b ${CAL.border} bg-slate-50/80 flex flex-col gap-2`}>
+                {workflowStep === "contacts" && filterStage === "needs_email" && workflow.needsContactFix > 0 && (
+                  <p className="text-xs text-sky-800 bg-sky-50 border border-sky-200 rounded-md px-3 py-2">
+                    Cal resolves these automatically: Hunter domain lookup first, then person-level email. Queue shrinks after each Relay / Cal Operator run.
+                  </p>
+                )}
+                <div className="flex items-center gap-2 overflow-x-auto">
                 <button
                   onClick={() => setFilterStage("all")}
-                  className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "all" ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+                  className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "all" ? "bg-slate-700 text-white" : `${CAL.textDim} hover:text-slate-700`}`}
                 >
                   All ({conversations.length})
                 </button>
@@ -1700,15 +1810,15 @@ export default function AdminSalesAgent() {
                   <>
                   <button
                     onClick={() => setFilterStage("needs_website")}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "needs_website" ? "bg-zinc-500/30 text-zinc-200" : "text-zinc-500 hover:text-zinc-300"}`}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "needs_website" ? "bg-slate-200 text-slate-800" : `${CAL.textDim} hover:text-slate-700`}`}
                   >
                     No website ({workflow.needsWebsite})
                   </button>
                   <button
                     onClick={() => setFilterStage("needs_email")}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "needs_email" ? "bg-red-500/30 text-red-300" : "text-zinc-500 hover:text-zinc-300"}`}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${filterStage === "needs_email" ? "bg-sky-200 text-sky-900" : `${CAL.textDim} hover:text-slate-700`}`}
                   >
-                    Needs email ({workflow.needsContactFix})
+                    Cal resolving email ({workflow.needsContactFix})
                   </button>
                   </>
                 )}
@@ -1728,21 +1838,26 @@ export default function AdminSalesAgent() {
                     </button>
                   </>
                 )}
+                </div>
               </div>
 
               {/* Conversation list */}
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto bg-white/40">
                 {convsLoading ? (
-                  <div className="flex items-center justify-center h-32 text-zinc-500">
+                  <div className={`flex items-center justify-center h-32 ${CAL.textDim}`}>
                     <RefreshCw className="w-4 h-4 animate-spin mr-2" /> Loading…
                   </div>
                 ) : filtered.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-32 text-zinc-600">
+                  <div className={`flex flex-col items-center justify-center h-32 ${CAL.textDim}`}>
                     <Bot className="w-8 h-8 mb-2" />
-                    <p className="text-sm">No conversations in this filter</p>
+                    <p className="text-sm">
+                      {filterStage === "needs_email"
+                        ? "Cal is working through the Hunter queue — check back after the next Relay run."
+                        : "No conversations in this filter"}
+                    </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-white/10">
+                  <div className={`divide-y ${CAL.border}`}>
                     {filtered.map((item) => {
                       const { conv, prospect } = item;
                       const eng = (item as { engagement?: { opens: number; clicks: number } }).engagement ?? { opens: 0, clicks: 0 };
@@ -1753,12 +1868,12 @@ export default function AdminSalesAgent() {
                         <div
                           key={conv.id}
                           onClick={() => setSelectedProspectId(prospect.id)}
-                          className={`px-6 py-3.5 cursor-pointer transition-colors hover:bg-[#24272e] ${isSelected ? "bg-[#24272e] border-l-2 border-amber-500" : "border-l-2 border-transparent"}`}
+                          className={`px-6 py-3.5 cursor-pointer transition-colors ${CAL.listHover} ${isSelected ? `${CAL.listSelected} border-l-2` : "border-l-2 border-transparent bg-white/70"}`}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
-                                <span className="font-medium text-sm text-white truncate">{prospect.company}</span>
+                                <span className={`font-medium text-sm ${CAL.text} truncate`}>{prospect.company}</span>
                                 {isReady && <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
                                 {prospect.robotCategory === "heavy_industrial" && (
                                   <Factory className="w-3 h-3 text-orange-400 flex-shrink-0" />
