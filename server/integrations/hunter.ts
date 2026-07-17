@@ -323,18 +323,22 @@ function splitName(name?: string | null): { first?: string; last?: string } {
  * decision-maker. Returns null when Hunter is disabled or finds nothing usable.
  */
 export async function findBestProspectEmail(
-  prospect: ProspectLike
+  prospect: ProspectLike,
+  opts?: { minDomainConfidence?: number; minFinderScore?: number },
 ): Promise<HunterContact | null> {
   if (!hunterEnabled()) return null;
   const domain = deriveCompanyDomain(prospect);
   if (!domain) return null;
+
+  const minFinder = opts?.minFinderScore ?? HUNTER_MIN_FINDER_SCORE;
+  const minDomain = opts?.minDomainConfidence ?? HUNTER_MIN_DOMAIN_CONFIDENCE;
 
   const { first, last } = splitName(prospect.contactName);
   if (first && last) {
     const found = await emailFinder(domain, first, last);
     if (
       found &&
-      found.score >= HUNTER_MIN_FINDER_SCORE &&
+      found.score >= minFinder &&
       !UNSENDABLE.has((found.status ?? "").toLowerCase())
     ) {
       return {
@@ -349,8 +353,8 @@ export async function findBestProspectEmail(
     }
   }
 
-  const search = await domainSearch(domain);
-  const best = search ? pickBestDomainEmail(search.emails) : null;
+  const search = await domainSearch(domain, { company: prospect.company ?? undefined });
+  const best = search ? pickBestDomainEmail(search.emails, { minConfidence: minDomain }) : null;
   if (!best) return null;
   return {
     email: best.value,

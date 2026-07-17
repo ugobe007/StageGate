@@ -21,6 +21,7 @@ import {
   pickBestDomainEmail,
   scoreToConfidence,
 } from "../integrations/hunter.js";
+import { apolloEnabled, apolloFindBestContact } from "../integrations/apolloContact.js";
 import {
   deriveCompanyDomain,
   extractEmailAddress,
@@ -106,15 +107,26 @@ export async function enrichProspectContact(
   prospect: ProspectRow,
   opts: { db?: Db; recovery?: boolean } = {}
 ): Promise<string | null> {
-  if (!hunterEnabled()) return null;
-
   const db = opts.db ?? (await getDb());
+
+  if (!hunterEnabled()) {
+    if (!db) return null;
+    return tryApolloEnrich(prospect, db);
+  }
+
   const recoveryMin = opts.recovery ? HUNTER_MIN_RECOVERY_CONFIDENCE : undefined;
   const exclude = new Set<string>();
   const current = extractEmailAddress(prospect.contactEmail) ?? prospect.contactEmail?.trim().toLowerCase();
   if (current) exclude.add(current);
 
   let contact = await findBestProspectEmail(prospect);
+
+  if (!contact) {
+    contact = await findBestProspectEmail(prospect, {
+      minDomainConfidence: HUNTER_MIN_RECOVERY_CONFIDENCE,
+      minFinderScore: HUNTER_MIN_RECOVERY_CONFIDENCE,
+    });
+  }
 
   if (contact && db && (await isSuppressed(db, contact.email))) {
     exclude.add(contact.email.trim().toLowerCase());
@@ -137,6 +149,15 @@ export async function enrichProspectContact(
     exclude.add(contact.email.trim().toLowerCase());
     const alt = await findReplacementContact(prospect, db, exclude, { minDomainConfidence: recoveryMin });
     contact = alt;
+  }
+
+  if (!contact && db) {
+    const apolloEmail = await tryApolloEnrich(prospect, db);
+    if (apolloEmail) return apolloEmail;
+  }
+
+  if (!contact && db) {
+    await logHunterMiss(db, prospect, "Hunter and Apollo found no sendable personal email");
   }
 
   if (!contact) return null;
@@ -178,11 +199,13 @@ export async function enrichProspectContact(
 export interface EnrichBatchResult {
   attempted: number;
   enriched: number;
+  hunterEnriched: number;
+  apolloEnriched: number;
   noResults: number;
   hunterBlocked: boolean;
   hunterBlockReason?: string;
   message?: string;
-  results: Array<{ id: number; company: string; email: string | null }>;
+  results: Array<{ id: number; company: string; email: string | null; source?: string; reason?: string }>;
 }
 
 export interface QuarantineRecoveryResult {
@@ -195,20 +218,72 @@ export interface QuarantineRecoveryResult {
 function enrichBatchMessage(result: EnrichBatchResult): string {
   if (result.hunterBlocked) {
     if (result.hunterBlockReason?.toLowerCase().includes("credit")) {
-      return `Hunter API blocked the run — ${result.hunterBlockReason}`;
+      return `Hunter API blocked — ${result.hunterBlockReason}. Check Hunter credits or try Apollo fallback.`;
     }
     return `Hunter API error — ${result.hunterBlockReason ?? "try again shortly"}`;
   }
   if (result.enriched > 0) {
-    return `Hunter found real emails for ${result.enriched} of ${result.attempted} prospects.`;
+    const parts = [`Hunter found ${result.hunterEnriched}`];
+    if (result.apolloEnriched > 0) parts.push(`Apollo found ${result.apolloEnriched}`);
+    return `${parts.join(", ")} of ${result.attempted} leads (${result.noResults} still need manual review).`;
   }
   if (result.attempted === 0) {
-    return "No enrichable prospects — need a website on file and a missing, low-confidence, or generic role inbox.";
+    return "No enrichable leads — need a website on file first (Fix contacts → Resolve URLs).";
   }
+  const sample = result.results
+    .filter((r) => !r.email)
+    .slice(0, 3)
+    .map((r) => r.company)
+    .join(", ");
+  const suffix = sample ? ` e.g. ${sample}` : "";
   return (
-    `Hunter found no person-level emails for ${result.noResults} prospects ` +
-    `(domain not in Hunter's index or below confidence threshold — not a credits issue).`
+    `Hunter + Apollo found no personal emails for ${result.noResults} leads` +
+    `${suffix}. Domains may not be in Hunter's index, or only generic inboxes exist — verify company names/websites.`
   );
+}
+
+async function logHunterMiss(db: Db, prospect: ProspectRow, reason: string): Promise<void> {
+  const domain = deriveCompanyDomain(prospect) ?? "unknown";
+  await db.insert(prospectActivities).values({
+    prospectId: prospect.id,
+    type: "hunter_no_match",
+    title: "No personal email found",
+    description: `${reason} (domain: ${domain})`,
+    metadata: { domain, reason },
+  });
+}
+
+async function tryApolloEnrich(prospect: ProspectRow, db: Db): Promise<string | null> {
+  if (!apolloEnabled()) return null;
+  const hit = await apolloFindBestContact({
+    company: prospect.company,
+    website: prospect.website,
+  });
+  if (!hit) return null;
+
+  const fullName = hit.name?.trim() ?? "";
+  const update: Partial<ProspectRow> = {
+    contactEmail: hit.email,
+    emailConfidence: hit.confidence,
+    updatedAt: new Date(),
+  };
+  if (fullName && !prospect.contactName) update.contactName = fullName;
+  if (hit.title && !prospect.contactTitle) update.contactTitle = hit.title;
+
+  await db.update(prospects).set(update).where(eq(prospects.id, prospect.id));
+  await db.insert(prospectActivities).values({
+    prospectId: prospect.id,
+    type: "contact_enriched",
+    title: `Apollo: found ${hit.email}`,
+    description: `Fallback after Hunter miss — confidence ${hit.confidence}`,
+    metadata: { email: hit.email, source: "apollo", confidence: hit.confidence },
+  });
+
+  prospect.contactEmail = hit.email;
+  prospect.emailConfidence = hit.confidence;
+  if (update.contactName) prospect.contactName = update.contactName;
+  if (update.contactTitle) prospect.contactTitle = update.contactTitle;
+  return hit.email;
 }
 
 /**
@@ -234,6 +309,8 @@ export async function enrichProspectsBatch(db: Db, limit = 25): Promise<EnrichBa
   const toEnrich = selectProspectsForEnrichment(candidates, cap);
 
   let enriched = 0;
+  let hunterEnriched = 0;
+  let apolloEnriched = 0;
   let noResults = 0;
   let hunterBlocked = false;
   let hunterBlockReason: string | undefined;
@@ -246,24 +323,52 @@ export async function enrichProspectsBatch(db: Db, limit = 25): Promise<EnrichBa
       if (hunterErr && (hunterErr.kind === "credits" || hunterErr.kind === "auth" || hunterErr.kind === "rate_limit")) {
         hunterBlocked = true;
         hunterBlockReason = hunterErr.message;
-        results.push({ id: p.id, company: p.company, email: null });
+        results.push({ id: p.id, company: p.company, email: null, reason: hunterErr.kind });
         break;
       }
-      if (email) enriched++;
-      else noResults++;
-      results.push({ id: p.id, company: p.company, email });
+      if (email) {
+        enriched++;
+        const lastActivity = await db
+          .select()
+          .from(prospectActivities)
+          .where(eq(prospectActivities.prospectId, p.id))
+          .orderBy(desc(prospectActivities.createdAt))
+          .limit(1);
+        const title = lastActivity[0]?.title ?? "";
+        if (title.startsWith("Apollo:")) apolloEnriched++;
+        else hunterEnriched++;
+        results.push({
+          id: p.id,
+          company: p.company,
+          email,
+          source: title.startsWith("Apollo:") ? "apollo" : "hunter",
+        });
+      } else {
+        noResults++;
+        results.push({
+          id: p.id,
+          company: p.company,
+          email: null,
+          reason: deriveCompanyDomain(p) ? "no_personal_email" : "bad_website",
+        });
+      }
+      void beforeEmail;
     } catch (err) {
       console.error(`[enrich] prospect ${p.id} failed: ${String(err)}`);
       noResults++;
-      results.push({ id: p.id, company: p.company, email: null });
+      results.push({ id: p.id, company: p.company, email: null, reason: "error" });
     }
     await new Promise((r) => setTimeout(r, 120));
   }
 
-  console.log(`[enrich] attempted ${toEnrich.length}, enriched ${enriched}, noResults ${noResults}`);
+  console.log(
+    `[enrich] attempted ${toEnrich.length}, hunter=${hunterEnriched}, apollo=${apolloEnriched}, noResults=${noResults}`,
+  );
   return {
     attempted: toEnrich.length,
     enriched,
+    hunterEnriched,
+    apolloEnriched,
     noResults,
     hunterBlocked,
     hunterBlockReason,
@@ -271,6 +376,8 @@ export async function enrichProspectsBatch(db: Db, limit = 25): Promise<EnrichBa
     message: enrichBatchMessage({
       attempted: toEnrich.length,
       enriched,
+      hunterEnriched,
+      apolloEnriched,
       noResults,
       hunterBlocked,
       hunterBlockReason,

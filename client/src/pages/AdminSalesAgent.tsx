@@ -1423,9 +1423,20 @@ export default function AdminSalesAgent() {
   // only have guessed or missing contacts.
   const enrichHunter = trpc.salesAgent.enrichContactsHunter.useMutation({
     onSuccess: (data) => {
-      if (data.enriched > 0) toast.success(data.message);
-      else if (data.attempted > 0) toast.warning(data.message);
-      else toast.info(data.message);
+      const failed = (data.results ?? []).filter((r) => !r.email).map((r) => r.company);
+      if (data.enriched > 0) {
+        toast.success(data.message);
+        if (data.apolloEnriched > 0) {
+          toast.info(`Apollo fallback found ${data.apolloEnriched} email(s) Hunter missed.`);
+        }
+      } else if (data.attempted > 0) {
+        toast.warning(data.message, {
+          description: failed.length > 0 ? `Missed: ${failed.slice(0, 5).join(", ")}${failed.length > 5 ? "…" : ""}` : undefined,
+          duration: 8000,
+        });
+      } else {
+        toast.info(data.message);
+      }
       refetchConvs();
       refetchWorkflow();
       utils.salesAgent.getWorkflowSummary.invalidate();
@@ -1813,11 +1824,11 @@ export default function AdminSalesAgent() {
                   <p className={`text-sm ${CAL.textMuted}`}>
                     {workflowStep === "contacts" && (
                       <>
-                        Cal auto-resolves contacts via Hunter:{" "}
+                        Cal auto-resolves contacts via Hunter (+ Apollo fallback):{" "}
                         <span className="font-semibold text-slate-100">{workflow.needsWebsite}</span> URL lookups ·{" "}
-                        <span className="font-semibold text-slate-100">{workflow.needsContactFix}</span> email enrichments queued.
+                        <span className="font-semibold text-slate-100">{workflow.needsContactFix}</span> need personal email.
                         <span className={`block text-sm ${CAL.textDim} mt-1.5 leading-relaxed`}>
-                          Relay + Cal Operator run this on schedule — manual buttons below are overrides only.
+                          Hunter skips generic inboxes (info@, sales@). If Hunter misses, Cal tries Apollo. Still stuck? Verify website domain on the prospect row.
                         </span>
                       </>
                     )}
@@ -1996,7 +2007,7 @@ export default function AdminSalesAgent() {
                     <Bot className="w-8 h-8 mb-2" />
                     <p className="text-sm text-center px-6">
                       {filterStage === "needs_email"
-                        ? "Cal is working through the Hunter queue — check back after the next Relay run."
+                        ? "Hunter and Apollo found no personal email for these leads — verify the website domain or add a contact manually."
                         : filterStage === "needs_website"
                         ? "No prospects missing a website in this view."
                         : "No conversations in this filter"}
