@@ -625,6 +625,7 @@ type RelayRunDetails = {
 function CalLandingGreeting({
   userName,
   workflow,
+  partnerWorkflow,
   lastCal,
   relayMissions,
   lastDiscovery,
@@ -632,6 +633,12 @@ function CalLandingGreeting({
 }: {
   userName?: string | null;
   workflow: WorkflowSummary;
+  partnerWorkflow?: {
+    withEmail: number;
+    needsDraft: number;
+    pendingReview: number;
+    approvedToSend: number;
+  } | null;
   lastCal?: CalOperatorReportData | null;
   relayMissions?: Array<{ title: string; priority: string }>;
   lastDiscovery?: { prospectsCreated?: number | null; status?: string } | null;
@@ -671,6 +678,15 @@ function CalLandingGreeting({
                 : contactParts.length === 0
                   ? "Contacts look ready."
                   : "Operator runs on schedule — Relay will queue Hunter next."}
+            </p>
+            <p className={`text-sm ${CAL.textMuted} leading-relaxed`}>
+              <strong className={CAL.text}>Partner & vendor outreach</strong> (exhibit houses, freight, AV):{" "}
+              {partnerWorkflow
+                ? `${partnerWorkflow.pendingReview} in review · ${partnerWorkflow.needsDraft} need draft · ${partnerWorkflow.withEmail} with email. `
+                : ""}
+              <a href="/admin/partner-outreach" className="text-amber-400 hover:text-amber-300 underline underline-offset-2">
+                Open Partner Outreach →
+              </a>
             </p>
             <p className={`text-sm ${CAL.textMuted} leading-relaxed`}>
               <strong className={CAL.text}>Relay</strong> (loop orchestrator):{" "}
@@ -1272,6 +1288,10 @@ export default function AdminSalesAgent() {
     { refetchInterval: 30_000 },
   );
 
+  const { data: partnerWorkflow } = trpc.partnerOutreach.getWorkflowSummary.useQuery(undefined, {
+    refetchInterval: 30_000,
+  });
+
   const contactQueueFilter =
     filterStage === "needs_website" ? "needs_website" as const
     : filterStage === "needs_email" ? "needs_email" as const
@@ -1688,6 +1708,7 @@ export default function AdminSalesAgent() {
           <CalLandingGreeting
             userName={user?.name}
             workflow={workflow}
+            partnerWorkflow={partnerWorkflow ?? null}
             lastCal={calDetails ?? null}
             relayMissions={relayDetails?.missions}
             lastDiscovery={lastDiscoveryRun ?? null}

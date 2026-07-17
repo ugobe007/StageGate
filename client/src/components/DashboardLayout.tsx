@@ -29,7 +29,7 @@ const menuItems = [
   { icon: ClipboardList,   label: "Demo Requests",    path: "/admin/demos" },
   { icon: FileText,        label: "Quotes",           path: "/admin/quotes" },
   { icon: Users,           label: "Partners",         path: "/admin/partners" },
-  { icon: Mail,            label: "Partner Email",    path: "/admin/partner-outreach" },
+  { icon: Mail,            label: "Partner Outreach", path: "/admin/partner-outreach" },
   { icon: Zap,             label: "Cal",              path: "/admin/sales-agent" },
   { icon: Radio,           label: "Orbital AI",       path: "/admin/orbital" },
   { icon: Truck,           label: "Vendors",          path: "/admin/vendors" },

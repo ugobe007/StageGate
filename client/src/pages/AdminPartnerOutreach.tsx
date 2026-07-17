@@ -261,7 +261,7 @@ export default function AdminPartnerOutreach() {
         </Link>
         <div className="flex-1 min-w-[160px]">
           <h1 className="text-base font-semibold" style={{ color: "#ececec" }}>Partner & Vendor Outreach</h1>
-          <p className="text-xs" style={{ color: "#64748b" }}>Compose with Cal · review · approve · send or bulk send</p>
+          <p className="text-xs" style={{ color: "#64748b" }}>Cal drafts automatically · you review & send at onstage.bot/admin/partner-outreach</p>
         </div>
         {selected.size > 0 && (
           <Button
