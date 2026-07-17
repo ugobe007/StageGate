@@ -12,10 +12,7 @@ import { getDb } from "../db";
 import { systemConfig } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { RSS_INTELLIGENCE_JOB_KEY } from "./bootstrapCrons";
-
-// Key used to store the quote follow-up job task UID in system_config
-const QUOTE_FOLLOWUP_JOB_KEY = "quote_followup_job_task_uid";
+import { QUOTE_FOLLOWUP_JOB_KEY, RSS_INTELLIGENCE_JOB_KEY } from "./bootstrapCrons";
 
 export const systemRouter = router({
   health: publicProcedure

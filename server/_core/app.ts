@@ -20,6 +20,7 @@ import {
 import { salesAgentDiscoveryHandler } from "../agents/salesAgentDiscovery";
 import { enrichContactsHandler } from "../agents/prospectEnrichment";
 import { calOperatorHandler } from "../agents/calOperator";
+import { relayLoopHandler } from "../agents/relayOperator";
 import { vendorScraperHandler } from "../agents/vendorScraper";
 import { rssIntelligenceHandler } from "../agents/rssIntelligence";
 import { runCheckpointPoller } from "../agents/checkpointPoller";
@@ -68,6 +69,7 @@ export async function createStageGateApp(): Promise<Express> {
   app.post("/api/scheduled/sales-agent-preview", salesAgentPreviewHandler);
   app.post("/api/scheduled/enrich-contacts", enrichContactsHandler);
   app.post("/api/scheduled/cal-operator", calOperatorHandler);
+  app.post("/api/scheduled/relay-loop", relayLoopHandler);
   app.post("/api/scheduled/cal-weekly-drafts", calWeeklyDraftsHandler);
   app.post("/api/scheduled/vendor-scraper", vendorScraperHandler);
   app.post("/api/scheduled/rss-intelligence", rssIntelligenceHandler);

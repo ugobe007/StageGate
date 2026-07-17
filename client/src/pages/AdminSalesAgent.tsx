@@ -25,7 +25,7 @@ import {
   TrendingUp, Calendar, Star, Cpu, Factory,
   CheckCircle, CheckCircle2, XCircle, Edit3, Inbox,
   ShieldCheck, Upload, FileText, Loader2,
-  MousePointerClick, ShieldAlert, ChevronRight, Globe
+  MousePointerClick, ShieldAlert, ChevronRight, Globe, Activity
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
@@ -516,6 +516,85 @@ type CalOperatorReportData = {
   errors?: string[];
   completedAt?: string | Date;
 };
+
+type RelayRunDetails = {
+  autoSend?: { sent: number; skipped: number; failed: number };
+  calOperator?: { emailsEnriched: number; draftsGenerated: number };
+  health?: { introsPaused: boolean; bounceRate: number; cronsMissing: string[] };
+  missions?: Array<{ title: string; priority: string }>;
+  learnings?: string;
+  escalations?: string[];
+};
+
+function RelayOperatorReport({
+  run,
+  isRunning,
+  onRun,
+}: {
+  run: { id: number; status: string; details?: RelayRunDetails; errorMessage?: string | null; completedAt?: Date | string | null } | null | undefined;
+  isRunning: boolean;
+  onRun: () => void;
+}) {
+  const d = run?.details;
+  const statusColor =
+    run?.status === "failed" ? "red" : d?.health?.introsPaused ? "amber" : "emerald";
+
+  return (
+    <div className={`mx-6 mt-2 mb-1 px-4 py-3 rounded-lg border text-sm ${
+      statusColor === "red"
+        ? "border-red-500/30 bg-red-950/20"
+        : statusColor === "amber"
+          ? "border-amber-500/30 bg-amber-950/20"
+          : "border-cyan-500/30 bg-cyan-950/20"
+    }`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-cyan-200 font-medium flex items-center gap-2">
+            <Activity className="w-4 h-4 text-cyan-400" />
+            Relay loop
+            {run?.id != null && (
+              <span className="text-cyan-400/60 text-xs font-normal">run #{run.id}</span>
+            )}
+            {isRunning && <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />}
+          </p>
+          {isRunning ? (
+            <p className="text-zinc-400 text-xs mt-1">Observe → Cal operator → auto-send → report…</p>
+          ) : run?.status === "failed" ? (
+            <p className="text-red-300/90 text-xs mt-1">{run.errorMessage ?? "Relay run failed"}</p>
+          ) : d ? (
+            <>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-zinc-300">
+                <span><strong className="text-white">{d.autoSend?.sent ?? 0}</strong> auto-sent</span>
+                <span><strong className="text-white">{d.calOperator?.emailsEnriched ?? 0}</strong> enriched</span>
+                <span><strong className="text-white">{d.calOperator?.draftsGenerated ?? 0}</strong> drafts</span>
+                {d.health?.introsPaused && (
+                  <span className="text-amber-400">breaker open ({((d.health.bounceRate ?? 0) * 100).toFixed(1)}%)</span>
+                )}
+              </div>
+              {d.missions?.[0] && (
+                <p className="text-zinc-500 text-xs mt-2">Top mission: {d.missions[0].title}</p>
+              )}
+              {d.learnings && (
+                <p className="text-zinc-500 text-xs mt-1 line-clamp-2">{d.learnings}</p>
+              )}
+            </>
+          ) : (
+            <p className="text-zinc-500 text-xs mt-1">Runs 2× daily via cron — orchestrates Cal, auto-send, and daily report.</p>
+          )}
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-cyan-700 text-cyan-400 hover:bg-cyan-950 gap-1.5 flex-shrink-0"
+          onClick={onRun}
+          disabled={isRunning}
+        >
+          {isRunning ? "Running…" : "Run Relay"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function CalOperatorReport({
   report,
@@ -1199,6 +1278,19 @@ export default function AdminSalesAgent() {
     refetchInterval: 120_000,
   });
 
+  const runRelayLoop = trpc.salesAgent.runRelayLoop.useMutation({
+    onSuccess: () => {
+      toast.success("Relay loop finished");
+      refetchWorkflow();
+      utils.salesAgent.getLatestRelayRun.invalidate();
+    },
+    onError: (err) => toast.error(`Relay failed: ${err.message}`),
+  });
+
+  const { data: lastRelayRun } = trpc.salesAgent.getLatestRelayRun.useQuery(undefined, {
+    refetchInterval: 120_000,
+  });
+
   useEffect(() => {
     if (operatorReport || !lastOperatorRun?.details) return;
     if (lastOperatorRun.status !== "completed") return;
@@ -1407,6 +1499,21 @@ export default function AdminSalesAgent() {
               ? lastOperatorRun.errorMessage
               : null
           }
+        />
+        <RelayOperatorReport
+          run={
+            lastRelayRun
+              ? {
+                  id: lastRelayRun.id,
+                  status: lastRelayRun.status,
+                  errorMessage: lastRelayRun.errorMessage,
+                  completedAt: lastRelayRun.completedAt,
+                  details: (lastRelayRun.details ?? undefined) as RelayRunDetails | undefined,
+                }
+              : undefined
+          }
+          isRunning={runRelayLoop.isPending}
+          onRun={() => runRelayLoop.mutate()}
         />
 
         {/* ── Secondary tabs (review queue + meetings) ── */}

@@ -251,11 +251,13 @@ export async function executeCalOperatorRun(opts?: {
 }
 
 export async function calOperatorHandler(req: Request, res: Response) {
+  let isCron = false;
   try {
     const user = await sdk.authenticateRequest(req);
     if (!user.isCron && user.role !== "admin") {
       return res.status(403).json({ error: "Forbidden" });
     }
+    isCron = user.isCron;
   } catch {
     return res.status(403).json({ error: "Invalid session" });
   }
@@ -264,7 +266,8 @@ export async function calOperatorHandler(req: Request, res: Response) {
   if (!db) return res.status(503).json({ error: "db unavailable" });
 
   try {
-    const result = await executeCalOperatorRun({ notify: true });
+    // Cron runs: Relay loop (30 min later) sends the unified daily report.
+    const result = await executeCalOperatorRun({ notify: !isCron });
     return res.json({ ok: true, ...result });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

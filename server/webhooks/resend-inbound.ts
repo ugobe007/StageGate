@@ -207,8 +207,9 @@ export async function resendInboundHandler(req: Request, res: Response) {
     }
 
     // ── 7. Generate Cal's reply draft ─────────────────────────────────────────
+    let inboundAutoSent = false;
     if (!["NEGATIVE", "OPT_OUT"].includes(intent.intent)) {
-      await generateCalDraft({
+      const draftId = await generateCalDraft({
         prospect,
         subject,
         bodyText,
@@ -222,6 +223,18 @@ export async function resendInboundHandler(req: Request, res: Response) {
         extractedDates: intent.extractedDates,
         calendarEventBooked: calendarEventId !== null,
       });
+
+      if (draftId) {
+        const { tryAutoSendInboundDraft } = await import("../agents/relayAutoSend.js");
+        const auto = await tryAutoSendInboundDraft(db, draftId, {
+          prospectId,
+          convState: newState,
+          intent: intent.intent,
+          confidence: intent.confidence,
+          calendarEventBooked: calendarEventId !== null,
+        });
+        inboundAutoSent = auto.sent;
+      }
     }
 
     // ── 8. Log opt-out separately ─────────────────────────────────────────────
@@ -235,7 +248,7 @@ export async function resendInboundHandler(req: Request, res: Response) {
       });
     }
 
-    res.json({ ok: true, matched: true, intent: intent.intent, mood: intent.mood, newState, calendarEventId });
+    res.json({ ok: true, matched: true, intent: intent.intent, mood: intent.mood, newState, calendarEventId, inboundAutoSent });
   } catch (err) {
     console.error("[Inbound webhook error]", err);
     res.status(500).json({ error: String(err) });
@@ -386,7 +399,7 @@ async function generateCalDraft({
   intent: IntentCategory;
   extractedDates: string[];
   calendarEventBooked: boolean;
-}) {
+}): Promise<number | null> {
   // Thread history for context
   const threadHistory = threadId
     ? (await db.select().from(emailThreads).where(eq(emailThreads.threadId, threadId)).limit(10))
@@ -425,17 +438,17 @@ Sign off as: ${FRANK_PERSONA.signature}`;
     });
     const raw = llmResponse.choices?.[0]?.message?.content ?? "";
     const replyBody = typeof raw === "string" ? raw : "";
-    if (!replyBody) return;
+    if (!replyBody) return null;
 
     const replySubject = subject.startsWith("Re:") ? subject : `Re: ${subject}`;
 
-    await db.insert(draftEmails).values({
+    const [inserted] = await db.insert(draftEmails).values({
       prospectId,
       subject: replySubject,
       body: replyBody,
       agentReasoning: `Intent: ${intent} | State: ${convState} | CalendarBooked: ${calendarEventBooked} | Dates: ${extractedDates.join(", ") || "none"}`,
       status: "pending",
-    });
+    }).returning({ id: draftEmails.id });
 
     await db.insert(prospectActivities).values({
       prospectId,
@@ -446,8 +459,10 @@ Sign off as: ${FRANK_PERSONA.signature}`;
     });
 
     console.log(`[Inbound] Draft created for ${prospect.company} (intent=${intent})`);
+    return inserted?.id ?? null;
   } catch (err) {
     console.error("[Inbound] LLM draft failed:", String(err).slice(0, 200));
+    return null;
   }
 }
 
