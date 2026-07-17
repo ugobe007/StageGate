@@ -282,11 +282,11 @@ function CalPipelineStatusStrip({
         <div className="flex flex-col gap-1.5 text-right flex-shrink-0">
           {deliverability?.paused ? (
             <span className="text-xs font-medium text-amber-800 bg-amber-100 px-2 py-1 rounded-md">
-              Breaker open · {(deliverability.rate * 100).toFixed(1)}% bounce
+              Intros paused · {(deliverability.rate * 100).toFixed(1)}% bounce · follow-ups OK
             </span>
           ) : (
             <span className="text-xs font-medium text-emerald-800 bg-emerald-50 px-2 py-1 rounded-md">
-              Deliverability OK
+              Deliverability OK · intros allowed
             </span>
           )}
           {(quarantineRecovered ?? 0) > 0 && (
@@ -565,14 +565,14 @@ function CalDeliverabilityBanner({
       <div className="flex-1 min-w-0 space-y-1">
         {stats.paused ? (
           <p className="text-amber-900 font-medium">
-            Circuit breaker open — new intro sends paused until bounce rate recovers.
+            New intro sends paused — follow-ups and scheduling replies still go out automatically.
           </p>
         ) : (
           <p className="text-yellow-900 font-medium">Deliverability warning — bounce rate elevated.</p>
         )}
         <p className="text-slate-600 text-xs leading-relaxed">
           Trailing {stats.windowDays}d: {stats.bounced}/{stats.sent} bounced ({ratePct}%), threshold {thresholdPct}%.
-          Follow-ups to engaged threads still run.
+          Intros resume automatically when the trailing rate drops. Relay + Cal quarantine bad addresses and Hunter-recover replacements on every cycle.
         </p>
         <p className="text-slate-500 text-xs flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
@@ -1566,7 +1566,7 @@ export default function AdminSalesAgent() {
 
   return (
     <>
-      <AdminPage fullHeight noPadding maxWidth="none">
+      <AdminPage fullHeight noPadding maxWidth="none" surface="light">
       <div className={`flex flex-col h-full ${CAL.page} overflow-hidden`}>
 
         <CalWorkflowBar

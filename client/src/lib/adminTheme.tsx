@@ -73,18 +73,31 @@ export function AdminPage({
   fullHeight,
   noPadding,
   className,
+  surface = "dark",
 }: {
   children: ReactNode;
   maxWidth?: string;
   fullHeight?: boolean;
   noPadding?: boolean;
   className?: string;
+  /** `light` for raised-card layouts (e.g. Cal workflow) on a soft gray base. */
+  surface?: "dark" | "light";
 }) {
+  const outerStyle =
+    surface === "light"
+      ? {
+          minHeight: "100%",
+          background: "linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%)",
+          color: "#0f172a",
+          fontFamily: ADMIN.font,
+        }
+      : adminPageOuterStyle;
+
   return (
     <div
       className={className}
       style={{
-        ...adminPageOuterStyle,
+        ...outerStyle,
         ...(fullHeight ? { height: "100%", display: "flex", flexDirection: "column", minHeight: 0 } : {}),
       }}
     >
