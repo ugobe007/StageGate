@@ -1571,8 +1571,8 @@ export default function AdminSalesAgent() {
 
   return (
     <>
-      <AdminPage fullHeight noPadding maxWidth="none" surface="dark">
-      <div className={`flex flex-col flex-1 min-h-0 overflow-y-auto overscroll-y-contain pb-10 ${CAL.page} ${CAL.body}`}>
+      <AdminPage noPadding maxWidth="none" surface="dark">
+      <div className={`flex flex-col pb-10 ${CAL.page} ${CAL.body}`}>
 
         <CalWorkflowBar
           workflow={workflow}

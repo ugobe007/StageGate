@@ -367,7 +367,7 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main content */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, overflow: "hidden" }}>
         {/* Mobile top bar */}
         {isMobile && (
           <div style={{
@@ -385,7 +385,7 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
             <span style={{ fontWeight: 700, fontSize: "0.875rem", color: D.emerald, letterSpacing: "0.04em", textTransform: "uppercase" }}>StageGate</span>
           </div>
         )}
-        <main style={{ flex: 1, overflowY: "auto", background: "transparent", color: D.text, fontFamily: D.font }}>
+        <main style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", background: "transparent", color: D.text, fontFamily: D.font, WebkitOverflowScrolling: "touch" }}>
           {children}
         </main>
       </div>
