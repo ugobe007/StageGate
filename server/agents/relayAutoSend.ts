@@ -20,6 +20,7 @@ import {
 } from "../outreachGate.js";
 import { isSendableEmailConfidence } from "../outreachContacts.js";
 import { advanceProspectConversationAfterSend } from "./salesAgent.js";
+import { isPartnerProspect } from "../services/partnerEmail.js";
 
 type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
 
@@ -288,7 +289,7 @@ export async function executeRelayAutoSend(db: Db): Promise<RelayAutoSendResult>
       introsPaused,
       intent,
       draftStatus: entry.draft.status as "pending" | "approved",
-      isPartnerDraft: entry.draft.audience !== "prospect",
+      isPartnerDraft: entry.draft.audience !== "prospect" || isPartnerProspect(p),
       suppressed,
       hasEmail: Boolean(p.contactEmail?.trim()),
     });

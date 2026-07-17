@@ -10,6 +10,7 @@ import {
   prospects,
   serviceOrders,
 } from "../../drizzle/schema.js";
+import type { PartnerOutreachSummary } from "../services/partnerOutreach.js";
 import type { CalWorkflowSummary } from "./salesAgent.js";
 import type { RelayPriority } from "./relayPlaybook.js";
 
@@ -100,6 +101,7 @@ export async function getConversionSnapshot(db: Db): Promise<ConversionSnapshot>
 export function prioritizeMissions(input: {
   conversion: ConversionSnapshot;
   workflow: CalWorkflowSummary;
+  partnerOutreach?: PartnerOutreachSummary;
   introsPaused: boolean;
   hunterEnabled: boolean;
   cronsMissing: string[];
@@ -168,9 +170,27 @@ export function prioritizeMissions(input: {
   if (input.workflow.pendingReview > 0 || input.workflow.readyToSend > 0) {
     missions.push({
       priority: "outreach_motion",
-      title: "Clear draft send queue",
+      title: "Clear OEM draft send queue",
       detail: `${input.workflow.pendingReview} pending review, ${input.workflow.readyToSend} approved — Relay auto-send will attempt safe sends.`,
-      metric: `${input.workflow.pendingReview + input.workflow.readyToSend} drafts`,
+      metric: `${input.workflow.pendingReview + input.workflow.readyToSend} OEM drafts`,
+    });
+  }
+
+  if (input.partnerOutreach && input.partnerOutreach.pendingReview > 0) {
+    missions.push({
+      priority: "outreach_motion",
+      title: "Review partner & vendor drafts",
+      detail: `${input.partnerOutreach.pendingReview} Cal partner draft(s) at /admin/partner-outreach — human approve & send.`,
+      metric: `${input.partnerOutreach.pendingReview} partner drafts`,
+    });
+  }
+
+  if (input.partnerOutreach && input.partnerOutreach.needsDraft > 0) {
+    missions.push({
+      priority: "outreach_motion",
+      title: "Partner outreach queue",
+      detail: `${input.partnerOutreach.needsDraft} ecosystem partner(s) have email but no draft — Cal drafts on operator runs.`,
+      metric: `${input.partnerOutreach.needsDraft} need partner draft`,
     });
   }
 

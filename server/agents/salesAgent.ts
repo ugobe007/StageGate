@@ -212,6 +212,10 @@ export async function salesAgentOutreachHandler(req: Request, res: Response) {
         continue;
       }
 
+      if (isPartnerProspect(prospect)) {
+        continue;
+      }
+
       const prepared = await prepareProspectOutreachRecipient(prospect, db);
       if (!prepared.ok) {
         if (prepared.reason === "low_confidence") skips.lowConfidence++;
@@ -813,7 +817,7 @@ async function generateFrankEmail(
 
   // Discovery + first two follow-ups: chapter templates — insight-first, no LLM drift
   if (stage === "discovery" || stage === "intro_sent" || stage === "followup_1") {
-    if (stage === "discovery" && isPartnerProspect(prospect)) {
+    if (isPartnerProspect(prospect)) {
       const showCity = await resolveShowCity(primaryShow);
       const { subject, body } = buildCalPartnerEmail({
         company: prospect.company,
@@ -1168,6 +1172,8 @@ export async function redraftPendingCalDraftsCore(): Promise<{
 
   for (const entry of entries) {
     if (!entry.prospect) continue;
+    if (isPartnerProspect(entry.prospect)) continue;
+
     const [conv] = await db
       .select()
       .from(salesAgentConversations)
@@ -1250,7 +1256,12 @@ export async function generateCalDraftsCore(options?: {
   const errors: string[] = [];
   const now = new Date();
 
-  for (const prospect of targets as Array<{ id: number; company: string; contactEmail: string | null }>) {
+  for (const prospect of targets as Array<{ id: number; company: string; contactEmail: string | null; vendorType?: string | null; outreachAngle?: string | null }>) {
+    if (isPartnerProspect(prospect)) {
+      skipped++;
+      continue;
+    }
+
     const toEmail = emailHelpers.getProspectOutreachEmail(prospect);
     if (!toEmail) { skipped++; continue; }
 

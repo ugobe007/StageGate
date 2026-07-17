@@ -26,6 +26,11 @@ import {
 } from "./prospectWebsiteResolution.js";
 import { enrichProspectsBatch, recoverQuarantinedProspectContacts } from "./prospectEnrichment.js";
 import { refreshCalDraftsCore, getCalWorkflowSummary } from "./salesAgent.js";
+import {
+  enrichPartnerProspectsBatch,
+  getPartnerOutreachSummary,
+  refreshPartnerOutreachDraftsCore,
+} from "../services/partnerOutreach.js";
 import { computeBounceStats } from "../outreachGate.js";
 
 const BATCH = Number(process.env.CAL_OPERATOR_BATCH_SIZE) || 25;
@@ -37,6 +42,9 @@ export type CalOperatorResult = {
   emailsEnriched: number;
   draftsRedrafted: number;
   draftsGenerated: number;
+  partnerDraftsGenerated: number;
+  partnerEnrichmentStarted: number;
+  partnerOutreachAfter: Awaited<ReturnType<typeof getPartnerOutreachSummary>>;
   quarantined: number;
   quarantineRecovered: number;
   quarantineUnresolved: number;
@@ -136,6 +144,8 @@ export async function runCalOperatorCycle(opts?: {
 
   let draftsRedrafted = 0;
   let draftsGenerated = 0;
+  let partnerDraftsGenerated = 0;
+  let partnerEnrichmentStarted = 0;
   if (opts?.skipDraftRefresh) {
     // Manual UI runs — user triggers Redraft emails separately.
   } else {
@@ -146,6 +156,21 @@ export async function runCalOperatorCycle(opts?: {
       if (drafts.errors.length) errors.push(...drafts.errors.slice(0, 3));
     } catch (err) {
       errors.push(`drafts: ${String(err)}`);
+    }
+
+    try {
+      const enrich = await enrichPartnerProspectsBatch(Math.min(BATCH, 10));
+      partnerEnrichmentStarted = enrich.started;
+    } catch (err) {
+      errors.push(`partner enrich: ${String(err)}`);
+    }
+
+    try {
+      const partner = await refreshPartnerOutreachDraftsCore({ limit: BATCH });
+      partnerDraftsGenerated = partner.drafted;
+      if (partner.errors.length) errors.push(...partner.errors.slice(0, 2));
+    } catch (err) {
+      errors.push(`partner drafts: ${String(err)}`);
     }
   }
 
@@ -162,6 +187,7 @@ export async function runCalOperatorCycle(opts?: {
   }
 
   const workflowAfter = await getCalWorkflowSummary();
+  const partnerOutreachAfter = await getPartnerOutreachSummary();
   const bounce = await computeBounceStats(db);
   const growthBrief = opts?.skipGrowthBrief
     ? undefined
@@ -170,6 +196,7 @@ export async function runCalOperatorCycle(opts?: {
   console.log(
     `[Cal operator] junk=${junk.dismissed} urls=${websitesResolved} dismissed=${websitesDismissed} ` +
       `emails=${emailsEnriched} redraft=${draftsRedrafted} newDrafts=${draftsGenerated} ` +
+      `partnerDrafts=${partnerDraftsGenerated} partnerEnrich=${partnerEnrichmentStarted} ` +
       `quarantine=${quarantined} recovered=${quarantineRecovered} unresolved=${quarantineUnresolved}`,
   );
 
@@ -180,6 +207,9 @@ export async function runCalOperatorCycle(opts?: {
     emailsEnriched,
     draftsRedrafted,
     draftsGenerated,
+    partnerDraftsGenerated,
+    partnerEnrichmentStarted,
+    partnerOutreachAfter,
     quarantined,
     quarantineRecovered,
     quarantineUnresolved,
@@ -225,7 +255,7 @@ export async function executeCalOperatorRun(opts?: {
       await notifyOwner({
         title: "Cal operator run — pipeline + growth ideas",
         content: [
-          `Cleaned ${result.junkDismissed} junk · resolved ${result.websitesResolved} URLs · enriched ${result.emailsEnriched} emails · ${result.draftsGenerated} new drafts.`,
+          `Cleaned ${result.junkDismissed} junk · resolved ${result.websitesResolved} URLs · enriched ${result.emailsEnriched} emails · ${result.draftsGenerated} OEM drafts · ${result.partnerDraftsGenerated} partner drafts.`,
           "",
           "Social:",
           ...brief.socialPosts.map((s) => `• ${s}`),

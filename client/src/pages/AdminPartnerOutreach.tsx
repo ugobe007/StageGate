@@ -56,6 +56,22 @@ export default function AdminPartnerOutreach() {
     { enabled: isAuthenticated && user?.role === "admin", refetchInterval: 15_000 },
   );
 
+  const { data: partnerWorkflow, refetch: refetchPartnerWorkflow } = trpc.partnerOutreach.getWorkflowSummary.useQuery(
+    undefined,
+    { enabled: isAuthenticated && user?.role === "admin", refetchInterval: 30_000 },
+  );
+
+  const runCalPartnerDrafts = trpc.partnerOutreach.runCalDrafts.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      void refetchPartnerWorkflow();
+      utils.admin.getDrafts.invalidate();
+      utils.admin.getDraftCount.invalidate();
+      setQueueExpanded(true);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const { data: recipients = [], isLoading } = trpc.partnerOutreach.listRecipients.useQuery(
     { source: filterSource, hasEmail: true },
     { enabled: isAuthenticated && user?.role === "admin" },
@@ -270,7 +286,36 @@ export default function AdminPartnerOutreach() {
             <Send size={12} /> {pendingPartnerDrafts} ready to send
           </Button>
         )}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs gap-1"
+          style={{ borderColor: ADMIN.borderHi, color: ADMIN.text, background: ADMIN.surface }}
+          disabled={runCalPartnerDrafts.isPending}
+          onClick={() => runCalPartnerDrafts.mutate({ limit: 40 })}
+        >
+          {runCalPartnerDrafts.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+          Run Cal partner drafts
+        </Button>
       </header>
+
+      {partnerWorkflow && (
+        <div
+          className="px-5 py-2.5 border-b text-xs flex flex-wrap gap-x-4 gap-y-1 shrink-0"
+          style={{ borderColor: ADMIN.border, background: "rgba(16, 185, 129, 0.08)", color: "#94a3b8" }}
+        >
+          <span>
+            <strong style={{ color: "#ececec" }}>Cal</strong> runs partner outreach 2× daily with the operator — enrich, draft, you review & send.
+          </span>
+          <span>{partnerWorkflow.withEmail} with email</span>
+          <span>{partnerWorkflow.needsDraft} need draft</span>
+          <span>{partnerWorkflow.pendingReview} in review</span>
+          <span>{partnerWorkflow.approvedToSend} approved</span>
+          {partnerWorkflow.needsEmail > 0 && (
+            <span>{partnerWorkflow.needsEmail} need email (Apollo enrich on operator run)</span>
+          )}
+        </div>
+      )}
 
       <div className="flex-1 flex min-h-0">
         {/* Recipient list */}

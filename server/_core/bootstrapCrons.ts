@@ -75,7 +75,7 @@ const PROJECT_CRONS: Array<{ key: string; job: HeartbeatJob }> = [
       name: "cal-operator-am",
       cron: "0 0 10 * * *",
       path: "/api/scheduled/cal-operator",
-      description: "Daily 10:00 UTC: Cal operator — junk cleanup, enrich, drafts, quarantine",
+      description: "Daily 10:00 UTC: Cal operator — OEM enrich, partner/vendor drafts, quarantine",
     },
   },
   {

@@ -14,6 +14,7 @@ import { sdk } from "../_core/sdk.js";
 import { notifyOwner } from "../_core/notification.js";
 import { runCalOperatorCycle } from "./calOperator.js";
 import { getCalWorkflowSummary } from "./salesAgent.js";
+import { getPartnerOutreachSummary } from "../services/partnerOutreach.js";
 import {
   computeBounceStats,
   normalizeSuppressionEmails,
@@ -99,7 +100,7 @@ type RelayOperatorCore = Omit<RelayOperatorResult, "learnings" | "escalations">;
 function buildLearnings(result: RelayOperatorCore): string {
   const parts: string[] = [];
   parts.push(
-    `Cal cleaned ${result.calOperator.junkDismissed} junk, enriched ${result.calOperator.emailsEnriched} emails, generated ${result.calOperator.draftsGenerated} drafts.`,
+    `Cal cleaned ${result.calOperator.junkDismissed} junk, enriched ${result.calOperator.emailsEnriched} emails, generated ${result.calOperator.draftsGenerated} OEM drafts and ${result.calOperator.partnerDraftsGenerated} partner drafts.`,
   );
   if (result.autoSend.sent > 0) {
     parts.push(`Auto-sent ${result.autoSend.sent} safe draft(s).`);
@@ -167,14 +168,17 @@ export function formatRelayDailyReport(result: RelayOperatorResult): string {
     `• Crons registered: ${result.health.cronsRegistered} (${result.health.cronsMissing.length} missing)`,
     "",
     "Actions taken",
-    `• Cal operator: ${result.calOperator.emailsEnriched} enriched, ${result.calOperator.draftsGenerated} new drafts, ${result.calOperator.quarantineRecovered} quarantine recovered`,
+    `• Cal operator: ${result.calOperator.emailsEnriched} enriched, ${result.calOperator.draftsGenerated} OEM drafts, ${result.calOperator.partnerDraftsGenerated} partner drafts, ${result.calOperator.quarantineRecovered} quarantine recovered`,
     `• Auto-send: ${result.autoSend.sent} sent / ${result.autoSend.skipped} skipped / ${result.autoSend.failed} failed`,
     `• Stale drafts discarded: ${result.staleDraftsDiscarded}`,
     `• Suppressions normalized: ${result.suppressionsNormalized}`,
     "",
-    "Pipeline",
+    "Pipeline (OEM)",
     `• Needs contact fix: ${w.needsContactFix} · Needs draft: ${w.needsDraft} · Pending review: ${w.pendingReview}`,
     `• Awaiting reply: ${w.awaitingReply} · Follow-ups due: ${w.followUpDue}`,
+    "",
+    "Pipeline (partners)",
+    `• Pending review: ${result.calOperator.partnerOutreachAfter.pendingReview} · Needs draft: ${result.calOperator.partnerOutreachAfter.needsDraft} · With email: ${result.calOperator.partnerOutreachAfter.withEmail}`,
     "",
     "Conversion (7d)",
     `• Users +${result.conversion.usersLast7d} · Demos +${result.conversion.demosLast7d} · Quotes +${result.conversion.quotesLast7d}`,
@@ -206,6 +210,7 @@ export async function runRelayLoop(opts?: {
   stepsCompleted.push("observe");
   const health = await observeHealth(db);
   const workflowBefore = await getCalWorkflowSummary();
+  const partnerOutreachBefore = await getPartnerOutreachSummary();
   const conversion = await getConversionSnapshot(db);
 
   // ORIENT + DECIDE
@@ -213,6 +218,7 @@ export async function runRelayLoop(opts?: {
   const missions = prioritizeMissions({
     conversion,
     workflow: workflowBefore,
+    partnerOutreach: partnerOutreachBefore,
     introsPaused: health.introsPaused,
     hunterEnabled: health.hunterEnabled,
     cronsMissing: health.cronsMissing,
@@ -239,6 +245,9 @@ export async function runRelayLoop(opts?: {
       emailsEnriched: 0,
       draftsRedrafted: 0,
       draftsGenerated: 0,
+      partnerDraftsGenerated: 0,
+      partnerEnrichmentStarted: 0,
+      partnerOutreachAfter: partnerOutreachBefore,
       quarantined: 0,
       quarantineRecovered: 0,
       quarantineUnresolved: 0,
@@ -257,6 +266,9 @@ export async function runRelayLoop(opts?: {
         emailsEnriched: 0,
         draftsRedrafted: 0,
         draftsGenerated: 0,
+        partnerDraftsGenerated: 0,
+        partnerEnrichmentStarted: 0,
+        partnerOutreachAfter: partnerOutreachBefore,
         quarantined: 0,
         quarantineRecovered: 0,
         quarantineUnresolved: 0,
