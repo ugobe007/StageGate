@@ -37,6 +37,8 @@ import {
   bootstrapProjectCrons,
   getRegisteredCronKeys,
 } from "../_core/bootstrapCrons.js";
+import { countMaxReadyForCal } from "./aiOrg.js";
+import { runNatashaCycle, type NatashaOperatorResult } from "./natashaOperator.js";
 
 export type RelayHealthObservation = {
   outreachDisabled: boolean;
@@ -53,6 +55,7 @@ export type RelayOperatorResult = {
   stepsCompleted: RelayLoopStep[];
   health: RelayHealthObservation;
   calOperator: Awaited<ReturnType<typeof runCalOperatorCycle>>;
+  natasha: NatashaOperatorResult;
   autoSend: Awaited<ReturnType<typeof executeRelayAutoSend>>;
   staleDraftsDiscarded: number;
   suppressionsNormalized: number;
@@ -60,6 +63,7 @@ export type RelayOperatorResult = {
   conversion: ConversionSnapshot;
   missions: RelayMission[];
   workflowAfter: Awaited<ReturnType<typeof getCalWorkflowSummary>>;
+  maxReadyForCal: number;
   escalations: string[];
   learnings: string;
   errors: string[];
@@ -80,6 +84,7 @@ async function observeHealth(db: NonNullable<Awaited<ReturnType<typeof getDb>>>)
     "sales_agent_outreach_pm_job_task_uid",
     "enrich_contacts_job_task_uid",
     "quote_followup_job_task_uid",
+    "natasha_operator_job_task_uid",
   ];
   const missing = expectedKeys.filter((k) => !registered.has(k));
 
@@ -100,10 +105,20 @@ type RelayOperatorCore = Omit<RelayOperatorResult, "learnings" | "escalations">;
 function buildLearnings(result: RelayOperatorCore): string {
   const parts: string[] = [];
   parts.push(
-    `Cal cleaned ${result.calOperator.junkDismissed} junk, enriched ${result.calOperator.emailsEnriched} emails, generated ${result.calOperator.draftsGenerated} OEM drafts and ${result.calOperator.partnerDraftsGenerated} partner drafts.`,
+    `Max enriched ${result.calOperator.emailsEnriched} contacts; Cal generated ${result.calOperator.draftsGenerated} OEM drafts and ${result.calOperator.partnerDraftsGenerated} partner drafts (junk cleaned: ${result.calOperator.junkDismissed}).`,
   );
+  if (result.maxReadyForCal > 0) {
+    parts.push(`Max→Cal queue: ${result.maxReadyForCal} ready.`);
+  }
+  if (result.natasha.brief?.uiExperiments?.length) {
+    parts.push(`Natasha proposed ${result.natasha.brief.uiExperiments.length} UI experiment(s).`);
+  } else if (result.natasha.funnel.usersLast7d + result.natasha.funnel.newsletterLast7d > 0) {
+    parts.push(
+      `Natasha funnel: +${result.natasha.funnel.usersLast7d} users, +${result.natasha.funnel.newsletterLast7d} newsletter.`,
+    );
+  }
   if (result.autoSend.sent > 0) {
-    parts.push(`Auto-sent ${result.autoSend.sent} safe draft(s).`);
+    parts.push(`Cal auto-sent ${result.autoSend.sent} safe draft(s).`);
   }
   if (result.staleDraftsDiscarded > 0) {
     parts.push(`Discarded ${result.staleDraftsDiscarded} stale draft(s).`);
@@ -140,6 +155,9 @@ function buildEscalations(result: RelayOperatorCore): string[] {
   if (result.calOperator.errors.length > 0) {
     items.push(`Cal operator errors: ${result.calOperator.errors.slice(0, 2).join("; ")}`);
   }
+  if (result.natasha.errors.length > 0) {
+    items.push(`Natasha errors: ${result.natasha.errors.slice(0, 2).join("; ")}`);
+  }
   if (result.autoSend.errors.length > 0) {
     items.push(`Auto-send failures: ${result.autoSend.errors.slice(0, 2).join("; ")}`);
   }
@@ -158,17 +176,21 @@ export function formatRelayDailyReport(result: RelayOperatorResult): string {
   const status = healthStatus(result);
   const statusLabel = status.toUpperCase();
   const w = result.workflowAfter;
+  const brief = result.natasha.brief;
+  const funnel = result.natasha.funnel;
 
   const lines = [
     `${RELAY_REPORT_TITLE} — ${statusLabel}`,
     "",
-    "Health",
+    "Health (Ted)",
     `• Outreach disabled: ${result.health.outreachDisabled ? "YES" : "no"}`,
     `• Circuit breaker: ${result.health.introsPaused ? "OPEN" : "closed"} (${(result.health.bounceRate * 100).toFixed(1)}% bounce)`,
     `• Crons registered: ${result.health.cronsRegistered} (${result.health.cronsMissing.length} missing)`,
     "",
     "Actions taken",
-    `• Cal operator: ${result.calOperator.emailsEnriched} enriched, ${result.calOperator.draftsGenerated} OEM drafts, ${result.calOperator.partnerDraftsGenerated} partner drafts, ${result.calOperator.quarantineRecovered} quarantine recovered`,
+    `• Max: ${result.calOperator.emailsEnriched} enriched, ${result.calOperator.quarantineRecovered} quarantine recovered · ready for Cal: ${result.maxReadyForCal}`,
+    `• Cal: ${result.calOperator.draftsGenerated} OEM drafts, ${result.calOperator.partnerDraftsGenerated} partner drafts, junk cleaned ${result.calOperator.junkDismissed}`,
+    `• Natasha: users +${funnel.usersLast7d}, newsletter +${funnel.newsletterLast7d}, profiles +${funnel.companyProfilesLast7d}`,
     `• Auto-send: ${result.autoSend.sent} sent / ${result.autoSend.skipped} skipped / ${result.autoSend.failed} failed`,
     `• Stale drafts discarded: ${result.staleDraftsDiscarded}`,
     `• Suppressions normalized: ${result.suppressionsNormalized}`,
@@ -187,6 +209,22 @@ export function formatRelayDailyReport(result: RelayOperatorResult): string {
     "Top missions",
     ...result.missions.map((m, i) => `${i + 1}. [${m.priority}] ${m.title} — ${m.detail}`),
   ];
+
+  if (brief?.socialPosts?.length || brief?.uiExperiments?.length) {
+    lines.push("", "Growth (Natasha)");
+    if (brief.socialPosts?.length) {
+      lines.push(...brief.socialPosts.slice(0, 2).map((s) => `• Social: ${s}`));
+    }
+    if (brief.newsletterHooks?.length) {
+      lines.push(...brief.newsletterHooks.slice(0, 1).map((s) => `• Newsletter: ${s}`));
+    }
+    if (brief.uiExperiments?.length) {
+      lines.push(...brief.uiExperiments.slice(0, 2).map((s) => `• UI: ${s}`));
+    }
+    if (brief.signupNudges?.length) {
+      lines.push(...brief.signupNudges.slice(0, 1).map((s) => `• Signup: ${s}`));
+    }
+  }
 
   if (result.escalations.length > 0) {
     lines.push("", "Escalations (human attention)", ...result.escalations.map((e) => `• ${e}`));
@@ -255,7 +293,7 @@ export async function runRelayLoop(opts?: {
     };
   } else {
     try {
-      calOperator = await runCalOperatorCycle({ skipGrowthBrief: true });
+      calOperator = await runCalOperatorCycle();
     } catch (err) {
       errors.push(`cal operator: ${String(err)}`);
       calOperator = {
@@ -274,6 +312,32 @@ export async function runRelayLoop(opts?: {
         errors: [String(err)],
       };
     }
+  }
+
+  // Natasha — growth observe + brief (priority 6; still runs so funnel is always visible)
+  let natasha: NatashaOperatorResult;
+  try {
+    const skipBrief =
+      health.introsPaused ||
+      !health.resendConfigured ||
+      health.cronsMissing.length > 3;
+    natasha = await runNatashaCycle({ skipBrief });
+  } catch (err) {
+    errors.push(`natasha: ${String(err)}`);
+    natasha = {
+      funnel: {
+        usersLast7d: conversion.usersLast7d,
+        usersTotal: conversion.usersTotal,
+        newsletterLast7d: 0,
+        newsletterTotal: 0,
+        companyProfilesLast7d: 0,
+        demosLast7d: conversion.demosLast7d,
+        demosPending: conversion.demosPending,
+        quotesLast7d: conversion.quotesLast7d,
+        quotesPending: conversion.quotesPending,
+      },
+      errors: [String(err)],
+    };
   }
 
   let suppressionsNormalized = 0;
@@ -302,11 +366,18 @@ export async function runRelayLoop(opts?: {
   // VERIFY
   stepsCompleted.push("verify");
   const workflowAfter = await getCalWorkflowSummary();
+  let maxReadyForCal = 0;
+  try {
+    maxReadyForCal = await countMaxReadyForCal();
+  } catch (err) {
+    errors.push(`max ready queue: ${String(err)}`);
+  }
 
   const partial: RelayOperatorCore = {
     stepsCompleted,
     health,
     calOperator,
+    natasha,
     autoSend,
     staleDraftsDiscarded,
     suppressionsNormalized,
@@ -314,7 +385,8 @@ export async function runRelayLoop(opts?: {
     conversion,
     missions,
     workflowAfter,
-    errors: [...errors, ...calOperator.errors, ...autoSend.errors],
+    maxReadyForCal,
+    errors: [...errors, ...calOperator.errors, ...natasha.errors, ...autoSend.errors],
   };
 
   const escalations = buildEscalations(partial);

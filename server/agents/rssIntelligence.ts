@@ -297,6 +297,7 @@ export async function rssIntelligenceHandler(req: Request, res: Response) {
         runType: "rss_intelligence",
         status: "running",
         startedAt: new Date(),
+        details: { agent: "max" },
       })
       .returning({ id: salesAgentRuns.id });
 
@@ -312,7 +313,7 @@ export async function rssIntelligenceHandler(req: Request, res: Response) {
           prospectsCreated: result.prospectsCreated,
           showsFound: result.showsFound,
           completedAt: new Date(),
-          details: result,
+          details: { ...result, agent: "max" },
         })
         .where(eq(salesAgentRuns.id, runId));
     }

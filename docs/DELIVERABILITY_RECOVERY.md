@@ -24,7 +24,7 @@ Code: `server/outreachGate.ts` → `shouldPauseNewIntros` / `computeBounceStats`
 | Apollo persists **verified only** | Guesses stay as UI suggestions, never `contactEmail` |
 | Import / discovery → `emailConfidence: low` | Hunter must raise before send |
 | Cold-send requires `high` / `verified` | `OUTREACH_ALLOW_MEDIUM_CONFIDENCE` defaults **off** |
-| Hunter mins → 90 / 90 / 80 (recovery) | Fewer marginal Hunter hits |
+| Hunter mins → 80 / 80 / 75 (post-recovery tune) | Accepts typical Hunter scores; still drops invalid/disposable |
 | Breaker open + ZeroBounce key | Fail-closed if verify unavailable |
 
 ## Railway / env checklist
@@ -38,10 +38,10 @@ OUTREACH_BOUNCE_MIN_SAMPLE=20
 # Keep OFF until bounce rate is healthy for 7+ days
 OUTREACH_ALLOW_MEDIUM_CONFIDENCE=0
 
-# Recommended during recovery
-HUNTER_MIN_FINDER_SCORE=90
-HUNTER_MIN_DOMAIN_CONFIDENCE=90
-HUNTER_MIN_RECOVERY_CONFIDENCE=80
+# Tuned so Max can enrich (Hunter often returns 80–89)
+HUNTER_MIN_FINDER_SCORE=80
+HUNTER_MIN_DOMAIN_CONFIDENCE=80
+HUNTER_MIN_RECOVERY_CONFIDENCE=75
 HUNTER_API_KEY=…          # required for enrichment
 ZEROBOUNCE_API_KEY=…      # strongly recommended; fail-closed while breaker open
 ZERO_BOUNCE_ACCEPT_CATCH_ALL=0
@@ -57,6 +57,7 @@ OUTREACH_DISABLED=1
 3. Run quarantine recovery (Cal / Relay operator) to clear bounced addresses off prospects.
 4. Watch admin bounce stats (`computeBounceStats` via Relay health) until rate &lt; 10%.
 5. Do **not** set `OUTREACH_ALLOW_MEDIUM_CONFIDENCE=1` until then.
+6. If bounce climbs again after the 80 floor, raise `HUNTER_MIN_*` back toward 90.
 
 ## Sending domains (Resend)
 

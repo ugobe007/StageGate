@@ -1,8 +1,11 @@
 /**
  * Relay — Autonomous Loop Operator (Stage Manager)
  *
- * Cal talks to humans. Relay talks to systems — monitors, prioritizes,
- * unblocks, and escalates only when the charter requires human approval.
+ * Orchestrates labeled agents (Cal, Max, Natasha, Ted) across StageGate and
+ * ReadyForRobots. Cal talks to humans; Max researches; Natasha owns growth
+ * surfaces; Ted owns performance signals. Relay talks to systems.
+ *
+ * See docs/ai-org.md · docs/relay_charter.md
  */
 
 export const RELAY_PERSONA = {

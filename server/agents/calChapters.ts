@@ -14,9 +14,10 @@
 
 import { FRANK_PERSONA } from "./frankPlaybook.js";
 import {
-  greetingLine,
-  normalizeCalEmailGreeting,
+  calPersonableGreeting,
   resolveGreetingName,
+  stripLeadingGreetingLine,
+  type CalMailStage,
 } from "../services/partnerEmail.js";
 
 export type CalChapterStage = "discovery" | "intro_sent" | "followup_1";
@@ -346,7 +347,7 @@ type ProspectLike = {
   vendorType?: string | null;
 };
 
-/** Build a field-note email — observation + one question, not a sales touch. */
+/** Build a field-note email — observation + one question, with a clear Cal intro. */
 export function buildCalChapterEmail(
   prospect: ProspectLike,
   stage: CalChapterStage,
@@ -369,17 +370,32 @@ export function buildCalChapterEmail(
     contactEmail: prospect.contactEmail,
     company: prospect.company,
   });
-  const salutation = greetingLine(resolved.greetingName, prospect.company);
+  const opening = calPersonableGreeting(
+    resolved.greetingName,
+    prospect.company,
+    stage as CalMailStage,
+  );
   const opener = formatOpener(note);
 
-  const parts: string[] = [];
-  if (opener) parts.push(opener);
-  parts.push(...note.body);
-  if (note.closer) parts.push(note.closer);
-  parts.push(note.question);
-  parts.push(FRANK_PERSONA.signature);
+  // Light personalization when we only have a team greeting — avoid awkward possessives.
+  let question = note.question;
+  if (!resolved.greetingName && prospect.company?.trim()) {
+    const co = prospect.company.trim();
+    if (!question.includes(co)) {
+      question = question.replace(/\byour (operation|floor|facility)\b/i, `the $1 at ${co}`);
+    }
+  }
 
-  const body = normalizeCalEmailGreeting(parts.join("\n\n"), salutation);
+  const restParts: string[] = [];
+  if (opener) restParts.push(opener);
+  restParts.push(...note.body);
+  if (note.closer) restParts.push(note.closer);
+  restParts.push(question);
+  restParts.push(FRANK_PERSONA.signature);
+
+  // Opening already has Cal's greeting/intro — only strip accidental Hi lines from the note body.
+  const rest = stripLeadingGreetingLine(restParts.join("\n\n"));
+  const body = rest ? `${opening}\n\n${rest}` : opening;
 
   return {
     subject: note.subject,

@@ -1,11 +1,11 @@
 /**
- * Prospect contact enrichment via Hunter.io.
+ * Max — Prospect contact enrichment via Hunter.io.
  *
- * StageGate's discovery agent guesses role inboxes (marketing@domain) that
- * rarely reach a human — the main reason automated outreach produced zero
- * replies. This module backfills real, verified decision-maker emails from
- * Hunter and persists them onto the prospect. Fail-open: when Hunter is
+ * Backfills real, verified decision-maker emails from Hunter onto prospects.
+ * Feeds Cal's sendable queue (listMaxReadyForCal). Fail-open: when Hunter is
  * disabled or finds nothing, prospects are left untouched.
+ *
+ * See docs/ai-org.md
  */
 
 import type { Request, Response } from "express";
@@ -290,14 +290,14 @@ export async function enrichProspectsBatch(db: Db, limit = 25): Promise<EnrichBa
         });
       }
     } catch (err) {
-      console.error(`[enrich] prospect ${p.id} failed: ${String(err)}`);
+      console.error(`[Max enrich] prospect ${p.id} failed: ${String(err)}`);
       noResults++;
       results.push({ id: p.id, company: p.company, email: null, reason: "error" });
     }
     await new Promise((r) => setTimeout(r, 120));
   }
 
-  console.log(`[enrich] attempted ${toEnrich.length}, enriched=${enriched}, noResults=${noResults}`);
+  console.log(`[Max enrich] attempted ${toEnrich.length}, enriched=${enriched}, noResults=${noResults}`);
   return {
     attempted: toEnrich.length,
     enriched,

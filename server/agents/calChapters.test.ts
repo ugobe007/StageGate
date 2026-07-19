@@ -42,17 +42,29 @@ describe("pickCalChapter", () => {
 });
 
 describe("buildCalChapterEmail", () => {
-  it("reads as an observation, not outreach", () => {
+  it("opens cold intros by introducing Cal from Ready For Robots", () => {
     const { body, subject } = buildCalChapterEmail(
-      { company: "UPS Supply Chain Solutions", contactEmail: "ops@ups.com" },
+      { company: "UPS Supply Chain Solutions" },
       "discovery",
     );
+    expect(body).toMatch(/^Hi UPS Supply Chain Solutions team,/);
+    expect(body).toMatch(/This is Cal from Ready For Robots/);
+    expect(body).toMatch(/teams like UPS Supply Chain Solutions/);
     expect(body).not.toMatch(/Field Note #\d+/);
-    expect(body).not.toMatch(/This is Cal|Physical AI Deployment Advisor|onstage\.bot/i);
+    expect(body).not.toMatch(/Physical AI Deployment Advisor|onstage\.bot/i);
     expect(body).not.toMatch(/would you like to meet|schedule a call|book a demo/i);
     expect(body).toContain("— Cal");
     expect(FRANK_PERSONA.signature).toBe("— Cal");
     expect(subject).not.toMatch(/Introducing myself|quick question/i);
+  });
+
+  it("opens follow-ups with Hi …, this is Cal again", () => {
+    const { body } = buildCalChapterEmail(
+      { company: "UPS Supply Chain Solutions", contactName: "Jordan Lee", contactEmail: "jordan@ups.com" },
+      "intro_sent",
+    );
+    expect(body).toMatch(/^Hi Jordan, this is Cal again\./);
+    expect(body).not.toMatch(/This is Cal from Ready For Robots/);
   });
 
   it("focuses on work and flow for operators, not robot specs", () => {
@@ -60,6 +72,7 @@ describe("buildCalChapterEmail", () => {
       { company: "Vention", contactName: "Mathieu Desmarais" },
       "discovery",
     );
+    expect(body).toMatch(/This is Cal from Ready For Robots/);
     expect(body).toMatch(/people|flow|work|walk|wait|handoff|warehouse|operation/i);
     expect(body).toMatch(/I'm curious|Does that|Have you|What's the|If you/i);
   });
@@ -70,6 +83,7 @@ describe("buildCalChapterEmail", () => {
       "discovery",
     );
     expect(audience).toBe("robot_oem");
+    expect(body).toMatch(/This is Cal from Ready For Robots/);
     expect(body).not.toMatch(/Field Note #\d+/);
     expect(body).not.toMatch(/task on your floor that everyone avoids/i);
     expect(body).toMatch(/customer|deployment|demo|power|integrator|show/i);

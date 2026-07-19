@@ -36,7 +36,7 @@ const TIERS = [
       "24/7 remote & on-site support",
       "4-hour emergency response SLA",
       "Unlimited robots",
-      "Dedicated technician: Max",
+      "Dedicated technician: Sam",
       "Priority parts sourcing",
       "Quarterly on-site inspections",
     ],
@@ -45,7 +45,7 @@ const TIERS = [
 ];
 
 const USE_CASES = [
-  { icon: AlertCircle, title: "Emergency Repair",       desc: "Robot breaks down mid-demo at a trade show. Max coordinates a technician within hours." },
+  { icon: AlertCircle, title: "Emergency Repair",       desc: "Robot breaks down mid-demo at a trade show. Sam coordinates a technician within hours." },
   { icon: Activity,    title: "Deployment Monitoring",  desc: "Robots deployed in hotels, airports, or retail locations monitored 24/7 with proactive alerts." },
   { icon: Wrench,      title: "Scheduled Maintenance",  desc: "Quarterly on-site inspections, firmware updates, and preventive maintenance to avoid failures." },
   { icon: Phone,       title: "Remote Diagnostics",     desc: "Most issues resolved remotely in under 30 minutes via secure connection to your robot's systems." },
@@ -53,7 +53,7 @@ const USE_CASES = [
 
 const WORKFLOW = [
   { step: "01", title: "Capture the issue", desc: "Submit the robot model, location, error state, urgency, and any photos or logs from the field." },
-  { step: "02", title: "Max triages", desc: "Max separates software, operator, hardware, and show-floor problems so the right response starts fast." },
+  { step: "02", title: "Sam triages", desc: "Sam separates software, operator, hardware, and show-floor problems so the right response starts fast." },
   { step: "03", title: "Remote first", desc: "StageGate attempts diagnostics, reset guidance, firmware review, and operator coaching before dispatching." },
   { step: "04", title: "Dispatch if needed", desc: "If the robot needs hands-on support, a technician is coordinated for show-floor or customer-site service." },
   { step: "05", title: "Close the loop", desc: "You receive the fix summary, parts notes, next maintenance recommendation, and follow-up schedule." },
@@ -92,7 +92,7 @@ export default function StageHandPage() {
           </h1>
           <p className="text-base max-w-2xl mx-auto mb-8 leading-relaxed" style={{ color: TEXT_MID }}>
             StageHand™ is the support layer for robots already in the field: remote diagnostics,
-            show-floor triage, emergency dispatch, and maintenance planning led by Max.
+            show-floor triage, emergency dispatch, and maintenance planning led by Sam.
             When your robot needs help, the workflow is already defined.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -152,7 +152,7 @@ export default function StageHandPage() {
                 and deployed customer environments where downtime is expensive.
               </p>
               <p>
-                Max handles the technical question first: what failed, who needs to act, what can be solved
+                Sam handles the technical question first: what failed, who needs to act, what can be solved
                 remotely, and when a technician needs to be on site.
               </p>
             </div>

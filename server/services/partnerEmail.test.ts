@@ -8,6 +8,7 @@ import {
   isGenericInbox,
   normalizeCalEmailGreeting,
   greetingLine,
+  calPersonableGreeting,
   PARTNER_SIGNUP_URL,
 } from "./partnerEmail";
 
@@ -90,6 +91,14 @@ describe("partnerEmail", () => {
   it("uses company team greeting when no contact name", () => {
     expect(greetingLine(null, "Boston Dynamics")).toBe("Hi Boston Dynamics team,");
     expect(greetingLine(null)).toBe("Hello,");
+  });
+
+  it("builds personable Cal openings for cold vs follow-up", () => {
+    expect(calPersonableGreeting("Jordan", "UPS Supply Chain Solutions", "discovery")).toMatch(
+      /This is Cal from Ready For Robots/,
+    );
+    expect(calPersonableGreeting("Jordan", "UPS", "intro_sent")).toBe("Hi Jordan, this is Cal again.");
+    expect(calPersonableGreeting(null, "UPS", "followup_1")).toBe("Hi UPS team, this is Cal again.");
   });
 
   it("identifies partner prospects", () => {

@@ -23,11 +23,13 @@ function clampScore(raw: string | undefined, fallback: number): number {
   return Math.min(Math.max(n, 0), 100);
 }
 
-/** Raised defaults after 22% trailing bounce (Cal circuit breaker) — env-tunable. */
-export const HUNTER_MIN_FINDER_SCORE = clampScore(process.env.HUNTER_MIN_FINDER_SCORE, 90);
-export const HUNTER_MIN_DOMAIN_CONFIDENCE = clampScore(process.env.HUNTER_MIN_DOMAIN_CONFIDENCE, 90);
-/** Lower bar when replacing a bounced/quarantined address (still personal-only). */
-export const HUNTER_MIN_RECOVERY_CONFIDENCE = clampScore(process.env.HUNTER_MIN_RECOVERY_CONFIDENCE, 80);
+/** Tunable floors — 80 matches typical Hunter domain-search scores while still
+ * rejecting weak hits. Invalid/disposable addresses remain blocked separately.
+ * Raise via env if bounce rate climbs again. */
+export const HUNTER_MIN_FINDER_SCORE = clampScore(process.env.HUNTER_MIN_FINDER_SCORE, 80);
+export const HUNTER_MIN_DOMAIN_CONFIDENCE = clampScore(process.env.HUNTER_MIN_DOMAIN_CONFIDENCE, 80);
+/** Slightly lower bar when replacing a bounced/quarantined address (still personal-only). */
+export const HUNTER_MIN_RECOVERY_CONFIDENCE = clampScore(process.env.HUNTER_MIN_RECOVERY_CONFIDENCE, 75);
 
 export type HunterErrorKind = "disabled" | "rate_limit" | "auth" | "credits" | "api" | "timeout";
 
@@ -317,6 +319,43 @@ function splitName(name?: string | null): { first?: string; last?: string } {
   return { first: parts[0], last: parts[parts.length - 1] };
 }
 
+const ROLE_ONLY_TOKENS = new Set([
+  "marketing", "sales", "operations", "ops", "support", "info", "admin",
+  "team", "director", "manager", "lead", "head", "vp", "ceo", "cto", "cfo",
+  "president", "founder", "owner", "contact", "inquiry", "enquiries",
+]);
+
+function isUsableHunterNamePart(part: string): boolean {
+  return /^[A-Za-z][A-Za-z'.-]{0,40}$/.test(part);
+}
+
+/**
+ * Strip junk / role-only "contact names" before Hunter Email Finder.
+ * Returns {} when the string is not a real person (avoids 400 "wrong format").
+ */
+export function sanitizeContactNameForHunter(name?: string | null): { first?: string; last?: string } {
+  const raw = (name ?? "").trim();
+  if (!raw || raw.length < 2) return {};
+  if (/[\[\]{}<>]/.test(raw)) return {};
+  if (/best\s*guess|not\s*provided|name\s*not|\bunknown\b|^none$|^null$|^tbd$/i.test(raw)) {
+    return {};
+  }
+  if (/^n\/?a$/i.test(raw) || /\bn\/a\b/i.test(raw)) return {};
+
+  const parts = raw.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return {};
+  if (parts.every((p) => ROLE_ONLY_TOKENS.has(p.toLowerCase().replace(/[^a-z]/g, "")))) {
+    return {};
+  }
+
+  const { first, last } = splitName(raw);
+  if (!first || !isUsableHunterNamePart(first)) return {};
+  if (last && !isUsableHunterNamePart(last)) return {};
+  // Email Finder needs first + last for reliable results
+  if (!last) return {};
+  return { first, last };
+}
+
 /**
  * Find the best real outreach contact for a prospect.
  * Strategy: if we know the contact's name, use Email Finder (returns a verified,
@@ -334,7 +373,7 @@ export async function findBestProspectEmail(
   const minFinder = opts?.minFinderScore ?? HUNTER_MIN_FINDER_SCORE;
   const minDomain = opts?.minDomainConfidence ?? HUNTER_MIN_DOMAIN_CONFIDENCE;
 
-  const { first, last } = splitName(prospect.contactName);
+  const { first, last } = sanitizeContactNameForHunter(prospect.contactName);
   if (first && last) {
     const found = await emailFinder(domain, first, last);
     if (

@@ -3,13 +3,16 @@
  *
  * Runs without human supervision:
  *   1. Dismiss junk exhibitor names (headlines, booth labels)
- *   2. Resolve websites via Hunter Domain Finder
- *   3. Enrich person-level emails via Hunter
+ *   2. Resolve websites via Hunter Domain Finder (Max)
+ *   3. Enrich person-level emails via Hunter (Max)
  *   4. Redraft / create Cal email drafts
  *   5. Quarantine bounced addresses
- *   6. Produce a growth brief (social, newsletter, whitepaper ideas)
+ *
+ * Growth briefs / signup experiments are owned by Natasha
+ * (server/agents/natashaOperator.ts).
  *
  * Scheduled: POST /api/scheduled/cal-operator (cron, 2× daily)
+ * AI org: docs/ai-org.md
  */
 
 import type { Request, Response } from "express";
@@ -17,7 +20,6 @@ import { desc, eq } from "drizzle-orm";
 import { getDb } from "../db.js";
 import { salesAgentRuns } from "../../drizzle/schema.js";
 import { sdk } from "../_core/sdk.js";
-import { invokeLLM } from "../_core/llm.js";
 import { notifyOwner } from "../_core/notification.js";
 import { hunterEnabled } from "../integrations/hunter.js";
 import {
@@ -30,7 +32,6 @@ import {
   getPartnerOutreachSummary,
   refreshPartnerOutreachDraftsCore,
 } from "../services/partnerOutreach.js";
-import { computeBounceStats } from "../outreachGate.js";
 
 const BATCH = Number(process.env.CAL_OPERATOR_BATCH_SIZE) || 25;
 
@@ -46,72 +47,15 @@ export type CalOperatorResult = {
   quarantined: number;
   quarantineRecovered: number;
   quarantineUnresolved: number;
-  growthBrief?: {
-    socialPosts: string[];
-    newsletterHooks: string[];
-    whitepaperTopics: string[];
-    pipelineNotes: string[];
-  };
   workflowAfter: Awaited<ReturnType<typeof getCalWorkflowSummary>>;
   errors: string[];
 };
 
-async function generateCalGrowthBrief(
-  workflow: Awaited<ReturnType<typeof getCalWorkflowSummary>>,
-  bounceRate: number,
-): Promise<CalOperatorResult["growthBrief"]> {
-  try {
-    const result = await invokeLLM({
-      messages: [
-        {
-          role: "system",
-          content: `You are Cal, StageGate's curious outreach lead. StageGate handles robot logistics for trade shows in Las Vegas (receive, power-up, calibrate, demo support, ship home). Think like a human marketer who never stops improving — suggest concrete growth ideas, not generic advice. Return ONLY valid JSON.`,
-        },
-        {
-          role: "user",
-          content: `Pipeline snapshot:
-- ${workflow.needsWebsite} prospects still need a website (junk cleanup)
-- ${workflow.needsContactFix} need email enrichment
-- ${workflow.needsDraft} ready for new drafts
-- ${workflow.pendingReview} drafts awaiting review
-- Bounce rate (7d): ${(bounceRate * 100).toFixed(1)}%
-
-Suggest 2 LinkedIn/social post snippets (≤280 chars each), 2 newsletter subject+hook lines, 2 whitepaper/blog topics that position StageGate as the authority on robot show logistics, and 2 pipeline improvement notes Cal should act on next run.
-
-JSON shape: { "socialPosts": [], "newsletterHooks": [], "whitepaperTopics": [], "pipelineNotes": [] }`,
-        },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "cal_growth_brief",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              socialPosts: { type: "array", items: { type: "string" } },
-              newsletterHooks: { type: "array", items: { type: "string" } },
-              whitepaperTopics: { type: "array", items: { type: "string" } },
-              pipelineNotes: { type: "array", items: { type: "string" } },
-            },
-            required: ["socialPosts", "newsletterHooks", "whitepaperTopics", "pipelineNotes"],
-            additionalProperties: false,
-          },
-        },
-      },
-    });
-    const raw = result.choices?.[0]?.message?.content;
-    return JSON.parse(typeof raw === "string" ? raw : "{}") as CalOperatorResult["growthBrief"];
-  } catch (err) {
-    console.warn("[Cal operator] growth brief failed:", String(err));
-    return undefined;
-  }
-}
-
 export async function runCalOperatorCycle(opts?: {
-  skipGrowthBrief?: boolean;
   /** Manual UI runs skip LLM redraft/generate — use Redraft emails button instead. */
   skipDraftRefresh?: boolean;
+  /** @deprecated Growth briefs moved to Natasha — ignored. */
+  skipGrowthBrief?: boolean;
 }): Promise<CalOperatorResult> {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
@@ -178,16 +122,21 @@ export async function runCalOperatorCycle(opts?: {
 
   const workflowAfter = await getCalWorkflowSummary();
   const partnerOutreachAfter = await getPartnerOutreachSummary();
-  const bounce = await computeBounceStats(db);
-  const growthBrief = opts?.skipGrowthBrief
-    ? undefined
-    : await generateCalGrowthBrief(workflowAfter, bounce.rate);
+
+  let maxReadyForCal = 0;
+  try {
+    const { countMaxReadyForCal } = await import("./aiOrg.js");
+    maxReadyForCal = await countMaxReadyForCal();
+  } catch {
+    /* non-fatal */
+  }
 
   console.log(
     `[Cal operator] junk=${junk.dismissed} urls=${websitesResolved} dismissed=${websitesDismissed} ` +
-      `emails=${emailsEnriched} redraft=${draftsRedrafted} newDrafts=${draftsGenerated} ` +
+      `emails=${emailsEnriched} (Max) redraft=${draftsRedrafted} newDrafts=${draftsGenerated} ` +
       `partnerDrafts=${partnerDraftsGenerated} ` +
-      `quarantine=${quarantined} recovered=${quarantineRecovered} unresolved=${quarantineUnresolved}`,
+      `quarantine=${quarantined} recovered=${quarantineRecovered} unresolved=${quarantineUnresolved} ` +
+      `maxReadyForCal=${maxReadyForCal}`,
   );
 
   return {
@@ -202,7 +151,6 @@ export async function runCalOperatorCycle(opts?: {
     quarantined,
     quarantineRecovered,
     quarantineUnresolved,
-    growthBrief,
     workflowAfter,
     errors,
   };
@@ -225,7 +173,6 @@ export async function executeCalOperatorRun(opts?: {
 
   try {
     const result = await runCalOperatorCycle({
-      skipGrowthBrief: opts?.skipGrowthBrief ?? false,
       skipDraftRefresh: opts?.skipDraftRefresh ?? false,
     });
 
@@ -239,21 +186,14 @@ export async function executeCalOperatorRun(opts?: {
       })
       .where(eq(salesAgentRuns.id, run.id));
 
-    const brief = result.growthBrief;
-    if (opts?.notify !== false && brief?.socialPosts?.length) {
+    if (opts?.notify !== false) {
       await notifyOwner({
-        title: "Cal operator run — pipeline + growth ideas",
+        title: "Cal operator run — pipeline",
         content: [
-          `Cleaned ${result.junkDismissed} junk · resolved ${result.websitesResolved} URLs · enriched ${result.emailsEnriched} emails · ${result.draftsGenerated} OEM drafts · ${result.partnerDraftsGenerated} partner drafts.`,
+          `Cal: cleaned ${result.junkDismissed} junk · Max enriched ${result.emailsEnriched} emails · ${result.draftsGenerated} OEM drafts · ${result.partnerDraftsGenerated} partner drafts.`,
+          `Quarantine recovered: ${result.quarantineRecovered}.`,
           "",
-          "Social:",
-          ...brief.socialPosts.map((s) => `• ${s}`),
-          "",
-          "Newsletter:",
-          ...brief.newsletterHooks.map((s) => `• ${s}`),
-          "",
-          "Authority content:",
-          ...brief.whitepaperTopics.map((s) => `• ${s}`),
+          "Growth ideas: see Natasha (marketing agent).",
         ].join("\n"),
       }).catch(() => {});
     }

@@ -786,9 +786,10 @@ import {
   buildCalPartnerEmail,
   isPartnerProspect,
   resolveGreetingName,
-  greetingLine,
+  calPersonableGreeting,
   normalizeCalEmailGreeting,
   calSalutationForProspect,
+  type CalMailStage,
 } from "../services/partnerEmail.js";
 
 /**
@@ -845,7 +846,11 @@ async function generateFrankEmail(
     contactEmail: prospect.contactEmail,
     company: prospect.company,
   });
-  const salutation = greetingLine(resolved.greetingName, prospect.company);
+  const opening = calPersonableGreeting(
+    resolved.greetingName,
+    prospect.company,
+    stage as CalMailStage,
+  );
   const contactLabel = resolved.greetingName ?? `${prospect.company} team`;
 
   const promptTemplate = STAGE_PROMPTS[stage] ?? STAGE_PROMPTS["followup_1"]!;
@@ -861,7 +866,7 @@ async function generateFrankEmail(
   const userPrompt = promptTemplate
     .replace(/\{\{companyName\}\}/g, prospect.company)
     .replace(/\{\{contactName\}\}/g, contactLabel)
-    .replace(/\{\{greetingLine\}\}/g, salutation)
+    .replace(/\{\{greetingLine\}\}/g, opening)
     .replace(/\{\{showName\}\}/g, primaryShow)
     .replace(/\{\{showDates\}\}/g, "")
     .replace(/\{\{showLocation\}\}/g, "Las Vegas")
@@ -904,12 +909,13 @@ async function generateFrankEmail(
     parsed.body = lines.slice(1).join("\n").trim();
   }
 
-  // Strip any LLM-generated sign-off and append the canonical signature
+  // Strip any LLM-generated sign-off and append the canonical signature.
+  // Prefer Cal's personable opening (includes "this is Cal again" on follow-ups).
   const bodyClean = normalizeCalEmailGreeting(
     (parsed.body ?? "")
       .replace(/\n*(Thanks[,.]?|Best[,.]?|Cheers[,.]?)[\s\S]*$/i, "")
       .trimEnd(),
-    salutation,
+    opening,
   );
 
   const body = bodyClean + `\n\n${FRANK_PERSONA.signature}`;

@@ -162,6 +162,40 @@ export function greetingLine(greetingName: string | null, company?: string): str
   return "Hello,";
 }
 
+/** Stages that affect how Cal introduces himself. */
+export type CalMailStage = "discovery" | "intro_sent" | "followup_1" | "followup_2" | "other";
+
+/**
+ * Personable Cal opening.
+ *
+ * - Cold (discovery): Hi … + short "This is Cal from Ready For Robots…" intro
+ * - Follow-ups: "Hi …, this is Cal again." so the recipient knows who is writing
+ */
+export function calPersonableGreeting(
+  greetingName: string | null,
+  company: string | undefined,
+  stage: CalMailStage,
+): string {
+  const name = greetingName?.trim() || null;
+  const co = company?.trim();
+  const who =
+    name ??
+    (co && co.toLowerCase() !== "your team" ? `${co} team` : null);
+
+  if (stage === "intro_sent" || stage === "followup_1" || stage === "followup_2") {
+    return who ? `Hi ${who}, this is Cal again.` : "Hi, this is Cal again.";
+  }
+
+  // Cold intro / other
+  const hi = who ? `Hi ${who},` : "Hi,";
+  const teamRef = co ? `teams like ${co}` : "operations teams";
+  return [
+    hi,
+    "",
+    `This is Cal from Ready For Robots. I spend my days on floors watching how work actually gets done — people, handoffs, waiting — and I help ${teamRef} figure out what to automate before anyone picks a robot.`,
+  ].join("\n");
+}
+
 /** Impersonal salutations Cal must never use (LLM drift or legacy templates). */
 const IMPERSONAL_GREETING =
   /^(?:(?:hi|hey|hello)\s+there|hey|hello\s+there)\s*,?\s*$/i;

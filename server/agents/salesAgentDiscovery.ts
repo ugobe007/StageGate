@@ -412,7 +412,7 @@ export async function salesAgentDiscoveryHandler(req: Request, res: Response) {
 
     const [run] = await db
       .insert(salesAgentRuns)
-      .values({ runType: "discovery", status: "running" })
+      .values({ runType: "discovery", status: "running", details: { agent: "max" } })
       .returning({ id: salesAgentRuns.id });
     const runId = run?.id;
 
@@ -425,7 +425,7 @@ export async function salesAgentDiscoveryHandler(req: Request, res: Response) {
         showsFound: result.showsFound,
         status: "completed",
         completedAt: new Date(),
-        details: result.details,
+        details: { ...result.details, agent: "max" },
       }).where(eq(salesAgentRuns.id, runId));
     }
 
@@ -451,11 +451,11 @@ export async function salesAgentDiscoveryCore(runId?: number): Promise<void> {
       showsFound: result.showsFound,
       status: "completed",
       completedAt: new Date(),
-      details: { ...result.details, triggeredBy: "admin" },
+      details: { ...result.details, triggeredBy: "admin", agent: "max" },
     }).where(eq(salesAgentRuns.id, runId));
   }
 
-  console.log(`[Discovery Core] Complete: ${result.prospectsFound} found, ${result.prospectsCreated} created`);
+  console.log(`[Max discovery] Complete: ${result.prospectsFound} found, ${result.prospectsCreated} created`);
 }
 
 // ─── Shared core logic (DRY) ──────────────────────────────────────────────────

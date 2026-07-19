@@ -3,18 +3,19 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Play, RefreshCw } from "lucide-react";
 import { BRAND, emeraldAlpha } from "@/lib/brand";
+import { AI_AGENTS } from "@shared/aiOrg";
 
-// ─── Agent metadata registry ──────────────────────────────────────────────────
+// ─── Workflow agent metadata (legacy named workflows) ─────────────────────────
 const AGENT_REGISTRY: Record<string, { label: string; description: string; icon: string; category: string }> = {
   "Lead Discovery": {
     label: "Lead Discovery",
-    description: "Scans trade show exhibitor lists and identifies robotics companies using AI analysis.",
+    description: "Scans trade show exhibitor lists and identifies robotics companies using AI analysis. Owned by Max (research).",
     icon: "🔍",
     category: "Lead Gen",
   },
   "Lead Email Generator": {
     label: "Lead Email Generator",
-    description: "Generates personalized B2B outreach emails for exhibitor leads attending a specific show.",
+    description: "Generates personalized B2B outreach emails for exhibitor leads attending a specific show. Owned by Cal.",
     icon: "✉️",
     category: "Lead Gen",
   },
@@ -36,9 +37,23 @@ const AGENT_REGISTRY: Record<string, { label: string; description: string; icon:
     icon: "📦",
     category: "Logistics",
   },
+  "Natasha Growth": {
+    label: "Natasha Growth",
+    description: "Marketing agent — observes signup funnel metrics and drafts social, newsletter, UI, and signup experiments.",
+    icon: "📈",
+    category: "Growth",
+  },
 };
 
 const ALL_AGENTS = Object.keys(AGENT_REGISTRY);
+
+const AI_ORG_ICONS: Record<string, string> = {
+  relay: "🎛️",
+  cal: "✉️",
+  max: "🔬",
+  natasha: "📈",
+  ted: "⚡",
+};
 
 function formatRelative(date: Date | null | undefined): string {
   if (!date) return "Never";
@@ -75,6 +90,7 @@ export default function AdminAgents() {
 
   const { data: agentStats, refetch: refetchStats } = trpc.admin.getAgentStats.useQuery(undefined, { refetchInterval: 10000 });
   const { data: agentRuns, refetch: refetchRuns } = trpc.admin.getAgentRuns.useQuery({ limit: 50 }, { refetchInterval: 10000 });
+  const { data: aiOrg } = trpc.admin.getAiOrg.useQuery(undefined, { refetchInterval: 60000 });
   const triggerDiscovery = trpc.salesAgent.triggerDiscovery.useMutation({
     onSuccess: (data) => { toast.success(data.message); refetchRuns(); refetchStats(); },
     onError: (e) => toast.error(e.message),
@@ -83,6 +99,14 @@ export default function AdminAgents() {
     onSuccess: (data) => {
       const generated = data.result?.generated ?? 0;
       toast.success(`Generated ${generated} draft${generated === 1 ? "" : "s"}`);
+      refetchRuns();
+      refetchStats();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const runNatasha = trpc.admin.runNatasha.useMutation({
+    onSuccess: () => {
+      toast.success("Natasha growth brief ready");
       refetchRuns();
       refetchStats();
     },
@@ -104,6 +128,10 @@ export default function AdminAgents() {
     }
     if (agentName === "Lead Email Generator") {
       generateDrafts.mutate({});
+      return;
+    }
+    if (agentName === "Natasha Growth") {
+      runNatasha.mutate();
       return;
     }
     if (agentName === "XBOT Outreach" || agentName === "XBOT Bulk Outreach") {
@@ -140,6 +168,55 @@ export default function AdminAgents() {
         </button>
       </div>
 
+      {/* AI Organization roster */}
+      <div style={{ marginBottom: "2rem" }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+          <div>
+            <h2 style={{ fontSize: "1rem", fontWeight: 600, color: "#ececec", margin: 0 }}>AI Organization</h2>
+            <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: "0.25rem 0 0" }}>
+              Relay orchestrates Cal, Max, Natasha, and Ted across StageGate and ReadyForRobots.
+              {typeof aiOrg?.maxReadyForCal === "number" ? (
+                <> Max→Cal queue: <span style={{ color: `${BRAND.emerald}` }}>{aiOrg.maxReadyForCal}</span> ready.</>
+              ) : null}
+            </p>
+          </div>
+          <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.30)" }}>docs/ai-org.md</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "0.75rem" }}>
+          {AI_AGENTS.map((agent) => (
+            <div
+              key={agent.id}
+              style={{
+                padding: "0.875rem",
+                borderRadius: "0.5rem",
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "#111111",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.375rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <span style={{ fontSize: "1.1rem" }}>{AI_ORG_ICONS[agent.id] ?? "•"}</span>
+                  <span style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#ececec" }}>{agent.name}</span>
+                </div>
+                <span
+                  style={{
+                    fontSize: "0.625rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    color: agent.status === "live" ? `${BRAND.emerald}` : "#f59e0b",
+                  }}
+                >
+                  {agent.status}
+                </span>
+              </div>
+              <div style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.35)", marginBottom: "0.375rem" }}>{agent.title}</div>
+              <p style={{ fontSize: "0.75rem", color: "#64748b", margin: 0, lineHeight: 1.45 }}>{agent.role}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Summary bar */}
       <div style={{ display: "flex", alignItems: "stretch", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", overflow: "hidden", background: "#111111", marginBottom: "1.5rem" }}>
         {[
@@ -165,7 +242,8 @@ export default function AdminAgents() {
           const isSelected = selectedAgent === agentName;
           const isActivating =
             (agentName === "Lead Discovery" && triggerDiscovery.isPending) ||
-            (agentName === "Lead Email Generator" && generateDrafts.isPending);
+            (agentName === "Lead Email Generator" && generateDrafts.isPending) ||
+            (agentName === "Natasha Growth" && runNatasha.isPending);
 
           return (
             <button

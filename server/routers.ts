@@ -1925,6 +1925,11 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       .query(async ({ input }) => {
         return db.getRecentAgentRuns(input.limit ?? 50);
       }),
+    getAiOrg: adminProcedure.query(async () => {
+      const { AI_AGENTS, countMaxReadyForCal } = await import("./agents/aiOrg");
+      const maxReadyForCal = await countMaxReadyForCal();
+      return { agents: AI_AGENTS, maxReadyForCal };
+    }),
     dbHealth: adminProcedure.query(async () => {
       return workflows.getDbHealth();
     }),
@@ -3263,12 +3268,22 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
     runCalOperator: adminProcedure.mutation(async () => {
       const { executeCalOperatorRun } = await import("./agents/calOperator");
       // Manual runs skip LLM-heavy steps — faster feedback in the UI.
-      return executeCalOperatorRun({ skipGrowthBrief: true, skipDraftRefresh: true, notify: false });
+      return executeCalOperatorRun({ skipDraftRefresh: true, notify: false });
     }),
 
     getLatestOperatorRun: adminProcedure.query(async () => {
       const { getLatestCalOperatorRun } = await import("./agents/calOperator");
       return getLatestCalOperatorRun();
+    }),
+
+    runNatasha: adminProcedure.mutation(async () => {
+      const { executeNatashaRun } = await import("./agents/natashaOperator");
+      return executeNatashaRun({ notify: true });
+    }),
+
+    getLatestNatashaRun: adminProcedure.query(async () => {
+      const { getLatestNatashaRun } = await import("./agents/natashaOperator");
+      return getLatestNatashaRun();
     }),
 
     runRelayLoop: adminProcedure.mutation(async () => {

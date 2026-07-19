@@ -1,7 +1,10 @@
 /**
- * research-agent.ts
- * Sales Intelligence Agent — researches a prospect company using AI + Apollo.io
- * Stores results in prospect_research table.
+ * Max — Research agent (AI org).
+ *
+ * Researches a prospect company using AI + Apollo.io and stores results in
+ * prospect_research. Feeds Cal's opportunity queue via listMaxReadyForCal().
+ *
+ * See docs/ai-org.md · shared/aiOrg.ts
  */
 
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -320,6 +323,10 @@ export async function researchAllPendingProspects(): Promise<{ processed: number
       failed++;
     }
   }
+
+  console.log(
+    `[Max research] processed=${processed} failed=${failed}`,
+  );
 
   return { processed, failed };
 }

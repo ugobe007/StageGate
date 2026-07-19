@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { pickBestDomainEmail } from "./hunter.js";
+import {
+  HUNTER_MIN_DOMAIN_CONFIDENCE,
+  pickBestDomainEmail,
+  sanitizeContactNameForHunter,
+} from "./hunter.js";
 import { extractEmailAddress } from "../outreachContacts.js";
 import { prospectNeedsEnrichment, selectProspectsForEnrichment } from "../agents/prospectEnrichment.js";
 
@@ -12,6 +16,21 @@ describe("extractEmailAddress", () => {
   it("returns null for invalid strings", () => {
     expect(extractEmailAddress("not-an-email")).toBeNull();
     expect(extractEmailAddress("")).toBeNull();
+  });
+});
+
+describe("sanitizeContactNameForHunter", () => {
+  it("accepts real person names", () => {
+    expect(sanitizeContactNameForHunter("Ryan Permeh")).toEqual({ first: "Ryan", last: "Permeh" });
+    expect(sanitizeContactNameForHunter("Dana Lee")).toEqual({ first: "Dana", last: "Lee" });
+  });
+
+  it("rejects junk and role-only labels", () => {
+    expect(sanitizeContactNameForHunter("[Best Guess: Name not provided]")).toEqual({});
+    expect(sanitizeContactNameForHunter("Unknown")).toEqual({});
+    expect(sanitizeContactNameForHunter("Marketing Team")).toEqual({});
+    expect(sanitizeContactNameForHunter("Marketing Director")).toEqual({});
+    expect(sanitizeContactNameForHunter("sales")).toEqual({});
   });
 });
 
@@ -44,6 +63,14 @@ describe("pickBestDomainEmail", () => {
         { value: "live@acme.com", type: "personal", confidence: 60, verification: { status: "valid" } },
       ]),
     ).toBeNull();
+  });
+
+  it("accepts personal emails at typical Hunter scores (>=80 default)", () => {
+    expect(HUNTER_MIN_DOMAIN_CONFIDENCE).toBeLessThanOrEqual(80);
+    const best = pickBestDomainEmail([
+      { value: "ceo@acme.com", type: "personal", confidence: 85, department: "executive", verification: { status: "accept_all" } },
+    ]);
+    expect(best?.value).toBe("ceo@acme.com");
   });
 
   it("drops invalid / disposable addresses", () => {
