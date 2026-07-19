@@ -104,6 +104,6 @@ RFR Cal autonomy on the Fly worker remains the execution layer. Relay complement
 - Weighting missions toward signup/activation
 - Verifying webhook and worker health daily
 
-See `AGENTS.md` for the RFR orchestrator contract (when present on the RFR repo).
+See repo-root `AGENTS.md` for Cursor agent ship/commit rules. RFR may also ship its own `AGENTS.md` for the product orchestrator.
 
 — Relay

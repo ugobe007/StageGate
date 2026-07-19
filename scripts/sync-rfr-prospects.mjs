@@ -4,12 +4,19 @@
  *
  * Usage:
  *   RFR_API_BASE=https://readyforrobots.com node scripts/sync-rfr-prospects.mjs
+ *   node scripts/sync-rfr-prospects.mjs --timeout-ms 60000
  */
 import "dotenv/config";
 import pg from "pg";
+import { armWallClock, fetchWithTimeout, parseAgentArgs } from "./lib/agent-cli.mjs";
 
 const RFR_API_BASE = (process.env.RFR_API_BASE || "https://ready-2-robot.fly.dev").replace(/\/$/, "");
 const DATABASE_URL = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+const { wallMs } = parseAgentArgs(process.argv.slice(2), {
+  defaultLimit: 500,
+  maxLimit: 500,
+  defaultWallMs: 2 * 60 * 1000,
+});
 
 if (!DATABASE_URL) {
   console.error("Set SUPABASE_DATABASE_URL or DATABASE_URL");
@@ -30,10 +37,13 @@ function mapStatus(outreach) {
 }
 
 async function main() {
-  const res = await fetch(`${RFR_API_BASE}/api/robot-companies/?limit=500&skip=0`);
+  const clearWall = armWallClock(wallMs, "sync-rfr-prospects");
+  const res = await fetchWithTimeout(`${RFR_API_BASE}/api/robot-companies/?limit=500&skip=0`, {
+    timeoutMs: 30_000,
+  });
   if (!res.ok) throw new Error(`RFR fetch failed: ${res.status}`);
   const { companies = [] } = await res.json();
-  console.log(`Fetched ${companies.length} robot_companies from RFR`);
+  console.log(`Fetched ${companies.length} robot_companies from RFR (wall ${wallMs}ms)`);
 
   const pool = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
   const client = await pool.connect();
@@ -100,6 +110,7 @@ async function main() {
   } finally {
     client.release();
     await pool.end();
+    clearWall();
   }
 }
 

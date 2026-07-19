@@ -9,8 +9,13 @@
     "generate:brand": "node scripts/generate-brand-assets.mjs",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
+    "agent:check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
+    "test:unit": "vitest run",
+    "agent:hunter": "tsx --env-file=.env scripts/run-hunter-enrich.mjs",
+    "agent:drafts": "node scripts/run-generate-drafts.mjs",
+    "agent:partner-enrich": "node scripts/run-partner-enrichment.mjs",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"

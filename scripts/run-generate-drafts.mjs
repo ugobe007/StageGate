@@ -1,14 +1,21 @@
 /**
  * scripts/run-generate-drafts.mjs
- * Generates email drafts for all prospects that don't already have a pending draft.
- * Uses the same LLM prompt logic as the tRPC generateDrafts procedure,
- * but runs directly against the DB so we can batch all prospects at once.
+ * Generates email drafts for prospects that don't already have a pending draft.
  *
- * Usage: node scripts/run-generate-drafts.mjs
+ * Usage:
+ *   node scripts/run-generate-drafts.mjs --limit 10
+ *   AGENT_WALL_MS=300000 node scripts/run-generate-drafts.mjs --limit 25
  */
 
 import pg from "pg";
+import { armWallClock, fetchWithTimeout, parseAgentArgs } from "./lib/agent-cli.mjs";
+
 const { Client } = pg;
+const { limit, wallMs } = parseAgentArgs(process.argv.slice(2), {
+  defaultLimit: 25,
+  maxLimit: 100,
+  defaultWallMs: 10 * 60 * 1000,
+});
 
 const connString = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
 if (!connString) { console.error("No DB connection string"); process.exit(1); }
@@ -16,8 +23,6 @@ if (!connString) { console.error("No DB connection string"); process.exit(1); }
 const FORGE_URL = process.env.BUILT_IN_FORGE_API_URL;
 const FORGE_KEY = process.env.BUILT_IN_FORGE_API_KEY;
 if (!FORGE_URL || !FORGE_KEY) { console.error("No LLM API credentials"); process.exit(1); }
-
-// ─── LLM call ─────────────────────────────────────────────────────────────────
 
 async function generateDraft(prospect, shows) {
   const isPartner = (prospect.outreachAngle === "partner") ||
@@ -29,7 +34,6 @@ async function generateDraft(prospect, shows) {
 
   const showNames = shows.length > 0 ? shows.join(", ") : "major Las Vegas trade shows";
 
-  // Robot context for OEM prospects
   const robotContext = prospect.robotName
     ? `Their robot is the ${prospect.robotName}${prospect.robotType ? ` (${prospect.robotType})` : ""}.`
     : prospect.robotType
@@ -62,9 +66,10 @@ SUBJECT: [subject line]
 
 [email body — 3-4 short paragraphs, under 200 words total]`;
 
-  const res = await fetch(`${FORGE_URL}/v1/chat/completions`, {
+  const res = await fetchWithTimeout(`${FORGE_URL}/v1/chat/completions`, {
     method: "POST",
     headers: { Authorization: `Bearer ${FORGE_KEY}`, "Content-Type": "application/json" },
+    timeoutMs: 30_000,
     body: JSON.stringify({
       model: "gpt-4o-mini",
       messages: [
@@ -78,7 +83,6 @@ SUBJECT: [subject line]
   const data = await res.json();
   const raw = data.choices?.[0]?.message?.content ?? "";
 
-  // Parse subject and body
   const subjectMatch = raw.match(/^SUBJECT:\s*(.+)$/im);
   const subject = subjectMatch ? subjectMatch[1].trim() : `Introduction — StageGate × ${prospect.company}`;
   const body = raw.replace(/^SUBJECT:.*$/im, "").trim();
@@ -86,13 +90,11 @@ SUBJECT: [subject line]
   return { subject, body, isPartner };
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
-
 async function main() {
+  const clearWall = armWallClock(wallMs, "run-generate-drafts");
   const client = new Client({ connectionString: connString, ssl: { rejectUnauthorized: false } });
   await client.connect();
 
-  // Get all prospects — shows is a JSON array column directly on the prospects table
   const prospectsResult = await client.query(`
     SELECT id, company, "contactName", "contactEmail", "robotName", "robotType",
            "vendorType", "outreachAngle", notes, website, shows
@@ -100,18 +102,19 @@ async function main() {
     ORDER BY company
   `);
 
-  // Get existing draft prospect IDs to avoid duplicates
   const draftsResult = await client.query(`
     SELECT DISTINCT "prospectId" FROM draft_emails WHERE status = 'pending'
   `);
   const existingDraftProspectIds = new Set(draftsResult.rows.map(r => r.prospectId));
 
   const allProspects = prospectsResult.rows;
-  const toProcess = allProspects.filter(p => !existingDraftProspectIds.has(p.id));
+  const toProcess = allProspects
+    .filter(p => !existingDraftProspectIds.has(p.id))
+    .slice(0, limit);
 
   console.log(`Total prospects: ${allProspects.length}`);
   console.log(`Already have drafts: ${existingDraftProspectIds.size}`);
-  console.log(`Generating drafts for: ${toProcess.length} prospects\n`);
+  console.log(`Generating drafts for: ${toProcess.length} (limit ${limit}, wall ${wallMs}ms)\n`);
 
   let generated = 0;
   let partnerDrafts = 0;
@@ -125,11 +128,10 @@ async function main() {
     process.stdout.write(`[${generated + errors + 1}/${toProcess.length}] ${prospect.company} (${tag})... `);
 
     try {
-      await new Promise(r => setTimeout(r, 300)); // stagger
+      await new Promise(r => setTimeout(r, 300));
 
       const { subject, body, isPartner } = await generateDraft(prospect, shows);
 
-      // Insert draft
       await client.query(`
         INSERT INTO draft_emails ("prospectId", subject, body, status, "createdAt", "updatedAt")
         VALUES ($1, $2, $3, 'pending', NOW(), NOW())
@@ -145,6 +147,7 @@ async function main() {
   }
 
   await client.end();
+  clearWall();
 
   console.log(`\n${"─".repeat(60)}`);
   console.log(`Draft Generation Complete`);

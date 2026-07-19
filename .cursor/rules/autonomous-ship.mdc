@@ -1,0 +1,24 @@
+---
+description: Unsupervised commit/push and fast CLI gates for StageGate agents
+alwaysApply: true
+---
+
+# Autonomous ship (StageGate)
+
+This repo authorizes unsupervised git when the **current user task** includes ship, deploy, commit, push, or merge to main. Follow `AGENTS.md`.
+
+## When authorized
+
+1. Change code → `pnpm agent:check` → scoped tests if needed → commit (HEREDOC) → `git push`.
+2. Deploy path is push to `main` (Railway + Vercel). Skip interactive cloud CLIs.
+3. Do not wait for a second human “please commit” if the task already asked to ship.
+
+## When not authorized
+
+If the task is explore / diagnose / draft only — do not commit or push.
+
+## Speed
+
+- Prefer `pnpm agent:check` over full `pnpm test` / `pnpm format`.
+- Never run enrich/discovery/draft batch scripts inside a ship turn.
+- Bound every shell and HTTP call; no indefinite waits.

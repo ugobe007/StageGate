@@ -1,13 +1,20 @@
 /**
  * scripts/run-partner-enrichment.mjs
- * Triggers Apollo + AI research enrichment for all ecosystem partner prospects
+ * Triggers Apollo + AI research enrichment for ecosystem partner prospects
  * (vendorType != robot_oem or outreachAngle = partner)
  *
- * Usage: node scripts/run-partner-enrichment.mjs
+ * Usage: node scripts/run-partner-enrichment.mjs --limit 10
  */
 
 import pg from "pg";
+import { armWallClock, fetchWithTimeout, parseAgentArgs } from "./lib/agent-cli.mjs";
+
 const { Client } = pg;
+const { limit, wallMs } = parseAgentArgs(process.argv.slice(2), {
+  defaultLimit: 25,
+  maxLimit: 100,
+  defaultWallMs: 10 * 60 * 1000,
+});
 
 const connString = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
 if (!connString) {
@@ -25,9 +32,10 @@ async function apolloSearchOrg(company, website) {
     const body = { q_organization_name: company, page: 1, per_page: 1 };
     if (website) body.q_organization_website_url = website;
 
-    const res = await fetch("https://api.apollo.io/v1/mixed_companies/search", {
+    const res = await fetchWithTimeout("https://api.apollo.io/v1/mixed_companies/search", {
       method: "POST",
       headers: { "x-api-key": key, "Content-Type": "application/json" },
+      timeoutMs: 15_000,
       body: JSON.stringify(body),
     });
     const data = await res.json();
@@ -43,9 +51,10 @@ async function apolloSearchPeople(orgId, orgName, partnerTitles) {
   if (!key) return [];
 
   try {
-    const res = await fetch("https://api.apollo.io/v1/mixed_people/search", {
+    const res = await fetchWithTimeout("https://api.apollo.io/v1/mixed_people/search", {
       method: "POST",
       headers: { "x-api-key": key, "Content-Type": "application/json" },
+      timeoutMs: 15_000,
       body: JSON.stringify({
         organization_ids: [orgId],
         person_titles: partnerTitles,
@@ -74,9 +83,10 @@ async function aiResearchPartner(company, vendorType, website) {
   const vendorLabel = (vendorType ?? "trade show vendor").replace(/_/g, " ");
 
   try {
-    const res = await fetch(`${apiUrl}/v1/chat/completions`, {
+    const res = await fetchWithTimeout(`${apiUrl}/v1/chat/completions`, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      timeoutMs: 30_000,
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
@@ -123,10 +133,10 @@ Return a JSON object with exactly these fields:
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
+  const clearWall = armWallClock(wallMs, "run-partner-enrichment");
   const client = new Client({ connectionString: connString, ssl: { rejectUnauthorized: false } });
   await client.connect();
 
-  // Fetch all partner prospects
   const result = await client.query(`
     SELECT id, company, website, "contactName", "contactEmail", "vendorType", "outreachAngle"
     FROM prospects
@@ -135,8 +145,10 @@ async function main() {
     ORDER BY company
   `);
 
-  const partners = result.rows;
-  console.log(`Found ${partners.length} ecosystem partner prospects to enrich\n`);
+  const partners = result.rows.slice(0, limit);
+  console.log(
+    `Enriching ${partners.length} of ${result.rows.length} partner prospects (limit ${limit}, wall ${wallMs}ms)\n`,
+  );
 
   // Title targets by vendor type
   const TITLE_TARGETS = {
@@ -248,6 +260,7 @@ async function main() {
   }
 
   await client.end();
+  clearWall();
 
   console.log(`\n${"─".repeat(60)}`);
   console.log(`Partner Enrichment Complete`);
