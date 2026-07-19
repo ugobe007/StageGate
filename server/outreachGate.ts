@@ -177,8 +177,11 @@ async function classifyDomain(domain: string): Promise<DnsClass> {
 
 // ─── ZeroBounce (optional, matches RFR) ──────────────────────────────────────
 
-/** Optional mailbox verification. Fail-open when unset or on error. */
-async function zeroBounceValid(email: string): Promise<boolean | null> {
+/**
+ * Optional mailbox verification.
+ * @returns true = sendable, false = reject, null = unknown (fail-open unless strict).
+ */
+export async function zeroBounceValid(email: string): Promise<boolean | null> {
   const key = process.env.ZEROBOUNCE_API_KEY?.trim();
   if (!key) return null;
   try {

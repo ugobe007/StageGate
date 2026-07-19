@@ -341,6 +341,23 @@ export async function prepareProspectOutreachRecipient(
   const screen = await screenRecipient(db, email);
   if (!screen.ok) return { ok: false, reason: screen.reason ?? "gate_rejected" };
 
+  // Circuit breaker open: only high/verified (medium already gated off by default)
+  // and fail-closed on ZeroBounce when the key is configured.
+  if (db) {
+    const { shouldPauseNewIntros, zeroBounceValid } = await import("../outreachGate.js");
+    const { paused } = await shouldPauseNewIntros(db);
+    if (paused) {
+      const conf = (prospect.emailConfidence ?? "").trim().toLowerCase();
+      if (conf !== "high" && conf !== "verified") {
+        return { ok: false, reason: "breaker_strict_confidence" };
+      }
+      if (process.env.ZEROBOUNCE_API_KEY?.trim()) {
+        const zb = await zeroBounceValid(email);
+        if (zb !== true) return { ok: false, reason: zb === false ? "zerobounce_invalid" : "zerobounce_unavailable" };
+      }
+    }
+  }
+
   return { ok: true, email };
 }
 

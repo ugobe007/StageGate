@@ -423,7 +423,8 @@ export async function salesAgentIngestHandler(req: Request, res: Response) {
         robotCategory: p.robotCategory ?? "light",
         shows: p.shows ?? [],
         notes: p.notes ?? null,
-        emailConfidence: p.emailConfidence ?? "low",
+        // Never trust discovery/LLM confidence for cold send — Hunter must raise it.
+        emailConfidence: "low",
         status: "new",
         vendorType: p.vendorType ?? "robot_oem",
         outreachAngle: p.outreachAngle ?? "customer",

@@ -19,7 +19,7 @@ describe("pickBestDomainEmail", () => {
   it("prefers personal emails over generic role inboxes", () => {
     const best = pickBestDomainEmail([
       { value: "info@acme.com", type: "generic", confidence: 99 },
-      { value: "dana@acme.com", type: "personal", confidence: 80, department: "sales" },
+      { value: "dana@acme.com", type: "personal", confidence: 92, department: "sales" },
     ]);
     expect(best?.value).toBe("dana@acme.com");
   });
@@ -27,7 +27,7 @@ describe("pickBestDomainEmail", () => {
   it("ranks by relevant department before confidence", () => {
     const best = pickBestDomainEmail([
       { value: "eng@acme.com", type: "personal", confidence: 95, department: "it" },
-      { value: "ceo@acme.com", type: "personal", confidence: 85, department: "executive" },
+      { value: "ceo@acme.com", type: "personal", confidence: 91, department: "executive" },
     ]);
     expect(best?.value).toBe("ceo@acme.com");
   });
@@ -49,7 +49,7 @@ describe("pickBestDomainEmail", () => {
   it("drops invalid / disposable addresses", () => {
     const best = pickBestDomainEmail([
       { value: "dead@acme.com", type: "personal", confidence: 99, verification: { status: "invalid" } },
-      { value: "live@acme.com", type: "personal", confidence: 85, verification: { status: "valid" } },
+      { value: "live@acme.com", type: "personal", confidence: 92, verification: { status: "valid" } },
     ]);
     expect(best?.value).toBe("live@acme.com");
   });
@@ -87,9 +87,13 @@ describe("prospectNeedsEnrichment", () => {
     expect(prospectNeedsEnrichment({ ...site, contactEmail: "dana@acme.com", emailConfidence: "" })).toBe(true);
   });
 
-  it("keeps real, confident, person-level emails", () => {
+  it("keeps real high-confidence person-level emails", () => {
     expect(prospectNeedsEnrichment({ ...site, contactEmail: "dana.lee@acme.com", emailConfidence: "high" })).toBe(false);
-    expect(prospectNeedsEnrichment({ ...site, contactEmail: "dana@acme.com", emailConfidence: "medium" })).toBe(false);
+    expect(prospectNeedsEnrichment({ ...site, contactEmail: "dana@acme.com", emailConfidence: "verified" })).toBe(false);
+  });
+
+  it("flags medium confidence until OUTREACH_ALLOW_MEDIUM_CONFIDENCE=1", () => {
+    expect(prospectNeedsEnrichment({ ...site, contactEmail: "dana@acme.com", emailConfidence: "medium" })).toBe(true);
   });
 });
 

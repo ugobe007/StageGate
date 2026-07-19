@@ -118,10 +118,24 @@ export function outreachEmailPolicySummary(prospect: ProspectLike) {
   };
 }
 
-/** Confidence levels we will cold-send to after Hunter / ZeroBounce screening. */
+/**
+ * Confidence levels we will cold-send to after Hunter / ZeroBounce screening.
+ *
+ * Default (deliverability recovery): only `high` / `verified`.
+ * `medium` was a major bounce source — Apollo guesses, CSV import, and LLM
+ * discovery often labeled unverified addresses as medium and cleared the gate.
+ * Set OUTREACH_ALLOW_MEDIUM_CONFIDENCE=1 to re-enable medium after bounce rate
+ * is healthy again.
+ */
 export function isSendableEmailConfidence(conf: string | null | undefined): boolean {
   const c = (conf ?? "").trim().toLowerCase();
-  return c === "high" || c === "medium" || c === "verified";
+  if (c === "high" || c === "verified") return true;
+  if (c === "medium") {
+    return ["1", "true", "yes"].includes(
+      (process.env.OUTREACH_ALLOW_MEDIUM_CONFIDENCE ?? "0").trim().toLowerCase(),
+    );
+  }
+  return false;
 }
 
 /** True when the prospect has a real website URL on file (required before email enrichment). */

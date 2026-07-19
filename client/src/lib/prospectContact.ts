@@ -30,8 +30,9 @@ function isDeprecatedRoleInbox(email: string): boolean {
   return Boolean(local && DEPRECATED_ROLE_INBOXES.has(local));
 }
 
+/** Mirrors server: medium is not cold-sendable unless ops re-enables it. */
 function isSendableEmailConfidence(conf: string): boolean {
-  return conf === "high" || conf === "medium" || conf === "verified";
+  return conf === "high" || conf === "verified";
 }
 
 export function prospectHasUsableWebsite(prospect: {

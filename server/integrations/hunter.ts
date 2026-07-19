@@ -23,10 +23,11 @@ function clampScore(raw: string | undefined, fallback: number): number {
   return Math.min(Math.max(n, 0), 100);
 }
 
-export const HUNTER_MIN_FINDER_SCORE = clampScore(process.env.HUNTER_MIN_FINDER_SCORE, 85);
-export const HUNTER_MIN_DOMAIN_CONFIDENCE = clampScore(process.env.HUNTER_MIN_DOMAIN_CONFIDENCE, 80);
+/** Raised defaults after 22% trailing bounce (Cal circuit breaker) — env-tunable. */
+export const HUNTER_MIN_FINDER_SCORE = clampScore(process.env.HUNTER_MIN_FINDER_SCORE, 90);
+export const HUNTER_MIN_DOMAIN_CONFIDENCE = clampScore(process.env.HUNTER_MIN_DOMAIN_CONFIDENCE, 90);
 /** Lower bar when replacing a bounced/quarantined address (still personal-only). */
-export const HUNTER_MIN_RECOVERY_CONFIDENCE = clampScore(process.env.HUNTER_MIN_RECOVERY_CONFIDENCE, 70);
+export const HUNTER_MIN_RECOVERY_CONFIDENCE = clampScore(process.env.HUNTER_MIN_RECOVERY_CONFIDENCE, 80);
 
 export type HunterErrorKind = "disabled" | "rate_limit" | "auth" | "credits" | "api" | "timeout";
 

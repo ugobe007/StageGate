@@ -3117,44 +3117,58 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
             });
             const peopleData = await peopleRes.json() as { people?: ApolloPerson[] };
             const people = peopleData.people ?? [];
+            // Only persist Apollo-verified addresses. Unverified Apollo emails are
+            // often pattern-guesses and were a top hard-bounce source (22% trailing).
             const verified = people.find(p => p.email_status === "verified" && p.email);
-            const guessed = people.find(p => p.email);
-            const best = verified ?? guessed ?? people[0];
-            if (best) {
-              bestEmail = best.email ?? null;
-              bestConfidence = best.email_status === "verified" ? "high" : best.email ? "medium" : "low";
+            const best = verified ?? null;
+            if (best?.email) {
+              bestEmail = best.email;
+              bestConfidence = "high";
               bestName = best.name ?? null;
               bestTitle = best.title ?? null;
               bestLinkedIn = best.linkedin_url ?? null;
+            } else {
+              // Keep name/title for Hunter Email Finder; do not store guessed emails.
+              const named = people.find(p => p.name) ?? people[0];
+              if (named) {
+                bestName = named.name ?? null;
+                bestTitle = named.title ?? null;
+                bestLinkedIn = named.linkedin_url ?? null;
+              }
             }
           } catch { /* ignore */ }
         }
 
-        // Step 3: Fallback email pattern suggestions
+        // Suggestions are UI-only — never written to contactEmail / never sent.
         const suggestions: string[] = [];
         if (!bestEmail && prospect.company) {
           const domain = prospect.website
             ? prospect.website.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]
-            : prospect.company.toLowerCase().replace(/[^a-z0-9]/g, "") + ".com";
-          suggestions.push(`sales@${domain}`, `events@${domain}`, `marketing@${domain}`);
-          if (bestName) {
-            const parts = bestName.toLowerCase().split(" ");
-            const first = parts[0] ?? "";
-            const last = parts[parts.length - 1] ?? "";
-            if (first && last) {
-              suggestions.push(`${first}@${domain}`, `${last}@${domain}`, `${first}.${last}@${domain}`, `${first[0] ?? ""}${last}@${domain}`);
+            : null;
+          if (domain?.includes(".")) {
+            if (bestName) {
+              const parts = bestName.toLowerCase().split(" ");
+              const first = parts[0] ?? "";
+              const last = parts[parts.length - 1] ?? "";
+              if (first && last) {
+                suggestions.push(`${first}@${domain}`, `${first}.${last}@${domain}`);
+              }
             }
           }
         }
 
-        const fallbackRoleEmail = suggestions[0] ?? null;
-        const selectedEmail = bestEmail ?? fallbackRoleEmail;
-
-        // Step 4: Update prospect if Apollo found a person or we can derive a company-domain role inbox.
-        if (selectedEmail && selectedEmail !== prospect.contactEmail) {
+        // Step 4: Persist only verified Apollo emails (Hunter fills the rest).
+        if (bestEmail && bestEmail !== prospect.contactEmail) {
           await dbConn.update(prospectsTable).set({
-            contactEmail: selectedEmail,
-            emailConfidence: bestEmail ? bestConfidence : "medium",
+            contactEmail: bestEmail,
+            emailConfidence: bestConfidence,
+            contactName: bestName ?? prospect.contactName,
+            contactTitle: bestTitle ?? prospect.contactTitle,
+            contactLinkedIn: bestLinkedIn ?? prospect.contactLinkedIn,
+            updatedAt: new Date(),
+          }).where(eq(prospectsTable.id, input.prospectId));
+        } else if (bestName && bestName !== prospect.contactName) {
+          await dbConn.update(prospectsTable).set({
             contactName: bestName ?? prospect.contactName,
             contactTitle: bestTitle ?? prospect.contactTitle,
             contactLinkedIn: bestLinkedIn ?? prospect.contactLinkedIn,
@@ -3163,9 +3177,9 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
         }
 
         return {
-          found: !!selectedEmail,
-          email: selectedEmail,
-          confidence: bestEmail ? bestConfidence : "medium",
+          found: !!bestEmail,
+          email: bestEmail,
+          confidence: bestEmail ? bestConfidence : "low",
           name: bestName,
           title: bestTitle,
           linkedIn: bestLinkedIn,
@@ -3341,22 +3355,29 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
                     });
                     const peopleData = await peopleRes.json() as { people?: Array<{ id: string; name: string; title?: string; email?: string; email_status?: string; linkedin_url?: string }> };
                     const people = peopleData.people ?? [];
-                    const best = people.find(p => p.email_status === "verified" && p.email) ?? people.find(p => p.email) ?? people[0];
-                    if (best) {
-                      bestEmail = best.email ?? null;
-                      bestConfidence = best.email_status === "verified" ? "high" : best.email ? "medium" : "low";
-                      bestName = best.name ?? null;
-                      bestTitle = best.title ?? null;
-                      bestLinkedIn = best.linkedin_url ?? null;
+                    const verified = people.find(p => p.email_status === "verified" && p.email);
+                    if (verified?.email) {
+                      bestEmail = verified.email;
+                      bestConfidence = "high";
+                      bestName = verified.name ?? null;
+                      bestTitle = verified.title ?? null;
+                      bestLinkedIn = verified.linkedin_url ?? null;
+                    } else {
+                      const named = people.find(p => p.name) ?? people[0];
+                      if (named) {
+                        bestName = named.name ?? null;
+                        bestTitle = named.title ?? null;
+                        bestLinkedIn = named.linkedin_url ?? null;
+                      }
                     }
                   } catch { /* ignore */ }
                 }
 
-                const selectedEmail = bestEmail ?? emailHelpers.getProspectOutreachEmail(prospect);
-                if (selectedEmail && selectedEmail !== prospect.contactEmail) {
+                // Never persist guessed Apollo / role-inbox fallbacks — Hunter must verify.
+                if (bestEmail && bestEmail !== prospect.contactEmail) {
                   await dbConn.update(prospectsTable).set({
-                    contactEmail: selectedEmail,
-                    emailConfidence: bestEmail ? bestConfidence : "medium",
+                    contactEmail: bestEmail,
+                    emailConfidence: bestConfidence,
                     contactName: bestName ?? prospect.contactName,
                     contactTitle: bestTitle ?? prospect.contactTitle,
                     contactLinkedIn: bestLinkedIn ?? prospect.contactLinkedIn,
@@ -3461,9 +3482,9 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
               .limit(1);
 
             if (existing) {
-              // Update existing prospect with any new info
+              // Import emails stay low-confidence until Hunter verifies (never auto-send).
               await dbConn.update(prospectsTable).set({
-                ...(contactEmail ? { contactEmail, emailConfidence: "medium" as const } : {}),
+                ...(contactEmail ? { contactEmail, emailConfidence: "low" as const } : {}),
                 ...(contactName ? { contactName } : {}),
                 ...(contactTitle ? { contactTitle } : {}),
                 ...(website ? { website } : {}),
@@ -3483,7 +3504,7 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
                 robotType: robotType || null,
                 robotCategory,
                 shows: resolvedShowName ? [resolvedShowName] : [],
-                emailConfidence: contactEmail ? "medium" : "low",
+                emailConfidence: "low",
                 status: "new",
                 createdAt: new Date(),
                 updatedAt: new Date(),
