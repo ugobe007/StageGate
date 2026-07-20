@@ -23,13 +23,13 @@ function clampScore(raw: string | undefined, fallback: number): number {
   return Math.min(Math.max(n, 0), 100);
 }
 
-/** Tunable floors — 80 matches typical Hunter domain-search scores while still
- * rejecting weak hits. Invalid/disposable addresses remain blocked separately.
- * Raise via env if bounce rate climbs again. */
-export const HUNTER_MIN_FINDER_SCORE = clampScore(process.env.HUNTER_MIN_FINDER_SCORE, 80);
-export const HUNTER_MIN_DOMAIN_CONFIDENCE = clampScore(process.env.HUNTER_MIN_DOMAIN_CONFIDENCE, 80);
+/** Tunable floors — raised back to 90 during Jul 2026 bounce recovery (16%+).
+ * Only Hunter scores that map to `high` (≥90) are persisted for cold send.
+ * Override via env once trailing bounce is healthy for 7+ days. */
+export const HUNTER_MIN_FINDER_SCORE = clampScore(process.env.HUNTER_MIN_FINDER_SCORE, 90);
+export const HUNTER_MIN_DOMAIN_CONFIDENCE = clampScore(process.env.HUNTER_MIN_DOMAIN_CONFIDENCE, 90);
 /** Slightly lower bar when replacing a bounced/quarantined address (still personal-only). */
-export const HUNTER_MIN_RECOVERY_CONFIDENCE = clampScore(process.env.HUNTER_MIN_RECOVERY_CONFIDENCE, 75);
+export const HUNTER_MIN_RECOVERY_CONFIDENCE = clampScore(process.env.HUNTER_MIN_RECOVERY_CONFIDENCE, 85);
 
 export type HunterErrorKind = "disabled" | "rate_limit" | "auth" | "credits" | "api" | "timeout";
 

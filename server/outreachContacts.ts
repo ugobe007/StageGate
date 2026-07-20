@@ -25,6 +25,8 @@ export const GENERIC_LOCAL_PARTS = new Set([
   "marketing", "sales", "info", "support", "hello", "contact",
   "partnerships", "events", "team", "admin", "office", "operations",
   "hi", "help", "press", "media", "careers", "jobs", "noreply", "no-reply",
+  // VC / generic catch-alls that hard-bounced in Jul 2026 recovery
+  "pitch", "pr", "ceo", "founder", "partners", "invest", "ir",
 ]);
 
 // Retained for backward-compatible call sites that still reference it.

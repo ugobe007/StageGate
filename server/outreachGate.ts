@@ -237,7 +237,19 @@ export async function screenRecipient(db: Db | null, email: string): Promise<Scr
   if (dnsClass === "nxdomain") return { ok: false, reason: "dead_domain" };
 
   const zb = await zeroBounceValid(addr);
-  if (zb === false) return { ok: false, reason: "zerobounce_invalid" };
+  // Deliverability recovery: when ZeroBounce is configured, fail CLOSED on
+  // invalid OR unavailable. Fail-open was letting guessed "high" addresses
+  // through during API blips and burned the bounce budget.
+  if (process.env.ZEROBOUNCE_API_KEY?.trim()) {
+    if (zb !== true) {
+      return {
+        ok: false,
+        reason: zb === false ? "zerobounce_invalid" : "zerobounce_unavailable",
+      };
+    }
+  } else if (zb === false) {
+    return { ok: false, reason: "zerobounce_invalid" };
+  }
 
   return { ok: true };
 }

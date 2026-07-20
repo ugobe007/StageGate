@@ -65,12 +65,17 @@ describe("pickBestDomainEmail", () => {
     ).toBeNull();
   });
 
-  it("accepts personal emails at typical Hunter scores (>=80 default)", () => {
-    expect(HUNTER_MIN_DOMAIN_CONFIDENCE).toBeLessThanOrEqual(80);
+  it("requires Hunter domain confidence >=90 by default (bounce recovery)", () => {
+    expect(HUNTER_MIN_DOMAIN_CONFIDENCE).toBeGreaterThanOrEqual(90);
+    expect(
+      pickBestDomainEmail([
+        { value: "dana@acme.com", type: "personal", confidence: 85, department: "executive", verification: { status: "valid" } },
+      ]),
+    ).toBeNull();
     const best = pickBestDomainEmail([
-      { value: "ceo@acme.com", type: "personal", confidence: 85, department: "executive", verification: { status: "accept_all" } },
+      { value: "dana@acme.com", type: "personal", confidence: 92, department: "executive", verification: { status: "valid" } },
     ]);
-    expect(best?.value).toBe("ceo@acme.com");
+    expect(best?.value).toBe("dana@acme.com");
   });
 
   it("drops invalid / disposable addresses", () => {

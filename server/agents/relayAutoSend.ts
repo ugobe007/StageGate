@@ -18,7 +18,7 @@ import {
   shouldPauseNewIntros,
   isSuppressed,
 } from "../outreachGate.js";
-import { isSendableEmailConfidence } from "../outreachContacts.js";
+import { isSendableEmailConfidence, isGuessedRoleInbox } from "../outreachContacts.js";
 import { advanceProspectConversationAfterSend } from "./salesAgent.js";
 import { isPartnerProspect } from "../services/partnerEmail.js";
 
@@ -167,8 +167,10 @@ export async function discardStaleDrafts(db: Db): Promise<{ discarded: number }>
     }
 
     const noEmail = !p.contactEmail?.trim();
+    const unsendableConf = !isSendableEmailConfidence(p.emailConfidence);
+    const roleInbox = isGuessedRoleInbox(p.contactEmail);
 
-    if (junk || suppressed || noEmail) {
+    if (junk || suppressed || noEmail || unsendableConf || roleInbox) {
       await emailHelpers.updateDraft(entry.draft.id, { status: "discarded" });
       discarded++;
     }
