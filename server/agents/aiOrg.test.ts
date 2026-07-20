@@ -8,16 +8,20 @@ describe("AI org registry", () => {
     );
   });
 
-  it("marks Cal, Max, Natasha, and Relay as live; Ted as chartered", () => {
+  it("marks all labeled agents as live", () => {
     expect(getAiAgent("cal").status).toBe("live");
     expect(getAiAgent("max").status).toBe("live");
     expect(getAiAgent("relay").status).toBe("live");
     expect(getAiAgent("natasha").status).toBe("live");
-    expect(getAiAgent("ted").status).toBe("chartered");
+    expect(getAiAgent("ted").status).toBe("live");
   });
 
   it("assigns Natasha the marketing cron path", () => {
     expect(getAiAgent("natasha").cronPaths).toContain("/api/scheduled/natasha-operator");
+  });
+
+  it("assigns Ted the performance cron path", () => {
+    expect(getAiAgent("ted").cronPaths).toContain("/api/scheduled/ted-operator");
   });
 
   it("assigns Max the research cron paths", () => {

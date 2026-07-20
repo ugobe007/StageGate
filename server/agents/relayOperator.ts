@@ -9,18 +9,15 @@
 import type { Request, Response } from "express";
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "../db.js";
-import { salesAgentRuns, systemConfig } from "../../drizzle/schema.js";
+import { salesAgentRuns } from "../../drizzle/schema.js";
 import { sdk } from "../_core/sdk.js";
 import { notifyOwner } from "../_core/notification.js";
 import { runCalOperatorCycle } from "./calOperator.js";
 import { getCalWorkflowSummary } from "./salesAgent.js";
 import { getPartnerOutreachSummary } from "../services/partnerOutreach.js";
 import {
-  computeBounceStats,
   normalizeSuppressionEmails,
-  outreachDisabled,
 } from "../outreachGate.js";
-import { hunterEnabled } from "../integrations/hunter.js";
 import { executeRelayAutoSend, discardStaleDrafts } from "./relayAutoSend.js";
 import {
   getConversionSnapshot,
@@ -33,27 +30,20 @@ import {
   RELAY_PERSONA,
   type RelayLoopStep,
 } from "./relayPlaybook.js";
-import {
-  bootstrapProjectCrons,
-  getRegisteredCronKeys,
-} from "../_core/bootstrapCrons.js";
+import { bootstrapProjectCrons } from "../_core/bootstrapCrons.js";
 import { countMaxReadyForCal } from "./aiOrg.js";
 import { runNatashaCycle, type NatashaOperatorResult } from "./natashaOperator.js";
+import {
+  runTedCycle,
+  type TedOperatorResult,
+} from "./tedOperator.js";
 
-export type RelayHealthObservation = {
-  outreachDisabled: boolean;
-  hunterEnabled: boolean;
-  forgeConfigured: boolean;
-  resendConfigured: boolean;
-  bounceRate: number;
-  introsPaused: boolean;
-  cronsRegistered: number;
-  cronsMissing: string[];
-};
+export type RelayHealthObservation = TedOperatorResult["health"];
 
 export type RelayOperatorResult = {
   stepsCompleted: RelayLoopStep[];
   health: RelayHealthObservation;
+  ted: TedOperatorResult;
   calOperator: Awaited<ReturnType<typeof runCalOperatorCycle>>;
   natasha: NatashaOperatorResult;
   autoSend: Awaited<ReturnType<typeof executeRelayAutoSend>>;
@@ -68,37 +58,6 @@ export type RelayOperatorResult = {
   learnings: string;
   errors: string[];
 };
-
-async function observeHealth(db: NonNullable<Awaited<ReturnType<typeof getDb>>>): Promise<RelayHealthObservation> {
-  const bounce = await computeBounceStats(db);
-  const registered = await getRegisteredCronKeys(db);
-  const expectedKeys = [
-    "sales_agent_discover_job_task_uid",
-    "sales_agent_ingest_job_task_uid",
-    "rss_intelligence_job_task_uid",
-    "cal_operator_am_job_task_uid",
-    "cal_operator_pm_job_task_uid",
-    "relay_loop_am_job_task_uid",
-    "relay_loop_pm_job_task_uid",
-    "sales_agent_outreach_am_job_task_uid",
-    "sales_agent_outreach_pm_job_task_uid",
-    "enrich_contacts_job_task_uid",
-    "quote_followup_job_task_uid",
-    "natasha_operator_job_task_uid",
-  ];
-  const missing = expectedKeys.filter((k) => !registered.has(k));
-
-  return {
-    outreachDisabled: outreachDisabled(),
-    hunterEnabled: hunterEnabled(),
-    forgeConfigured: Boolean(process.env.BUILT_IN_FORGE_API_URL && process.env.BUILT_IN_FORGE_API_KEY),
-    resendConfigured: Boolean(process.env.RESEND_API_KEY?.trim()),
-    bounceRate: bounce.rate,
-    introsPaused: bounce.paused,
-    cronsRegistered: registered.size,
-    cronsMissing: missing,
-  };
-}
 
 type RelayOperatorCore = Omit<RelayOperatorResult, "learnings" | "escalations">;
 
@@ -116,6 +75,9 @@ function buildLearnings(result: RelayOperatorCore): string {
     parts.push(
       `Natasha funnel: +${result.natasha.funnel.usersLast7d} users, +${result.natasha.funnel.newsletterLast7d} newsletter.`,
     );
+  }
+  if (result.ted.grade !== "green") {
+    parts.push(`Ted grade ${result.ted.grade}: ${result.ted.recommendations[0] ?? "needs attention"}.`);
   }
   if (result.autoSend.sent > 0) {
     parts.push(`Cal auto-sent ${result.autoSend.sent} safe draft(s).`);
@@ -158,6 +120,12 @@ function buildEscalations(result: RelayOperatorCore): string[] {
   if (result.natasha.errors.length > 0) {
     items.push(`Natasha errors: ${result.natasha.errors.slice(0, 2).join("; ")}`);
   }
+  if (result.ted.errors.length > 0) {
+    items.push(`Ted errors: ${result.ted.errors.slice(0, 2).join("; ")}`);
+  }
+  if (result.ted.grade === "red") {
+    items.push(`Ted grade RED: ${result.ted.recommendations[0] ?? "loop unhealthy"}`);
+  }
   if (result.autoSend.errors.length > 0) {
     items.push(`Auto-send failures: ${result.autoSend.errors.slice(0, 2).join("; ")}`);
   }
@@ -183,9 +151,12 @@ export function formatRelayDailyReport(result: RelayOperatorResult): string {
     `${RELAY_REPORT_TITLE} — ${statusLabel}`,
     "",
     "Health (Ted)",
+    `• Grade: ${result.ted.grade.toUpperCase()}`,
     `• Outreach disabled: ${result.health.outreachDisabled ? "YES" : "no"}`,
     `• Circuit breaker: ${result.health.introsPaused ? "OPEN" : "closed"} (${(result.health.bounceRate * 100).toFixed(1)}% bounce)`,
     `• Crons registered: ${result.health.cronsRegistered} (${result.health.cronsMissing.length} missing)`,
+    `• Failed runs (24h): ${result.health.failedRunsLast24h} · Stale running: ${result.health.staleRunningRuns}`,
+    ...result.ted.recommendations.slice(0, 3).map((r) => `• Rec: ${r}`),
     "",
     "Actions taken",
     `• Max: ${result.calOperator.emailsEnriched} enriched, ${result.calOperator.quarantineRecovered} quarantine recovered · ready for Cal: ${result.maxReadyForCal}`,
@@ -244,9 +215,32 @@ export async function runRelayLoop(opts?: {
   const stepsCompleted: RelayLoopStep[] = [];
   const errors: string[] = [];
 
-  // OBSERVE
+  // OBSERVE — Ted owns loop health
   stepsCompleted.push("observe");
-  const health = await observeHealth(db);
+  let ted: TedOperatorResult;
+  try {
+    ted = await runTedCycle();
+  } catch (err) {
+    errors.push(`ted: ${String(err)}`);
+    ted = {
+      health: {
+        outreachDisabled: false,
+        hunterEnabled: false,
+        forgeConfigured: false,
+        resendConfigured: false,
+        bounceRate: 0,
+        introsPaused: false,
+        cronsRegistered: 0,
+        cronsMissing: [],
+        failedRunsLast24h: 0,
+        staleRunningRuns: 0,
+      },
+      grade: "red",
+      recommendations: [`Ted cycle failed: ${String(err)}`],
+      errors: [String(err)],
+    };
+  }
+  const health = ted.health;
   const workflowBefore = await getCalWorkflowSummary();
   const partnerOutreachBefore = await getPartnerOutreachSummary();
   const conversion = await getConversionSnapshot(db);
@@ -376,6 +370,7 @@ export async function runRelayLoop(opts?: {
   const partial: RelayOperatorCore = {
     stepsCompleted,
     health,
+    ted,
     calOperator,
     natasha,
     autoSend,
@@ -386,7 +381,7 @@ export async function runRelayLoop(opts?: {
     missions,
     workflowAfter,
     maxReadyForCal,
-    errors: [...errors, ...calOperator.errors, ...natasha.errors, ...autoSend.errors],
+    errors: [...errors, ...calOperator.errors, ...natasha.errors, ...ted.errors, ...autoSend.errors],
   };
 
   const escalations = buildEscalations(partial);

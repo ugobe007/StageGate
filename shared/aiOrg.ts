@@ -98,10 +98,14 @@ export const AI_AGENTS: readonly AiAgentMeta[] = [
     role: "Site performance, cron health, error budgets",
     talksTo: "Runtime metrics and deploy signals",
     success: "Faster pages, fewer regressions",
-    status: "chartered",
+    status: "live",
     products: ["stagegate", "readyforrobots"],
-    cronPaths: [],
-    modules: ["server/agents/relayOperator.ts"],
+    cronPaths: ["/api/scheduled/ted-operator"],
+    modules: [
+      "server/agents/tedOperator.ts",
+      "server/agents/tedPlaybook.ts",
+      "server/agents/relayOperator.ts",
+    ],
   },
 ] as const;
 

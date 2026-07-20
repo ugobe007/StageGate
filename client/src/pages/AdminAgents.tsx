@@ -43,6 +43,12 @@ const AGENT_REGISTRY: Record<string, { label: string; description: string; icon:
     icon: "📈",
     category: "Growth",
   },
+  "Ted Health": {
+    label: "Ted Health",
+    description: "Performance agent — grades cron health, bounce circuit, failed runs, and emits loop recommendations.",
+    icon: "⚡",
+    category: "Ops",
+  },
 };
 
 const ALL_AGENTS = Object.keys(AGENT_REGISTRY);
@@ -112,6 +118,14 @@ export default function AdminAgents() {
     },
     onError: (e) => toast.error(e.message),
   });
+  const runTed = trpc.admin.runTed.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Ted grade ${String(data.grade ?? "").toUpperCase() || "ready"}`);
+      refetchRuns();
+      refetchStats();
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const statsMap = new Map((agentStats ?? []).map((s) => [s.agentName, s]));
 
@@ -132,6 +146,10 @@ export default function AdminAgents() {
     }
     if (agentName === "Natasha Growth") {
       runNatasha.mutate();
+      return;
+    }
+    if (agentName === "Ted Health") {
+      runTed.mutate();
       return;
     }
     if (agentName === "XBOT Outreach" || agentName === "XBOT Bulk Outreach") {
@@ -243,7 +261,8 @@ export default function AdminAgents() {
           const isActivating =
             (agentName === "Lead Discovery" && triggerDiscovery.isPending) ||
             (agentName === "Lead Email Generator" && generateDrafts.isPending) ||
-            (agentName === "Natasha Growth" && runNatasha.isPending);
+            (agentName === "Natasha Growth" && runNatasha.isPending) ||
+            (agentName === "Ted Health" && runTed.isPending);
 
           return (
             <button

@@ -39,7 +39,7 @@ Move anonymous visitors → signed-up users → paying customers.
 
 ## Priority stack
 
-1. Infrastructure — worker up, webhooks valid, API keys, crons fired (**Ted**)
+1. Infrastructure — worker up, webhooks valid, API keys, crons fired (**Ted** — `/api/scheduled/ted-operator` + Relay observe)
 2. Deliverability — quarantine bounces, Hunter recovery, circuit breaker (**Cal** + Max enrich)
 3. Conversion blockers — empty pipeline, pending demos/quotes
 4. Outreach motion — Max enrich → Cal draft → auto-send safe queue

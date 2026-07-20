@@ -45,7 +45,7 @@ Move anonymous visitors → signed-up users → paying customers.
 | **Cal** | Humans (email) | Outreach, replies, engagement | Replies, meetings, activation | Live |
 | **Max** | Apollo, Hunter, RSS, RFR OEMs, scrapers | Find/score opportunities; enrich; hand off to Cal | Fresh, sendable pipeline for Cal | Live |
 | **Natasha** | Product / UX surfaces | Signup funnels, marketing experiments, UI conversion | Signups / activation rate | Live |
-| **Ted** | Runtime metrics | Perf, Core Web Vitals, error budgets, deploy / cron health | Faster pages, fewer regressions | Chartered |
+| **Ted** | Runtime metrics | Perf, Core Web Vitals, error budgets, deploy / cron health | Faster pages, fewer regressions | Live |
 
 Cal’s **voice is consistent** across brands. Product context may differ; identity does not.
 
@@ -65,6 +65,12 @@ Natasha observes signup funnel metrics (users, newsletter, company profiles, dem
 
 Code: `runNatashaCycle()` / `executeNatashaRun()` in `server/agents/natashaOperator.ts`. Invoked from Relay and cron `/api/scheduled/natasha-operator`.
 
+## Ted → loop health
+
+Ted observes cron registration, bounce circuit breaker, API key presence, and recent failed/stale agent runs. He grades the loop (green / yellow / red) and emits recommendations.
+
+Code: `runTedCycle()` / `executeTedRun()` in `server/agents/tedOperator.ts`. Invoked from Relay observe step and cron `/api/scheduled/ted-operator`.
+
 ## Cron ownership
 
 | Endpoint | Schedule (UTC) | Owner |
@@ -77,6 +83,7 @@ Code: `runNatashaCycle()` / `executeNatashaRun()` in `server/agents/natashaOpera
 | `/api/scheduled/quote-followup` | 09:00 | Cal |
 | `/api/scheduled/cal-operator` | 10:00, 22:00 | Cal (+ Max enrich inside cycle) |
 | `/api/scheduled/natasha-operator` | 11:00 | Natasha |
+| `/api/scheduled/ted-operator` | 12:00 | Ted |
 | `/api/scheduled/relay-loop` | 10:30, 22:30 | Relay |
 | `/api/scheduled/sales-agent-outreach` | 14:00, 18:00 | Cal |
 

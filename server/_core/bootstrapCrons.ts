@@ -20,6 +20,7 @@ export const SALES_AGENT_OUTREACH_PM_JOB_KEY = "sales_agent_outreach_pm_job_task
 export const ENRICH_CONTACTS_JOB_KEY = "enrich_contacts_job_task_uid";
 export const QUOTE_FOLLOWUP_JOB_KEY = "quote_followup_job_task_uid";
 export const NATASHA_OPERATOR_JOB_KEY = "natasha_operator_job_task_uid";
+export const TED_OPERATOR_JOB_KEY = "ted_operator_job_task_uid";
 
 /** Primary relay-loop key (AM run) — used for taskUid lookups. */
 export const RELAY_LOOP_JOB_KEY = RELAY_LOOP_AM_JOB_KEY;
@@ -77,6 +78,15 @@ const PROJECT_CRONS: Array<{ key: string; job: HeartbeatJob }> = [
       cron: "0 0 11 * * *",
       path: "/api/scheduled/natasha-operator",
       description: "Daily 11:00 UTC: Natasha — signup funnel observe + growth brief",
+    },
+  },
+  {
+    key: TED_OPERATOR_JOB_KEY,
+    job: {
+      name: "ted-operator-daily",
+      cron: "0 0 12 * * *",
+      path: "/api/scheduled/ted-operator",
+      description: "Daily 12:00 UTC: Ted — loop health, crons, deliverability grade",
     },
   },
   {

@@ -3286,6 +3286,16 @@ For ataCarnetEligible: determine if this shipment qualifies for an ATA Carnet ba
       return getLatestNatashaRun();
     }),
 
+    runTed: adminProcedure.mutation(async () => {
+      const { executeTedRun } = await import("./agents/tedOperator");
+      return executeTedRun({ notify: true });
+    }),
+
+    getLatestTedRun: adminProcedure.query(async () => {
+      const { getLatestTedRun } = await import("./agents/tedOperator");
+      return getLatestTedRun();
+    }),
+
     runRelayLoop: adminProcedure.mutation(async () => {
       const { executeRelayRun } = await import("./agents/relayOperator");
       return executeRelayRun({ skipNotify: true, skipCalOperator: false });
