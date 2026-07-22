@@ -111,6 +111,25 @@ describe("demos.submit", () => {
     ).rejects.toThrow();
   });
 
+  it("includes funnel source in owner notification when provided", async () => {
+    const caller = appRouter.createCaller(createAnonContext());
+
+    await caller.demos.submit({
+      name: "Dana",
+      email: "dana@acme.com",
+      company: "Acme Robotics",
+      robotType: "Humanoid / Bipedal",
+      source: "dashboard",
+    });
+
+    const call = (notifyOwner as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(call.content).toContain("Funnel: demo_submit");
+    expect(call.content).toContain("source=dashboard");
+    expect(db.createDemoRequest).toHaveBeenCalledWith(
+      expect.not.objectContaining({ source: expect.anything() })
+    );
+  });
+
   it("accepts optional fields (no show, no message)", async () => {
     const caller = appRouter.createCaller(createAnonContext());
 

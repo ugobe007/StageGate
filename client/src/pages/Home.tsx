@@ -790,16 +790,23 @@ export default function Home() {
             <Link href="/register">
               <button className="btn-primary" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem" }}>Register Free <ArrowRight size={15} /></button>
             </Link>
+            <button
+              className="btn-default"
+              onClick={() => setDemoOpen(true)}
+              style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem" }}
+            >
+              Request a Demo
+            </button>
             <Link href="/tour">
               <button style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", fontSize: "0.9375rem", padding: "0.875rem 2rem", fontWeight: 700, color: "#000", background: "#f59e0b", border: "1px solid #f59e0b", borderRadius: "0.25rem", cursor: "pointer", transition: "all 0.15s" }}>
                 Book a Showroom Tour <ArrowRight size={15} />
               </button>
             </Link>
-            <a href="https://calendar.google.com/calendar/embed?src=bc58ef12c74e2216111ee28feb95e5edf6381e54aa8699acdab87cd370177797%40group.calendar.google.com&ctz=America%2FLos_Angeles" target="_blank" rel="noopener noreferrer">
+            <Link href="/schedule">
               <button className="btn-primary" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem", background: "transparent", border: "1px solid rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.65)" }}>
-                Schedule a Call <ArrowUpRight size={15} />
+                Schedule a Call <ArrowRight size={15} />
               </button>
-            </a>
+            </Link>
             <Link href="/shows">
               <button className="btn-default" style={{ fontSize: "0.9375rem", padding: "0.875rem 2rem" }}>
                 View Shows <ArrowUpRight size={15} />
@@ -836,10 +843,10 @@ export default function Home() {
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)" }}>Email</span>
                   hello@onstage.bot
                 </a>
-                <a href="https://calendar.google.com/calendar/embed?src=bc58ef12c74e2216111ee28feb95e5edf6381e54aa8699acdab87cd370177797%40group.calendar.google.com&ctz=America%2FLos_Angeles" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "0.75rem", fontSize: "1.125rem", fontWeight: 700, color: "rgba(255,255,255,0.70)", textDecoration: "none" }}>
+                <Link href="/schedule" style={{ display: "inline-flex", alignItems: "center", gap: "0.75rem", fontSize: "1.125rem", fontWeight: 700, color: "rgba(255,255,255,0.70)", textDecoration: "none" }}>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)" }}>Schedule</span>
-                  Book a 30-min call <ArrowUpRight size={16} />
-                </a>
+                  Book a 30-min call <ArrowRight size={16} />
+                </Link>
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -898,7 +905,7 @@ export default function Home() {
       </footer>
 
       {/* ── MODALS ───────────────────────────────────────────────────────────── */}
-      <DemoRequestModal open={demoOpen} onOpenChange={setDemoOpen} />
+      <DemoRequestModal open={demoOpen} onOpenChange={setDemoOpen} source="home" />
 
       <style>{`
         @keyframes bounce {

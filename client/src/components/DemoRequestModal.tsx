@@ -25,9 +25,11 @@ const ROBOT_TYPES = [
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Funnel attribution passed through to demos.submit */
+  source?: string;
 }
 
-export default function DemoRequestModal({ open, onOpenChange }: Props) {
+export default function DemoRequestModal({ open, onOpenChange, source }: Props) {
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -77,6 +79,7 @@ export default function DemoRequestModal({ open, onOpenChange }: Props) {
       preferredShowId: matchedShow?.id,
       preferredShowName: form.preferredShowName || undefined,
       message: form.message.trim() || undefined,
+      source,
     });
   }
 

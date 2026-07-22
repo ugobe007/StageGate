@@ -102,9 +102,11 @@ type Props = {
   onOpenChange?: (open: boolean) => void;
   onClose?: () => void;
   preselectedShowId?: number;
+  /** Funnel attribution passed through to quotes.submit */
+  source?: string;
 };
 
-export default function GetQuoteModal({ open, onOpenChange, onClose, preselectedShowId }: Props) {
+export default function GetQuoteModal({ open, onOpenChange, onClose, preselectedShowId, source }: Props) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>(() => ({
     ...EMPTY,
@@ -167,6 +169,7 @@ export default function GetQuoteModal({ open, onOpenChange, onClose, preselected
       showName: selectedShow?.name || form.showName.trim() || undefined,
       serviceIds: form.serviceIds,
       notes: form.notes.trim() || undefined,
+      source,
     });
   }
 

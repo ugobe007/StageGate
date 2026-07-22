@@ -4,9 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import Navbar from "@/components/Navbar";
+import DemoRequestModal from "@/components/DemoRequestModal";
+import GetQuoteModal from "@/components/GetQuoteModal";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { CheckCircle, ArrowRight, Loader2, Building2, Bot } from "lucide-react";
+import { CheckCircle, ArrowRight, Loader2, Building2, Bot, Play, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { BRAND } from "@/lib/brand";
 
@@ -46,6 +48,8 @@ export default function Register() {
   const { user, isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
   const { data: existingProfile } = trpc.company.getMyProfile.useQuery(undefined, { enabled: isAuthenticated });
+  const [demoOpen, setDemoOpen] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
 
   const [form, setForm] = useState({
     companyName: "",
@@ -60,8 +64,8 @@ export default function Register() {
 
   const upsertProfile = trpc.company.upsertProfile.useMutation({
     onSuccess: () => {
-      toast.success("Company profile saved! Welcome to StageGate.");
-      navigate("/dashboard");
+      toast.success("Profile started — finish setup to unlock demo & quote.");
+      navigate("/onboarding");
     },
     onError: (err) => {
       toast.error(err.message || "Failed to save profile");
@@ -131,23 +135,34 @@ export default function Register() {
                 <strong style={{ color: "#ececec" }}>{existingProfile.companyName}</strong> is registered on StageGate.
               </p>
               <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "2rem" }}>
-                Head to your dashboard to view orders, book services, or update your profile.
+                Next: book a demo or get a quote for your next show.
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <button
+                  type="button"
+                  onClick={() => setDemoOpen(true)}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", background: `${BRAND.emerald}`, border: "none", color: "#fff", fontWeight: 600, fontSize: "0.9375rem", borderRadius: "0.375rem", cursor: "pointer" }}
+                >
+                  <Play size={15} /> Request a Demo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuoteOpen(true)}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", background: "#f59e0b", border: "none", color: "#1C1E22", fontWeight: 600, fontSize: "0.9375rem", borderRadius: "0.375rem", cursor: "pointer" }}
+                >
+                  <FileText size={15} /> Get a Quote
+                </button>
                 <Link href="/dashboard">
                   <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.12)", color: "#f1f5f9", fontWeight: 600, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
                     Go to My Dashboard <ArrowRight size={15} />
-                  </a>
-                </Link>
-                <Link href="/order">
-                  <a style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", padding: "0.625rem 1.25rem", border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "rgba(255,255,255,0.45)", fontWeight: 500, fontSize: "0.9375rem", borderRadius: "0.375rem", textDecoration: "none" }}>
-                    Book Services
                   </a>
                 </Link>
               </div>
             </div>
           </div>
         </div>
+        <DemoRequestModal open={demoOpen} onOpenChange={setDemoOpen} source="register" />
+        <GetQuoteModal open={quoteOpen} onOpenChange={setQuoteOpen} source="register" />
       </div>
     );
   }

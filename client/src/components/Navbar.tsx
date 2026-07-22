@@ -294,7 +294,7 @@ export default function Navbar({ darkBg = false }: { darkBg?: boolean }) {
       )}
     </nav>
     <NewsTicker />
-    <GetQuoteModal open={quoteOpen} onOpenChange={setQuoteOpen} />
+    <GetQuoteModal open={quoteOpen} onOpenChange={setQuoteOpen} source="navbar" />
     </>
   );
 }

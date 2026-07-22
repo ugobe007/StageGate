@@ -7,11 +7,13 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Navbar from "@/components/Navbar";
 import EditProfileSheet from "@/components/EditProfileSheet";
+import DemoRequestModal from "@/components/DemoRequestModal";
+import GetQuoteModal from "@/components/GetQuoteModal";
 import { BRAND, emeraldAlpha } from "@/lib/brand";
 import {
   Package, Calendar, CheckCircle, Clock, AlertCircle, XCircle,
   ArrowRight, Loader2, User, Building2, Globe, Phone, Mail,
-  Bot, Zap, FileText, Send, Plus, ChevronDown, ChevronUp, Star,
+  Bot, Zap, FileText, Send, Plus, ChevronDown, ChevronUp, Star, Play,
 } from "lucide-react";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ size?: number }> }> = {
@@ -62,6 +64,8 @@ export default function ClientDashboard() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [expandedRequest, setExpandedRequest] = useState<number | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [demoOpen, setDemoOpen] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
 
   const utils = trpc.useUtils();
   const { data: profile, isLoading: profileLoading } = trpc.company.getMyProfile.useQuery(undefined, { enabled: isAuthenticated });
@@ -184,6 +188,40 @@ export default function ClientDashboard() {
               <User size={12} /> Edit Profile
             </button>
           </div>
+
+          {/* Activation next step — nudge new users toward demo/quote */}
+          {(serviceReqs?.length ?? 0) === 0 && (
+            <div style={{ marginBottom: "1.5rem", border: `1px solid ${emeraldAlpha(0.25)}`, borderRadius: "0.5rem", background: emeraldAlpha(0.06), padding: "1.25rem 1.5rem" }}>
+              <p style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: `${BRAND.emerald}`, margin: "0 0 0.5rem", fontFamily: "'JetBrains Mono', monospace" }}>
+                Next step
+              </p>
+              <h2 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#ececec", margin: "0 0 0.375rem" }}>
+                Book a demo or get a quote
+              </h2>
+              <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.50)", margin: "0 0 1rem", lineHeight: 1.55, maxWidth: "42rem" }}>
+                Your profile is ready. See StageGate in person or get a custom proposal for your next show — we respond within one business day.
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.625rem" }}>
+                <button
+                  type="button"
+                  onClick={() => setDemoOpen(true)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.625rem 1.125rem", background: `${BRAND.emerald}`, color: "#fff", fontWeight: 700, fontSize: "0.8125rem", borderRadius: "0.375rem", border: "none", cursor: "pointer" }}
+                >
+                  <Play size={13} /> Request a Demo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuoteOpen(true)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.625rem 1.125rem", background: "#f59e0b", color: "#1C1E22", fontWeight: 700, fontSize: "0.8125rem", borderRadius: "0.375rem", border: "none", cursor: "pointer" }}
+                >
+                  <FileText size={13} /> Get a Quote
+                </button>
+                <Link href="/schedule" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.625rem 1.125rem", background: "transparent", color: "rgba(255,255,255,0.55)", fontWeight: 600, fontSize: "0.8125rem", borderRadius: "0.375rem", border: "1px solid rgba(255,255,255,0.12)", textDecoration: "none" }}>
+                  Schedule a Call <ArrowRight size={13} />
+                </Link>
+              </div>
+            </div>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1.5rem" }}>
 
@@ -517,6 +555,8 @@ export default function ClientDashboard() {
         onClose={() => setEditProfileOpen(false)}
         profile={profile}
       />
+      <DemoRequestModal open={demoOpen} onOpenChange={setDemoOpen} source="dashboard" />
+      <GetQuoteModal open={quoteOpen} onOpenChange={setQuoteOpen} source="dashboard" />
     </div>
   );
 }

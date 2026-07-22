@@ -98,7 +98,7 @@ export const appRouter = router({
         if (isNew) {
           await notifyOwner({
             title: "New Company Registered",
-            content: `${input.companyName} just completed their company profile on StageGate.`,
+            content: `${input.companyName} just completed their company profile on StageGate.\nFunnel: signup_complete${input.onboardingComplete ? " · onboarding=done" : " · next=onboarding"}`,
           }).catch(() => {});
         }
         return { id };
@@ -934,14 +934,17 @@ Subject line and body only.`,
           preferredShowId: z.number().optional(),
           preferredShowName: z.string().optional(),
           message: z.string().optional(),
+          /** Funnel attribution: home | dashboard | register | navbar | shows */
+          source: z.string().max(64).optional(),
         })
       )
       .mutation(async ({ input }) => {
-        await db.createDemoRequest(input);
+        const { source, ...rest } = input;
+        await db.createDemoRequest(rest);
         const showLabel = input.preferredShowName || (input.preferredShowId ? `Show #${input.preferredShowId}` : "Not specified");
         await notifyOwner({
           title: `New Demo Request — ${input.company}`,
-          content: `${input.name} (${input.email}) from ${input.company} has requested a demo.\nRobot: ${input.robotType}\nPreferred show: ${showLabel}\n${input.message ? `Message: ${input.message}` : ""}`,
+          content: `${input.name} (${input.email}) from ${input.company} has requested a demo.\nRobot: ${input.robotType}\nPreferred show: ${showLabel}\nFunnel: demo_submit${source ? ` · source=${source}` : ""}\n${input.message ? `Message: ${input.message}` : ""}`,
         }).catch(() => {});
         return { success: true };
       }),
@@ -980,17 +983,19 @@ Subject line and body only.`,
           showName: z.string().optional(),
           serviceIds: z.array(z.number()).optional(),
           notes: z.string().optional(),
+          /** Funnel attribution: home | dashboard | register | navbar | shows */
+          source: z.string().max(64).optional(),
         })
       )
       .mutation(async ({ input }) => {
-        const { serviceIds, ...rest } = input;
+        const { serviceIds, source, ...rest } = input;
         await db.createQuoteRequest({
           ...rest,
           serviceIds: serviceIds ? JSON.stringify(serviceIds) : null,
         });
         await notifyOwner({
           title: "New Quote Request — " + input.company,
-          content: `${input.name} (${input.email}) from ${input.company} has requested a quote.\nRobot: ${input.robotType} × ${input.robotCount}\nShow: ${input.showName || "Not specified"}\nServices: ${serviceIds?.length || 0} selected`,
+          content: `${input.name} (${input.email}) from ${input.company} has requested a quote.\nRobot: ${input.robotType} × ${input.robotCount}\nShow: ${input.showName || "Not specified"}\nServices: ${serviceIds?.length || 0} selected\nFunnel: quote_submit${source ? ` · source=${source}` : ""}`,
         });
         return { success: true };
       }),
