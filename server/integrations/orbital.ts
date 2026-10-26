@@ -102,6 +102,7 @@ export function createOrbitalRouter(): Router {
   });
 
   router.get("/health", (req, res) => void forward(req, res, "/health"));
+  router.get("/whoami", (req, res) => void forward(req, res, "/api/dashboard/whoami"));
 
   // Fleet Management Dashboard (Module 7) read surface.
   router.get("/fleet", (req, res) => void forward(req, res, "/api/dashboard/fleet"));
