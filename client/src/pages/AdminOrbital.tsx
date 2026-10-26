@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity, AlertTriangle, BatteryCharging, Bot, Check, CircleStop, Copy, Cpu, Crosshair, Gauge, Heart,
-  KeyRound, LayoutDashboard, Loader2, Lock, Map, Navigation, Play, Plus, RefreshCw, Radio, Send,
+  KeyRound, LayoutDashboard, Loader2, Lock, MapIcon, Navigation, Play, Plus, RefreshCw, Radio, Send,
   Settings, ShieldAlert, Thermometer, Trash2, Users, Video, X,
 } from "lucide-react";
 import { BRAND, emeraldAlpha } from "@/lib/brand";
@@ -375,7 +375,7 @@ type Capability = { scope: string; label: string; kind: "monitor" | "control"; d
 const CAPABILITIES: Capability[] = [
   { scope: "telemetry.read", label: "Telemetry", kind: "monitor", desc: "Live sensor + drift stream", icon: <Radio size={14} /> },
   { scope: "state.read", label: "State", kind: "monitor", desc: "Battery, mode, health", icon: <Heart size={14} /> },
-  { scope: "map.read", label: "Spatial map", kind: "monitor", desc: "Facility floor + localization", icon: <Map size={14} /> },
+  { scope: "map.read", label: "Spatial map", kind: "monitor", desc: "Facility floor + localization", icon: <MapIcon size={14} /> },
   { scope: "camera.read", label: "Camera", kind: "monitor", desc: "Overhead + onboard feeds", icon: <Video size={14} /> },
   { scope: "control.velocity", label: "Drive", kind: "control", desc: "Speed, direction & visual waypoints", icon: <Navigation size={14} /> },
   { scope: "control.estop", label: "Safety stop", kind: "control", desc: "Emergency stop / resume", icon: <CircleStop size={14} /> },
@@ -701,7 +701,7 @@ export default function AdminOrbital() {
       )}
 
       {/* Mission control hero — warehouse map + operator rail (above the fold) */}
-      <style>{`.orbital-hero{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;margin-top:16px;align-items:start}@media (max-width:1100px){.orbital-hero{grid-template-columns:1fr}.orbital-hero>.orbital-rail{max-width:560px}}`}</style>
+      <style>{`.orbital-hero{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;margin-top:16px;align-items:start}@media (max-width:1100px){.orbital-hero{grid-template-columns:1fr}.orbital-rail{display:grid;grid-template-columns:1fr;gap:16px}}`}</style>
       {map && (
         <div className="orbital-hero">
           <div ref={reg("map")} data-sec="map" style={{ background: cardBg, border, borderRadius: 8, overflow: "hidden", scrollMarginTop: 80 }}>
@@ -725,9 +725,13 @@ export default function AdminOrbital() {
                         {mapSel}{routing ? " · en route" : ""}
                       </span>
                       {routing && (
-                        <button onClick={() => clearRoute(mapSel)} style={{ fontSize: ".72rem", padding: "2px 6px", borderRadius: 6, border: `1px solid ${MC.line}`, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>Clear route</button>
+                        <button onClick={() => clearRoute(mapSel)} style={{ fontSize: ".72rem", padding: "2px 6px", borderRadius: 6, border: `1px solid ${MC.line}`, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>
+                          Clear route
+                        </button>
                       )}
-                      <button onClick={() => setMapSel(null)} style={{ fontSize: ".72rem", padding: "2px 6px", borderRadius: 6, border: `1px solid ${MC.line}`, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>Deselect</button>
+                      <button onClick={() => setMapSel(null)} style={{ fontSize: ".72rem", padding: "2px 6px", borderRadius: 6, border: `1px solid ${MC.line}`, background: "transparent", color: MC.inkMut, cursor: "pointer" }}>
+                        Deselect
+                      </button>
                     </>
                   );
                 })()}
@@ -766,7 +770,9 @@ export default function AdminOrbital() {
                   const unacked = alerts.filter((a) => !a.acknowledged);
                   return (
                     <>
-                      <span style={{ fontSize: ".62rem", fontFamily: MONO, padding: "1px 7px", borderRadius: 999, background: MC.input, color: unacked.length ? "#f59e0b" : "rgba(255,255,255,0.4)" }}>{unacked.length}</span>
+                      <span style={{ fontSize: ".62rem", fontFamily: MONO, padding: "1px 7px", borderRadius: 999, background: MC.input, color: unacked.length ? "#f59e0b" : "rgba(255,255,255,0.4)" }}>
+                        {unacked.length}
+                      </span>
                       {unacked.length > 0 && (
                         <button onClick={() => { void Promise.all(unacked.map((a) => ackAlert(a.id))); }}
                           style={{ marginLeft: "auto", fontSize: ".68rem", color: BRAND.emerald, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
@@ -822,7 +828,7 @@ export default function AdminOrbital() {
                 {statusFilter && (() => {
                   const s = STATUS_META.find((x) => x.key === statusFilter);
                   return (
-                    <button onClick={() => setStatusFilter(null)} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 8px", borderRadius: 6, cursor: "pointer", fontSize: ".74rem", border: `1px solid ${MC.line}`, background: "transparent", color: MC.inkMut }}>
+                    <button onClick={() => setStatusFilter(null)} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 8px", borderRadius: 6, cursor: "pointer", fontSize: ".72rem", background: "transparent", border: `1px solid ${MC.line}`, color: MC.inkMut }}>
                       <span style={{ width: 6, height: 6, borderRadius: 999, background: s?.color }} />
                       {s?.label} <span style={{ color: MC.inkDim }}>✕</span>
                     </button>
@@ -831,7 +837,7 @@ export default function AdminOrbital() {
               </div>
             } />
 
-          <style>{`.orbital-fleet-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0.75rem}@media (max-width:1100px){.orbital-fleet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:720px){.orbital-fleet-grid{grid-template-columns:1fr}}`}</style>
+          <style>{`.orbital-fleet-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0.75rem}@media (max-width:1100px){.orbital-fleet-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}@media (max-width:640px){.orbital-fleet-grid{grid-template-columns:1fr!important}}`}</style>
           <div className="orbital-fleet-grid">
             {robots.map((r) => (
               <FleetCard
@@ -941,7 +947,7 @@ function SequenceBar({ seq, robots, secondsLeft, border }: {
           {goals.map((r) => {
             const ph = r.mission_phase ?? "idle";
             return (
-              <span key={r.id} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: ".64rem", padding: "2px 7px", borderRadius: 6, background: "rgba(255,255,255,0.04)", border }}>
+              <span key={r.id} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: ".64rem", padding: "2px 7px", borderRadius: 6, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
                 <span style={{ fontFamily: MONO, color: "rgba(255,255,255,0.55)" }}>{r.id}</span>
                 <span style={{ color: "rgba(255,255,255,0.75)" }}>{r.mission}</span>
                 <span style={{ fontFamily: MONO, fontSize: ".58rem", color: PHASE_COLOR[ph] ?? "rgba(255,255,255,0.35)" }}>{PHASE_LABEL[ph] ?? ph}</span>
@@ -1112,7 +1118,7 @@ function WarehouseMapView({ map, robots, selectedId, onSelectRobot, onFloorClick
 
 const RAIL_ITEMS: { id: string; label: string; icon: React.ReactNode }[] = [
   { id: "overview", label: "Overview", icon: <LayoutDashboard size={18} /> },
-  { id: "map", label: "Spatial Map", icon: <Map size={18} /> },
+  { id: "map", label: "Spatial Map", icon: <MapIcon size={18} /> },
   { id: "fleet", label: "Fleet", icon: <Bot size={18} /> },
   { id: "alerts", label: "Alerts", icon: <AlertTriangle size={18} /> },
   { id: "capabilities", label: "Capabilities", icon: <Cpu size={18} /> },
@@ -1126,7 +1132,7 @@ function NavRail({ active, onSelect }: { active: string; onSelect: (id: string) 
       background: "#08090e", borderRight: `1px solid ${MC.line}`,
       display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 0", gap: 4,
     }}>
-      <div style={{ width: 36, height: 36, borderRadius: 9, overflow: "hidden", background: "#0c1119", border: "1px solid rgba(0,165,218,0.4)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 14px rgba(0,165,218,0.25)", marginBottom: 10 }}>
+      <div style={{ width: 36, height: 36, borderRadius: 9, overflow: "hidden", background: "#0c1119", border: "1px solid rgba(0,165,218,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <img src="/orbital-logo.png" alt="Orbital AI" style={{ width: 30, height: 30, objectFit: "contain" }} />
       </div>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
@@ -1160,7 +1166,7 @@ function Header({ facilityName, lastSync, onRefresh, onOnboard }: { facilityName
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ width: 30, height: 30, borderRadius: 8, overflow: "hidden", background: "#0c1119", border: "1px solid rgba(0,165,218,0.5)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 12px rgba(0,165,218,0.3)" }}>
+          <span style={{ width: 30, height: 30, borderRadius: 8, overflow: "hidden", background: "#0c1119", border: "1px solid rgba(0,165,218,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <img src="/orbital-logo.png" alt="Orbital AI" style={{ width: 26, height: 26, objectFit: "contain" }} />
           </span>
           <h1 style={{ margin: 0, fontSize: "1.5rem", letterSpacing: "-0.01em" }}>Orbital<span style={{ color: MC.azure, fontWeight: 300 }}> AI</span> — Fleet Control</h1>
@@ -1172,11 +1178,11 @@ function Header({ facilityName, lastSync, onRefresh, onOnboard }: { facilityName
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         {onOnboard && (
-          <button onClick={onOnboard} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(0,165,218,0.5)", background: "#0e2230", color: "#7fd6f2", cursor: "pointer", fontSize: ".82rem", fontWeight: 600, boxShadow: "0 0 12px rgba(0,165,218,0.25)" }}>
+          <button onClick={onOnboard} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(0,165,218,0.5)", background: "#0e2230", color: MC.azureLight, cursor: "pointer" }}>
             <Plus size={14} /> Onboard robot API
           </button>
         )}
-        <button onClick={onRefresh} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer", fontSize: ".82rem" }}>
+        <button onClick={onRefresh} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer" }}>
           <RefreshCw size={14} /> Refresh
         </button>
       </div>
@@ -1197,7 +1203,8 @@ function ControlBtn({ label, icon, color, busy, locked, title, onClick }: { labe
   return (
     <button disabled={busy || locked} onClick={onClick} title={title} style={{
       display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 7,
-      border: `1px solid ${locked ? "rgba(255,255,255,0.15)" : color}`, background: locked ? "rgba(255,255,255,0.04)" : `${color}1A`,
+      border: `1px solid ${locked ? "rgba(255,255,255,0.15)" : color}`,
+      background: locked ? "rgba(255,255,255,0.04)" : `${color}1A`,
       color, cursor: locked ? "not-allowed" : busy ? "wait" : "pointer",
       fontSize: ".76rem", fontWeight: 600, opacity: busy ? 0.6 : 1,
     }}>
@@ -1250,7 +1257,7 @@ function Vitals({ s }: { s?: SensorSnapshot | null }) {
   }
   if (s.motors?.length) {
     const hottest = s.motors.reduce((m, x) => ((x.temperature_c ?? -1) > (m.temperature_c ?? -1) ? x : m), s.motors[0]);
-    cells.push(cell(`Hottest motor (${s.motors.length})`, hottest.temperature_c != null ? `${hottest.joint} ${hottest.temperature_c.toFixed(0)}°C` : hottest.joint, tempColor(hottest.temperature_c, 60, 75), <Gauge size={12} />));
+    cells.push(cell(`Hottest motor (${s.motors.length})`, hottest.temperature_c != null ? `${hottest.joint} ${hottest.temperature_c.toFixed(0)}°C` : hottest.joint, tempColor(hottest.temperature_c ?? 0, 65, 80), <Thermometer size={12} />));
   }
   if (s.spatial) {
     const sp = s.spatial;
@@ -1286,7 +1293,7 @@ function RobotModal({ detail, busy, onClose, onControl }: {
   const secs = (s?: number | null) => (s == null ? "—" : s >= 3600 ? `${(s / 3600).toFixed(1)}h` : `${Math.round(s)}s`);
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: MC.card, border: `1px solid ${MC.lineStrong}`, borderRadius: 14, padding: 24, width: 460, maxWidth: "92vw", maxHeight: "88vh", overflowY: "auto" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: MC.card, border: `1px solid ${MC.lineStrong}`, borderRadius: 14, padding: 24, width: 460, maxWidth: "92vw", maxHeight: "88vh", overflowY: "auto", color: MC.ink }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1397,17 +1404,21 @@ function OEMModal({ oem, onClose, onSave, onToggleStatus, onRemove }: {
         )}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, gap: 8, flexWrap: "wrap" }}>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={onToggleStatus} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: suspended ? BRAND.emerald : "#fca5a5", cursor: "pointer", fontSize: ".78rem" }}>
+            <button onClick={onToggleStatus} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: suspended ? BRAND.emerald : "rgba(255,255,255,0.8)", cursor: "pointer" }}>
               {suspended ? "Reactivate access" : "Suspend access"}
             </button>
             <button onClick={() => (confirmRemove ? onRemove() : setConfirmRemove(true))}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: confirmRemove ? "#fca5a5" : "rgba(255,255,255,0.55)", cursor: "pointer", fontSize: ".78rem" }}>
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: confirmRemove ? "#fca5a5" : "rgba(255,255,255,0.8)", cursor: "pointer" }}>
               <Trash2 size={13} /> {confirmRemove ? "Click to confirm" : "Remove"}
             </button>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={onClose} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer", fontSize: ".78rem" }}>Cancel</button>
-            <button onClick={() => onSave(want)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: BRAND.emerald, color: "#0b0f14", cursor: "pointer", fontSize: ".78rem", fontWeight: 700 }}>Save scopes</button>
+            <button onClick={onClose} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer" }}>
+              Cancel
+            </button>
+            <button onClick={() => onSave(want)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: BRAND.emerald, color: "#0b0f14", cursor: "pointer", fontSize: ".78rem", fontWeight: 600 }}>
+              Save
+            </button>
           </div>
         </div>
       </div>
@@ -1499,7 +1510,7 @@ function ControlPanel({ robot, grants, busy, onSpeed, onDrive, onStopDrive, onCl
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, maxWidth: 168, margin: "0 auto" }}>
           {DIRS.map(([glyph, heading], i) => heading === null ? (
             <button key={i} disabled={!canVel} onClick={onStopDrive} title="Stop jog"
-              style={{ aspectRatio: "1", borderRadius: 8, border: "1px solid rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.12)", color: "#f87171", cursor: canVel ? "pointer" : "not-allowed", fontSize: 14 }}>{glyph}</button>
+              style={{ aspectRatio: "1", borderRadius: 8, border: "1px solid rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.12)", color: "#f87171", cursor: canVel ? "pointer" : "not-allowed", fontSize: 15 }}>■</button>
           ) : (
             <button key={i} disabled={!canVel} onClick={() => onDrive(heading, speed)} title={`${heading}°`}
               style={{ aspectRatio: "1", borderRadius: 8, border, background: "rgba(255,255,255,0.04)", color: BRAND.white, cursor: canVel ? "pointer" : "not-allowed", fontSize: 15 }}>{glyph}</button>
@@ -1513,7 +1524,7 @@ function ControlPanel({ robot, grants, busy, onSpeed, onDrive, onStopDrive, onCl
         {routing ? (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: ".76rem", color: BRAND.emerald }}>en route · {robot.waypoints!.length} pt{robot.waypoints!.length > 1 ? "s" : ""}</span>
-            <button onClick={onClearRoute} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer" }}>Clear route</button>
+            <button onClick={onClearRoute} style={{ fontSize: ".72rem", padding: "4px 10px", borderRadius: 7, border, background: "transparent", color: "rgba(255,255,255,0.8)", cursor: "pointer" }}>Clear</button>
           </div>
         ) : (
           <div style={{ fontSize: ".74rem", color: "rgba(255,255,255,0.45)" }}>Click the map to set a waypoint. Shift-click to chain multiple.</div>
@@ -1647,13 +1658,13 @@ function OemPartnersPanel({ oems, cardBg, border, onManage, onWizard, sectionRef
     <div ref={sectionRef("partners")} data-sec="partners" style={{ background: cardBg, border, borderRadius: 8, marginTop: 20, scrollMarginTop: 80, overflow: "hidden" }}>
       <SbSection kicker="OEM-07" title="OEM Partners & API Scopes" desc="3rd-party robot companies and the control they've unlocked for Orbital" kickerColor={MC.amber}
         extra={
-          <button onClick={onWizard} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 6, cursor: "pointer", fontSize: ".74rem", fontWeight: 500, background: "transparent", border: `1px solid ${MC.line}`, color: MC.azureLight }}>
+          <button onClick={onWizard} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 6, cursor: "pointer", fontSize: ".74rem", fontWeight: 500, border: `1px solid ${MC.line}`, background: "transparent", color: MC.azureLight }}>
             <Plus size={13} /> Onboard robot API
           </button>
         } />
       {oems.length === 0 ? (
         <div style={{ color: MC.inkDim, fontSize: ".82rem", padding: "0.75rem" }}>
-          No OEM partners registered yet. Use <button onClick={onWizard} style={{ color: MC.azure, background: "transparent", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Onboard robot API</button> to register one.
+          No OEM partners registered yet. Use <button onClick={onWizard} style={{ color: MC.azure, background: "transparent", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Onboard robot API</button> to add one.
         </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
@@ -1679,7 +1690,9 @@ function OemPartnersPanel({ oems, cardBg, border, onManage, onWizard, sectionRef
                     <span style={{ color: o.monitor_ready ? MC.azureLight : MC.inkDim }}>monitor</span>
                   </td>
                   <td style={{ textAlign: "right" }}>
-                    <button onClick={() => onManage(o)} style={{ padding: "2px 8px", borderRadius: 6, border: `1px solid ${MC.line}`, background: "transparent", color: MC.azureLight, cursor: "pointer", fontSize: ".74rem" }}>Manage</button>
+                    <button onClick={() => onManage(o)} style={{ padding: "2px 8px", borderRadius: 6, border: `1px solid ${MC.line}`, background: "transparent", color: MC.azureLight, cursor: "pointer" }}>
+                      Manage
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -1698,10 +1711,10 @@ function LogicPanel({ orchestrator, cardBg, border }: { orchestrator: Orchestrat
     ? `${orchestrator.enabled ? "on" : "off"} · ${decisions.length} decision${decisions.length === 1 ? "" : "s"} · ${auto} auto-executed`
     : "—";
   const cards: [string, React.ReactNode][] = [
-    ["1 · Control hierarchy", <>Each tick resolves one command source per robot in priority order: <b style={{ color: BRAND.emerald }}>visual-nav waypoints</b> → <b style={{ color: "#f59e0b" }}>manual jog</b> → <span style={{ color: "rgba(255,255,255,0.6)" }}>autonomous patrol</span>. Setting one supersedes the others.</>],
-    ["2 · Drift & ARIA correction", <>Overhead cameras give the <b style={{ color: BRAND.emerald }}>ground-truth pose</b>; the robot's onboard SLAM <span style={{ color: "rgba(255,255,255,0.6)" }}>self-report</span> accumulates drift. ARIA decays it toward zero each tick — the dashed link on the map is the live gap.</>],
-    ["3 · Safety halt", <>When drift crosses the halt threshold, ARIA fires an <b style={{ color: "#ef4444" }}>auto E-Stop</b> + alert. Sim-triggered halts auto-recover; a manual E-Stop waits for an operator Resume.</>],
-    ["4 · Orchestrator", <>A supervisory loop scans the fleet on a fixed cadence and takes safety-first actions — proactive charge dispatch on low battery, auto E-Stop on critical anomalies. <span style={{ color: "rgba(255,255,255,0.5)" }}>{orchLine}</span></>],
+    ["1 · Control hierarchy", <>Each tick resolves one command source per robot in priority order: <b style={{ color: BRAND.emerald }}>visual-nav waypoints</b> → <b style={{ color: "#f59e0b" }}>manual jog</b> → <b style={{ color: MC.azure }}>fleet defaults</b>.</>],
+    ["2 · Drift & ARIA correction", <>Overhead cameras give the <b style={{ color: BRAND.emerald }}>ground-truth pose</b>; the robot's onboard SLAM <span style={{ color: "rgba(255,255,255,0.6)" }}>drifts are compared against ARIA</span> to correct pathing and health.</>],
+    ["3 · Safety halt", <>When drift crosses the halt threshold, ARIA fires an <b style={{ color: "#ef4444" }}>auto E-Stop</b> + alert. Sim-triggered halts auto-recover; a manual E-Stop waits for operator resume.</>],
+    ["4 · Orchestrator", <>A supervisory loop scans the fleet on a fixed cadence and takes safety-first actions — proactive charge dispatch on low battery, auto E-Stop on critical anomalies.</>],
   ];
   return (
     <div style={{ background: cardBg, border, borderRadius: 12, padding: 16, marginTop: 20 }}>
@@ -1755,7 +1768,7 @@ function Ticker({ metrics, stateCounts, facility, oems, live }: {
     </span>
   ));
   return (
-    <div style={{ marginTop: 14, background: MC.panel, border: `1px solid ${MC.line}`, borderRadius: 10, overflow: "hidden", position: "relative", WebkitMaskImage: "linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent)", maskImage: "linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent)" }}>
+    <div style={{ marginTop: 14, background: MC.panel, border: `1px solid ${MC.line}`, borderRadius: 10, overflow: "hidden", position: "relative", WebkitMaskImage: "linear-gradient(90deg, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%)" }}>
       <style>{`@keyframes orbital-ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}} .orbital-ticker-track{animation:orbital-ticker 92s linear infinite} .orbital-ticker-track:hover{animation-play-state:paused}`}</style>
       <div className="orbital-ticker-track" style={{ display: "inline-flex", alignItems: "center", padding: "9px 0" }}>
         {strip("a")}{strip("b")}
@@ -1798,7 +1811,7 @@ function Overview({ metrics, stateCounts, statusFilter, onToggle, cardBg, border
         <div style={{ display: "flex", height: 10, borderRadius: 999, overflow: "hidden", background: MC.input, marginBottom: 10 }}>
           {present.map((s) => (
             <div key={s.key} onClick={() => onToggle(s.key)} title={`${s.label}: ${stateCounts[s.key]}`}
-              style={{ width: `${((stateCounts[s.key] ?? 0) / total) * 100}%`, background: s.color, cursor: "pointer", opacity: statusFilter && statusFilter !== s.key ? 0.3 : 1, transition: "opacity .15s" }} />
+              style={{ width: `${((stateCounts[s.key] ?? 0) / total) * 100}%`, background: s.color, cursor: "pointer", opacity: statusFilter && statusFilter !== s.key ? 0.3 : 1, transition: "opacity .14s" }} />
           ))}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -1903,7 +1916,7 @@ function OnboardWizard({ catalog, onClose, onCreate }: {
               return (
                 <div key={s} style={{ display: "flex", alignItems: "center", gap: 6, flex: i < steps.length - 1 ? 1 : "0 0 auto" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ width: 22, height: 22, borderRadius: 999, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".7rem", fontWeight: 700, background: on ? MC.azure : done ? emeraldAlpha(0.2) : MC.input, color: on ? "#04121a" : done ? MC.green : MC.inkDim, border: `1px solid ${on ? MC.azure : done ? MC.green : MC.line}` }}>{done ? "✓" : n}</span>
+                    <span style={{ width: 22, height: 22, borderRadius: 999, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".7rem", fontWeight: 700, background: on ? MC.azure : done ? MC.green : MC.input, color: on ? "#04121a" : MC.inkDim }}>{n}</span>
                     <span style={{ fontSize: ".72rem", color: on ? MC.ink : MC.inkDim }}>{s}</span>
                   </span>
                   {i < steps.length - 1 && <span style={{ flex: 1, height: 1, background: MC.line }} />}
@@ -1913,7 +1926,7 @@ function OnboardWizard({ catalog, onClose, onCreate }: {
           </div>
         )}
 
-        {err && <div style={{ padding: "9px 12px", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: 8, color: "#fca5a5", fontSize: ".8rem", marginBottom: 14 }}>{err}</div>}
+        {err && <div style={{ padding: "9px 12px", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: 8, color: "#fca5a5", fontSize: ".8rem", marginBottom: 12 }}>{err}</div>}
 
         {result ? (
           <div style={{ marginTop: 4 }}>
@@ -1925,14 +1938,16 @@ function OnboardWizard({ catalog, onClose, onCreate }: {
               <div style={{ ...lbl, marginTop: 14 }}>API key (shown once)</div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <code style={{ flex: 1, background: MC.input, border: `1px solid ${MC.line}`, borderRadius: 8, padding: "9px 11px", color: MC.green, fontFamily: MONO, fontSize: ".8rem", wordBreak: "break-all" }}>{result.credential.api_key}</code>
-                <button onClick={copyKey} style={{ display: "flex", alignItems: "center", gap: 5, padding: "9px 12px", borderRadius: 8, border: `1px solid ${MC.line}`, background: MC.input, color: MC.inkMut, cursor: "pointer", fontSize: ".76rem" }}>
+                <button onClick={copyKey} style={{ display: "flex", alignItems: "center", gap: 5, padding: "9px 12px", borderRadius: 8, border: `1px solid ${MC.line}`, background: MC.input, color: MC.ink, cursor: "pointer" }}>
                   {copied ? <Check size={13} color={MC.green} /> : <Copy size={13} />} {copied ? "Copied" : "Copy"}
                 </button>
               </div>
               <div style={{ fontSize: ".72rem", color: MC.inkDim, marginTop: 8 }}>Granted {result.profile.granted_scopes.length} scope(s). Manage anytime from OEM Partners.</div>
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 18 }}>
-              <button onClick={onClose} style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: MC.azure, color: "#04121a", cursor: "pointer", fontSize: ".82rem", fontWeight: 700 }}>Done</button>
+              <button onClick={onClose} style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: MC.azure, color: "#04121a", cursor: "pointer", fontSize: ".82rem", fontWeight: 600 }}>
+                Close
+              </button>
             </div>
           </div>
         ) : (
@@ -2003,7 +2018,7 @@ function OnboardWizard({ catalog, onClose, onCreate }: {
                       onChange={(e) => setPolicies((p) => ({ ...p, drift_halt_threshold_m: +e.target.value }))} style={{ width: "100%", accentColor: MC.azure }} />
                   </div>
                 </div>
-                <div><label style={lbl}>Geofence zone</label><input style={inp} value={policies.geofence} onChange={(e) => setPolicies((p) => ({ ...p, geofence: e.target.value }))} placeholder="facility-wide" /></div>
+                <div><label style={lbl}>Geofence zone</label><input style={inp} value={policies.geofence} onChange={(e) => setPolicies((p) => ({ ...p, geofence: e.target.value }))} placeholder="Aisle A / north dock" /></div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderTop: `1px solid ${MC.line}` }}>
                   <span style={{ fontSize: ".82rem", color: MC.ink }}>Auto E-Stop on critical anomaly</span>
                   <Switch on={policies.auto_estop_on_critical} onClick={() => setPolicies((p) => ({ ...p, auto_estop_on_critical: !p.auto_estop_on_critical }))} />
@@ -2017,10 +2032,10 @@ function OnboardWizard({ catalog, onClose, onCreate }: {
 
             {step === 4 && (
               <div style={{ display: "grid", gap: 10, fontSize: ".82rem" }}>
-                {[["Company", company], ["Vendor", vendorName], ["Transport", transport], ["Contact", email],
-                  ["Scopes", Array.from(scopes).join(", ") || "none"], ["Max speed", `${policies.max_speed_mps.toFixed(2)} m/s`],
-                  ["Drift halt", `${policies.drift_halt_threshold_m.toFixed(2)} m`], ["Geofence", policies.geofence],
-                  ["Auto E-Stop", policies.auto_estop_on_critical ? "on" : "off"], ["Teleop approval", policies.require_approval_for_teleop ? "required" : "off"],
+                {[['Company', company], ['Vendor', vendorName], ['Transport', transport], ['Contact', email],
+                  ['Scopes', Array.from(scopes).join(', ') || 'none'], ['Max speed', `${policies.max_speed_mps.toFixed(2)} m/s`],
+                  ['Drift halt', `${policies.drift_halt_threshold_m.toFixed(2)} m`], ['Geofence', policies.geofence],
+                  ['Auto E-Stop', policies.auto_estop_on_critical ? 'on' : 'off'], ['Teleop approval', policies.require_approval_for_teleop ? 'required' : 'off'],
                 ].map(([k, v]) => (
                   <div key={k as string} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "6px 0", borderBottom: `1px solid ${MC.line}` }}>
                     <span style={{ color: MC.inkDim }}>{k}</span>
@@ -2031,16 +2046,16 @@ function OnboardWizard({ catalog, onClose, onCreate }: {
             )}
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
-              <button onClick={() => (step === 1 ? onClose() : setStep(step - 1))} style={{ padding: "9px 16px", borderRadius: 8, border: `1px solid ${MC.line}`, background: "transparent", color: MC.inkMut, cursor: "pointer", fontSize: ".82rem" }}>
+              <button onClick={() => (step === 1 ? onClose() : setStep(step - 1))} style={{ padding: "9px 16px", borderRadius: 8, border: `1px solid ${MC.line}`, background: "transparent", color: MC.ink, cursor: "pointer" }}>
                 {step === 1 ? "Cancel" : "Back"}
               </button>
               {step < 4 ? (
                 <button disabled={step === 1 && !step1Valid} onClick={() => setStep(step + 1)}
-                  style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: step === 1 && !step1Valid ? MC.input : MC.azure, color: step === 1 && !step1Valid ? MC.inkDim : "#04121a", cursor: step === 1 && !step1Valid ? "not-allowed" : "pointer", fontSize: ".82rem", fontWeight: 700 }}>
+                  style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: step === 1 && !step1Valid ? MC.input : MC.azure, color: step === 1 && !step1Valid ? MC.inkDim : "#04121a", cursor: step === 1 && !step1Valid ? "not-allowed" : "pointer" }}>
                   Continue
                 </button>
               ) : (
-                <button disabled={creating} onClick={submit} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 18px", borderRadius: 8, border: "none", background: MC.green, color: "#04121a", cursor: creating ? "wait" : "pointer", fontSize: ".82rem", fontWeight: 700 }}>
+                <button disabled={creating} onClick={submit} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 18px", borderRadius: 8, border: "none", background: MC.green, color: "#0b0f14", cursor: "pointer" }}>
                   {creating && <Loader2 size={14} className="animate-spin" />} Create partner
                 </button>
               )}
