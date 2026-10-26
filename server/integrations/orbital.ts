@@ -13,6 +13,7 @@
  * Env:
  *   ORBITAL_API_URL   Base URL of the Orbital AI Cloud (e.g. https://orbital.onstage.bot)
  *   ORBITAL_API_KEY   Optional bearer token forwarded as Authorization (future-proof)
+ *   ORBITAL_RBAC_PROXY_SECRET  Same value as on the Orbital cloud; lets StageGate admins act as Orbital admins
  */
 import express, { type Request, type Response, type Router } from "express";
 
@@ -23,10 +24,28 @@ export function orbitalBaseUrl(): string | null {
   return raw ? raw.replace(/\/+$/, "") : null;
 }
 
-function orbitalHeaders(): Record<string, string> {
+/**
+ * Orbital trusts `X-Orbital-Role` only alongside its ORBITAL_RBAC_PROXY_SECRET, so the role
+ * is claimed only for a signed-in StageGate admin; everyone else reaches Orbital as a viewer.
+ */
+async function orbitalHeaders(req: Request): Promise<Record<string, string>> {
   const headers: Record<string, string> = { "content-type": "application/json" };
   const key = (process.env.ORBITAL_API_KEY || "").trim();
   if (key) headers["authorization"] = `Bearer ${key}`;
+
+  const proxySecret = (process.env.ORBITAL_RBAC_PROXY_SECRET || "").trim();
+  if (!proxySecret) return headers;
+  try {
+    const { sdk } = await import("../_core/sdk");
+    const user = await sdk.authenticateRequest(req);
+    if (user.role === "admin" && !user.isCron) {
+      headers["x-orbital-role"] = "admin";
+      headers["x-orbital-proxy-secret"] = proxySecret;
+      headers["x-orbital-actor"] = `stagegate:${user.email || user.openId}`;
+    }
+  } catch {
+    // Not signed in: forward without a role claim.
+  }
   return headers;
 }
 
@@ -50,7 +69,7 @@ async function forward(req: Request, res: Response, upstreamPath: string): Promi
     const hasBody = req.method !== "GET" && req.method !== "HEAD";
     const upstream = await fetch(url, {
       method: req.method,
-      headers: orbitalHeaders(),
+      headers: await orbitalHeaders(req),
       body: hasBody ? JSON.stringify(req.body ?? {}) : undefined,
       signal: controller.signal,
     });
