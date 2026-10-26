@@ -98,7 +98,7 @@ export function createOrbitalRouter(): Router {
   // without a round-trip to the cloud.
   router.get("/status", (_req, res) => {
     const base = orbitalBaseUrl();
-    res.json({ configured: Boolean(base), baseConfigured: Boolean(base) });
+    res.json({ configured: Boolean(base), baseConfigured: Boolean(base), proxySecretConfigured: Boolean((process.env.ORBITAL_RBAC_PROXY_SECRET || "").trim()) });
   });
 
   router.get("/health", (req, res) => void forward(req, res, "/health"));
