@@ -900,7 +900,7 @@ export default function AdminOrbital() {
 
       {/* OEM governance + benchmark */}
       <BenchmarkLibraryPanel robots={allRobots} cardBg={cardBg} border={border} />
-      <OemPartnersPanel oems={oems} cardBg={cardBg} border={border} onManage={setManageOem} onWizard={() => setWizardOpen(true)} sectionRef={reg("partners")} />
+      <OemPartnersPanel oems={oems} cardBg={cardBg} border={border} onManage={setManageOem} onWizard={() => setWizardOpen(true)} sectionRef={reg} />
 
       {selected && (
         <RobotModal detail={selected} busy={busy[selected.id]} onClose={() => setSelected(null)}
